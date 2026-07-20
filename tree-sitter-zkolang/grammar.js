@@ -42,7 +42,7 @@ module.exports = grammar({
     binary: $ => choice(
       prec.left(1, seq($._expr, '||', $._expr)),
       prec.left(2, seq($._expr, '&&', $._expr)),
-      prec.left(3, seq($._expr, choice('==', '!='), $._expr)),
+      prec.left(3, seq($._expr, choice('==', '!=', '<', '<=', '>', '>='), $._expr)),
       prec.left(4, seq($._expr, choice('+', '-'), $._expr)),
       prec.left(5, seq($._expr, choice('*', '/'), $._expr)),
     ),

@@ -37,8 +37,14 @@ fn main() {
     println!("program           : {src}");
     println!("WIRING_VERSION u8 : 01");
     println!("commit    32      : {}", hex(&commit_bytes));
-    println!("log2N     u32 LE  : {log_t} -> {}", hex(&(log_t as u32).to_le_bytes()));
-    println!("width     u32 LE  : {width} -> {}", hex(&width.to_le_bytes()));
+    println!(
+        "log2N     u32 LE  : {log_t} -> {}",
+        hex(&(log_t as u32).to_le_bytes())
+    );
+    println!(
+        "width     u32 LE  : {width} -> {}",
+        hex(&width.to_le_bytes())
+    );
     println!("rate      u32 LE  : {rate} -> {}", hex(&rate.to_le_bytes()));
     println!("root      32      : {}", hex(&root));
     println!("descriptor {}B    : {}", buf.len(), hex(&buf));

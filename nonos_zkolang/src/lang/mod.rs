@@ -14,7 +14,7 @@ mod include;
 mod lex;
 mod parse;
 
-pub use compile::compile;
+pub use compile::{compile, compile_full, Compiled};
 pub use error::CompileError;
 pub use include::expand_includes;
 
@@ -27,4 +27,12 @@ pub fn compile_source(src: &str) -> Result<Vec<Op>, CompileError> {
     let tokens = lex::lex(src)?;
     let ast = parse::parse(&tokens)?;
     compile(&ast)
+}
+
+/// Compile zKolang source into a VM program together with the advice plan its ordered
+/// comparisons need, which the driver fills before proving.
+pub fn compile_source_full(src: &str) -> Result<Compiled, CompileError> {
+    let tokens = lex::lex(src)?;
+    let ast = parse::parse(&tokens)?;
+    compile_full(&ast)
 }

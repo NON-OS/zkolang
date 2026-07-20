@@ -5,15 +5,18 @@
 
 //! Finish the program.
 
-use alloc::vec::Vec;
-
 use super::state::Compiler;
 use crate::isa::Op;
+use crate::lang::compile::compiled::Compiled;
 
 impl Compiler {
-    /// End the program with a halt and hand back the instruction list.
-    pub(crate) fn finish(mut self) -> Vec<Op> {
+    /// End the program with a halt and hand back the program and its advice plan.
+    pub(crate) fn finish(mut self) -> Compiled {
         self.ops.push(Op::Halt);
-        self.ops
+        Compiled {
+            ops: self.ops,
+            advice: self.advice,
+            n_advice: self.next_advice,
+        }
     }
 }

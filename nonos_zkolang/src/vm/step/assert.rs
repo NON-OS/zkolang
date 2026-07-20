@@ -16,7 +16,7 @@ impl Vm {
         let va = self.rget(a)?;
         row.ra = va;
         row.aux = va;
-        if va != Fp::ZERO {
+        if va != Fp::ZERO && self.check {
             return Err(ProveError::Unprovable { step: clk });
         }
         Ok(())

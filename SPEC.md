@@ -54,7 +54,7 @@ for_stmt    = "for" ident "in" expr ".." expr "{" { statement } "}" ;
 expr        = or ;
 or          = and { "||" and } ;
 and         = equality { "&&" equality } ;
-equality    = sum [ ( "==" | "!=" ) sum ] ;
+equality    = sum [ ( "==" | "!=" | "<" | "<=" | ">" | ">=" ) sum ] ;
 sum         = product { ( "+" | "-" ) product } ;
 product     = unary { ( "*" | "/" ) unary } ;
 unary       = ( "-" | "!" ) unary | primary ;
@@ -106,7 +106,7 @@ Operators, tightest binding last:
 |---|---|---|
 | or | `\|\|` | `a + b - a*b`, exact on bits |
 | and | `&&` | `a * b`, exact on bits |
-| equality | `== !=` | a bit, one when the relation holds |
+| comparison | `== != < <= > >=` | a bit, one when the relation holds |
 | sum | `+ -` | field add and subtract |
 | product | `* /` | field multiply, and multiply by an inverse |
 | unary | `- !` | negate, and `1 - x` (logical not) |
@@ -140,10 +140,14 @@ transparent, over the quadratic extension, with no trusted setup.
 
 ## 9. Ordered comparison
 
-Equality is a field primitive and is in the language. Ordered comparison, `a < b` and
-its relatives, is not a field primitive: deciding an order needs the operands' bits,
-which are not recoverable by field arithmetic. Today a program expresses an ordered
-comparison by supplying the bit decomposition as a private witness and constraining it,
-the pattern the standard library and the range proofs use. A first-class comparison
-operator that supplies this witness itself is specified for a future revision; it does
-not change the field or the proof, only the front end and the witness assembly.
+Equality is a field primitive. Ordered comparison, `a < b` and its relatives, is not:
+deciding an order needs the operands' bits, which field arithmetic cannot recover. The
+operators `< <= > >=` are first class and supply the witness themselves. `a < b` range
+proves both operands to sixteen bits, forms `a + 2^16 - b`, decomposes it into seventeen
+bits, and returns the complement of the top bit, which is the sign of the difference.
+`a > b` is `b < a`, and the inclusive forms are the negations. The bit decompositions
+are advice: the compiler records, per comparison, which value is decomposed, and the
+driver evaluates the program, reads those values, fills the bits, and then proves with
+every constraint enforced. Soundness rests on the range proofs and the composition
+constraints, not on how the bits were produced, so a false order or an operand outside
+the sixteen-bit range has no proof. Operands must lie in `[0, 2^16)`.

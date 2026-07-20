@@ -11,6 +11,7 @@ use alloc::string::String;
 use alloc::vec::Vec;
 
 use crate::isa::Op;
+use crate::lang::compile::compiled::Advice;
 use crate::lang::parse::{ConstDef, FnDef};
 
 pub(crate) struct Compiler {
@@ -27,4 +28,10 @@ pub(crate) struct Compiler {
     pub(crate) next_public: u16,
     pub(crate) next_secret: u16,
     pub(crate) next_output: u16,
+    /// Total declared secrets, so comparison advice indexes past them.
+    pub(crate) n_secret: u16,
+    /// The next free advice-bit slot, counting from zero in the advice region.
+    pub(crate) next_advice: u16,
+    /// The decomposition plan a comparison builds for the driver to fill.
+    pub(crate) advice: Vec<Advice>,
 }

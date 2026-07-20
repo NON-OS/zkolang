@@ -12,8 +12,14 @@ use crate::lang::parse::{ConstDef, FnDef};
 
 impl Compiler {
     /// A fresh compiler over a program's constants and functions, with the public
-    /// input count already known so secret inputs index after the public prefix.
-    pub(crate) fn new(consts: Vec<ConstDef>, fns: Vec<FnDef>, n_public: u16) -> Compiler {
+    /// input and secret counts already known so secrets index after the public prefix
+    /// and comparison advice indexes after the secrets.
+    pub(crate) fn new(
+        consts: Vec<ConstDef>,
+        fns: Vec<FnDef>,
+        n_public: u16,
+        n_secret: u16,
+    ) -> Compiler {
         Compiler {
             ops: Vec::new(),
             consts,
@@ -28,6 +34,9 @@ impl Compiler {
             next_public: 0,
             next_secret: 0,
             next_output: 0,
+            n_secret,
+            next_advice: 0,
+            advice: Vec::new(),
         }
     }
 }

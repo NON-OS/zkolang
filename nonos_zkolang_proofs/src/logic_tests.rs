@@ -115,7 +115,9 @@ fn parity_folds_xor_over_bits() {
     let src = fs::read_to_string(base.join("examples").join("parity.zkl")).unwrap();
     let expanded = expand_includes(&src, &mut resolve).expect("expand");
     let parity = |bits: &[u64]| {
-        prove_source_with_inputs(&expanded, bits).expect("run").outputs[0]
+        prove_source_with_inputs(&expanded, bits)
+            .expect("run")
+            .outputs[0]
     };
     assert_eq!(parity(&[1, 0, 1, 0]), 0, "two ones is even");
     assert_eq!(parity(&[1, 1, 1, 0]), 1, "three ones is odd");

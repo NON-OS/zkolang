@@ -7,6 +7,7 @@
 //! whole pipeline behind one function, the surface a shell command or a capsule
 //! calls. Nothing here panics; every failure is a typed `RunError`.
 
+mod advice;
 mod error;
 mod log_t;
 mod params;

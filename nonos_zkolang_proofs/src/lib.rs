@@ -16,6 +16,8 @@ mod backend_tests;
 #[cfg(test)]
 mod commit_tests;
 #[cfg(test)]
+mod comparison_tests;
+#[cfg(test)]
 mod const_table_tests;
 #[cfg(test)]
 mod corpus_tests;

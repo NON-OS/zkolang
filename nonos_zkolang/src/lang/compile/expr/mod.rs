@@ -7,6 +7,8 @@
 
 mod binary;
 mod call;
+mod compare;
+mod decompose;
 mod div;
 mod index;
 mod inline;
@@ -34,6 +36,7 @@ impl Compiler {
             Expr::Div(l, r) => self.div(l, r),
             Expr::Neg(x) => self.neg(x),
             Expr::Ne(l, r) => self.ne(l, r),
+            Expr::Lt(l, r) => self.compare(l, r),
             Expr::Inv(x) => self.inv(x),
             Expr::Sel(c, l, r) => self.select(c, l, r),
             Expr::If(c, l, r) => self.select(c, l, r),

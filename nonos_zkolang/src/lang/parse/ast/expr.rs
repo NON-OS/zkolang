@@ -22,6 +22,7 @@ pub enum Expr {
     Neg(Box<Expr>),
     Eq(Box<Expr>, Box<Expr>),
     Ne(Box<Expr>, Box<Expr>),
+    Lt(Box<Expr>, Box<Expr>),
     Inv(Box<Expr>),
     Sel(Box<Expr>, Box<Expr>, Box<Expr>),
     If(Box<Expr>, Box<Expr>, Box<Expr>),

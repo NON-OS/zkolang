@@ -13,7 +13,7 @@
 (fn_def (identifier) @function)
 (call (identifier) @function.call)
 
-["+" "-" "*" "/" "==" "!=" "&&" "||" "!" ".."] @operator
+["+" "-" "*" "/" "==" "!=" "<" "<=" ">" ">=" "&&" "||" "!" ".."] @operator
 ["(" ")" "[" "]" "{" "}"] @punctuation.bracket
 ["," ";"] @punctuation.delimiter
 

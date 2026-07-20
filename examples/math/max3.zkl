@@ -1,0 +1,8 @@
+// The maximum of three sixteen-bit inputs, using ordered comparison to select the
+// larger at each step. The comparison auto-witnesses its bit decomposition, so the
+// program reads as the plain arithmetic it means. Run: zkolang math/max3.zkl
+input a;
+input b;
+input c;
+let ab = sel(a < b, b, a);
+output sel(ab < c, c, ab);

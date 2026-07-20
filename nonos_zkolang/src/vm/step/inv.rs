@@ -22,7 +22,12 @@ impl Vm {
         let va = self.rget(a)?;
         row.ra = va;
         if va == Fp::ZERO {
-            return Err(ProveError::Unprovable { step: clk });
+            if self.check {
+                return Err(ProveError::Unprovable { step: clk });
+            }
+            row.rd = Fp::ZERO;
+            row.aux = Fp::ZERO;
+            return self.wset(d, Fp::ZERO);
         }
         let inv = va.inv();
         row.rd = inv;

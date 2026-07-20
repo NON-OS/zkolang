@@ -33,13 +33,16 @@ fn all_programs(dir: PathBuf, out: &mut Vec<PathBuf>) {
 fn every_program_compiles() {
     let mut files = Vec::new();
     all_programs(root().join("examples"), &mut files);
-    assert!(files.len() >= 40, "expected a large corpus, found {}", files.len());
+    assert!(
+        files.len() >= 40,
+        "expected a large corpus, found {}",
+        files.len()
+    );
     for path in files {
         let src = fs::read_to_string(&path).expect("read");
         let expanded = expand_includes(&src, &mut resolve)
             .unwrap_or_else(|e| panic!("include {}: {:?}", path.display(), e));
-        compile_source(&expanded)
-            .unwrap_or_else(|e| panic!("compile {}: {:?}", path.display(), e));
+        compile_source(&expanded).unwrap_or_else(|e| panic!("compile {}: {:?}", path.display(), e));
     }
 }
 
@@ -117,14 +120,20 @@ fn shielded_value_programs() {
     assert_ne!(c1, out("commitment.zkl", &[42], &[8]));
 
     // A nullifier binds the key and index; a MAC binds the key and message.
-    assert_ne!(out("nullifier.zkl", &[0], &[99]), out("nullifier.zkl", &[1], &[99]));
+    assert_ne!(
+        out("nullifier.zkl", &[0], &[99]),
+        out("nullifier.zkl", &[1], &[99])
+    );
     assert_ne!(out("mac.zkl", &[5], &[1]), out("mac.zkl", &[5], &[2]));
 }
 
 #[test]
 fn hashing_and_membership_programs() {
     // The sponge and a Merkle path both prove and are deterministic.
-    assert_eq!(out("sponge2.zkl", &[3, 5], &[]), out("sponge2.zkl", &[3, 5], &[]));
+    assert_eq!(
+        out("sponge2.zkl", &[3, 5], &[]),
+        out("sponge2.zkl", &[3, 5], &[])
+    );
     assert!(proves("merkle3.zkl", &[7, 11, 13, 17, 0, 1, 0], &[]));
     assert!(proves("merkle3.zkl", &[7, 11, 13, 17, 1, 1, 1], &[]));
 }

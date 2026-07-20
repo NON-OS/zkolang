@@ -1,0 +1,6 @@
+// A bound check: one when the input lies in the half-open window [lo, hi), by conjoining
+// two ordered comparisons. Operands are sixteen-bit. Run: zkolang logic/in_range.zkl
+const LO = 10;
+const HI = 100;
+input x;
+output (LO <= x) && (x < HI);
