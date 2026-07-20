@@ -27,7 +27,7 @@ native code at the same cost budget.
 - **Identifier.** `[A-Za-z_][A-Za-z0-9_]*`, not equal to a keyword.
 - **Number.** `[0-9]+`, read as a field element modulo `p`.
 - **String.** `"` up to the next `"`, used only as an include path.
-- **Keywords.** `let const fn input secret output assert for in if else inv sel include`.
+- **Keywords.** `let const fn input secret output assert for in if else match inv sel include`.
   Four have a second spelling with the same meaning, the language's own register:
   `public` for `input`, `witness` for `secret`, `reveal` for `output`, `prove` for
   `assert`. A program may use either spelling.
@@ -61,8 +61,9 @@ equality    = sum [ ( "==" | "!=" | "<" | "<=" | ">" | ">=" ) sum ] ;
 sum         = product { ( "+" | "-" ) product } ;
 product     = unary { ( "*" | "/" ) unary } ;
 unary       = ( "-" | "!" ) unary | primary ;
-primary     = number | array | inv | sel | if_expr
+primary     = number | array | inv | sel | if_expr | match_expr
             | call | index | ident | "(" expr ")" ;
+match_expr  = "match" expr "{" { number "=>" expr "," } "_" "=>" expr [ "," ] "}" ;
 
 array       = "[" [ expr { "," expr } ] "]" ;
 inv         = "inv" "(" expr ")" ;
@@ -117,8 +118,10 @@ Operators, tightest binding last:
 `inv(x)` is the field inverse; inverting zero has no witness, so it makes the trace
 unprovable, and `/` is multiplication by an inverse with the same rule. `sel(c, a, b)`
 is a branchless select returning `a` when `c` is one and `b` when `c` is zero, with `c`
-constrained boolean. `if c { a } else { b }` is the same select in a familiar shape,
-and both arms are evaluated. An array literal is a vector; `name[i]` reads a constant
+constrained boolean. `if c { a } else { b }` is the same select in a familiar shape, and
+both arms are evaluated. `match e { v => a, ..., _ => d }` compares the scrutinee to each
+value and falls through to the required default `_`, desugared to a nested select, so it
+too evaluates every arm. An array literal is a vector; `name[i]` reads a constant
 table or an array at a constant index, which must be in bounds.
 
 ## 7. Compilation and the machine

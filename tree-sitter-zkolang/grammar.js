@@ -35,7 +35,7 @@ module.exports = grammar({
       '{', repeat($._statement), '}'),
 
     _expr: $ => choice(
-      $.binary, $.unary, $.call, $.index, $.array, $.inv, $.sel, $.if_expr,
+      $.binary, $.unary, $.call, $.index, $.array, $.inv, $.sel, $.if_expr, $.match_expr,
       $.paren, $.number, $.identifier,
     ),
 
@@ -54,6 +54,8 @@ module.exports = grammar({
     inv: $ => seq('inv', '(', $._expr, ')'),
     sel: $ => seq('sel', '(', $._expr, ',', $._expr, ',', $._expr, ')'),
     if_expr: $ => seq('if', $._expr, '{', $._expr, '}', 'else', '{', $._expr, '}'),
+    match_expr: $ => seq('match', $._expr, '{',
+      repeat(seq(choice($.number, '_'), '=>', $._expr, ',')), '}'),
     paren: $ => seq('(', $._expr, ')'),
 
     identifier: $ => /[A-Za-z_][A-Za-z0-9_]*/,

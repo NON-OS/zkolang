@@ -1,93 +1,158 @@
-<!-- NONOS Operating System. Copyright (C) 2026 NONOS Contributors. AGPL-3.0-or-later. -->
+<!-- NONOS. AGPL-3.0-or-later. -->
 
-# zKolang
+# zKølang
 
-A verifiable-compute language by NONOS. zKolang compiles a small straight-line
-language to a register virtual machine, and the machine's execution trace is
-proven by a transparent post-quantum STARK with no trusted setup. A proof attests
-that a specific program ran on specific public inputs and produced specific public
-outputs, not that some bag of valid rows happens to exist.
+A language for verifiable computation, by NØNOS. You write a program; you get back a
+transparent post-quantum STARK proof that it ran exactly as written and produced exactly
+these outputs, checkable by anyone, forever, with no trusted setup. When you want, the
+inputs stay private and the proof reveals only that they satisfied the program.
 
-The step AIR binds every operand to the live register file, so register reuse is
-invisible to soundness and a forged row cannot pass. The public statement, the
-program commitment, its trace length, and its public inputs and outputs are bound
-into the proof, and a per-program verifier key ties the commitment to the program's
-wiring at a fixed rate, which is what lets a pay-to-prove market register and
-challenge a program by its commitment alone.
+It is not a general application language. It will not build a web server or a user
+interface. It is a proving language, the thing you reach for when you need math you can
+prove you did right, and prove it without showing what went in.
 
-## Workspace
+## The mental model
 
-```
-nonos-stark/           transparent STARK primitives: field, Poseidon, FRI, DEEP
-nonos_zkolang/         the language, the VM, the step AIR, and the prover binding
-nonos_zkolang_proofs/  the host proof suite behind the documentation
-docs/                  language, machine, AIR, economics, reference, recipes
-paper/                 the research paper
-```
-
-The language and the STARK travel together here so the repository builds and proves
-on its own, with no dependency outside `blake3`.
+A program compiles to a register machine: thirty two registers over the Goldilocks field,
+the integers modulo the prime `p = 2^64 - 2^32 + 1`. Running it lays down an execution
+trace of width fifty one, and that trace is what the STARK proves. So the whole story is
+`program -> trace -> proof`. Every value is a field element, arithmetic wraps modulo `p`,
+and the proof binds a fixed statement the verifier replays: the program commitment, the
+trace length, and the public inputs and outputs.
 
 ## Quickstart
 
 ```
-cargo test -p nonos_zkolang_proofs
-cargo run -p nonos_zkolang_proofs --release --example measure
+cargo build -p nonos_zkolang_cli        # builds the `zkolang` tool
+zkolang run examples/cube.zkl --input 9 # compiles, proves, verifies
 ```
 
-The proof suite covers the AIR tamper set, register binding, public input and
-output soundness, the language end to end including functions, the verifier-key
-binding at the registration rate, and the fee model. The measurement example prints
-the trace shapes and fees the documentation reports.
+```
+verified
+outputs [729]
+steps 5  trace 2^3
+```
+
+The tool has four verbs: `run` compiles and proves, `check` compiles only, `build` emits
+a native backend, and `key` prints a circuit's registration key.
 
 ## A first program
 
 ```
-fn sq(x) = x * x;
 input x;
-let y = sq(x) + 5;
-output y;        // proves y = x^2 + 5 for the committed public x and y
+let y = x * x * x;
+output y;
 ```
 
-The language has `let`, `assert`, `input`, `secret`, `output`, field arithmetic
-with division and negation, equality and not-equal, the branchless `sel` and its
-`if`/`else` sugar, bounded `for` loops unrolled at compile time, constant tables
-read by a compile-time index, and functions inlined hygienically at each call. See
-[docs](nonos_zkolang/docs/02-language.md).
+`input` reads a public value, `let` binds an expression, `output` publishes a result.
+There are no types to write, because there is one type, a field element. That is also the
+one thing to understand: numbers wrap modulo the prime, so `0 - 1` is not minus one, it is
+`p - 1`. Comparison and range checks are therefore not free; they are done by witnessed
+bit decomposition, which the compiler fills for you.
 
-## Examples
+## The language
 
-Programs written in the language, under [examples](examples): a cubed input, a
-polynomial by Horner's rule, Fibonacci, a factorial, a power, a geometric series, a
-dot product and a matrix-vector product over arrays, a range proof, a round schedule
-over a constant table, a two-to-one hash-tree node, and `mimc.zkl`, a full MiMC hash
-whose output is proven equal to the field reference. Every example is compiled, run,
-and proven by the suite in `nonos_zkolang_proofs`.
+- Bindings and values: `let`, `const` (a scalar read by name or a table read by a
+  constant index), `input`, `secret`, `output`.
+- Control and structure: bounded `for` loops unrolled at compile time, first-class arrays,
+  functions inlined at each call, and `include "name.zkl";`.
+- Operators: field `+ - * /`, unary `-`, the field inverse `inv`, equality `== !=`,
+  ordered comparison `< <= > >=`, logical `! && ||`, the branchless `sel` and its `if`
+  and `match` forms.
+- A private register: `witness` is `secret`, `public` is `input`, `reveal` is `output`,
+  `prove` is `assert`. The same program in a cypherpunk voice:
 
-## Targets
+```
+witness key;
+public position;
+reveal nullifier(key, position);
+prove balance == 0;
+```
 
-The compiled program is target-independent, so one `.zkl` source has three
-back-ends: the proven STARK trace, native **C** (`to_c`), and **Python**
-(`to_python`). All three compute over the same field, and the C back-end is checked
-end to end against the proof, native binary versus prover. The syntax grammar for
-editors and GitHub is under [grammars](grammars).
+The [specification](SPEC.md) is normative; the [manifesto](MANIFESTO.md) says what it is
+for.
 
-## Standard library
+## The standard library
 
-Under [stdlib](stdlib), included with `include "name.zkl";`: `math.zkl` (squares,
-cubes, the x^7 S-box), `logic.zkl` (the boolean gadgets `and`, `or`, `not`, `xor`,
-`nand`, `nor`, `implies`), `cmp.zkl` (`is_equal`, `is_zero`, `is_distinct`), and
-`hash.zkl` (the MiMC constants and S-box). Ordered comparison is a witnessed proof;
-see `examples/less_than.zkl`. Every gadget is written in zKølang and proven by the
-suite.
+Under [stdlib](stdlib), included with `include`: `math` (powers and small gadgets),
+`logic` (the boolean gates and a multiplexer and a majority), `cmp` (equality and zero
+tests), `field` (reciprocal and division), `bits` (bit recomposition for range proofs),
+and `hash` (the MiMC round and its constants). Every gadget is written in zKølang and its
+soundness is proven, in the suite and, for the core gadgets, in Lean 4 under [lean](lean).
 
-## Documentation
+## Backends
 
-Start with the [overview](nonos_zkolang/docs/01-overview.md) and
-[the language](nonos_zkolang/docs/02-language.md), then the
-[reference](nonos_zkolang/docs/07-reference.md) and the
-[recipes](nonos_zkolang/docs/10-recipes.md). The economics, the recursion ABI, and
-the on-chain contract spec are under the same directory.
+One source, four targets, all over the same field. The STARK prover; native **x86_64
+assembly** (`zkolang build --target asm`); native **C**; and **Python**. The natives are
+checked against the prover, bit for bit, so run and prove are the same verb.
+
+```
+zkolang build examples/cube.zkl --target asm --out cube.S
+cc cube.S -o cube && ./cube 9        # 729, native, no prover
+```
+
+## The compiler
+
+A constant-folding and algebraic-simplification optimizer runs before lowering, so the
+trace is smaller while the proof is unchanged. Errors are diagnostics, not kinds:
+
+```
+error: unexpected token
+  --> 2:13
+   |
+   | let y = x * ;
+   |             ^
+```
+
+## The utilities
+
+The circuits the kernel and NOX rest on live under [circuits](circuits), each proven with
+an accepting and a failing case and pinned to the verifier key an on-chain registry gates
+on.
+
+- `circuits/shield` is the private-value utility: `spend_note` proves a note's membership,
+  retires it with a nullifier, and range-proves its value; `transfer_note` spends one note
+  and creates another, conserving value. The amounts, keys, and positions stay private.
+- `circuits/kernel` is the trust boundary: attestation, anti-rollback against a TPM floor,
+  capability and syscall authorization, measured boot, and sealing.
+
+A circuit becomes real by registration. Its verifier key is
+`keccak256(0x01 ‖ commit ‖ log2N ‖ trace_width ‖ rate ‖ periodic_root)`, its commitment is
+`blake3` over the serialized ops, and a pay-to-prove fee settles per use in NOX. Read any
+key with `zkolang key <file.zkl>`.
+
+## Proving and verification
+
+```
+cargo test -p nonos_zkolang_proofs
+```
+
+The suite proves the language end to end: the AIR tamper set and register binding, the
+public statement, the optimizer, the operators including comparison, the standard library
+gadgets, the shield and kernel utilities with their accept and reject cases, the
+verifier-key binding, and the fee model. Nothing here only compiles; it proves.
+
+## Tooling
+
+The `zkolang` command-line tool under [nonos_zkolang_cli](nonos_zkolang_cli), a tree-sitter
+grammar under [tree-sitter-zkolang](tree-sitter-zkolang), a TextMate grammar under
+[grammars](grammars), and a VS Code extension under [editors/vscode](editors/vscode).
+
+## Layout
+
+```
+nonos_zkolang/         the language, the VM, the step AIR, the prover binding
+nonos_zkolang_cli/     the zkolang command-line tool
+nonos_zkolang_proofs/  the host proof suite
+nonos-stark/           the transparent STARK primitives (vendored)
+circuits/              the production utilities, kernel and shield
+examples/              programs written in the language
+stdlib/                the standard library, in zKølang
+lean/                  gadget soundness in Lean 4
+```
+
+The language and the STARK travel together so the repository builds and proves on its own,
+with no dependency outside `blake3`.
 
 ## License
 

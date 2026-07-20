@@ -18,7 +18,7 @@
     "keywords": {
       "patterns": [
         {
-          "match": "\\b(let|const|fn|input|public|secret|witness|output|reveal|assert|prove|for|in|if|else|include)\\b",
+          "match": "\\b(let|const|fn|input|public|secret|witness|output|reveal|assert|prove|for|in|if|else|match|include)\\b",
           "name": "keyword.control.zkolang"
         },
         {
