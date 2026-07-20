@@ -12,6 +12,8 @@ pub mod mimc;
 #[cfg(test)]
 mod array_tests;
 #[cfg(test)]
+mod backend_tests;
+#[cfg(test)]
 mod commit_tests;
 #[cfg(test)]
 mod const_table_tests;

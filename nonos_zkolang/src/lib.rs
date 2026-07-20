@@ -20,6 +20,7 @@
 extern crate alloc;
 
 mod air;
+mod backend;
 mod commit;
 mod driver;
 mod isa;
@@ -30,6 +31,7 @@ mod vkey;
 mod vm;
 
 pub use air::{BuildError, StepAir, TRACE_WIDTH};
+pub use backend::{to_c, to_python};
 pub use commit::{commit, commit_limbs, serialize};
 pub use driver::{
     prove_program, prove_source, prove_source_with_inputs, prove_source_with_witness, Report,
