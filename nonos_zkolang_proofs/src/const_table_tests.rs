@@ -87,3 +87,27 @@ fn indexing_a_non_table_is_an_error() {
         Err(CompileError::NotIndexable)
     ));
 }
+
+#[test]
+fn a_scalar_constant_reads_by_name() {
+    let src = "const N = 5; input x; output x + N;";
+    let report = prove_source_with_inputs(src, &[3]).expect("run");
+    assert!(report.verified);
+    assert_eq!(report.outputs, vec![8]);
+}
+
+#[test]
+fn scalar_and_table_constants_coexist() {
+    let src = "const K = 10; const T = [1, 2, 3]; input x; output x * K + T[1];";
+    let report = prove_source_with_inputs(src, &[2]).expect("run");
+    assert!(report.verified);
+    assert_eq!(report.outputs, vec![22], "2*10 + 2");
+}
+
+#[test]
+fn indexing_a_scalar_is_a_type_error() {
+    assert!(matches!(
+        compile_source("const N = 5; output N[0];"),
+        Err(CompileError::NotIndexable)
+    ));
+}

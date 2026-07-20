@@ -11,3 +11,4 @@
 mod eval;
 mod lookup;
 mod resolve;
+mod scalar;

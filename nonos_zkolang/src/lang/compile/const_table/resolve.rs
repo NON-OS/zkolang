@@ -18,11 +18,12 @@ impl Compiler {
             Expr::Var(n) => n.as_str(),
             _ => return Err(CompileError::NotIndexable),
         };
+        let is_value = self.lookup(name).is_some()
+            || self.loop_const(name).is_some()
+            || self.scalar_const(name).is_some();
         let table = match self.const_table(name) {
             Some(t) => t,
-            None if self.lookup(name).is_some() || self.loop_const(name).is_some() => {
-                return Err(CompileError::NotIndexable);
-            }
+            None if is_value => return Err(CompileError::NotIndexable),
             None => return Err(CompileError::UnknownConst),
         };
         let i = self.const_eval(index)?;

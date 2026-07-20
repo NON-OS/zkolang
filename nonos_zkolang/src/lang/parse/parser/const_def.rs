@@ -3,22 +3,33 @@
  AGPL-3.0-or-later
 */
 
-//! A constant table definition.
+//! A constant definition, scalar or table.
+
+use alloc::vec;
+use alloc::vec::Vec;
 
 use super::Parser;
 use crate::lang::lex::Tok;
 use crate::lang::parse::ast::ConstDef;
 use crate::lang::CompileError;
-use alloc::vec::Vec;
 
 impl<'a> Parser<'a> {
-    /// `const name = [n0, n1, ...];`: decimal literals in declaration order, later
-    /// read by a compile-time index.
+    /// `const name = 5;` binds a scalar; `const name = [n0, ...];` binds a table. The
+    /// `[` after `=` selects between them.
     pub(crate) fn const_def(&mut self) -> Result<ConstDef, CompileError> {
         self.pos += 1;
         let name = self.ident()?;
         self.expect(&Tok::Assign)?;
-        self.expect(&Tok::LBracket)?;
+        if !matches!(self.peek(), Some(Tok::LBracket)) {
+            let v = self.number()?;
+            self.expect(&Tok::Semi)?;
+            return Ok(ConstDef {
+                name,
+                values: vec![v],
+                scalar: true,
+            });
+        }
+        self.pos += 1;
         let mut values = Vec::new();
         if !matches!(self.peek(), Some(Tok::RBracket)) {
             loop {
@@ -32,6 +43,10 @@ impl<'a> Parser<'a> {
         }
         self.expect(&Tok::RBracket)?;
         self.expect(&Tok::Semi)?;
-        Ok(ConstDef { name, values })
+        Ok(ConstDef {
+            name,
+            values,
+            scalar: false,
+        })
     }
 }
