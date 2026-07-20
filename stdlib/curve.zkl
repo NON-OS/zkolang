@@ -1,0 +1,10 @@
+// Short Weierstrass curve gadgets over the field, the arithmetic under an elliptic curve
+// signature. `on_curve` is zero exactly when the point satisfies y^2 = x^3 + a*x + b, so
+// assert it to prove a point is on the curve. The slopes are the group law's, computed
+// with the field inverse: addition needs the points to differ in x, doubling needs a
+// nonzero y. `add_x` and `add_y` give the resulting coordinates from a slope.
+fn on_curve(x, y, a, b)      = y * y - (x * x * x + a * x + b);
+fn add_slope(x1, y1, x2, y2) = (y2 - y1) / (x2 - x1);
+fn double_slope(x, y, a)     = (3 * x * x + a) / (2 * y);
+fn add_x(slope, x1, x2)      = slope * slope - x1 - x2;
+fn add_y(slope, x1, x3, y1)  = slope * (x1 - x3) - y1;

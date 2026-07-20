@@ -1,0 +1,9 @@
+// Arithmetic gate gadgets on bits, the atoms of a binary circuit. The half adder sums two
+// bits into a sum and a carry; the full adder folds in an incoming carry. Each is one
+// inlined expression and is exact when its inputs are bits.
+include "logic.zkl";
+
+fn half_sum(a, b)      = xor(a, b);
+fn half_carry(a, b)    = and(a, b);
+fn full_sum(a, b, c)   = xor(xor(a, b), c);
+fn full_carry(a, b, c) = majority(a, b, c);

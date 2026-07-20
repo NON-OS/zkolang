@@ -1,0 +1,7 @@
+// Encoding gadgets: pack small values into one field element at fixed byte and word
+// widths, exact while each part stays inside its width. The inverse, reading a part back
+// out, is a witnessed decomposition; see bits.zkl.
+fn pack2_byte(lo, hi)     = lo + 256 * hi;
+fn pack2_word(lo, hi)     = lo + 65536 * hi;
+fn pack3_byte(a, b, c)    = a + 256 * b + 65536 * c;
+fn pack4_byte(a, b, c, d) = a + 256 * b + 65536 * c + 16777216 * d;

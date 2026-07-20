@@ -141,3 +141,59 @@ fn the_alu_selects_an_operation_by_a_match() {
     assert_eq!(run(2, 8, 5), 40);
     assert_eq!(run(9, 8, 5), 5);
 }
+
+#[test]
+fn curve_gadgets() {
+    // On the curve y^2 = x^3 (a=0, b=0): (4, 8) satisfies 64 = 64, off-curve (4, 9) does not.
+    assert_eq!(
+        out(
+            "include \"curve.zkl\";\npublic x;\npublic y;\nreveal on_curve(x, y, 0, 0);",
+            &[4, 8]
+        ),
+        0
+    );
+    assert_ne!(
+        out(
+            "include \"curve.zkl\";\npublic x;\npublic y;\nreveal on_curve(x, y, 0, 0);",
+            &[4, 9]
+        ),
+        0
+    );
+}
+
+#[test]
+fn gate_gadgets() {
+    let full_sum = |a, b, c| {
+        out(
+            "include \"gate.zkl\";\npublic a;\npublic b;\npublic c;\nreveal full_sum(a, b, c);",
+            &[a, b, c],
+        )
+    };
+    let full_carry = |a, b, c| {
+        out(
+            "include \"gate.zkl\";\npublic a;\npublic b;\npublic c;\nreveal full_carry(a, b, c);",
+            &[a, b, c],
+        )
+    };
+    assert_eq!([full_sum(1, 1, 1), full_carry(1, 1, 1)], [1, 1]);
+    assert_eq!([full_sum(1, 1, 0), full_carry(1, 1, 0)], [0, 1]);
+    assert_eq!([full_sum(1, 0, 0), full_carry(1, 0, 0)], [1, 0]);
+}
+
+#[test]
+fn encoding_gadgets() {
+    assert_eq!(
+        out(
+            "include \"encode.zkl\";\npublic a;\npublic b;\nreveal pack2_byte(a, b);",
+            &[5, 3]
+        ),
+        773
+    );
+    assert_eq!(
+        out(
+            "include \"encode.zkl\";\npublic a;\npublic b;\npublic c;\nreveal pack3_byte(a, b, c);",
+            &[1, 2, 3]
+        ),
+        197121
+    );
+}
