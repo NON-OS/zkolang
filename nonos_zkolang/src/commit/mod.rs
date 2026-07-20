@@ -13,6 +13,7 @@
 //! bytes and the shape of the commitment are each stated in one place.
 
 mod digest;
+mod encode_op;
 mod serialize;
 
 pub use digest::{commit, commit_limbs};

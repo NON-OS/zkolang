@@ -12,7 +12,7 @@ use alloc::vec::Vec;
 
 use nonos_stark::field::Fp;
 
-use super::prove::run_and_prove;
+use super::pipeline::run_and_prove;
 use super::{Report, RunError};
 use crate::lang::compile_source;
 

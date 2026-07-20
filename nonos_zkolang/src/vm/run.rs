@@ -3,9 +3,7 @@
  AGPL-3.0-or-later
 */
 
-//! The run loop: step through the program, one row per instruction, and stop at
-//! the halt. A program that never halts is a typed error, not an infinite loop,
-//! because the loop is bounded by the instruction list.
+//! The run loop: step through the program and stop at the halt.
 
 use alloc::vec::Vec;
 
@@ -16,10 +14,9 @@ use crate::isa::Program;
 use crate::trace::{Row, Trace};
 
 impl Vm {
-    /// Run `program` on `inputs`, the first `n_public` of which are public. On
-    /// success returns the trace plus the public boundary the proof commits to.
-    /// The clock is the row index, so the trace is an ordered sequence by
-    /// construction.
+    /// Run the program on inputs, the first `n_public` of which are public, returning
+    /// the trace and the public boundary the proof commits to. The clock is the row
+    /// index, so the trace is ordered by construction.
     pub fn run(
         &mut self,
         program: &Program,

@@ -3,17 +3,13 @@
  AGPL-3.0-or-later
 */
 
-//! zkolang verifiable-compute VM (Phase 1 core).
+//! zKolang verifiable-compute VM.
 //!
-//! A register and memory VM over the Goldilocks field whose execution trace the
-//! NONOS in-kernel transparent STARK proves. This crate is the VM, instruction
-//! set, trace model, and the step AIR the prover reads. The zkolang language
-//! front-end and the NOX proving-fee rail build on top of it.
-//!
-//! The field and the Poseidon permutation are the kernel STARK's, taken from the
-//! `nonos-stark` crate. A VM register holds an `Fp`, the same scalar the STARK
-//! commits, so a run and its proof are the same object with no field translation
-//! between them and no second definition of the modulus anywhere in the tree.
+//! A register VM over the Goldilocks field whose execution trace the NONOS in-kernel
+//! transparent STARK proves. This crate is the VM, the instruction set, the trace
+//! model, the step AIR, the language front-end, the native back-ends, and the NOX
+//! fee. A register holds an `Fp`, the same scalar the STARK commits, so a run and its
+//! proof are the same object with no second definition of the field.
 
 #![no_std]
 

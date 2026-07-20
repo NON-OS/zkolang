@@ -3,23 +3,14 @@
  AGPL-3.0-or-later
 */
 
-//! The scanner: source bytes to a token stream. zkolang source is ASCII; a
-//! non-ASCII or otherwise unexpected byte is a typed error carrying its offset.
-//! Line comments run from `//` to end of line.
+//! The scanner: a dispatch loop over the word, number, and symbol readers.
 
-use alloc::string::String;
 use alloc::vec::Vec;
 
-use super::super::CompileError;
-use super::token::Tok;
-
-fn is_ident_start(b: u8) -> bool {
-    b.is_ascii_alphabetic() || b == b'_'
-}
-
-fn is_ident_continue(b: u8) -> bool {
-    b.is_ascii_alphanumeric() || b == b'_'
-}
+use super::{
+    classify::is_ident_start, number::scan_number, symbol::scan_symbol, token::Tok, word::scan_word,
+};
+use crate::lang::CompileError;
 
 /// Tokenize `src`, or report the first byte that begins no valid token.
 pub fn lex(src: &str) -> Result<Vec<Tok>, CompileError> {
@@ -30,111 +21,24 @@ pub fn lex(src: &str) -> Result<Vec<Tok>, CompileError> {
         let ch = b[i];
         if ch.is_ascii_whitespace() {
             i += 1;
-            continue;
-        }
-        // A double slash starts a line comment. We check this before the single
-        // `/` operator below, so `//` is always a comment and a lone `/` is always
-        // division. Skip to the newline and let the outer loop pick up from there.
-        if ch == b'/' && i + 1 < b.len() && b[i + 1] == b'/' {
-            i += 2;
+        } else if ch == b'/' && b.get(i + 1) == Some(&b'/') {
             while i < b.len() && b[i] != b'\n' {
                 i += 1;
             }
-            continue;
-        }
-        if is_ident_start(ch) {
-            let start = i;
-            while i < b.len() && is_ident_continue(b[i]) {
-                i += 1;
-            }
-            let word = &src[start..i];
-            toks.push(match word {
-                "let" => Tok::Let,
-                "assert" => Tok::Assert,
-                "input" => Tok::Input,
-                "secret" => Tok::Secret,
-                "output" => Tok::Output,
-                "inv" => Tok::Inv,
-                "sel" => Tok::Sel,
-                "for" => Tok::For,
-                "in" => Tok::In,
-                "if" => Tok::If,
-                "else" => Tok::Else,
-                "fn" => Tok::Fn,
-                "const" => Tok::Const,
-                _ => Tok::Ident(String::from(word)),
-            });
-            continue;
-        }
-        if ch.is_ascii_digit() {
-            let start = i;
-            let mut value: u64 = 0;
-            while i < b.len() && b[i].is_ascii_digit() {
-                let digit = (b[i] - b'0') as u64;
-                value = match value.checked_mul(10).and_then(|v| v.checked_add(digit)) {
-                    Some(v) => v,
-                    None => return Err(CompileError::NumberTooLarge { at: start }),
-                };
-                i += 1;
-            }
-            toks.push(Tok::Num(value));
-            continue;
-        }
-        // The single-character operators and punctuation. A lone `/` reaches here
-        // only when it was not the start of a `//` comment, so it is division.
-        let single = match ch {
-            b'+' => Some(Tok::Plus),
-            b'-' => Some(Tok::Minus),
-            b'*' => Some(Tok::Star),
-            b'/' => Some(Tok::Slash),
-            b'(' => Some(Tok::LParen),
-            b')' => Some(Tok::RParen),
-            b',' => Some(Tok::Comma),
-            b';' => Some(Tok::Semi),
-            b'{' => Some(Tok::LBrace),
-            b'}' => Some(Tok::RBrace),
-            b'[' => Some(Tok::LBracket),
-            b']' => Some(Tok::RBracket),
-            _ => None,
-        };
-        if let Some(tok) = single {
-            toks.push(tok);
-            i += 1;
-            continue;
-        }
-        // `=` is either assignment or, when doubled, the equality operator. We peek
-        // one byte to tell them apart and advance by one or two accordingly.
-        if ch == b'=' {
-            if i + 1 < b.len() && b[i + 1] == b'=' {
-                toks.push(Tok::EqEq);
-                i += 2;
-            } else {
-                toks.push(Tok::Assign);
-                i += 1;
-            }
-            continue;
-        }
-        // `!` is only ever the start of `!=`. A bare `!` has no meaning in the
-        // language, so it is a lexing error rather than a token.
-        if ch == b'!' {
-            if i + 1 < b.len() && b[i + 1] == b'=' {
-                toks.push(Tok::BangEq);
-                i += 2;
-                continue;
-            }
+        } else if is_ident_start(ch) {
+            let (t, ni) = scan_word(src, b, i);
+            toks.push(t);
+            i = ni;
+        } else if ch.is_ascii_digit() {
+            let (t, ni) = scan_number(b, i)?;
+            toks.push(t);
+            i = ni;
+        } else if let Some((t, ni)) = scan_symbol(b, i)? {
+            toks.push(t);
+            i = ni;
+        } else {
             return Err(CompileError::UnexpectedChar { at: i });
         }
-        // `.` is only ever the range `..` of a `for`. A single dot is meaningless
-        // in the language, so it is a lexing error.
-        if ch == b'.' {
-            if i + 1 < b.len() && b[i + 1] == b'.' {
-                toks.push(Tok::DotDot);
-                i += 2;
-                continue;
-            }
-            return Err(CompileError::UnexpectedChar { at: i });
-        }
-        return Err(CompileError::UnexpectedChar { at: i });
     }
     Ok(toks)
 }
