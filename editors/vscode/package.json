@@ -1,0 +1,28 @@
+{
+  "name": "zkolang",
+  "displayName": "zKolang",
+  "description": "Language support for zKolang (.zkl): the verifiable-compute language by NONOS.",
+  "version": "0.1.0",
+  "publisher": "nonos",
+  "license": "AGPL-3.0-or-later",
+  "repository": { "type": "git", "url": "https://github.com/NON-OS/zkolang" },
+  "engines": { "vscode": "^1.75.0" },
+  "categories": ["Programming Languages"],
+  "contributes": {
+    "languages": [
+      {
+        "id": "zkolang",
+        "aliases": ["zKolang", "zkolang"],
+        "extensions": [".zkl"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "zkolang",
+        "scopeName": "source.zkolang",
+        "path": "./syntaxes/zkolang.tmLanguage.json"
+      }
+    ]
+  }
+}
