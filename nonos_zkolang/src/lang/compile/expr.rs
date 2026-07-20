@@ -41,8 +41,15 @@ impl Compiler {
                     });
                     return Ok(Val { reg: d, temp: true });
                 }
-                let reg = self.lookup(n).ok_or(CompileError::UnknownVariable)?;
-                Ok(Val { reg, temp: false })
+                if let Some(reg) = self.lookup(n) {
+                    return Ok(Val { reg, temp: false });
+                }
+                // A bare array name is a whole vector, not a single value, so using
+                // it where a value is required is a type error rather than unknown.
+                if self.lookup_array(n).is_some() {
+                    return Err(CompileError::ArrayNotScalar);
+                }
+                Err(CompileError::UnknownVariable)
             }
             Expr::Add(l, r) => self.binary(l, r, |d, a, b| Op::Add { d, a, b }),
             Expr::Sub(l, r) => self.binary(l, r, |d, a, b| Op::Sub { d, a, b }),
@@ -120,19 +127,31 @@ impl Compiler {
             Expr::Sel(cond, l, r) => self.select(cond, l, r),
             Expr::If(cond, l, r) => self.select(cond, l, r),
             Expr::Call(name, args) => self.call(name, args),
-            // A table read folds to the entry it names and materializes as an
-            // immediate, so a constant table costs one `Imm` per read and nothing
-            // more; the table itself never reaches the trace.
-            Expr::Index(base, idx) => {
-                let v = self.resolve_index(base, idx)?;
-                let d = self.alloc()?;
-                self.ops.push(Op::Imm {
-                    d,
-                    v: Fp::from_u64(v),
-                });
-                Ok(Val { reg: d, temp: true })
+            Expr::Index(base, idx) => self.index(base, idx),
+            // An array literal is a whole vector, so it is only valid as the right
+            // side of a `let`, handled in the statement lowering. Anywhere a single
+            // value is expected it is a type error.
+            Expr::Array(_) => Err(CompileError::ArrayNotScalar),
+        }
+    }
+
+    // An index expression resolves against an array binding first, returning the
+    // register that element already occupies, and otherwise against a constant table,
+    // where the value folds to one immediate. Both need a compile-time index.
+    fn index(&mut self, base: &Expr, idx: &Expr) -> Result<Val, CompileError> {
+        if let Expr::Var(name) = base {
+            if self.lookup_array(name).is_some() {
+                let reg = self.array_element(name, idx)?;
+                return Ok(Val { reg, temp: false });
             }
         }
+        let v = self.resolve_index(base, idx)?;
+        let d = self.alloc()?;
+        self.ops.push(Op::Imm {
+            d,
+            v: Fp::from_u64(v),
+        });
+        Ok(Val { reg: d, temp: true })
     }
 
     // The shared shape of a two-operand arithmetic node: compile both operands,

@@ -38,7 +38,7 @@ sum      := product (('+' | '-') product)*
 product  := unary (('*' | '/') unary)*
 unary    := '-' unary | primary
 primary  := atom ('[' expr ']')*
-atom     := number | ident | ident '(' args? ')' | '(' expr ')'
+atom     := number | ident | ident '(' args? ')' | '(' expr ')' | '[' args? ']'
           | 'inv' '(' expr ')' | 'sel' '(' expr ',' expr ',' expr ')'
           | 'if' expr '{' expr '}' 'else' '{' expr '}'
 args     := expr (',' expr)*
@@ -79,7 +79,7 @@ Each failure is a typed value, never a panic.
   `NumberTooLarge { at }`, `UnexpectedEof`, `UnexpectedToken`, `UnknownVariable`,
   `TooManyRegisters`, `LoopTooLarge`, `UnknownFunction`, `ArityMismatch`,
   `RecursionTooDeep`, `NotIndexable`, `UnknownConst`, `NonConstantIndex`,
-  `IndexOutOfBounds`.
+  `IndexOutOfBounds`, `ArrayNotScalar`.
 - `ProveError` (`src/vm/`): `BadRegister`, `BadInput`, `NoHalt`,
   `Unprovable { step }`.
 - `BuildError` (`src/air/`): `NoHalt`, `TooLong`, `MissingPublicOutput`.
@@ -88,8 +88,8 @@ Each failure is a typed value, never a panic.
 
 ## Limits
 
-- Sixteen registers. A program needing more live values than the file holds is a
-  `TooManyRegisters` compile error.
+- Thirty-two registers. A program needing more live values than the file holds is
+  a `TooManyRegisters` compile error.
 - Straight-line only. No runtime loops, conditionals, or calls; bounded loops are
   unrolled and functions are inlined by the front-end.
 - Traces up to 2^16 rows (`MAX_LOG_T` in `src/driver.rs`); a longer program is a
@@ -102,7 +102,7 @@ Each failure is a typed value, never a panic.
 
 The driver proves at 32 queries, 16 grinding bits, and 3 extra blowup bits
 (`src/driver.rs`), the same money-grade setting the `nonos-stark` tests use. The
-trace width is 35 and the AIR has 46 transition constraints of degree at most
+trace width is 51 and the AIR has 46 transition constraints of degree at most
 three.
 
 ## FAQ
@@ -132,7 +132,7 @@ the terminal, then write a `.zkl` file and run `zkolang myfile.zkl`.
 
 ## Reproducing the claims
 
-In `userland/nonos_zkolang_proofs`: `cargo test` runs the 82 host proofs behind this
+In `userland/nonos_zkolang_proofs`: `cargo test` runs the 102 host proofs behind this
 documentation (opcode tamper rejection, register binding, public input and output
 soundness, the language end to end including functions, the verifier-key binding at
 the registration rate, and the fee model), and

@@ -37,6 +37,10 @@ pub(super) struct Compiler {
     // constant, so a reference to one lowers to an immediate rather than a
     // register read.
     pub(super) loop_consts: Vec<(String, u64)>,
+    // Array bindings: a name mapped to the registers holding its elements in order.
+    // An array is a compile-time fixed-size vector, so an indexed read resolves to
+    // one of these registers rather than a runtime address.
+    pub(super) arrays: Vec<(String, Vec<u8>)>,
     // The high-water mark of registers ever allocated, and the pool of registers
     // freed from dead temporaries and available for reuse.
     pub(super) next: u8,
@@ -68,6 +72,7 @@ impl Compiler {
             inline_depth: 0,
             syms: Vec::new(),
             loop_consts: Vec::new(),
+            arrays: Vec::new(),
             next: 0,
             free: Vec::new(),
             n_public,
@@ -132,8 +137,20 @@ impl Compiler {
         }
     }
 
+    /// Remove and return the newest scalar binding of a name, if any. Used when a
+    /// name becomes an array so its old scalar register can be reclaimed.
+    pub(super) fn take_scalar(&mut self, name: &str) -> Option<u8> {
+        self.syms
+            .iter()
+            .rposition(|(n, _)| n.as_str() == name)
+            .map(|pos| self.syms.remove(pos).1)
+    }
+
     /// Whether any live binding still holds this register, so it must not be freed.
+    /// Both scalar names and array elements count, so a register an array holds is
+    /// never reclaimed under it.
     pub(super) fn reg_in_use(&self, reg: u8) -> bool {
         self.syms.iter().any(|(_, r)| *r == reg)
+            || self.arrays.iter().any(|(_, regs)| regs.contains(&reg))
     }
 }

@@ -35,6 +35,7 @@ product  := unary (('*' | '/') unary)*
 unary    := '-' unary | primary
 primary  := atom ('[' expr ']')*
 atom     := number | ident | ident '(' args? ')' | '(' expr ')'
+          | '[' args? ']'
           | 'inv' '(' expr ')'
           | 'sel' '(' expr ',' expr ',' expr ')'
           | 'if' expr '{' expr '}' 'else' '{' expr '}'
@@ -190,6 +191,31 @@ static arithmetic, so the constants are written once instead of as hundreds of
 literals. The index is deliberately static: an index that depended on a witness
 would make the program's shape data-dependent, which the straight-line model does
 not allow, so a runtime index is a compile error rather than a silent read.
+
+## Arrays
+
+An array literal `[e0, e1, ...]` binds to a name with `let`, giving a fixed-size
+vector. Its elements are full expressions, not just literals, and a read `v[i]`
+selects an element by a compile-time index, the same static index a constant table
+uses. An array costs nothing at proof time beyond the registers its elements hold,
+and a reassignment reclaims the old vector's registers, so a loop can rebuild a
+state vector each iteration and still fit the register file.
+
+```
+input a; input b; input c;
+let v = [a, b, a + b];
+output v[2];                 // a + b
+
+let s = [1, 1, 1];
+for r in 0 .. 8 {
+    let s = [s[0] + s[1], s[1] + s[2], s[2] + s[0]];   // a rolling fold
+}
+output s[0];
+```
+
+An array is a whole vector, so using its name where a single value is expected, or
+indexing past its end, is a compile error. This is the data shape a permutation's
+state or a small matrix needs.
 
 ## A complete program
 

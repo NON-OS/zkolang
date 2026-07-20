@@ -79,8 +79,11 @@ pub enum CompileError {
     /// A table index that is not a compile-time constant, so it cannot be resolved
     /// while the program is still straight-line.
     NonConstantIndex,
-    /// A table index outside the bounds of its constant table.
+    /// A table or array index outside the bounds of its elements.
     IndexOutOfBounds,
+    /// An array used where a single value is required, such as an operand of
+    /// arithmetic or an argument. Arrays are read through an index, not whole.
+    ArrayNotScalar,
 }
 
 use crate::isa::Op;

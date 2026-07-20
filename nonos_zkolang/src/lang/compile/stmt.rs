@@ -8,6 +8,8 @@
 //! shadows when no alias holds it, which is what lets a long accumulator loop fit
 //! the register file.
 
+use alloc::vec::Vec;
+
 use super::super::parse::{Expr, Stmt};
 use super::super::CompileError;
 use super::compiler::{Compiler, MAX_UNROLL};
@@ -17,11 +19,39 @@ impl Compiler {
     /// Lower one statement.
     pub(super) fn stmt(&mut self, s: &Stmt) -> Result<(), CompileError> {
         match s {
+            // Binding an array literal: compile each element to a register the array
+            // then owns, and bind the whole vector. A shadowed array of the same name
+            // has its unused registers reclaimed inside `bind_array`.
+            Stmt::Let(name, Expr::Array(elems)) => {
+                let mut regs = Vec::with_capacity(elems.len());
+                for el in elems {
+                    // The array keeps this register, so a temporary is not released;
+                    // an element that aliases a binding is sound because a binding
+                    // never mutates a register in place.
+                    regs.push(self.expr(el)?.reg);
+                }
+                // A same-named scalar no longer applies once the name is an array.
+                if let Some(old_reg) = self.take_scalar(name) {
+                    if !regs.contains(&old_reg) && !self.reg_in_use(old_reg) {
+                        self.free.push(old_reg);
+                    }
+                }
+                self.bind_array(name, regs);
+                Ok(())
+            }
             Stmt::Let(name, e) => {
                 // Note the register this name held before, if any. The right-hand
                 // side may still read it, so we look it up before compiling.
                 let old = self.lookup(name);
                 let v = self.expr(e)?;
+                // A same-named array no longer applies once the name is a scalar.
+                if let Some(old_array) = self.take_array(name) {
+                    for r in old_array {
+                        if r != v.reg && !self.reg_in_use(r) {
+                            self.free.push(r);
+                        }
+                    }
+                }
                 self.rebind(name, v.reg);
                 // If the name shadowed an earlier binding and no other live name
                 // holds that register, reclaim it. The alias check is what keeps

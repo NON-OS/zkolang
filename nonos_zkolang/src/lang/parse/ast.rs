@@ -38,10 +38,13 @@ pub enum Expr {
     // A call to a user function, inlined at compile time. The name and its
     // argument expressions.
     Call(String, Vec<Expr>),
-    // An index into a constant table: the table name and the index expression. The
-    // index must fold to a compile-time constant, so the reference resolves to one
-    // fixed table entry and the program stays straight-line.
+    // An index into a constant table or an array binding: the base name and the
+    // index expression. The index must fold to a compile-time constant, so the
+    // reference resolves to one fixed element and the program stays straight-line.
     Index(Box<Expr>, Box<Expr>),
+    // An array literal, `[e0, e1, ...]`. It binds to a name with `let`, giving a
+    // fixed-size vector whose elements are read by a compile-time index.
+    Array(Vec<Expr>),
 }
 
 // A statement node.

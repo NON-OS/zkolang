@@ -319,6 +319,23 @@ impl<'a> Parser<'a> {
                 self.expect(&Tok::RParen)?;
                 Ok(e)
             }
+            // An array literal, `[e0, e1, ...]`. The elements are full expressions,
+            // so an array can hold computed values, not only literals.
+            Some(Tok::LBracket) => {
+                let mut elems = Vec::new();
+                if !matches!(self.peek(), Some(Tok::RBracket)) {
+                    loop {
+                        elems.push(self.expr()?);
+                        if matches!(self.peek(), Some(Tok::Comma)) {
+                            self.pos += 1;
+                        } else {
+                            break;
+                        }
+                    }
+                }
+                self.expect(&Tok::RBracket)?;
+                Ok(Expr::Array(elems))
+            }
             Some(Tok::Inv) => {
                 self.expect(&Tok::LParen)?;
                 let e = self.expr()?;

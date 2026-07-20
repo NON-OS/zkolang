@@ -15,6 +15,7 @@
 //! the statement lowering, and the expression lowering (arithmetic, the witnessed
 //! gadgets, the conditional, and inlined function calls).
 
+mod array;
 mod compiler;
 mod const_table;
 mod expr;
