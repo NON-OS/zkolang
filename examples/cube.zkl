@@ -1,0 +1,5 @@
+// Prove y = x^3 for a public input x, without the verifier recomputing it.
+// Run: zkolang cube.zkl
+input x;
+let y = x * x * x;
+output y;

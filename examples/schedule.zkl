@@ -1,0 +1,13 @@
+// A round schedule over a constant table, indexed by a loop variable. This is the
+// data shape a hash uses: constants laid out as row * width + lane, read with a
+// static index while the loop unrolls. Nothing here is Rust; it is zKolang source
+// the compiler lowers to VM opcodes and the STARK proves.
+// Run: zkolang schedule.zkl
+const RC = [3, 1, 4, 1, 5, 9, 2, 6];
+
+input seed;
+let acc = seed;
+for r in 0 .. 4 {
+    let acc = acc + RC[r * 2] * RC[r * 2 + 1];
+}
+output acc;

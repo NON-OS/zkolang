@@ -1,0 +1,14 @@
+// Prove a secret value w is a 4-bit number, without revealing w. Each bit is
+// constrained boolean by a reusable relation, and the bits reconstruct w.
+// Run: zkolang range.zkl
+fn bit(b) = b * b - b;
+
+secret w;
+secret b0; secret b1; secret b2; secret b3;
+
+assert bit(b0);
+assert bit(b1);
+assert bit(b2);
+assert bit(b3);
+
+assert w - (b0 + 2 * b1 + 4 * b2 + 8 * b3);
