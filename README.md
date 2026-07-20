@@ -58,10 +58,18 @@ read by a compile-time index, and functions inlined hygienically at each call. S
 ## Examples
 
 Programs written in the language, under [examples](examples): a cubed input, a
-polynomial by Horner's rule, Fibonacci, a range proof, a round schedule over a
-constant table, a two-to-one hash-tree node, and `mimc.zkl`, a full MiMC hash
-whose output is proven equal to the field reference. Every example is compiled,
-run, and proven by the suite in `nonos_zkolang_proofs`. The syntax grammar for
+polynomial by Horner's rule, Fibonacci, a factorial, a power, a geometric series, a
+dot product and a matrix-vector product over arrays, a range proof, a round schedule
+over a constant table, a two-to-one hash-tree node, and `mimc.zkl`, a full MiMC hash
+whose output is proven equal to the field reference. Every example is compiled, run,
+and proven by the suite in `nonos_zkolang_proofs`.
+
+## Targets
+
+The compiled program is target-independent, so one `.zkl` source has three
+back-ends: the proven STARK trace, native **C** (`to_c`), and **Python**
+(`to_python`). All three compute over the same field, and the C back-end is checked
+end to end against the proof, native binary versus prover. The syntax grammar for
 editors and GitHub is under [grammars](grammars).
 
 ## Documentation

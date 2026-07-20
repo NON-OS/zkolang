@@ -1,0 +1,11 @@
+// Dot product of two four-vectors given as inputs, accumulated over an array with
+// a loop index. Run: zkolang dot.zkl
+input a0; input a1; input a2; input a3;
+input b0; input b1; input b2; input b3;
+let a = [a0, a1, a2, a3];
+let b = [b0, b1, b2, b3];
+let acc = 0;
+for i in 0 .. 4 {
+    let acc = acc + a[i] * b[i];
+}
+output acc;

@@ -1,0 +1,6 @@
+// Six factorial, a product over a range. Run: zkolang factorial.zkl
+let acc = 1;
+for i in 1 .. 7 {
+    let acc = acc * i;
+}
+output acc;

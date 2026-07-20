@@ -1,0 +1,7 @@
+// x raised to the tenth, by repeated multiplication. Run: zkolang power.zkl
+input x;
+let acc = 1;
+for i in 0 .. 10 {
+    let acc = acc * x;
+}
+output acc;

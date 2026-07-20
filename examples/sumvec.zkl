@@ -1,0 +1,8 @@
+// Sum a five-element input vector. Run: zkolang sumvec.zkl
+input a; input b; input c; input d; input e;
+let v = [a, b, c, d, e];
+let acc = 0;
+for i in 0 .. 5 {
+    let acc = acc + v[i];
+}
+output acc;

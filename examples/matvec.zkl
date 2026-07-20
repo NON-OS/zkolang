@@ -1,0 +1,10 @@
+// A three-by-three matrix, held row-major in a constant table, times an input
+// vector. Three public outputs, one per row. Run: zkolang matvec.zkl
+const M = [1, 2, 3,
+           4, 5, 6,
+           7, 8, 9];
+input x0; input x1; input x2;
+let x = [x0, x1, x2];
+output M[0] * x[0] + M[1] * x[1] + M[2] * x[2];
+output M[3] * x[0] + M[4] * x[1] + M[5] * x[2];
+output M[6] * x[0] + M[7] * x[1] + M[8] * x[2];

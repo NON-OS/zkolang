@@ -1,0 +1,10 @@
+// The geometric series 1 + x + x^2 + ... + x^7, carrying the running power in a
+// second accumulator. Run: zkolang geometric.zkl
+input x;
+let acc = 0;
+let p = 1;
+for i in 0 .. 8 {
+    let acc = acc + p;
+    let p = p * x;
+}
+output acc;

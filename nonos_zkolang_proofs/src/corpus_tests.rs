@@ -69,3 +69,46 @@ fn the_range_program_compiles() {
     // here we only confirm the committed file is a well-formed program.
     assert!(nonos_zkolang::compile_source(&program("range.zkl")).is_ok());
 }
+
+#[test]
+fn dot_product_over_arrays() {
+    let report =
+        prove_source_with_inputs(&program("dot.zkl"), &[1, 2, 3, 4, 5, 6, 7, 8]).expect("run");
+    assert!(report.verified);
+    assert_eq!(report.outputs, vec![70], "1*5 + 2*6 + 3*7 + 4*8");
+}
+
+#[test]
+fn matrix_times_vector() {
+    let report = prove_source_with_inputs(&program("matvec.zkl"), &[1, 1, 1]).expect("run");
+    assert!(report.verified);
+    assert_eq!(report.outputs, vec![6, 15, 24], "row sums of the matrix");
+}
+
+#[test]
+fn sum_of_a_vector() {
+    let report = prove_source_with_inputs(&program("sumvec.zkl"), &[1, 2, 3, 4, 5]).expect("run");
+    assert!(report.verified);
+    assert_eq!(report.outputs, vec![15]);
+}
+
+#[test]
+fn a_power_by_repeated_multiplication() {
+    let report = prove_source_with_inputs(&program("power.zkl"), &[2]).expect("run");
+    assert!(report.verified);
+    assert_eq!(report.outputs, vec![1024], "2^10");
+}
+
+#[test]
+fn factorial_over_a_range() {
+    let report = prove_source(&program("factorial.zkl")).expect("run");
+    assert!(report.verified);
+    assert_eq!(report.outputs, vec![720], "6!");
+}
+
+#[test]
+fn a_geometric_series() {
+    let report = prove_source_with_inputs(&program("geometric.zkl"), &[2]).expect("run");
+    assert!(report.verified);
+    assert_eq!(report.outputs, vec![255], "1 + 2 + 4 + ... + 128");
+}
