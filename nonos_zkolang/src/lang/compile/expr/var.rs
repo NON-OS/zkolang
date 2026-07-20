@@ -25,6 +25,8 @@ impl Compiler {
         if self.lookup_array(n).is_some() {
             return Err(CompileError::ArrayNotScalar);
         }
-        Err(CompileError::UnknownVariable)
+        Err(CompileError::UnknownVariable {
+            name: alloc::string::String::from(n),
+        })
     }
 }

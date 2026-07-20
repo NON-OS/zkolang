@@ -25,25 +25,33 @@ pub fn span_of(err: &CompileError) -> Option<usize> {
 }
 
 /// A one-line human description of an error.
-pub fn message(err: &CompileError) -> &'static str {
+pub fn message(err: &CompileError) -> String {
     match err {
-        CompileError::UnexpectedChar { .. } => "unexpected character",
-        CompileError::NumberTooLarge { .. } => "number too large for the field",
-        CompileError::UnexpectedEof { .. } => "unexpected end of input",
-        CompileError::UnexpectedToken { .. } => "unexpected token",
-        CompileError::UnknownVariable => "unknown variable",
-        CompileError::TooManyRegisters => "too many live values for the register file",
-        CompileError::LoopTooLarge => "loop range unrolls too far",
-        CompileError::UnknownFunction => "call to an undefined function",
-        CompileError::ArityMismatch => "wrong number of arguments",
-        CompileError::RecursionTooDeep => "function inlining nested too deep",
-        CompileError::NotIndexable => "indexing a value that is not a table or array",
-        CompileError::UnknownConst => "unknown constant",
-        CompileError::NonConstantIndex => "index is not a compile-time constant",
-        CompileError::IndexOutOfBounds => "index out of bounds",
-        CompileError::ArrayNotScalar => "array used where a single value is required",
-        CompileError::IncludeNotFound => "included file not found",
-        CompileError::IncludeTooDeep => "include nested too deep",
+        CompileError::UnexpectedChar { .. } => "unexpected character".into(),
+        CompileError::NumberTooLarge { .. } => "number too large for the field".into(),
+        CompileError::UnexpectedEof { .. } => "unexpected end of input".into(),
+        CompileError::UnexpectedToken { .. } => "unexpected token".into(),
+        CompileError::UnknownVariable { name } => format!("unknown variable `{name}`"),
+        CompileError::TooManyRegisters => "too many live values for the register file".into(),
+        CompileError::LoopTooLarge => "loop range unrolls too far".into(),
+        CompileError::UnknownFunction { name } => {
+            format!("call to an undefined function `{name}`")
+        }
+        CompileError::ArityMismatch {
+            name,
+            expected,
+            got,
+        } => {
+            format!("function `{name}` takes {expected} arguments but got {got}")
+        }
+        CompileError::RecursionTooDeep => "function inlining nested too deep".into(),
+        CompileError::NotIndexable => "indexing a value that is not a table or array".into(),
+        CompileError::UnknownConst { name } => format!("unknown constant `{name}`"),
+        CompileError::NonConstantIndex => "index is not a compile-time constant".into(),
+        CompileError::IndexOutOfBounds => "index out of bounds".into(),
+        CompileError::ArrayNotScalar => "array used where a single value is required".into(),
+        CompileError::IncludeNotFound => "included file not found".into(),
+        CompileError::IncludeTooDeep => "include nested too deep".into(),
     }
 }
 

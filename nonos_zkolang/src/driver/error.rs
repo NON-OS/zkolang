@@ -12,7 +12,7 @@ use crate::lang::CompileError;
 use crate::vm::ProveError;
 
 /// The reasons a proving run stops short of a report.
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub enum RunError {
     /// The source did not compile.
     Compile(CompileError),

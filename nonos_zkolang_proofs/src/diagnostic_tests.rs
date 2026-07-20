@@ -42,3 +42,15 @@ fn a_missing_semicolon_is_flagged_where_the_next_statement_begins() {
     assert!(d.contains("unexpected token"), "{d}");
     assert!(d.contains("2:1"), "wrong location:\n{d}");
 }
+
+#[test]
+fn a_semantic_error_names_the_offending_symbol() {
+    // An unknown variable quotes the name, not just the kind.
+    let d = diag("output foo + 1;");
+    assert!(d.contains("unknown variable"), "{d}");
+    assert!(d.contains("`foo`"), "name not quoted:\n{d}");
+    // An arity mismatch names the function and both counts.
+    let a = diag("fn f(x) = x; output f(1, 2);");
+    assert!(a.contains("`f`"), "function not named:\n{a}");
+    assert!(a.contains('1') && a.contains('2'), "counts missing:\n{a}");
+}

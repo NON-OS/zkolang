@@ -64,7 +64,7 @@ fn a_free_variable_in_a_body_is_an_error() {
     let src = "fn g(x) = x + z; input a; output g(a);";
     assert!(matches!(
         compile_source(src),
-        Err(CompileError::UnknownVariable)
+        Err(CompileError::UnknownVariable { .. })
     ));
 }
 
@@ -72,7 +72,7 @@ fn a_free_variable_in_a_body_is_an_error() {
 fn an_unknown_function_is_an_error() {
     assert!(matches!(
         compile_source("output nope(3);"),
-        Err(CompileError::UnknownFunction)
+        Err(CompileError::UnknownFunction { .. })
     ));
 }
 
@@ -81,7 +81,7 @@ fn an_arity_mismatch_is_an_error() {
     let src = "fn f(x) = x; output f(1, 2);";
     assert!(matches!(
         compile_source(src),
-        Err(CompileError::ArityMismatch)
+        Err(CompileError::ArityMismatch { .. })
     ));
 }
 

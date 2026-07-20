@@ -96,7 +96,7 @@ fn false_assertion_has_no_proof() {
 #[test]
 fn unknown_variable_is_a_compile_error() {
     match compile_source("let x = y + 1;") {
-        Err(CompileError::UnknownVariable) => {}
+        Err(CompileError::UnknownVariable { .. }) => {}
         other => panic!("expected an unknown-variable error, got {other:?}"),
     }
 }

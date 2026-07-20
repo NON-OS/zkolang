@@ -18,10 +18,18 @@ impl Compiler {
     pub(crate) fn call(&mut self, name: &str, args: &[Expr]) -> Result<Val, CompileError> {
         let def = match self.fns.iter().find(|f| f.name.as_str() == name) {
             Some(f) => f.clone(),
-            None => return Err(CompileError::UnknownFunction),
+            None => {
+                return Err(CompileError::UnknownFunction {
+                    name: alloc::string::String::from(name),
+                })
+            }
         };
         if def.params.len() != args.len() {
-            return Err(CompileError::ArityMismatch);
+            return Err(CompileError::ArityMismatch {
+                name: alloc::string::String::from(name),
+                expected: def.params.len(),
+                got: args.len(),
+            });
         }
         if self.inline_depth >= MAX_INLINE {
             return Err(CompileError::RecursionTooDeep);

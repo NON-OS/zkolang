@@ -64,7 +64,7 @@ fn an_out_of_range_index_is_a_compile_error() {
 fn indexing_an_unknown_table_is_an_error() {
     assert!(matches!(
         compile_source("output NOPE[0];"),
-        Err(CompileError::UnknownConst)
+        Err(CompileError::UnknownConst { .. })
     ));
 }
 

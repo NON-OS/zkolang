@@ -24,7 +24,11 @@ impl Compiler {
         let table = match self.const_table(name) {
             Some(t) => t,
             None if is_value => return Err(CompileError::NotIndexable),
-            None => return Err(CompileError::UnknownConst),
+            None => {
+                return Err(CompileError::UnknownConst {
+                    name: alloc::string::String::from(name),
+                })
+            }
         };
         let i = self.const_eval(index)?;
         if i < 0 || i as usize >= table.len() {
