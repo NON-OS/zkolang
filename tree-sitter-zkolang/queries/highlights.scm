@@ -5,7 +5,8 @@
 (number) @number
 
 [
-  "include" "const" "fn" "let" "input" "secret" "output" "assert" "for" "in" "if" "else"
+  "include" "const" "fn" "let" "input" "public" "secret" "witness" "output" "reveal"
+  "assert" "prove" "for" "in" "if" "else"
 ] @keyword
 
 ["inv" "sel"] @function.builtin

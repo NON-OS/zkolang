@@ -28,6 +28,9 @@ native code at the same cost budget.
 - **Number.** `[0-9]+`, read as a field element modulo `p`.
 - **String.** `"` up to the next `"`, used only as an include path.
 - **Keywords.** `let const fn input secret output assert for in if else inv sel include`.
+  Four have a second spelling with the same meaning, the language's own register:
+  `public` for `input`, `witness` for `secret`, `reveal` for `output`, `prove` for
+  `assert`. A program may use either spelling.
 - **Operators and punctuation.** `+ - * / = == != ! && || .. ( ) [ ] { } , ;`.
 
 ## 3. Grammar

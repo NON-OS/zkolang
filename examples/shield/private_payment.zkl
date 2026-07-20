@@ -1,0 +1,20 @@
+// A private payment, written in the language's own voice. The spender holds a key as a
+// witness; the amounts are public here only to keep the circuit legible. The program
+// reveals the nullifier that retires the spent note, deterministic in the key so a
+// double spend collides yet leaking nothing of the key, and proves the transfer
+// conserves value. The chain learns that a valid payment happened, and nothing else.
+// This is what zKolang is for: privacy is not an application you trust, it is a
+// property the proof enforces. Run: zkolang shield/private_payment.zkl
+include "hash.zkl";
+
+witness key;
+public position;
+public in_amount;
+public out_amount;
+public fee;
+
+let nf = key + position;
+for i in 0 .. 16 { let nf = mimc_round(nf, MIMC_C[i]); }
+reveal nf;
+
+prove in_amount - (out_amount + fee);

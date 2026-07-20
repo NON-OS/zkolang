@@ -96,3 +96,17 @@ fn boolean_operators_bind_looser_than_comparison() {
         .expect("run");
     assert_eq!(r2.outputs, vec![0]);
 }
+
+#[test]
+fn the_cypherpunk_keyword_spelling_is_the_same_language() {
+    // public/witness/reveal/prove are aliases of input/secret/output/assert. A program
+    // written in either spelling compiles to the same proof.
+    let plain = prove_source_with_inputs("input a; secret b; output a + b; assert a - a;", &[3, 4])
+        .expect("run");
+    let styled =
+        prove_source_with_inputs("public a; witness b; reveal a + b; prove a - a;", &[3, 4])
+            .expect("run");
+    assert!(plain.verified && styled.verified);
+    assert_eq!(plain.outputs, styled.outputs);
+    assert_eq!(styled.outputs, vec![7]);
+}

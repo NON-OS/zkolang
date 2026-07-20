@@ -20,10 +20,10 @@ pub(super) fn scan_word(src: &str, b: &[u8], start: usize) -> (Tok, usize) {
     }
     let tok = match &src[start..i] {
         "let" => Tok::Let,
-        "assert" => Tok::Assert,
-        "input" => Tok::Input,
-        "secret" => Tok::Secret,
-        "output" => Tok::Output,
+        "assert" | "prove" => Tok::Assert,
+        "input" | "public" => Tok::Input,
+        "secret" | "witness" => Tok::Secret,
+        "output" | "reveal" => Tok::Output,
         "inv" => Tok::Inv,
         "sel" => Tok::Sel,
         "for" => Tok::For,
