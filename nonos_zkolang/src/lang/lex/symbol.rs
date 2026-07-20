@@ -33,6 +33,7 @@ pub(super) fn scan_symbol(b: &[u8], i: usize) -> Result<Option<(Tok, usize)>, Co
     }
     match b[i] {
         b'=' if b.get(i + 1) == Some(&b'=') => Ok(Some((Tok::EqEq, i + 2))),
+        b'=' if b.get(i + 1) == Some(&b'>') => Ok(Some((Tok::FatArrow, i + 2))),
         b'=' => Ok(Some((Tok::Assign, i + 1))),
         b'!' if b.get(i + 1) == Some(&b'=') => Ok(Some((Tok::BangEq, i + 2))),
         b'!' => Ok(Some((Tok::Bang, i + 1))),

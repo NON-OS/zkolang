@@ -22,6 +22,8 @@ mod const_table_tests;
 #[cfg(test)]
 mod corpus_tests;
 #[cfg(test)]
+mod diagnostic_tests;
+#[cfg(test)]
 mod feature_tests;
 #[cfg(test)]
 mod fn_tests;
@@ -45,6 +47,8 @@ mod loop_tests;
 mod nox_tests;
 #[cfg(test)]
 mod operator_tests;
+#[cfg(test)]
+mod optimize_tests;
 #[cfg(test)]
 mod recipes_tests;
 #[cfg(test)]

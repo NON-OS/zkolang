@@ -25,7 +25,7 @@ impl<'a> Parser<'a> {
         let mut body = Vec::new();
         while !matches!(self.peek(), Some(Tok::RBrace)) {
             if self.peek().is_none() {
-                return Err(CompileError::UnexpectedEof);
+                return Err(CompileError::UnexpectedEof { at: self.at() });
             }
             body.push(self.stmt()?);
         }

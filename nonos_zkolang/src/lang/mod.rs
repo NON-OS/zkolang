@@ -9,12 +9,15 @@
 //! count is a static property.
 
 mod compile;
+mod diagnostic;
 mod error;
 mod include;
 mod lex;
+mod optimize;
 mod parse;
 
 pub use compile::{compile, compile_full, Compiled};
+pub use diagnostic::render as render_error;
 pub use error::CompileError;
 pub use include::expand_includes;
 
@@ -24,15 +27,15 @@ use alloc::vec::Vec;
 /// Compile zKolang source into a VM program ending in `Halt`, ready for the VM to run
 /// and the step AIR to prove.
 pub fn compile_source(src: &str) -> Result<Vec<Op>, CompileError> {
-    let tokens = lex::lex(src)?;
-    let ast = parse::parse(&tokens)?;
+    let (tokens, spans) = lex::lex(src)?;
+    let ast = parse::parse(&tokens, &spans, src.len())?;
     compile(&ast)
 }
 
 /// Compile zKolang source into a VM program together with the advice plan its ordered
 /// comparisons need, which the driver fills before proving.
 pub fn compile_source_full(src: &str) -> Result<Compiled, CompileError> {
-    let tokens = lex::lex(src)?;
-    let ast = parse::parse(&tokens)?;
+    let (tokens, spans) = lex::lex(src)?;
+    let ast = parse::parse(&tokens, &spans, src.len())?;
     compile_full(&ast)
 }

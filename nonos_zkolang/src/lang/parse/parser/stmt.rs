@@ -38,8 +38,8 @@ impl<'a> Parser<'a> {
                 Ok(Stmt::Output(e))
             }
             Some(Tok::For) => self.for_loop(),
-            Some(_) => Err(CompileError::UnexpectedToken),
-            None => Err(CompileError::UnexpectedEof),
+            Some(_) => Err(CompileError::UnexpectedToken { at: self.at() }),
+            None => Err(CompileError::UnexpectedEof { at: self.at() }),
         }
     }
 }

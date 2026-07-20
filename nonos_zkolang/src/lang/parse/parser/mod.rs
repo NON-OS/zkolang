@@ -21,6 +21,7 @@ mod ident_expr;
 mod if_expr;
 mod input_secret;
 mod inv_expr;
+mod match_expr;
 mod number;
 mod or;
 mod primary;
@@ -37,11 +38,19 @@ use super::ast::Ast;
 
 pub(crate) struct Parser<'a> {
     pub(crate) toks: &'a [Tok],
+    pub(crate) spans: &'a [usize],
+    pub(crate) eof: usize,
     pub(crate) pos: usize,
 }
 
-/// Parse a token stream into an AST.
-pub fn parse(toks: &[Tok]) -> Result<Ast, CompileError> {
-    let mut p = Parser { toks, pos: 0 };
+/// Parse a token stream into an AST. `spans` holds each token's byte offset and `eof`
+/// is the length of the source, so a diagnostic can point past the last token.
+pub fn parse(toks: &[Tok], spans: &[usize], eof: usize) -> Result<Ast, CompileError> {
+    let mut p = Parser {
+        toks,
+        spans,
+        eof,
+        pos: 0,
+    };
     p.program()
 }

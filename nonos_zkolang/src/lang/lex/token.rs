@@ -23,6 +23,8 @@ pub enum Tok {
     Else,
     Fn,
     Const,
+    Match,
+    FatArrow,
     Ident(String),
     Num(u64),
     Plus,

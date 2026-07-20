@@ -32,6 +32,7 @@ pub(super) fn scan_word(src: &str, b: &[u8], start: usize) -> (Tok, usize) {
         "else" => Tok::Else,
         "fn" => Tok::Fn,
         "const" => Tok::Const,
+        "match" => Tok::Match,
         w => Tok::Ident(String::from(w)),
     };
     (tok, i)

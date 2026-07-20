@@ -13,10 +13,11 @@ use alloc::string::String;
 impl<'a> Parser<'a> {
     /// Consume an identifier, for a name or a parameter.
     pub(crate) fn ident(&mut self) -> Result<String, CompileError> {
+        let at = self.at();
         match self.bump() {
             Some(Tok::Ident(n)) => Ok(n.clone()),
-            Some(_) => Err(CompileError::UnexpectedToken),
-            None => Err(CompileError::UnexpectedEof),
+            Some(_) => Err(CompileError::UnexpectedToken { at }),
+            None => Err(CompileError::UnexpectedEof { at }),
         }
     }
 }

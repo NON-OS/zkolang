@@ -14,8 +14,8 @@ use std::process::exit;
 use std::{env, fs};
 
 use nonos_zkolang::{
-    commit, compile_source, expand_includes, prove_source_with_witness, to_asm, to_c, to_python,
-    verifier_key, REGISTRATION_RATE,
+    commit, compile_source, expand_includes, prove_source_with_witness, render_error, to_asm, to_c,
+    to_python, verifier_key, REGISTRATION_RATE,
 };
 
 fn main() {
@@ -126,7 +126,7 @@ fn cmd_check(a: &[String]) -> i32 {
             println!("ok  {} instructions", ops.len());
             0
         }
-        Err(e) => err(&format!("compile error: {e:?}")),
+        Err(e) => err(&render_error(&src, &e)),
     }
 }
 
@@ -140,7 +140,7 @@ fn cmd_build(a: &[String]) -> i32 {
     };
     let program = match compile_source(&src) {
         Ok(p) => p,
-        Err(e) => return err(&format!("compile error: {e:?}")),
+        Err(e) => return err(&render_error(&src, &e)),
     };
     let out = match flag(a, "--target").unwrap_or("c") {
         "c" => to_c(&program),
@@ -173,7 +173,7 @@ fn cmd_key(a: &[String]) -> i32 {
     };
     let program = match compile_source(&src) {
         Ok(p) => p,
-        Err(e) => return err(&format!("compile error: {e:?}")),
+        Err(e) => return err(&render_error(&src, &e)),
     };
     match verifier_key(&program, REGISTRATION_RATE) {
         Ok(vk) => {

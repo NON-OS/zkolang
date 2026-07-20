@@ -14,6 +14,7 @@ impl<'a> Parser<'a> {
     /// A literal, a variable or call, a parenthesized expression, an array literal, or
     /// one of the builtin and conditional forms.
     pub(crate) fn atom(&mut self) -> Result<Expr, CompileError> {
+        let at = self.at();
         match self.bump() {
             Some(Tok::Num(v)) => Ok(Expr::Num(*v)),
             Some(Tok::Ident(n)) => {
@@ -29,8 +30,9 @@ impl<'a> Parser<'a> {
             Some(Tok::Inv) => self.inv_expr(),
             Some(Tok::Sel) => self.sel_expr(),
             Some(Tok::If) => self.if_expr(),
-            Some(_) => Err(CompileError::UnexpectedToken),
-            None => Err(CompileError::UnexpectedEof),
+            Some(Tok::Match) => self.match_expr(),
+            Some(_) => Err(CompileError::UnexpectedToken { at }),
+            None => Err(CompileError::UnexpectedEof { at }),
         }
     }
 }

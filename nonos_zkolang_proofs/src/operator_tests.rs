@@ -7,7 +7,7 @@
 //! front-end sugar over the existing opcodes, so each is proven the same way. The
 //! tests check both a true program that verifies and a false claim that has none.
 
-use nonos_zkolang::prove_source_with_inputs;
+use nonos_zkolang::{compile_source, prove_source_with_inputs};
 
 #[test]
 fn division_is_multiplication_by_an_inverse() {
@@ -109,4 +109,17 @@ fn the_cypherpunk_keyword_spelling_is_the_same_language() {
     assert!(plain.verified && styled.verified);
     assert_eq!(plain.outputs, styled.outputs);
     assert_eq!(styled.outputs, vec![7]);
+}
+
+#[test]
+fn match_selects_the_arm_or_the_default() {
+    let src = "public x; reveal match x { 0 => 100, 1 => 200, 2 => 300, _ => 999 };";
+    let out = |v| prove_source_with_inputs(src, &[v]).expect("run").outputs[0];
+    assert_eq!([out(0), out(1), out(2), out(5)], [100, 200, 300, 999]);
+}
+
+#[test]
+fn match_is_exhaustive_via_its_default() {
+    // A match without a default arm is a compile error, not a silent fallthrough.
+    assert!(compile_source("input x; output match x { 0 => 1, 1 => 2 };").is_err());
 }

@@ -12,10 +12,13 @@ use super::{
 };
 use crate::lang::CompileError;
 
-/// Tokenize `src`, or report the first byte that begins no valid token.
-pub fn lex(src: &str) -> Result<Vec<Tok>, CompileError> {
+/// Tokenize `src`, returning each token with the byte offset it starts at, or report
+/// the first byte that begins no valid token. The offsets let the parser point a
+/// diagnostic at the exact place a token sits in the source.
+pub fn lex(src: &str) -> Result<(Vec<Tok>, Vec<usize>), CompileError> {
     let b = src.as_bytes();
     let mut toks: Vec<Tok> = Vec::new();
+    let mut spans: Vec<usize> = Vec::new();
     let mut i = 0usize;
     while i < b.len() {
         let ch = b[i];
@@ -28,17 +31,20 @@ pub fn lex(src: &str) -> Result<Vec<Tok>, CompileError> {
         } else if is_ident_start(ch) {
             let (t, ni) = scan_word(src, b, i);
             toks.push(t);
+            spans.push(i);
             i = ni;
         } else if ch.is_ascii_digit() {
             let (t, ni) = scan_number(b, i)?;
             toks.push(t);
+            spans.push(i);
             i = ni;
         } else if let Some((t, ni)) = scan_symbol(b, i)? {
             toks.push(t);
+            spans.push(i);
             i = ni;
         } else {
             return Err(CompileError::UnexpectedChar { at: i });
         }
     }
-    Ok(toks)
+    Ok((toks, spans))
 }

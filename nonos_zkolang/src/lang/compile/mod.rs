@@ -31,6 +31,9 @@ use crate::isa::Op;
 
 /// Lower an AST into a VM program with its advice plan.
 pub fn compile_full(ast: &Ast) -> Result<Compiled, CompileError> {
+    // Fold constants and drop no-op arithmetic before lowering, so the trace is smaller
+    // while the proof is unchanged.
+    let ast = super::optimize::optimize(ast);
     // Count the public inputs and secrets first, through any loops, so secrets index
     // after the public prefix and comparison advice indexes after the secrets.
     let n_public = count_inputs::count_inputs(&ast.stmts).min(u16::MAX as u64) as u16;

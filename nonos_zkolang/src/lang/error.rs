@@ -12,10 +12,10 @@ pub enum CompileError {
     UnexpectedChar { at: usize },
     /// A numeric literal too large for the field's 64-bit representative.
     NumberTooLarge { at: usize },
-    /// The token stream ended mid-statement or mid-expression.
-    UnexpectedEof,
-    /// A token that does not fit the grammar at this point.
-    UnexpectedToken,
+    /// The token stream ended mid-statement or mid-expression, at this byte offset.
+    UnexpectedEof { at: usize },
+    /// A token that does not fit the grammar at this point, at this byte offset.
+    UnexpectedToken { at: usize },
     /// A reference to a name that was never bound.
     UnknownVariable,
     /// The program needs more live values than the register file holds.
