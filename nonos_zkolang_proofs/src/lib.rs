@@ -7,14 +7,20 @@
 //! ALU step AIR and driven through the money-grade Poseidon-committed STARK, so
 //! the honest trace is proven to accept and each tampered trace to be rejected.
 
+pub mod mimc;
+
 #[cfg(test)]
 mod commit_tests;
 #[cfg(test)]
 mod const_table_tests;
 #[cfg(test)]
+mod corpus_tests;
+#[cfg(test)]
 mod feature_tests;
 #[cfg(test)]
 mod fn_tests;
+#[cfg(test)]
+mod hash_tests;
 #[cfg(test)]
 mod io_tests;
 #[cfg(test)]

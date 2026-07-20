@@ -1,0 +1,12 @@
+// Evaluate a polynomial by Horner's rule over a constant coefficient table.
+// C holds [c0, c1, c2], the polynomial c0 + c1*x + c2*x^2. The loop reads the
+// coefficients high to low with a static index, so nothing here is Rust.
+// Run: zkolang horner.zkl
+const C = [1, 2, 3];
+
+input x;
+let acc = 0;
+for i in 0 .. 3 {
+    let acc = acc * x + C[2 - i];
+}
+output acc;

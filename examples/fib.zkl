@@ -1,0 +1,12 @@
+// The tenth Fibonacci number, computed by a bounded loop that carries two
+// accumulators across iterations. The loop is unrolled at compile time, so the
+// program's shape is fixed and its proof cost is known in advance.
+// Run: zkolang fib.zkl
+let a = 0;
+let b = 1;
+for i in 0 .. 10 {
+    let s = a + b;
+    let a = b;
+    let b = s;
+}
+output a;

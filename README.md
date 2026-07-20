@@ -51,8 +51,18 @@ output y;        // proves y = x^2 + 5 for the committed public x and y
 
 The language has `let`, `assert`, `input`, `secret`, `output`, field arithmetic
 with division and negation, equality and not-equal, the branchless `sel` and its
-`if`/`else` sugar, bounded `for` loops unrolled at compile time, and functions
-inlined hygienically at each call. See [docs](nonos_zkolang/docs/02-language.md).
+`if`/`else` sugar, bounded `for` loops unrolled at compile time, constant tables
+read by a compile-time index, and functions inlined hygienically at each call. See
+[docs](nonos_zkolang/docs/02-language.md).
+
+## Examples
+
+Programs written in the language, under [examples](examples): a cubed input, a
+polynomial by Horner's rule, Fibonacci, a range proof, a round schedule over a
+constant table, a two-to-one hash-tree node, and `mimc.zkl`, a full MiMC hash
+whose output is proven equal to the field reference. Every example is compiled,
+run, and proven by the suite in `nonos_zkolang_proofs`. The syntax grammar for
+editors and GitHub is under [grammars](grammars).
 
 ## Documentation
 

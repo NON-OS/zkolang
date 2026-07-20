@@ -1,0 +1,71 @@
+/*
+ zKølang by NØNOS
+ AGPL-3.0-or-later
+*/
+
+//! The example corpus, proven. Every program under examples/ is a zKolang source
+//! file, and each one here is compiled from disk, run, and its trace proven. The
+//! ones with a closed-form answer check their public output; the rest check the
+//! proof verifies and the program is a real, provable statement.
+
+use std::fs;
+use std::path::PathBuf;
+
+use nonos_zkolang::{prove_source, prove_source_with_inputs};
+
+// Read an example program by name from the repository's examples directory.
+fn program(name: &str) -> String {
+    let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    path.pop();
+    path.push("examples");
+    path.push(name);
+    fs::read_to_string(&path).unwrap_or_else(|e| panic!("read {}: {e}", path.display()))
+}
+
+#[test]
+fn cube_of_a_public_input() {
+    let report = prove_source_with_inputs(&program("cube.zkl"), &[4]).expect("run");
+    assert!(report.verified);
+    assert_eq!(report.outputs, vec![64], "4^3");
+}
+
+#[test]
+fn horner_evaluates_the_polynomial() {
+    // 1 + 2x + 3x^2 at x = 2 is 1 + 4 + 12 = 17.
+    let report = prove_source_with_inputs(&program("horner.zkl"), &[2]).expect("run");
+    assert!(report.verified);
+    assert_eq!(report.outputs, vec![17]);
+}
+
+#[test]
+fn fibonacci_reaches_the_tenth_number() {
+    let report = prove_source(&program("fib.zkl")).expect("run");
+    assert!(report.verified);
+    assert_eq!(report.outputs, vec![55], "fib(10)");
+}
+
+#[test]
+fn the_schedule_program_runs() {
+    let report = prove_source_with_inputs(&program("schedule.zkl"), &[7]).expect("run");
+    assert!(report.verified);
+}
+
+#[test]
+fn the_merkle_node_is_a_provable_statement() {
+    // A correct internal node over two children. Distinct children give a distinct
+    // node, so the compression is not collapsing its inputs.
+    let a = prove_source_with_inputs(&program("merkle2.zkl"), &[3, 5]).expect("run");
+    let b = prove_source_with_inputs(&program("merkle2.zkl"), &[5, 3]).expect("run");
+    assert!(a.verified && b.verified);
+    assert_ne!(
+        a.outputs, b.outputs,
+        "left and right were not distinguished"
+    );
+}
+
+#[test]
+fn the_range_program_compiles() {
+    // The range proof takes a private witness, so it is exercised in witness_tests;
+    // here we only confirm the committed file is a well-formed program.
+    assert!(nonos_zkolang::compile_source(&program("range.zkl")).is_ok());
+}
