@@ -1,0 +1,23 @@
+// An unsigned less than comparator for two bytes. The comparison is decided from the
+// most significant bit down: at each position, if the bits differ, the one with the
+// zero bit is the smaller and the decision is fixed; if they agree, the decision defers
+// to the lower positions. The gadget carries a decided flag and the running answer so
+// the first differing bit settles it. One when a is strictly less than b.
+// Run: zkolang logic/less_than8.zkl
+include "logic.zkl";
+
+input a0; input a1; input a2; input a3; input a4; input a5; input a6; input a7;
+input b0; input b1; input b2; input b3; input b4; input b5; input b6; input b7;
+let a = [a0, a1, a2, a3, a4, a5, a6, a7];
+let b = [b0, b1, b2, b3, b4, b5, b6, b7];
+
+let decided = 0;
+let answer = 0;
+for k in 0 .. 8 {
+    let diff = xor(a[7 - k], b[7 - k]);
+    let a_less = and(diff, b[7 - k]);
+    let fresh = and(diff, not(decided));
+    let answer = answer + and(fresh, a_less);
+    let decided = or(decided, diff);
+}
+output answer;

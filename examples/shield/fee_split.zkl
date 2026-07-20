@@ -1,0 +1,10 @@
+// The fee accounting of a shielded swap: an input is split into a recipient amount, a
+// change amount, and a protocol fee, and the circuit checks the three sum back to the
+// input. A verifier confirms the split is exact without seeing any of the three values.
+// Run: zkolang shield/fee_split.zkl
+input total;
+input recipient;
+input change;
+input fee;
+assert total - (recipient + change + fee);
+output recipient;

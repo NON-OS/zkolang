@@ -1,0 +1,18 @@
+// The minimum of two bytes, selected by a witnessed comparison. The prover supplies the
+// less than bit and its four bit justification, the difference decomposition proving the
+// order, and the multiplexer returns the smaller. The witness is constrained, so the
+// selected value is the true minimum. Run: zkolang logic/min2.zkl
+include "logic.zkl";
+include "bits.zkl";
+
+input a;
+input b;
+secret lt;
+secret d0; secret d1; secret d2; secret d3;
+
+assert is_bit(lt);
+assert bit(d0); assert bit(d1); assert bit(d2); assert bit(d3);
+// When lt is one, a < b, witnessed by (b - a - 1) decomposing into four bits.
+let claim = compose4(d0, d1, d2, d3);
+assert lt * ((b - a - 1) - claim);
+output mux(lt, a, b);

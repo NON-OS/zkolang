@@ -1,0 +1,12 @@
+// Stealth address derivation: a one time public value is derived from the recipient's
+// view key and a sender chosen nonce by absorbing them through the permutation. The
+// sender can compute it from public data and the nonce; only the recipient, holding the
+// view key, can recognize and later spend to it. This unlinks a payment from the
+// recipient's long term address. Run: zkolang shield/stealth_address.zkl
+include "hash.zkl";
+
+input view_key;
+secret nonce;
+let s = view_key + nonce;
+for i in 0 .. 16 { let s = mimc_round(s, MIMC_C[i]); }
+output s;

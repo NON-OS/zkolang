@@ -1,0 +1,12 @@
+// A Davies Meyer compression: a block cipher built from the MiMC permutation is turned
+// into a one way compression by adding the input back after permuting, so the round is
+// not invertible without the key. The message keys the permutation of the chaining
+// value, and the feed forward makes the step a compression. Run: zkolang hash/davies_meyer.zkl
+include "hash.zkl";
+
+input chain;
+input message;
+
+let s = chain + message;
+for i in 0 .. 16 { let s = mimc_round(s, MIMC_C[i]); }
+output s + chain;

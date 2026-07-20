@@ -1,0 +1,27 @@
+// An eight bit ripple carry adder. Two bytes, given bit by bit, are summed from the
+// least significant position up: each stage forms the sum bit as the exclusive or of
+// the two input bits and the incoming carry, and the outgoing carry as their majority.
+// The eight sum bits and the final carry form the nine bit result. This is the adder a
+// larger arithmetic circuit chains, the carry threading through every stage.
+// Run: zkolang logic/ripple8.zkl
+include "logic.zkl";
+
+input a0; input a1; input a2; input a3; input a4; input a5; input a6; input a7;
+input b0; input b1; input b2; input b3; input b4; input b5; input b6; input b7;
+
+assert is_bit(a0); assert is_bit(a1); assert is_bit(a2); assert is_bit(a3);
+assert is_bit(a4); assert is_bit(a5); assert is_bit(a6); assert is_bit(a7);
+assert is_bit(b0); assert is_bit(b1); assert is_bit(b2); assert is_bit(b3);
+assert is_bit(b4); assert is_bit(b5); assert is_bit(b6); assert is_bit(b7);
+
+let c = 0;
+let s0 = xor(xor(a0, b0), c); let c = majority(a0, b0, c);
+let s1 = xor(xor(a1, b1), c); let c = majority(a1, b1, c);
+let s2 = xor(xor(a2, b2), c); let c = majority(a2, b2, c);
+let s3 = xor(xor(a3, b3), c); let c = majority(a3, b3, c);
+let s4 = xor(xor(a4, b4), c); let c = majority(a4, b4, c);
+let s5 = xor(xor(a5, b5), c); let c = majority(a5, b5, c);
+let s6 = xor(xor(a6, b6), c); let c = majority(a6, b6, c);
+let s7 = xor(xor(a7, b7), c); let c = majority(a7, b7, c);
+output s0; output s1; output s2; output s3;
+output s4; output s5; output s6; output s7; output c;

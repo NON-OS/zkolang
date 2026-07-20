@@ -1,0 +1,12 @@
+// Hash one field element to two, a length doubling, by permuting the input and then
+// permuting a domain separated copy. Two independent looking outputs from one input, as
+// a pseudorandom generator seed expansion does. Run: zkolang hash/hash_to_two.zkl
+include "hash.zkl";
+
+input x;
+let a = x;
+for i in 0 .. 16 { let a = mimc_round(a, MIMC_C[i]); }
+let b = x + 1;
+for i in 0 .. 16 { let b = mimc_round(b, MIMC_C[i]); }
+output a;
+output b;

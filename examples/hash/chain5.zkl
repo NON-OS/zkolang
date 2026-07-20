@@ -1,0 +1,11 @@
+// A hash chain of length five: the permutation applied five times in succession, the
+// state after each application feeding the next. A verifiable delay style iterated hash,
+// where the output pins the whole chain. Run: zkolang hash/chain5.zkl
+include "hash.zkl";
+
+input seed;
+let s = seed;
+for step in 0 .. 5 {
+    for i in 0 .. 16 { let s = mimc_round(s, MIMC_C[i]); }
+}
+output s;
