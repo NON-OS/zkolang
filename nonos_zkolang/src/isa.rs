@@ -1,18 +1,7 @@
-// NONOS Operating System
-// Copyright (C) 2026 NONOS Contributors
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU Affero General Public License for more details.
-//
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <https://www.gnu.org/licenses/>.
+/*
+ zKølang by NØNOS
+ AGPL-3.0-or-later
+*/
 
 //! zkolang VM instruction set, v0.1.
 //!
@@ -25,7 +14,10 @@
 use nonos_stark::field::Fp;
 
 // Register file size. Fixed so the AIR's register columns are a constant width.
-pub const REGS: usize = 16;
+// Thirty-two lanes hold the state of a width-12 permutation and its mixing matrix,
+// which needs the old lanes live while the new ones are built, so a hash fits the
+// file. Every register index is still a full byte, so the encoding is unchanged.
+pub const REGS: usize = 32;
 
 // A single VM instruction. `d` is the destination register; `a`, `b`, `c` are
 // source registers.
