@@ -47,32 +47,29 @@ impl Compiler {
             width: nbits,
         });
 
+        // Recompose the value by Horner from the most significant bit: acc = 2*acc + bit.
+        // Two additions per bit, no constant load and no multiply, so the weighted sum
+        // costs a third fewer rows than the schoolbook form.
         let mut acc = self.alloc()?;
         self.ops.push(Op::Imm {
             d: acc,
             v: Fp::ZERO,
         });
-        for (k, &bit) in bits.iter().enumerate() {
-            let pk = self.alloc()?;
-            self.ops.push(Op::Imm {
-                d: pk,
-                v: Fp::from_u64(1u64 << (k as u32)),
-            });
-            let term = self.alloc()?;
-            self.ops.push(Op::Mul {
-                d: term,
-                a: bit,
-                b: pk,
+        for &bit in bits.iter().rev() {
+            let doubled = self.alloc()?;
+            self.ops.push(Op::Add {
+                d: doubled,
+                a: acc,
+                b: acc,
             });
             let nacc = self.alloc()?;
             self.ops.push(Op::Add {
                 d: nacc,
-                a: acc,
-                b: term,
+                a: doubled,
+                b: bit,
             });
             self.free.push(acc);
-            self.free.push(pk);
-            self.free.push(term);
+            self.free.push(doubled);
             acc = nacc;
         }
 
