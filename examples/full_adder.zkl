@@ -1,0 +1,15 @@
+// A one bit full adder built from the logic library: the sum bit is the exclusive or
+// of the three inputs, the carry bit is their majority. Each input is constrained to be
+// a bit first, so the gadgets hold. Run: zkolang full_adder.zkl
+include "logic.zkl";
+
+input a;
+input b;
+input cin;
+
+assert is_bit(a);
+assert is_bit(b);
+assert is_bit(cin);
+
+output xor(xor(a, b), cin);
+output majority(a, b, cin);

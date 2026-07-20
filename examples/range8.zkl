@@ -1,0 +1,15 @@
+// A range proof: the input is a byte, a value in [0, 256). The prover supplies the
+// eight bits as a private witness, each is constrained to be a bit, and their weighted
+// sum is constrained to equal the input. An out of range value has no bit witness, so
+// no proof exists. This is what keeps shielded amounts non negative and bounded.
+// Run: zkolang range8.zkl
+include "bits.zkl";
+
+input v;
+secret b0; secret b1; secret b2; secret b3;
+secret b4; secret b5; secret b6; secret b7;
+
+assert bit(b0); assert bit(b1); assert bit(b2); assert bit(b3);
+assert bit(b4); assert bit(b5); assert bit(b6); assert bit(b7);
+
+assert v - compose8(b0, b1, b2, b3, b4, b5, b6, b7);

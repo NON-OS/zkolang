@@ -1,0 +1,14 @@
+// A four to one multiplexer selected by two bits. Two first stage muxes pick within
+// each half by the low bit, and a second stage mux picks between the halves by the high
+// bit, so the output is the selected data line. Run: zkolang mux4.zkl
+include "logic.zkl";
+
+input d0; input d1; input d2; input d3;
+input s0; input s1;
+
+assert is_bit(s0);
+assert is_bit(s1);
+
+let lo = mux(s0, d1, d0);
+let hi = mux(s0, d3, d2);
+output mux(s1, hi, lo);

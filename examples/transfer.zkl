@@ -1,0 +1,15 @@
+// The balance constraint of a shielded transfer: the values entering equal the values
+// leaving plus the fee. Proven in zero knowledge, it lets a chain accept a transfer
+// without learning any amount, only that value was conserved. The amounts are inputs
+// here; in a full note circuit they are openings of commitments, range proven below.
+// Run: zkolang transfer.zkl
+input in0;
+input in1;
+input out0;
+input out1;
+input fee;
+
+// Zero exactly when the sums balance; the proof exists only for a conserving transfer.
+assert (in0 + in1) - (out0 + out1 + fee);
+
+output out0 + out1;

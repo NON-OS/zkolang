@@ -1,0 +1,16 @@
+// A hiding commitment to a value under a blinding factor, the leaf a shielded note
+// commits on chain. The value and its blinding are absorbed into the MiMC permutation,
+// so the output reveals nothing about either yet binds them: no second (value, blinding)
+// yields the same commitment without breaking the permutation. This is one of the two
+// zKolang utilities the kernel exposes to NOX, a note a spender can later prove owning.
+// Run: zkolang commitment.zkl
+include "hash.zkl";
+
+input value;
+secret blinding;
+
+let s = value + blinding;
+for i in 0 .. 16 {
+    let s = mimc_round(s, MIMC_C[i]);
+}
+output s;

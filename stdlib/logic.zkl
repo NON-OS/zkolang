@@ -14,3 +14,13 @@ fn implies(x, y) = 1 - x + x * y;
 
 // The bit relation, re-exported for callers that only include logic.zkl.
 fn is_bit(x) = x * x - x;
+
+// The complement of xor: one when the bits agree.
+fn xnor(x, y) = 1 - (x + y - 2 * x * y);
+
+// A one-bit multiplexer: select a when s is one, b when s is zero. Written as an
+// affine blend so it stays degree one in the data and needs no primitive.
+fn mux(s, a, b) = b + s * (a - b);
+
+// The majority of three bits, one when at least two are set.
+fn majority(a, b, c) = a * b + b * c + a * c - 2 * a * b * c;

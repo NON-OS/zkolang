@@ -1,0 +1,11 @@
+// The tenth Lucas number. Same recurrence as Fibonacci, seeded with two and one, so it
+// exercises the carried accumulator shape with different initial conditions.
+// Run: zkolang lucas.zkl
+let a = 2;
+let b = 1;
+for i in 0 .. 10 {
+    let s = a + b;
+    let a = b;
+    let b = s;
+}
+output a;

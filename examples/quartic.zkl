@@ -1,0 +1,5 @@
+// A quartic through the library power gadget: x to the fourth by two squarings.
+// Run: zkolang quartic.zkl
+include "math.zkl";
+input x;
+output pow4(x);

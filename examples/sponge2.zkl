@@ -1,0 +1,14 @@
+// A two block MiMC sponge: the state absorbs the first input, is permuted, absorbs the
+// second, is permuted again, and the state is squeezed as the digest. This hashes an
+// arbitrary length message by absorbing one block at a time between permutations.
+// Run: zkolang sponge2.zkl
+include "hash.zkl";
+
+input x0;
+input x1;
+
+let s = x0;
+for i in 0 .. 16 { let s = mimc_round(s, MIMC_C[i]); }
+let s = s + x1;
+for i in 0 .. 16 { let s = mimc_round(s, MIMC_C[i]); }
+output s;

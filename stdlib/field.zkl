@@ -1,0 +1,11 @@
+// Field utilities: the operations that need the inverse, named so a program reads in
+// terms of division and reciprocals rather than the primitive. Division by zero has
+// no witness, so a program that divides by a possibly zero value must guard it.
+
+fn recip(x)     = inv(x);
+fn divide(a, b) = a / b;
+fn ratio(a, b)  = a * inv(b);
+fn negate(x)    = 0 - x;
+
+// The mean of two values, one field division by two.
+fn mean2(a, b) = (a + b) * inv(2);

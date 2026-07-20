@@ -1,0 +1,12 @@
+// The population count of four bits, the number that are set. Each input is constrained
+// to be a bit, and their sum is the count. Run: zkolang popcount4.zkl
+include "logic.zkl";
+
+input b0; input b1; input b2; input b3;
+
+assert is_bit(b0);
+assert is_bit(b1);
+assert is_bit(b2);
+assert is_bit(b3);
+
+output b0 + b1 + b2 + b3;

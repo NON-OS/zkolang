@@ -1,0 +1,12 @@
+// Bit utilities: the relation that pins a value to a single bit, and the recompositions
+// that turn a list of bits back into the integer they represent. A range proof asserts
+// each bit relation is zero and that the input equals the composition of its bits.
+
+// Zero exactly when x is a bit; assert this to constrain a witnessed bit.
+fn bit(x) = x * x - x;
+
+// Little-endian recomposition of two, four, and eight bits into their value.
+fn compose2(b0, b1)                         = b0 + 2 * b1;
+fn compose4(b0, b1, b2, b3)                 = b0 + 2 * b1 + 4 * b2 + 8 * b3;
+fn compose8(b0, b1, b2, b3, b4, b5, b6, b7) =
+    b0 + 2 * b1 + 4 * b2 + 8 * b3 + 16 * b4 + 32 * b5 + 64 * b6 + 128 * b7;

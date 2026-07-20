@@ -7,3 +7,21 @@ fn pow7(x) = x * x * x * x * x * x * x;
 // A branchless minimum of a boolean-selected pair: sel is the primitive, this names
 // the common shape of choosing by a computed bit.
 fn choose(bit, a, b) = sel(bit, a, b);
+
+// Fixed powers by repeated squaring, so a caller names the exponent instead of
+// spelling out the product. Each is one inlined expression.
+fn pow2(x) = x * x;
+fn pow3(x) = x * x * x;
+fn pow5(x) = x * x * x * x * x;
+fn pow6(x) = sq(cube(x));
+fn pow8(x) = sq(pow4(x));
+
+// Small linear shapes that recur in circuits.
+fn double(x)        = x + x;
+fn triple(x)        = x + x + x;
+fn muladd(a, b, c)  = a * b + c;
+fn diffsq(a, b)     = (a - b) * (a - b);
+fn sumsq(a, b)      = a * a + b * b;
+
+// A degree two polynomial a*x^2 + b*x + c, evaluated by Horner.
+fn quad(a, b, c, x) = (a * x + b) * x + c;

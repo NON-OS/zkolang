@@ -8,3 +8,9 @@ const MIMC_C = [11400714819323198485, 16088033396387240378, 18339175128185271363
                 1701577562105719986, 2115931002410623643, 7476793921636051640,
                 3314512000073146649, 3439479947032908558, 17443250021448620071,
                 13023377555915530036];
+
+// One MiMC round: raise the state plus a round constant to the seventh power. A
+// program builds the permutation by folding this over the constant table, and a
+// sponge builds a variable-input hash by absorbing between calls.
+fn pow7(x) = x * x * x * x * x * x * x;
+fn mimc_round(s, c) = pow7(s + c);

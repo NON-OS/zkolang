@@ -1,0 +1,5 @@
+// The squared Euclidean length of a three vector, the dot product of the vector with
+// itself. Run: zkolang norm_sq.zkl
+include "math.zkl";
+input x; input y; input z;
+output sumsq(x, y) + sq(z);

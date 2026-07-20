@@ -1,0 +1,15 @@
+// The nullifier of a note: a value derived from the owner's secret key and the note's
+// position, published when the note is spent so the same note cannot be spent twice.
+// It reveals nothing about the key, because it is the key absorbed through the MiMC
+// permutation, yet it is deterministic in the key and index, so a double spend collides.
+// Run: zkolang nullifier.zkl
+include "hash.zkl";
+
+secret sk;
+input index;
+
+let s = sk + index;
+for i in 0 .. 16 {
+    let s = mimc_round(s, MIMC_C[i]);
+}
+output s;

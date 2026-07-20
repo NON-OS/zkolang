@@ -10,3 +10,13 @@ fn is_zero(x) = x == 0;
 
 // One when a and b differ.
 fn is_distinct(a, b) = a != b;
+
+// One when x equals one.
+fn is_one(x) = x == 1;
+
+// One when x is not zero, the complement of the zero test.
+fn is_nonzero(x) = 1 - is_zero(x);
+
+// One when neither a nor b is zero, by testing their product. Sound over a field
+// with no zero divisors: a * b is zero exactly when a or b is.
+fn both_nonzero(a, b) = is_nonzero(a * b);

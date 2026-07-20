@@ -1,0 +1,8 @@
+// The sum of the first five squares. The loop variable is squared and accumulated, so
+// the summand is computed from the static index. Run: zkolang sum_of_squares.zkl
+include "math.zkl";
+let acc = 0;
+for i in 1 .. 6 {
+    let acc = acc + sq(i);
+}
+output acc;

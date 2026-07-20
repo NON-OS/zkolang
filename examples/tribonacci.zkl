@@ -1,0 +1,12 @@
+// The tenth tribonacci number: each term is the sum of the previous three, carried
+// across the loop in three accumulators. Run: zkolang tribonacci.zkl
+let a = 0;
+let b = 0;
+let c = 1;
+for i in 0 .. 10 {
+    let s = a + b + c;
+    let a = b;
+    let b = c;
+    let c = s;
+}
+output a;

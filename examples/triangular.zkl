@@ -1,0 +1,7 @@
+// The tenth triangular number, the sum of one through ten, accumulated over a range.
+// Run: zkolang triangular.zkl
+let acc = 0;
+for i in 1 .. 11 {
+    let acc = acc + i;
+}
+output acc;
