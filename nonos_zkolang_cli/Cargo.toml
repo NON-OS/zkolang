@@ -1,0 +1,14 @@
+# The zKolang command-line tool: compile, run and prove, emit a backend, or read a
+# circuit's registration key, from a shell or an editor.
+[package]
+name = "nonos_zkolang_cli"
+version = "0.1.0"
+edition = "2021"
+license = "AGPL-3.0-or-later"
+
+[[bin]]
+name = "zkolang"
+path = "src/main.rs"
+
+[dependencies]
+nonos_zkolang = { path = "../nonos_zkolang" }
