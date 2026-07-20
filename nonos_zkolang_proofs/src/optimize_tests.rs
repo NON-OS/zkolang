@@ -74,3 +74,27 @@ fn propagation_preserves_shadowing_and_runtime_values() {
         .expect("run");
     assert_eq!(r.outputs, vec![10]);
 }
+
+#[test]
+fn common_subexpressions_are_shared() {
+    // (x + 1) * (x + 1) computes x + 1 once, so it is one add, not two.
+    let ops = compile_source("input x; output (x + 1) * (x + 1);").expect("compile");
+    assert!(
+        ops.len() <= 6,
+        "subexpression not shared: {} ops",
+        ops.len()
+    );
+    let r = prove_source_with_inputs("input x; output (x + 1) * (x + 1);", &[4]).expect("run");
+    assert_eq!(r.outputs, vec![25]);
+}
+
+#[test]
+fn cse_shares_the_largest_repeat_and_stays_correct() {
+    // The whole product (a + b) * c is shared where it repeats, not only a + b.
+    let r = prove_source_with_inputs(
+        "input a; input b; input c; output ((a + b) * c) + ((a + b) * c);",
+        &[2, 3, 4],
+    )
+    .expect("run");
+    assert_eq!(r.outputs, vec![40]);
+}

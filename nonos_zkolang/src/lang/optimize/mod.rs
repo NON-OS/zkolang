@@ -9,12 +9,14 @@
 //! Function bodies are folded before they inline. The proof a program produces is
 //! unchanged; the trace it needs is smaller and its register pressure lower.
 
+mod cse;
 mod expr;
 mod propagate;
 
 use alloc::vec::Vec;
 
 use super::parse::{Ast, FnDef};
+use cse::cse;
 use expr::fold;
 use propagate::propagate;
 
@@ -32,6 +34,6 @@ pub(super) fn optimize(ast: &Ast) -> Ast {
     Ast {
         consts: ast.consts.clone(),
         fns,
-        stmts: propagate(&ast.stmts),
+        stmts: cse(&propagate(&ast.stmts)),
     }
 }
