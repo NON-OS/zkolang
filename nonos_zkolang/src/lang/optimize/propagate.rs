@@ -59,20 +59,40 @@ fn norm(e: &Expr, env: &Env) -> Expr {
     fold(&subst(e, env))
 }
 
+// Names bound anywhere inside a loop body. Such a name's value evolves across the loop's
+// unrolled iterations, so its binding is not a constant even when one iteration folds to a
+// literal, and it must never be propagated.
+fn loop_bound(stmts: &[Stmt], set: &mut Vec<String>, in_loop: bool) {
+    for s in stmts {
+        match s {
+            Stmt::Let(n, _) | Stmt::Input(n) | Stmt::Secret(n) if in_loop => {
+                if !set.contains(n) {
+                    set.push(n.clone());
+                }
+            }
+            Stmt::For { body, .. } => loop_bound(body, set, true),
+            _ => {}
+        }
+    }
+}
+
 /// Propagate constants across a statement list.
 pub(super) fn propagate(stmts: &[Stmt]) -> Vec<Stmt> {
     let mut env: Env = Vec::new();
-    go(stmts, &mut env, 0)
+    let mut varying: Vec<String> = Vec::new();
+    loop_bound(stmts, &mut varying, false);
+    go(stmts, &mut env, 0, &varying)
 }
 
-fn go(stmts: &[Stmt], env: &mut Env, depth: usize) -> Vec<Stmt> {
+fn go(stmts: &[Stmt], env: &mut Env, depth: usize, varying: &[String]) -> Vec<Stmt> {
     let mut out = Vec::new();
     for s in stmts {
         match s {
             Stmt::Let(name, e) => {
                 let e2 = norm(e, env);
-                if let Expr::Num(v) = e2 {
-                    env.push((name.clone(), Some(v)));
+                let is_varying = varying.iter().any(|n| n == name);
+                if let (Expr::Num(v), false) = (&e2, is_varying) {
+                    env.push((name.clone(), Some(*v)));
                     // At the top level the binding is dead once its uses are inlined, so
                     // drop it and free its register; inside a loop keep it, since a name
                     // it defines may be read after the loop.
@@ -97,7 +117,7 @@ fn go(stmts: &[Stmt], env: &mut Env, depth: usize) -> Vec<Stmt> {
             Stmt::For { var, lo, hi, body } => {
                 let mark = env.len();
                 env.push((var.clone(), None));
-                let nbody = go(body, env, depth + 1);
+                let nbody = go(body, env, depth + 1, varying);
                 env.truncate(mark);
                 out.push(Stmt::For {
                     var: var.clone(),
