@@ -72,6 +72,15 @@ back-ends: the proven STARK trace, native **C** (`to_c`), and **Python**
 end to end against the proof, native binary versus prover. The syntax grammar for
 editors and GitHub is under [grammars](grammars).
 
+## Standard library
+
+Under [stdlib](stdlib), included with `include "name.zkl";`: `math.zkl` (squares,
+cubes, the x^7 S-box), `logic.zkl` (the boolean gadgets `and`, `or`, `not`, `xor`,
+`nand`, `nor`, `implies`), `cmp.zkl` (`is_equal`, `is_zero`, `is_distinct`), and
+`hash.zkl` (the MiMC constants and S-box). Ordered comparison is a witnessed proof;
+see `examples/less_than.zkl`. Every gadget is written in zKølang and proven by the
+suite.
+
 ## Documentation
 
 Start with the [overview](nonos_zkolang/docs/01-overview.md) and
