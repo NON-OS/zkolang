@@ -24,6 +24,8 @@ mod corpus_tests;
 #[cfg(test)]
 mod diagnostic_tests;
 #[cfg(test)]
+mod equivalence_tests;
+#[cfg(test)]
 mod feature_tests;
 #[cfg(test)]
 mod fn_tests;

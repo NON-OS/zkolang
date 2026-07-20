@@ -16,7 +16,7 @@ mod lex;
 mod optimize;
 mod parse;
 
-pub use compile::{compile, compile_full, Compiled};
+pub use compile::{compile, compile_full, compile_unoptimized, Compiled};
 pub use diagnostic::render as render_error;
 pub use error::CompileError;
 pub use include::expand_includes;
@@ -38,4 +38,12 @@ pub fn compile_source_full(src: &str) -> Result<Compiled, CompileError> {
     let (tokens, spans) = lex::lex(src)?;
     let ast = parse::parse(&tokens, &spans, src.len())?;
     compile_full(&ast)
+}
+
+/// Compile zKolang source without the optimizer, for checking that optimization preserves
+/// behavior against the optimized program.
+pub fn compile_source_unoptimized(src: &str) -> Result<Vec<Op>, CompileError> {
+    let (tokens, spans) = lex::lex(src)?;
+    let ast = parse::parse(&tokens, &spans, src.len())?;
+    compile_unoptimized(&ast)
 }

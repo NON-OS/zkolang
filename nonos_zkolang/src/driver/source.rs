@@ -47,3 +47,20 @@ pub fn prove_source_with_witness(
 pub fn prove_source(src: &str) -> Result<Report, RunError> {
     prove_source_with_inputs(src, &[])
 }
+
+/// Run a compiled program on public and secret inputs and return its outputs, without
+/// proving. Used to check that a transform is behavior-preserving by comparing two
+/// compilations of the same source. It does not fill comparison advice, so it is for
+/// programs without ordered comparison.
+pub fn evaluate(
+    program: &[crate::isa::Op],
+    public: &[u64],
+    secret: &[u64],
+) -> Result<Vec<u64>, RunError> {
+    let mut inputs: Vec<Fp> = public.iter().map(|&v| Fp::from_u64(v)).collect();
+    inputs.extend(secret.iter().map(|&v| Fp::from_u64(v)));
+    let trace = crate::vm::Vm::new()
+        .run(program, &inputs, public.len())
+        .map_err(RunError::Execute)?;
+    Ok(trace.public_outputs.iter().map(|f| f.value()).collect())
+}

@@ -29,13 +29,10 @@ use super::parse::Ast;
 use super::CompileError;
 use crate::isa::Op;
 
-/// Lower an AST into a VM program with its advice plan.
-pub fn compile_full(ast: &Ast) -> Result<Compiled, CompileError> {
-    // Fold constants and drop no-op arithmetic before lowering, so the trace is smaller
-    // while the proof is unchanged.
-    let ast = super::optimize::optimize(ast);
-    // Count the public inputs and secrets first, through any loops, so secrets index
-    // after the public prefix and comparison advice indexes after the secrets.
+// Lower an AST as given, without optimizing. The public inputs and secrets are counted
+// first, through any loops, so secrets index after the public prefix and comparison advice
+// indexes after the secrets.
+fn lower(ast: &Ast) -> Result<Compiled, CompileError> {
     let n_public = count_inputs::count_inputs(&ast.stmts).min(u16::MAX as u64) as u16;
     let n_secret = count_secrets::count_secrets(&ast.stmts).min(u16::MAX as u64) as u16;
     let mut c = Compiler::new(ast.consts.clone(), ast.fns.clone(), n_public, n_secret);
@@ -45,7 +42,19 @@ pub fn compile_full(ast: &Ast) -> Result<Compiled, CompileError> {
     Ok(c.finish())
 }
 
+/// Lower an AST into a VM program with its advice plan, optimizing first so the trace is
+/// smaller while the proof is unchanged.
+pub fn compile_full(ast: &Ast) -> Result<Compiled, CompileError> {
+    lower(&super::optimize::optimize(ast))
+}
+
 /// Lower an AST into a VM program ending in `Halt`.
 pub fn compile(ast: &Ast) -> Result<Vec<Op>, CompileError> {
     compile_full(ast).map(|c| c.ops)
+}
+
+/// Lower an AST into a VM program without the optimizer, for checking that optimization
+/// preserves behavior.
+pub fn compile_unoptimized(ast: &Ast) -> Result<Vec<Op>, CompileError> {
+    lower(ast).map(|c| c.ops)
 }
