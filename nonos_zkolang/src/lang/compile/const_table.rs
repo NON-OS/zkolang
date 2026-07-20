@@ -1,18 +1,7 @@
-// NONOS Operating System
-// Copyright (C) 2026 NONOS Contributors
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU Affero General Public License for more details.
-//
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <https://www.gnu.org/licenses/>.
+/*
+ zKølang by NØNOS
+ AGPL-3.0-or-later
+*/
 
 //! Constant tables and the compile-time index that reads them. A table is a fixed
 //! list of field values named once and read by a static index; because both the
@@ -27,7 +16,10 @@ use super::compiler::Compiler;
 impl Compiler {
     /// The values of a constant table by name, in declaration order.
     pub(super) fn const_table(&self, name: &str) -> Option<&[u64]> {
-        self.consts.iter().find(|c| c.name.as_str() == name).map(|c| c.values.as_slice())
+        self.consts
+            .iter()
+            .find(|c| c.name.as_str() == name)
+            .map(|c| c.values.as_slice())
     }
 
     /// Fold a compile-time-constant expression to its integer value, for a table
@@ -40,9 +32,10 @@ impl Compiler {
     pub(super) fn const_eval(&self, e: &Expr) -> Result<i128, CompileError> {
         match e {
             Expr::Num(v) => Ok(*v as i128),
-            Expr::Var(n) => {
-                self.loop_const(n).map(|v| v as i128).ok_or(CompileError::NonConstantIndex)
-            }
+            Expr::Var(n) => self
+                .loop_const(n)
+                .map(|v| v as i128)
+                .ok_or(CompileError::NonConstantIndex),
             Expr::Add(l, r) => Ok(self.const_eval(l)? + self.const_eval(r)?),
             Expr::Sub(l, r) => Ok(self.const_eval(l)? - self.const_eval(r)?),
             Expr::Mul(l, r) => Ok(self.const_eval(l)? * self.const_eval(r)?),

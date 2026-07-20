@@ -1,4 +1,8 @@
-// NONOS Operating System (AGPL-3.0-or-later)
+/*
+ zKølang by NØNOS
+ AGPL-3.0-or-later
+*/
+
 //! The pay-to-prove fee model. A quote follows the proving work, splits into a
 //! prover payment and a protocol cut, and the pieces are internally consistent.
 
@@ -13,11 +17,17 @@ fn a_proof_has_a_priced_quote() {
     // The buyer pays base plus compute.
     assert_eq!(q.total_micronox, q.base_micronox + q.compute_micronox);
     // The fee splits exactly into the prover payment and the protocol cut.
-    assert_eq!(q.prover_micronox + q.protocol_fee_micronox, q.total_micronox);
+    assert_eq!(
+        q.prover_micronox + q.protocol_fee_micronox,
+        q.total_micronox
+    );
     // Both sides are paid something, and the protocol earns revenue.
     assert!(q.prover_micronox > 0, "the prover was paid nothing");
     assert!(q.protocol_fee_micronox > 0, "the protocol earned nothing");
-    assert!(q.prover_micronox > q.protocol_fee_micronox, "the prover should keep the majority");
+    assert!(
+        q.prover_micronox > q.protocol_fee_micronox,
+        "the prover should keep the majority"
+    );
 }
 
 #[test]
@@ -32,5 +42,8 @@ fn a_larger_trace_costs_more() {
         )
         .expect("run"),
     );
-    assert!(big.total_micronox >= small.total_micronox, "a larger proof did not cost more");
+    assert!(
+        big.total_micronox >= small.total_micronox,
+        "a larger proof did not cost more"
+    );
 }

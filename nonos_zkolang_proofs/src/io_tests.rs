@@ -1,4 +1,8 @@
-// NONOS Operating System (AGPL-3.0-or-later)
+/*
+ zKølang by NØNOS
+ AGPL-3.0-or-later
+*/
+
 //! Soundness of public input and output binding. An honest run with a public
 //! input and output verifies; substituting a different public value that the
 //! prover did not actually compute against must be rejected. These build the
@@ -40,7 +44,10 @@ fn verifies_against(public_inputs: &[Fp], public_outputs: &[Fp]) -> bool {
 #[test]
 fn honest_public_io_verifies() {
     // x = 3, y = 9: the values the trace was actually built from.
-    assert!(verifies_against(&[Fp::from_u64(3)], &[Fp::from_u64(9)]), "honest public io rejected");
+    assert!(
+        verifies_against(&[Fp::from_u64(3)], &[Fp::from_u64(9)]),
+        "honest public io rejected"
+    );
 }
 
 #[test]

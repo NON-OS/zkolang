@@ -1,4 +1,8 @@
-// NONOS Operating System (AGPL-3.0-or-later)
+/*
+ zKølang by NØNOS
+ AGPL-3.0-or-later
+*/
+
 //! End-to-end proofs of the zkolang step AIR against the money-grade
 //! Poseidon-committed STARK. A real VM program exercising the whole branchless
 //! computational core is run, its trace laid out for the AIR, and the prover and
@@ -64,13 +68,27 @@ const R_MUL: usize = 10;
 
 fn honest() -> (StepAir, Vec<Fp>) {
     let program = [
-        Op::Imm { d: 0, v: Fp::from_u64(0) },
-        Op::Imm { d: 1, v: Fp::from_u64(5) },
-        Op::Imm { d: 2, v: Fp::from_u64(5) },
+        Op::Imm {
+            d: 0,
+            v: Fp::from_u64(0),
+        },
+        Op::Imm {
+            d: 1,
+            v: Fp::from_u64(5),
+        },
+        Op::Imm {
+            d: 2,
+            v: Fp::from_u64(5),
+        },
         Op::Inv { d: 3, a: 1 },
         Op::Eq { d: 4, a: 1, b: 2 },
         Op::Eq { d: 5, a: 1, b: 0 },
-        Op::Sel { d: 6, c: 4, a: 1, b: 0 },
+        Op::Sel {
+            d: 6,
+            c: 4,
+            a: 1,
+            b: 0,
+        },
         Op::Bool { a: 4 },
         Op::Assert { a: 0 },
         Op::Add { d: 7, a: 1, b: 2 },
@@ -79,9 +97,13 @@ fn honest() -> (StepAir, Vec<Fp>) {
         Op::Halt,
     ];
     let mut vm = Vm::new();
-    let trace = vm.run(&program, &[], 0).expect("honest run produced no trace");
+    let trace = vm
+        .run(&program, &[], 0)
+        .expect("honest run produced no trace");
     let air = StepAir::compile(&program, LOG_T, &[], &[]).expect("program did not compile");
-    let flat = air.build_trace(&trace).expect("honest trace did not lay out");
+    let flat = air
+        .build_trace(&trace)
+        .expect("honest trace did not lay out");
     (air, flat)
 }
 
@@ -147,7 +169,10 @@ fn nonboolean_select_condition_is_rejected() {
     let (air, mut flat) = honest();
     // A condition outside {0,1} must trip the select's boolean gate.
     flat[cell(R_SEL, C)] = Fp::from_u64(2);
-    assert!(!accepts(&air, &flat), "a non-boolean select condition verified");
+    assert!(
+        !accepts(&air, &flat),
+        "a non-boolean select condition verified"
+    );
 }
 
 #[test]
@@ -171,7 +196,10 @@ fn data_in_a_padding_row_is_rejected() {
     // Row 13 is a padding halt row. Smuggling a value into an operand column
     // must trip the halt-cleanliness constraint.
     flat[cell(13, A)] = Fp::from_u64(42);
-    assert!(!accepts(&air, &flat), "a padding row carrying data verified");
+    assert!(
+        !accepts(&air, &flat),
+        "a padding row carrying data verified"
+    );
 }
 
 #[test]
@@ -210,7 +238,10 @@ fn operand_not_from_register_is_rejected() {
     // binding, a must equal the live r1, can reject this.
     flat[cell(R_ADD, A)] = Fp::from_u64(6);
     flat[cell(R_ADD, D)] = Fp::from_u64(11);
-    assert!(!accepts(&air, &flat), "an operand not drawn from its register verified");
+    assert!(
+        !accepts(&air, &flat),
+        "an operand not drawn from its register verified"
+    );
 }
 
 #[test]
@@ -227,5 +258,8 @@ fn broken_write_propagation_is_rejected() {
     // Row 1 writes r1 = 5, so from row 2 on the register file must carry 5 in
     // slot r1. Corrupt that carried value.
     flat[cell(2, RF_BASE + 1)] = Fp::from_u64(9);
-    assert!(!accepts(&air, &flat), "a register that lost its written value verified");
+    assert!(
+        !accepts(&air, &flat),
+        "a register that lost its written value verified"
+    );
 }

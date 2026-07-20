@@ -1,18 +1,7 @@
-// NONOS Operating System
-// Copyright (C) 2026 NONOS Contributors
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU Affero General Public License for more details.
-//
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <https://www.gnu.org/licenses/>.
+/*
+ zKølang by NØNOS
+ AGPL-3.0-or-later
+*/
 
 //! Compiling a program's public data flow into the AIR. This walks the program to
 //! the first halt, records the per-row wiring, and binds each public input and
@@ -50,12 +39,19 @@ impl StepAir {
             return Err(BuildError::NoHalt);
         }
         if wiring.len() > t {
-            return Err(BuildError::TooLong { rows: wiring.len(), cap: t });
+            return Err(BuildError::TooLong {
+                rows: wiring.len(),
+                cap: t,
+            });
         }
         while wiring.len() < t {
             wiring.push(WireRow::EMPTY);
         }
-        Ok(StepAir { log_t, wiring, public_bindings: Vec::new() })
+        Ok(StepAir {
+            log_t,
+            wiring,
+            public_bindings: Vec::new(),
+        })
     }
 
     /// Compile a program's public data flow into the AIR and bind the public
@@ -102,11 +98,18 @@ impl StepAir {
             return Err(BuildError::NoHalt);
         }
         if wiring.len() > t {
-            return Err(BuildError::TooLong { rows: wiring.len(), cap: t });
+            return Err(BuildError::TooLong {
+                rows: wiring.len(),
+                cap: t,
+            });
         }
         while wiring.len() < t {
             wiring.push(WireRow::EMPTY);
         }
-        Ok(StepAir { log_t, wiring, public_bindings })
+        Ok(StepAir {
+            log_t,
+            wiring,
+            public_bindings,
+        })
     }
 }

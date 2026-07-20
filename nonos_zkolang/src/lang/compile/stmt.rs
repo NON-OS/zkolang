@@ -1,18 +1,7 @@
-// NONOS Operating System
-// Copyright (C) 2026 NONOS Contributors
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU Affero General Public License for more details.
-//
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <https://www.gnu.org/licenses/>.
+/*
+ zKølang by NØNOS
+ AGPL-3.0-or-later
+*/
 
 //! Statement lowering: bindings, assertions, public and private inputs, outputs,
 //! and the unrolled `for` loop. A `let` reclaims the register of a binding it
@@ -104,7 +93,11 @@ impl Compiler {
                 self.release(&a);
                 self.release(&b);
                 let d = self.alloc()?;
-                self.ops.push(Op::Sub { d, a: a.reg, b: b.reg });
+                self.ops.push(Op::Sub {
+                    d,
+                    a: a.reg,
+                    b: b.reg,
+                });
                 self.ops.push(Op::Assert { a: d });
                 self.free.push(d);
                 Ok(())
@@ -115,7 +108,11 @@ impl Compiler {
                 self.release(&a);
                 self.release(&b);
                 let diff = self.alloc()?;
-                self.ops.push(Op::Sub { d: diff, a: a.reg, b: b.reg });
+                self.ops.push(Op::Sub {
+                    d: diff,
+                    a: a.reg,
+                    b: b.reg,
+                });
                 self.free.push(diff);
                 // Inverting the difference discards the result; its only job is to
                 // fail, and so make the trace unprovable, when the difference is zero.

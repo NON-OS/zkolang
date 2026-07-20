@@ -1,18 +1,7 @@
-// NONOS Operating System
-// Copyright (C) 2026 NONOS Contributors
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU Affero General Public License for more details.
-//
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <https://www.gnu.org/licenses/>.
+/*
+ zKølang by NØNOS
+ AGPL-3.0-or-later
+*/
 
 //! One instruction. `step` fills the trace row for a single opcode and updates the
 //! register file. The witnessed opcodes (invert, equality) record the auxiliary
@@ -86,8 +75,11 @@ impl Vm {
                 let diff = va - vb;
                 // aux is the inverse of the difference when non-zero, the equality
                 // witness the AIR uses; the result is one exactly when equal.
-                let (eq, aux) =
-                    if diff == Fp::ZERO { (Fp::ONE, Fp::ZERO) } else { (Fp::ZERO, diff.inv()) };
+                let (eq, aux) = if diff == Fp::ZERO {
+                    (Fp::ONE, Fp::ZERO)
+                } else {
+                    (Fp::ZERO, diff.inv())
+                };
                 row.rd = eq;
                 row.aux = aux;
                 self.wset(d, eq)?;

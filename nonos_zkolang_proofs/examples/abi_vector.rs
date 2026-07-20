@@ -1,6 +1,8 @@
-// Cross-check the on-chain ABI vector against the Rust commitment. Prints the
-// canonical bytes, the blake3 digest, and the four field limbs for [Halt], to
-// confirm the Solidity RecursionAbi library and src/commit.rs agree byte for byte.
+/*
+ zKølang by NØNOS
+ AGPL-3.0-or-later
+*/
+
 use nonos_zkolang::{commit, commit_limbs, serialize, Op};
 
 fn main() {
@@ -22,6 +24,10 @@ fn main() {
 
     let limbs = commit_limbs(&prog);
     for (i, l) in limbs.iter().enumerate() {
-        println!("limb[{i}]           = {:>20}  (0x{:016x})", l.value(), l.value());
+        println!(
+            "limb[{i}]           = {:>20}  (0x{:016x})",
+            l.value(),
+            l.value()
+        );
     }
 }

@@ -1,4 +1,8 @@
-// NONOS Operating System (AGPL-3.0-or-later)
+/*
+ zKølang by NØNOS
+ AGPL-3.0-or-later
+*/
+
 //! Recipes: real verifiable-compute use cases expressed in zKølang and proven end
 //! to end. Each is a use a buyer would actually pay to have proven. They double as
 //! the tested source behind the recipes documentation page.
@@ -21,9 +25,17 @@ fn polynomial_evaluation() {
 fn secret_root_of_a_public_quadratic() {
     let src = "input b; input c; secret x; assert x * x + c - b * x;";
     // b = 5, c = 6, x = 2: 4 + 6 - 10 = 0.
-    assert!(prove_source_with_witness(src, &[5, 6], &[2]).expect("run").verified);
+    assert!(
+        prove_source_with_witness(src, &[5, 6], &[2])
+            .expect("run")
+            .verified
+    );
     // The other root, x = 3: 9 + 6 - 15 = 0.
-    assert!(prove_source_with_witness(src, &[5, 6], &[3]).expect("run").verified);
+    assert!(
+        prove_source_with_witness(src, &[5, 6], &[3])
+            .expect("run")
+            .verified
+    );
     // A non-root, x = 4: 16 + 6 - 20 = 2, no proof.
     assert!(prove_source_with_witness(src, &[5, 6], &[4]).is_err());
 }
@@ -36,7 +48,11 @@ fn private_set_membership() {
     let src = "secret w; input v0; input v1; input v2;
                assert (w - v0) * (w - v1) * (w - v2);";
     // w = 7 is in {5, 7, 9}.
-    assert!(prove_source_with_witness(src, &[5, 7, 9], &[7]).expect("run").verified);
+    assert!(
+        prove_source_with_witness(src, &[5, 7, 9], &[7])
+            .expect("run")
+            .verified
+    );
     // w = 8 is not in the set, so there is no proof.
     assert!(prove_source_with_witness(src, &[5, 7, 9], &[8]).is_err());
 }
@@ -65,7 +81,11 @@ fn secret_value_is_in_range() {
                assert b3 * b3 - b3;
                assert w - (b0 + 2 * b1 + 4 * b2 + 8 * b3);";
     // w = 13 = 1101: bits b0=1, b1=0, b2=1, b3=1.
-    assert!(prove_source_with_witness(src, &[], &[13, 1, 0, 1, 1]).expect("run").verified);
+    assert!(
+        prove_source_with_witness(src, &[], &[13, 1, 0, 1, 1])
+            .expect("run")
+            .verified
+    );
     // A non-boolean bit, b0 = 2, is not a valid decomposition, so no proof.
     assert!(prove_source_with_witness(src, &[], &[13, 2, 0, 1, 1]).is_err());
 }
@@ -85,7 +105,11 @@ fn a_range_proof_with_a_reusable_bit_relation() {
                assert bit(b3);
                assert w - (b0 + 2 * b1 + 4 * b2 + 8 * b3);";
     // w = 10 = 1010: b0=0, b1=1, b2=0, b3=1.
-    assert!(prove_source_with_witness(src, &[], &[10, 0, 1, 0, 1]).expect("run").verified);
+    assert!(
+        prove_source_with_witness(src, &[], &[10, 0, 1, 0, 1])
+            .expect("run")
+            .verified
+    );
     // A bit that is not boolean fails the `bit` relation, so there is no proof.
     assert!(prove_source_with_witness(src, &[], &[10, 3, 1, 0, 1]).is_err());
 }

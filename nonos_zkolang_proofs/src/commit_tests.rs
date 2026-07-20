@@ -1,4 +1,8 @@
-// NONOS Operating System (AGPL-3.0-or-later)
+/*
+ zKølang by NØNOS
+ AGPL-3.0-or-later
+*/
+
 //! The program commitment and the public-statement binding. A proof carries a
 //! stable commitment to its program, and a proof bound to one statement is
 //! rejected under another: the Fiat-Shamir seeding of the public statement does
@@ -19,8 +23,16 @@ const LOG_T: u32 = 4;
 fn commitment_is_deterministic_and_distinguishing() {
     let square = compile_source("input x; let y = x * x; output y;").expect("compile");
     let cube = compile_source("input x; let y = x * x * x; output y;").expect("compile");
-    assert_eq!(commit(&square), commit(&square), "the commitment is not deterministic");
-    assert_ne!(commit(&square), commit(&cube), "two programs share a commitment");
+    assert_eq!(
+        commit(&square),
+        commit(&square),
+        "the commitment is not deterministic"
+    );
+    assert_ne!(
+        commit(&square),
+        commit(&cube),
+        "two programs share a commitment"
+    );
 }
 
 #[test]
@@ -29,7 +41,10 @@ fn the_report_carries_the_program_commitment() {
     let report = prove_source_with_inputs(src, &[9]).expect("run");
     assert!(report.verified);
     let expected = commit(&compile_source(src).expect("compile"));
-    assert_eq!(report.program_commit, expected, "the report commitment does not match");
+    assert_eq!(
+        report.program_commit, expected,
+        "the report commitment does not match"
+    );
 }
 
 #[test]

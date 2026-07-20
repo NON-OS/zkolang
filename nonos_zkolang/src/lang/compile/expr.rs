@@ -1,18 +1,7 @@
-// NONOS Operating System
-// Copyright (C) 2026 NONOS Contributors
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU Affero General Public License for more details.
-//
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <https://www.gnu.org/licenses/>.
+/*
+ zKølang by NØNOS
+ AGPL-3.0-or-later
+*/
 
 //! Expression lowering: each node becomes a small run of opcodes. Division,
 //! negation, and not-equal are sugar over the existing opcodes; the conditional is
@@ -35,7 +24,10 @@ impl Compiler {
         match e {
             Expr::Num(v) => {
                 let d = self.alloc()?;
-                self.ops.push(Op::Imm { d, v: Fp::from_u64(*v) });
+                self.ops.push(Op::Imm {
+                    d,
+                    v: Fp::from_u64(*v),
+                });
                 Ok(Val { reg: d, temp: true })
             }
             Expr::Var(n) => {
@@ -43,7 +35,10 @@ impl Compiler {
                 // an immediate. Otherwise the name must resolve to a binding.
                 if let Some(v) = self.loop_const(n) {
                     let d = self.alloc()?;
-                    self.ops.push(Op::Imm { d, v: Fp::from_u64(v) });
+                    self.ops.push(Op::Imm {
+                        d,
+                        v: Fp::from_u64(v),
+                    });
                     return Ok(Val { reg: d, temp: true });
                 }
                 let reg = self.lookup(n).ok_or(CompileError::UnknownVariable)?;
@@ -65,7 +60,11 @@ impl Compiler {
                 self.release(&a);
                 self.free.push(recip);
                 let d = self.alloc()?;
-                self.ops.push(Op::Mul { d, a: a.reg, b: recip });
+                self.ops.push(Op::Mul {
+                    d,
+                    a: a.reg,
+                    b: recip,
+                });
                 Ok(Val { reg: d, temp: true })
             }
             // Negation is subtraction from zero: -x = 0 - x. We load a zero, then
@@ -73,11 +72,18 @@ impl Compiler {
             Expr::Neg(x) => {
                 let v = self.expr(x)?;
                 let zero = self.alloc()?;
-                self.ops.push(Op::Imm { d: zero, v: Fp::ZERO });
+                self.ops.push(Op::Imm {
+                    d: zero,
+                    v: Fp::ZERO,
+                });
                 self.release(&v);
                 self.free.push(zero);
                 let d = self.alloc()?;
-                self.ops.push(Op::Sub { d, a: zero, b: v.reg });
+                self.ops.push(Op::Sub {
+                    d,
+                    a: zero,
+                    b: v.reg,
+                });
                 Ok(Val { reg: d, temp: true })
             }
             // Not-equal is the complement of the equality bit: (a != b) = 1 - (a == b).
@@ -89,7 +95,11 @@ impl Compiler {
                 self.release(&a);
                 self.release(&b);
                 let bit = self.alloc()?;
-                self.ops.push(Op::Eq { d: bit, a: a.reg, b: b.reg });
+                self.ops.push(Op::Eq {
+                    d: bit,
+                    a: a.reg,
+                    b: b.reg,
+                });
                 let one = self.alloc()?;
                 self.ops.push(Op::Imm { d: one, v: Fp::ONE });
                 self.free.push(bit);
@@ -116,7 +126,10 @@ impl Compiler {
             Expr::Index(base, idx) => {
                 let v = self.resolve_index(base, idx)?;
                 let d = self.alloc()?;
-                self.ops.push(Op::Imm { d, v: Fp::from_u64(v) });
+                self.ops.push(Op::Imm {
+                    d,
+                    v: Fp::from_u64(v),
+                });
                 Ok(Val { reg: d, temp: true })
             }
         }
@@ -150,7 +163,12 @@ impl Compiler {
         self.release(&a);
         self.release(&b);
         let d = self.alloc()?;
-        self.ops.push(Op::Sel { d, c: c.reg, a: a.reg, b: b.reg });
+        self.ops.push(Op::Sel {
+            d,
+            c: c.reg,
+            a: a.reg,
+            b: b.reg,
+        });
         Ok(Val { reg: d, temp: true })
     }
 
@@ -179,8 +197,12 @@ impl Compiler {
         }
         // Swap the name scope for one holding only the parameters, compile the body,
         // then restore. The register pool is shared, only the names change.
-        let param_scope: Vec<(String, u8)> =
-            def.params.iter().zip(&arg_vals).map(|(p, v)| (p.clone(), v.reg)).collect();
+        let param_scope: Vec<(String, u8)> = def
+            .params
+            .iter()
+            .zip(&arg_vals)
+            .map(|(p, v)| (p.clone(), v.reg))
+            .collect();
         let saved_syms = core::mem::replace(&mut self.syms, param_scope);
         let saved_loops = core::mem::take(&mut self.loop_consts);
         self.inline_depth += 1;
@@ -200,6 +222,9 @@ impl Compiler {
                 }
             }
         }
-        Ok(Val { reg: result.reg, temp })
+        Ok(Val {
+            reg: result.reg,
+            temp,
+        })
     }
 }

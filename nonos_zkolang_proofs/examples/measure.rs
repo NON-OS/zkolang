@@ -1,5 +1,8 @@
-// Measurement harness for the paper's evaluation. Prints real trace shapes and
-// NOX fees for a handful of programs, produced by running the crate.
+/*
+ zKølang by NØNOS
+ AGPL-3.0-or-later
+*/
+
 use nonos_zkolang::{prove_source_with_inputs, quote};
 
 fn main() {
@@ -11,7 +14,11 @@ fn main() {
         ),
         ("square  y=x^2", "input x; let y=x*x; output y;", &[9]),
         ("cube    y=x^3", "input x; let y=x*x*x; output y;", &[3]),
-        ("degree8 y=x^8", "input x; let a=x*x; let b=a*a; let c=b*b; output c;", &[2]),
+        (
+            "degree8 y=x^8",
+            "input x; let a=x*x; let b=a*a; let c=b*b; output c;",
+            &[2],
+        ),
     ];
     for (name, src, inputs) in cases {
         let r = prove_source_with_inputs(src, inputs).expect("run");

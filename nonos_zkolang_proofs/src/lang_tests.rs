@@ -1,4 +1,8 @@
-// NONOS Operating System (AGPL-3.0-or-later)
+/*
+ zKølang by NØNOS
+ AGPL-3.0-or-later
+*/
+
 //! End-to-end proofs of the zkolang source language. A program written as text is
 //! compiled, run, proven, and verified through the one-call driver. A true
 //! program verifies; a false claim has no trace to prove; a malformed program is
@@ -33,7 +37,10 @@ fn equality_and_select_prove() {
         assert pick - 3;
     ";
     let report = prove_source(src).expect("an honest program failed to run");
-    assert!(report.verified, "an equality-and-select program did not verify");
+    assert!(
+        report.verified,
+        "an equality-and-select program did not verify"
+    );
 }
 
 #[test]

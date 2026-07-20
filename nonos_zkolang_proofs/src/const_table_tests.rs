@@ -1,4 +1,8 @@
-// NONOS Operating System (AGPL-3.0-or-later)
+/*
+ zKølang by NØNOS
+ AGPL-3.0-or-later
+*/
+
 //! Constant tables, read by a compile-time index. A table names a fixed list of
 //! field values once; a read with a static index folds to one entry, so the table
 //! never reaches the trace. This is the data shape a hash needs: round constants and
@@ -50,12 +54,18 @@ fn a_table_value_enters_arithmetic() {
 #[test]
 fn an_out_of_range_index_is_a_compile_error() {
     let src = "const T = [1, 2]; output T[2];";
-    assert!(matches!(compile_source(src), Err(CompileError::IndexOutOfBounds)));
+    assert!(matches!(
+        compile_source(src),
+        Err(CompileError::IndexOutOfBounds)
+    ));
 }
 
 #[test]
 fn indexing_an_unknown_table_is_an_error() {
-    assert!(matches!(compile_source("output NOPE[0];"), Err(CompileError::UnknownConst)));
+    assert!(matches!(
+        compile_source("output NOPE[0];"),
+        Err(CompileError::UnknownConst)
+    ));
 }
 
 #[test]
@@ -63,11 +73,17 @@ fn a_runtime_index_is_rejected() {
     // The index must be static; a public input cannot address a table, because a
     // data-dependent index would break the straight-line shape.
     let src = "const T = [1, 2, 3]; input i; output T[i];";
-    assert!(matches!(compile_source(src), Err(CompileError::NonConstantIndex)));
+    assert!(matches!(
+        compile_source(src),
+        Err(CompileError::NonConstantIndex)
+    ));
 }
 
 #[test]
 fn indexing_a_non_table_is_an_error() {
     let src = "let x = 5; output x[0];";
-    assert!(matches!(compile_source(src), Err(CompileError::NotIndexable)));
+    assert!(matches!(
+        compile_source(src),
+        Err(CompileError::NotIndexable)
+    ));
 }

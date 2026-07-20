@@ -1,18 +1,7 @@
-// NONOS Operating System
-// Copyright (C) 2026 NONOS Contributors
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU Affero General Public License for more details.
-//
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <https://www.gnu.org/licenses/>.
+/*
+ zKølang by NØNOS
+ AGPL-3.0-or-later
+*/
 
 //! The compiler state and its register allocator. The allocator reuses freed
 //! registers, and a name binding resolves newest-first with an alias-aware reclaim
@@ -116,13 +105,21 @@ impl Compiler {
 
     /// The register a bound name currently resolves to, newest binding first.
     pub(super) fn lookup(&self, name: &str) -> Option<u8> {
-        self.syms.iter().rev().find(|(n, _)| n.as_str() == name).map(|(_, r)| *r)
+        self.syms
+            .iter()
+            .rev()
+            .find(|(n, _)| n.as_str() == name)
+            .map(|(_, r)| *r)
     }
 
     /// The value of a loop variable if `name` is one, innermost loop first. A loop
     /// variable shadows a same-named binding while its loop is active.
     pub(super) fn loop_const(&self, name: &str) -> Option<u64> {
-        self.loop_consts.iter().rev().find(|(n, _)| n.as_str() == name).map(|(_, v)| *v)
+        self.loop_consts
+            .iter()
+            .rev()
+            .find(|(n, _)| n.as_str() == name)
+            .map(|(_, v)| *v)
     }
 
     /// Point a name at a register, replacing its newest binding in place so no

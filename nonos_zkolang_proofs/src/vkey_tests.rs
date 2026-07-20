@@ -1,4 +1,8 @@
-// NONOS Operating System (AGPL-3.0-or-later)
+/*
+ zKølang by NØNOS
+ AGPL-3.0-or-later
+*/
+
 //! The verifier key and its periodic root. The golden test is the strong one:
 //! prove a real program with the preprocessed prover, then the preprocessed
 //! verifier must accept using the root the helper computed and reject a wrong one.

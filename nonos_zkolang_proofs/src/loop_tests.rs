@@ -1,4 +1,8 @@
-// NONOS Operating System (AGPL-3.0-or-later)
+/*
+ zKølang by NØNOS
+ AGPL-3.0-or-later
+*/
+
 //! Bounded `for` loops, unrolled by the compiler. The loop variable is a
 //! compile-time constant, so a program's shape stays static; a loop is exactly
 //! its hand-unrolled body, and it proves the same way. These cover an

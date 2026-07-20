@@ -1,18 +1,7 @@
-// NONOS Operating System
-// Copyright (C) 2026 NONOS Contributors
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU Affero General Public License for more details.
-//
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <https://www.gnu.org/licenses/>.
+/*
+ zKølang by NØNOS
+ AGPL-3.0-or-later
+*/
 
 //! The prove pipeline over an already-compiled program: run the VM, size the
 //! trace, lay it out, bind the public statement, prove, and verify. This is where
@@ -56,11 +45,18 @@ pub(super) fn run_and_prove(
     n_public: usize,
 ) -> Result<Report, RunError> {
     let mut vm = Vm::new();
-    let trace = vm.run(program, inputs, n_public).map_err(RunError::Execute)?;
+    let trace = vm
+        .run(program, inputs, n_public)
+        .map_err(RunError::Execute)?;
     let steps = trace.rows.len();
     let log_trace_len = choose_log_t(steps).ok_or(RunError::ProgramTooLong { steps })?;
-    let air = StepAir::compile(program, log_trace_len, &trace.public_inputs, &trace.public_outputs)
-        .map_err(RunError::Layout)?;
+    let air = StepAir::compile(
+        program,
+        log_trace_len,
+        &trace.public_inputs,
+        &trace.public_outputs,
+    )
+    .map_err(RunError::Layout)?;
     let flat = air.build_trace(&trace).map_err(RunError::Layout)?;
 
     // The public statement bound into the proof by Fiat-Shamir: the program

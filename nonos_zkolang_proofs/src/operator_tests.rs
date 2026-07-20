@@ -1,4 +1,8 @@
-// NONOS Operating System (AGPL-3.0-or-later)
+/*
+ zKølang by NØNOS
+ AGPL-3.0-or-later
+*/
+
 //! The extended operators: field division, unary negation, and not-equal. Each is
 //! front-end sugar over the existing opcodes, so each is proven the same way. The
 //! tests check both a true program that verifies and a false claim that has none.
