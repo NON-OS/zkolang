@@ -30,6 +30,8 @@ mod feature_tests;
 #[cfg(test)]
 mod fn_tests;
 #[cfg(test)]
+mod fuzz_tests;
+#[cfg(test)]
 mod hash_tests;
 #[cfg(test)]
 mod include_tests;
