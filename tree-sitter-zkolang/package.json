@@ -1,0 +1,9 @@
+{
+  "name": "tree-sitter-zkolang",
+  "version": "0.1.0",
+  "description": "zKolang grammar for tree-sitter",
+  "license": "AGPL-3.0-or-later",
+  "main": "bindings/node",
+  "devDependencies": { "tree-sitter-cli": "^0.22.0" },
+  "tree-sitter": [ { "scope": "source.zkolang", "file-types": ["zkl"] } ]
+}

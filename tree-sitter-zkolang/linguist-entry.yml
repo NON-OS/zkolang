@@ -1,0 +1,13 @@
+# The entry to add to github/linguist lib/linguist/languages.yml to have GitHub count
+# .zkl as zKolang. Alphabetical order in that file; language_id is assigned by the
+# Linguist maintainers' script and must be unique, so leave it for the review to set.
+# Submit alongside sample .zkl files under samples/zKolang/ and this repository's
+# tree-sitter grammar registered under vendor/grammars.
+zKolang:
+  type: programming
+  color: "#7d5fff"
+  extensions:
+    - ".zkl"
+  tm_scope: source.zkolang
+  ace_mode: text
+  language_id: 0
