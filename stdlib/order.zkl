@@ -1,0 +1,10 @@
+// Ordering gadgets, built on the comparison operators. Each is one inlined expression,
+// so it costs only the comparison it names. Operands must lie in the sixteen-bit
+// comparison range. Include and call: min(a, b), clamp(x, lo, hi), in_window(x, lo, hi).
+include "logic.zkl";
+
+fn min(a, b)          = sel(a < b, a, b);
+fn max(a, b)          = sel(a < b, b, a);
+fn clamp(x, lo, hi)   = min(max(x, lo), hi);
+fn abs_diff(a, b)     = sel(a < b, b - a, a - b);
+fn in_window(x, lo, hi) = (lo <= x) && (x <= hi);

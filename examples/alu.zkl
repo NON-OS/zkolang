@@ -1,0 +1,15 @@
+// A tiny ALU. The operation code selects add, subtract, multiply, or the minimum of two
+// operands, chosen by a match. Every arm is evaluated, as everywhere in the language, so
+// the minimum's comparison is always computed. This is the whole toolkit at work: match,
+// the ordering library, and the comparison under it. Run: zkolang alu.zkl
+include "order.zkl";
+
+public op;
+public a;
+public b;
+reveal match op {
+    0 => a + b,
+    1 => a - b,
+    2 => a * b,
+    _ => min(a, b),
+};

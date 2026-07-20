@@ -56,6 +56,8 @@ mod register_file_tests;
 #[cfg(test)]
 mod shield_tests;
 #[cfg(test)]
+mod stdlib_tests;
+#[cfg(test)]
 mod step_tests;
 #[cfg(test)]
 mod vkey_tests;

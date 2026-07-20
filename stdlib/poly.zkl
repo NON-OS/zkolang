@@ -1,0 +1,7 @@
+// Polynomial gadgets by Horner. A line, a quadratic, a cubic evaluated at a point, and
+// the linear interpolation between two values by a fraction. Each folds its coefficients
+// with one multiply and add per degree, so a cubic costs three multiplies.
+fn line(m, b, x)          = m * x + b;
+fn quad(a, b, c, x)       = (a * x + b) * x + c;
+fn cubic(a, b, c, d, x)   = ((a * x + b) * x + c) * x + d;
+fn lerp(a, b, t)          = a + t * (b - a);

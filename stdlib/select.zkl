@@ -1,0 +1,9 @@
+// Selection gadgets over the branchless primitive. `cond` names an if by a bit; the
+// multiplexers pick one data line from two, four, or eight by their select bits, each
+// stage halving the candidates. Select bits are expected to be bits.
+include "logic.zkl";
+
+fn cond(c, a, b) = sel(c, a, b);
+fn mux4(s1, s0, d0, d1, d2, d3) = mux(s1, mux(s0, d3, d2), mux(s0, d1, d0));
+fn mux8(s2, s1, s0, d0, d1, d2, d3, d4, d5, d6, d7) =
+    mux(s2, mux4(s1, s0, d4, d5, d6, d7), mux4(s1, s0, d0, d1, d2, d3));
