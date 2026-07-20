@@ -58,18 +58,48 @@ fn gen_program(rng: &mut Rng) -> (String, Vec<u64>) {
     (src, inputs)
 }
 
+// A program that carries two accumulators across a loop, rebinding them each iteration,
+// the exact shape the loop-rebinding bug lived in. `c` is a loop-invariant input, `s` and
+// `t` evolve, so the optimizer must propagate the first and never the second.
+fn gen_loop_program(rng: &mut Rng) -> (String, Vec<u64>) {
+    let mut src = String::from("input a;\ninput b;\ninput c;\nlet s = a;\nlet t = b;\n");
+    let body_vars: Vec<String> = vec!["s".into(), "t".into(), "c".into(), "i".into()];
+    let k = 2 + rng.below(7);
+    src.push_str(&format!("for i in 0 .. {k} {{\n"));
+    src.push_str(&format!("  let u = {};\n", gen_expr(rng, 3, &body_vars)));
+    src.push_str("  let s = t;\n  let t = u;\n}\n");
+    src.push_str("output s;\n");
+    let inputs = vec![rng.below(50), rng.below(50), rng.below(50)];
+    (src, inputs)
+}
+
+fn agree(src: &str, inputs: &[u64]) {
+    let opt = compile_source(src).unwrap_or_else(|e| panic!("optimized:\n{src}\n{e:?}"));
+    let raw = compile_source_unoptimized(src).unwrap_or_else(|e| panic!("raw:\n{src}\n{e:?}"));
+    let a = evaluate(&opt, inputs, &[]).unwrap_or_else(|e| panic!("run opt:\n{src}\n{e:?}"));
+    let b = evaluate(&raw, inputs, &[]).unwrap_or_else(|e| panic!("run raw:\n{src}\n{e:?}"));
+    assert_eq!(
+        a, b,
+        "the optimizer changed the output of:\n{src}\ninputs {inputs:?}"
+    );
+}
+
 #[test]
 fn the_optimizer_is_equivalent_under_fuzzing() {
     let mut rng = Rng(0x0DDC0FFEE);
     for _ in 0..3000 {
         let (src, inputs) = gen_program(&mut rng);
-        let opt = compile_source(&src).unwrap_or_else(|e| panic!("optimized:\n{src}\n{e:?}"));
-        let raw = compile_source_unoptimized(&src).unwrap_or_else(|e| panic!("raw:\n{src}\n{e:?}"));
-        let a = evaluate(&opt, &inputs, &[]).unwrap_or_else(|e| panic!("run opt:\n{src}\n{e:?}"));
-        let b = evaluate(&raw, &inputs, &[]).unwrap_or_else(|e| panic!("run raw:\n{src}\n{e:?}"));
-        assert_eq!(
-            a, b,
-            "the optimizer changed the output of:\n{src}\ninputs {inputs:?}"
-        );
+        agree(&src, &inputs);
+    }
+}
+
+#[test]
+fn the_optimizer_is_equivalent_under_loop_fuzzing() {
+    // The loop-carried-accumulator class. A propagation that treats an evolving name as a
+    // constant, the bug that shipped once, fails here.
+    let mut rng = Rng(0xBADF00D);
+    for _ in 0..2000 {
+        let (src, inputs) = gen_loop_program(&mut rng);
+        agree(&src, &inputs);
     }
 }
