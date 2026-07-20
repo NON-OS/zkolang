@@ -4,20 +4,21 @@
 */
 
 //! The optimizer: a behaviour-preserving pass over the tree before lowering. It folds
-//! constant sub-expressions and removes the algebraic identities that cost a trace row
-//! for nothing, in the statements and in the function bodies that will be inlined into
-//! them. The proof a program produces is unchanged; the trace it needs is smaller.
+//! constant sub-expressions, removes the algebraic identities that cost a trace row for
+//! nothing, and propagates constant bindings, inlining them and freeing their registers.
+//! Function bodies are folded before they inline. The proof a program produces is
+//! unchanged; the trace it needs is smaller and its register pressure lower.
 
 mod expr;
-mod stmt;
+mod propagate;
 
 use alloc::vec::Vec;
 
 use super::parse::{Ast, FnDef};
 use expr::fold;
-use stmt::fold_stmt;
+use propagate::propagate;
 
-/// Fold constants and drop no-op arithmetic across a whole program.
+/// Fold constants, drop no-op arithmetic, and propagate constants across a program.
 pub(super) fn optimize(ast: &Ast) -> Ast {
     let fns = ast
         .fns
@@ -31,6 +32,6 @@ pub(super) fn optimize(ast: &Ast) -> Ast {
     Ast {
         consts: ast.consts.clone(),
         fns,
-        stmts: ast.stmts.iter().map(fold_stmt).collect(),
+        stmts: propagate(&ast.stmts),
     }
 }

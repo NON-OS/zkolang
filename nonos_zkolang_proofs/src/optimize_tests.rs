@@ -36,3 +36,41 @@ fn folding_preserves_behavior() {
     let c = prove_source_with_inputs("input x; let y = x * x * x; output y;", &[9]).expect("run");
     assert_eq!(c.outputs, vec![729]);
 }
+
+#[test]
+fn constant_propagation_raises_the_register_ceiling() {
+    // Forty constant bindings summed would need forty live registers, past the file of
+    // thirty two, so without propagation this is TooManyRegisters. Propagation inlines
+    // them and the program folds to a single value.
+    let mut src = String::new();
+    for i in 0..40u64 {
+        src.push_str(&format!("let c{i} = {};\n", i + 1));
+    }
+    src.push_str("output ");
+    for i in 0..40u64 {
+        if i > 0 {
+            src.push_str(" + ");
+        }
+        src.push_str(&format!("c{i}"));
+    }
+    src.push(';');
+    let ops = compile_source(&src).expect("compile");
+    assert!(
+        ops.len() < 8,
+        "constants were not propagated: {} ops",
+        ops.len()
+    );
+    assert_eq!(
+        prove_source_with_inputs(&src, &[]).unwrap().outputs,
+        vec![820]
+    );
+}
+
+#[test]
+fn propagation_preserves_shadowing_and_runtime_values() {
+    // The first k is a constant and inlines; the second rebinds k to a runtime value and
+    // shadows it, so the output is the runtime value, not the constant.
+    let r = prove_source_with_inputs("let k = 5; input x; let k = x + 1; output k;", &[9])
+        .expect("run");
+    assert_eq!(r.outputs, vec![10]);
+}
