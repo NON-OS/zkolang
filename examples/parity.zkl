@@ -1,0 +1,12 @@
+// The parity of four bits, folded with the xor gadget from the logic library. Odd
+// number of ones gives one, even gives zero. Run: zkolang parity.zkl
+include "logic.zkl";
+
+input b0; input b1; input b2; input b3;
+
+assert is_bit(b0);
+assert is_bit(b1);
+assert is_bit(b2);
+assert is_bit(b3);
+
+output xor(xor(b0, b1), xor(b2, b3));
