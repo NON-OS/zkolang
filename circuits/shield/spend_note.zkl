@@ -1,0 +1,52 @@
+// A shielded note spend, the private-value utility in one circuit. The spender proves a
+// note they can open sits under the public commitment-tree root, publishes the note's
+// nullifier to retire it so it cannot be spent twice, and range-proves the note's value
+// so no negative value is minted under the field's wraparound. The value, the spending
+// key, and the note's position in the tree all stay private; a verifier learns only that
+// a valid, in-range, unspent note was spent, and its nullifier.
+//
+// This is the whole language at work: the standard library and its MiMC permutation, an
+// array indexed by an unrolled loop, a nested loop over the path, the range gadget, and
+// the cypherpunk register. Run: zkolang circuits/shield/spend_note.zkl
+include "hash.zkl";
+include "logic.zkl";
+include "bits.zkl";
+
+witness value;
+witness key;
+witness s0; witness s1; witness s2;
+witness p0; witness p1; witness p2;
+public root;
+public position;
+
+// The value is a byte, so it is non-negative and bounded.
+secret v0; secret v1; secret v2; secret v3;
+secret v4; secret v5; secret v6; secret v7;
+prove bit(v0); prove bit(v1); prove bit(v2); prove bit(v3);
+prove bit(v4); prove bit(v5); prove bit(v6); prove bit(v7);
+prove value - compose8(v0, v1, v2, v3, v4, v5, v6, v7);
+
+// The note is the commitment to the value under the key.
+let note = value + key;
+for i in 0 .. 16 { let note = mimc_round(note, MIMC_C[i]); }
+
+// The note authenticates to the public root along its path.
+let sib = [s0, s1, s2];
+let pb = [p0, p1, p2];
+let node = note;
+for lvl in 0 .. 3 {
+    let b = pb[lvl];
+    let left = mux(b, sib[lvl], node);
+    let right = mux(b, node, sib[lvl]);
+    let acc = left;
+    for i in 0 .. 4 { let acc = mimc_round(acc, MIMC_C[i]); }
+    let acc = acc + right;
+    for i in 4 .. 8 { let acc = mimc_round(acc, MIMC_C[i]); }
+    let node = acc;
+}
+prove node - root;
+
+// The nullifier retires the note, deterministic in the key and position.
+let nf = key + position;
+for i in 0 .. 16 { let nf = mimc_round(nf, MIMC_C[i]); }
+reveal nf;

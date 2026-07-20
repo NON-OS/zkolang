@@ -1,0 +1,13 @@
+// Anti-rollback enforcement. The kernel keeps a monotonic floor in a TPM counter; an
+// image may boot only if its rollback index is at least that floor, so a signed but
+// stale image cannot be replayed. The check is one ordered comparison: with the index
+// below the floor there is no proof, so the boot has no attestation to present.
+// Run: zkolang kernel/anti_rollback.zkl
+public floor;
+public index;
+
+// One when the index is at least the floor; the minus one makes the circuit unprovable
+// when it is not, so a rollback cannot be attested.
+prove (floor <= index) - 1;
+
+reveal index;

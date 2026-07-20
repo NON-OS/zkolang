@@ -1,0 +1,13 @@
+// An eight-stage measured boot. Each stage measurement is folded into the running root
+// and permuted, so the final root commits to the whole boot sequence in order; a single
+// changed stage changes the root. Run: zkolang kernel/boot_chain8.zkl
+include "hash.zkl";
+public m0; public m1; public m2; public m3;
+public m4; public m5; public m6; public m7;
+let ms = [m0, m1, m2, m3, m4, m5, m6, m7];
+let root = 0;
+for k in 0 .. 8 {
+    let root = root + ms[k];
+    for i in 0 .. 16 { let root = mimc_round(root, MIMC_C[i]); }
+}
+reveal root;

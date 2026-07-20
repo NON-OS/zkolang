@@ -1,0 +1,18 @@
+// Capsule attestation. A capsule is admitted only if its content hashes to a
+// measurement the kernel already trusts. The content is a private witness, two field
+// blocks absorbed through the MiMC sponge; the expected measurement is public. The
+// proof shows the prover holds content matching the measurement without revealing the
+// content, which is what lets the kernel attest a RAM-resident capsule by its hash.
+// Run: zkolang kernel/attest.zkl
+include "hash.zkl";
+
+public expected;
+witness block0;
+witness block1;
+
+let s = block0;
+for i in 0 .. 16 { let s = mimc_round(s, MIMC_C[i]); }
+let s = s + block1;
+for i in 0 .. 16 { let s = mimc_round(s, MIMC_C[i]); }
+
+prove s - expected;

@@ -1,0 +1,12 @@
+// Sealing. Data is bound to a platform measurement so it can be unsealed only where the
+// same measurement reproduces. The circuit derives the sealing key from the measurement
+// and a private secret and proves the sealed value was formed under it, so a different
+// platform cannot unseal. Run: zkolang kernel/seal.zkl
+include "hash.zkl";
+public measurement;
+public sealed;
+witness data;
+let k = measurement + data;
+for i in 0 .. 16 { let k = mimc_round(k, MIMC_C[i]); }
+prove k - sealed;
+reveal measurement;

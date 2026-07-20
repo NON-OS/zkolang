@@ -33,6 +33,7 @@ fn all_programs(dir: PathBuf, out: &mut Vec<PathBuf>) {
 fn every_program_compiles() {
     let mut files = Vec::new();
     all_programs(root().join("examples"), &mut files);
+    all_programs(root().join("circuits"), &mut files);
     assert!(
         files.len() >= 40,
         "expected a large corpus, found {}",

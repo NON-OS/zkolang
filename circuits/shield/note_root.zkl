@@ -1,0 +1,29 @@
+// The commitment-tree root a note authenticates to, given its opening and path. This is
+// the companion that computes the public root a spend proves against: the note is the
+// commitment to a value under a key, folded up a depth-three path of siblings ordered by
+// the path bits. Run: zkolang circuits/shield/note_root.zkl
+include "hash.zkl";
+include "logic.zkl";
+
+witness value;
+witness key;
+witness s0; witness s1; witness s2;
+witness p0; witness p1; witness p2;
+
+let note = value + key;
+for i in 0 .. 16 { let note = mimc_round(note, MIMC_C[i]); }
+
+let sib = [s0, s1, s2];
+let pb = [p0, p1, p2];
+let node = note;
+for lvl in 0 .. 3 {
+    let b = pb[lvl];
+    let left = mux(b, sib[lvl], node);
+    let right = mux(b, node, sib[lvl]);
+    let acc = left;
+    for i in 0 .. 4 { let acc = mimc_round(acc, MIMC_C[i]); }
+    let acc = acc + right;
+    for i in 4 .. 8 { let acc = mimc_round(acc, MIMC_C[i]); }
+    let node = acc;
+}
+reveal node;

@@ -1,0 +1,13 @@
+// A capability check. A capsule requests one right; the broker holds the set of rights
+// it was granted. The circuit proves the requested right is one of the granted set, by
+// constraining the product of the differences to zero, which is zero exactly when the
+// request matches a grant. No membership is revealed beyond that it holds.
+// Run: zkolang kernel/capability.zkl
+public requested;
+public grant0;
+public grant1;
+public grant2;
+public grant3;
+
+prove (requested - grant0) * (requested - grant1)
+    * (requested - grant2) * (requested - grant3);

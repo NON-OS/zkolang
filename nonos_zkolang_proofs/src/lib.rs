@@ -32,6 +32,8 @@ mod include_tests;
 #[cfg(test)]
 mod io_tests;
 #[cfg(test)]
+mod kernel_tests;
+#[cfg(test)]
 mod lang_tests;
 #[cfg(test)]
 mod library_tests;
@@ -47,6 +49,8 @@ mod operator_tests;
 mod recipes_tests;
 #[cfg(test)]
 mod register_file_tests;
+#[cfg(test)]
+mod shield_tests;
 #[cfg(test)]
 mod step_tests;
 #[cfg(test)]
