@@ -1,0 +1,12 @@
+// Comparison gadgets. Equality is a language primitive; the ordered comparisons need
+// the operands' bits, which a caller supplies as a private witness and constrains.
+include "logic.zkl";
+
+// One when a equals b, zero otherwise. A field primitive, no witness needed.
+fn is_equal(a, b) = a == b;
+
+// One when x is zero.
+fn is_zero(x) = x == 0;
+
+// One when a and b differ.
+fn is_distinct(a, b) = a != b;

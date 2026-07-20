@@ -1,0 +1,16 @@
+// Boolean gadgets over bits. Each argument is expected to be 0 or 1; constrain it
+// with `assert bit(x)` from math.zkl, or produce it from a comparison, before
+// relying on these. Every gadget is one field expression, so it inlines with no
+// cost beyond the arithmetic it names.
+include "math.zkl";
+
+fn not(x)      = 1 - x;
+fn and(x, y)   = x * y;
+fn or(x, y)    = x + y - x * y;
+fn xor(x, y)   = x + y - 2 * x * y;
+fn nand(x, y)  = 1 - x * y;
+fn nor(x, y)   = 1 - (x + y - x * y);
+fn implies(x, y) = 1 - x + x * y;
+
+// The bit relation, re-exported for callers that only include logic.zkl.
+fn is_bit(x) = x * x - x;

@@ -1,0 +1,17 @@
+// Prove a < b for four-bit values, with the difference's bits as a private witness.
+// a < b holds exactly when (b - a - 1) lies in [0, 16), which is true iff it
+// decomposes into four boolean bits. If a >= b the difference wraps and no bit
+// witness exists, so the statement has no proof.
+// Run: zkolang less_than.zkl
+include "logic.zkl";
+
+input a;
+input b;
+secret d0; secret d1; secret d2; secret d3;
+
+assert is_bit(d0);
+assert is_bit(d1);
+assert is_bit(d2);
+assert is_bit(d3);
+
+assert (b - a - 1) - (d0 + 2 * d1 + 4 * d2 + 8 * d3);

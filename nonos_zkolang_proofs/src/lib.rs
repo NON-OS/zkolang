@@ -32,6 +32,8 @@ mod io_tests;
 #[cfg(test)]
 mod lang_tests;
 #[cfg(test)]
+mod logic_tests;
+#[cfg(test)]
 mod loop_tests;
 #[cfg(test)]
 mod nox_tests;
