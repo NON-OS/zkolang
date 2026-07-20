@@ -8,9 +8,10 @@
 use super::token::Tok;
 use crate::lang::CompileError;
 
-/// Read a single or multi-character symbol at `i`. `==`, `!=`, and `..` are the
-/// two-character forms; a lone `!` or `.` is a lexing error. `None` means the byte
-/// begins no symbol, which the caller reports as an unexpected character.
+/// Read a single or multi-character symbol at `i`. `==`, `!=`, `&&`, `||`, and `..`
+/// are the two-character forms; a lone `!` is logical not, a lone `.` is a lexing
+/// error. `None` means the byte begins no symbol, which the caller reports as an
+/// unexpected character.
 pub(super) fn scan_symbol(b: &[u8], i: usize) -> Result<Option<(Tok, usize)>, CompileError> {
     let single = match b[i] {
         b'+' => Some(Tok::Plus),
@@ -34,8 +35,11 @@ pub(super) fn scan_symbol(b: &[u8], i: usize) -> Result<Option<(Tok, usize)>, Co
         b'=' if b.get(i + 1) == Some(&b'=') => Ok(Some((Tok::EqEq, i + 2))),
         b'=' => Ok(Some((Tok::Assign, i + 1))),
         b'!' if b.get(i + 1) == Some(&b'=') => Ok(Some((Tok::BangEq, i + 2))),
+        b'!' => Ok(Some((Tok::Bang, i + 1))),
+        b'&' if b.get(i + 1) == Some(&b'&') => Ok(Some((Tok::AmpAmp, i + 2))),
+        b'|' if b.get(i + 1) == Some(&b'|') => Ok(Some((Tok::PipePipe, i + 2))),
         b'.' if b.get(i + 1) == Some(&b'.') => Ok(Some((Tok::DotDot, i + 2))),
-        b'!' | b'.' => Err(CompileError::UnexpectedChar { at: i }),
+        b'.' => Err(CompileError::UnexpectedChar { at: i }),
         _ => Ok(None),
     }
 }

@@ -1,0 +1,12 @@
+// A boolean access policy over comparisons, written with the language's logical
+// operators. Access is granted when the request is inside a numeric window and the role
+// matches either of two allowed values. The comparisons yield bits and the operators
+// combine them: `!`, `&&`, and `||` desugar to the field encodings, exact on bits.
+// Run: zkolang logic/access_policy.zkl
+input lo_ok;
+input hi_ok;
+input role;
+
+let in_window = lo_ok && hi_ok;
+let role_ok = (role == 1) || (role == 2);
+output in_window && role_ok;

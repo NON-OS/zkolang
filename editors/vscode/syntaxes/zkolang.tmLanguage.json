@@ -44,7 +44,7 @@
       "name": "constant.numeric.zkolang"
     },
     "operators": {
-      "match": "==|!=|\\.\\.|[+\\-*/=]",
+      "match": "==|!=|&&|\\|\\||\\.\\.|[+\\-*/=!]",
       "name": "keyword.operator.zkolang"
     }
   }

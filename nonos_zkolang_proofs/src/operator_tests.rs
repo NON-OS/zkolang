@@ -53,3 +53,46 @@ fn not_equal_is_the_complement_of_equal() {
         .expect("run");
     assert_eq!(same.outputs, vec![0]);
 }
+
+#[test]
+fn logical_not_flips_a_bit() {
+    let one = prove_source_with_inputs("input x; output !x;", &[0]).expect("run");
+    assert_eq!(one.outputs, vec![1]);
+    let zero = prove_source_with_inputs("input x; output !x;", &[1]).expect("run");
+    assert_eq!(zero.outputs, vec![0]);
+}
+
+#[test]
+fn logical_and_is_the_product_of_bits() {
+    let t = |a, b| {
+        prove_source_with_inputs("input a; input b; output a && b;", &[a, b])
+            .expect("run")
+            .outputs[0]
+    };
+    assert_eq!([t(0, 0), t(0, 1), t(1, 0), t(1, 1)], [0, 0, 0, 1]);
+}
+
+#[test]
+fn logical_or_is_the_bit_union() {
+    let t = |a, b| {
+        prove_source_with_inputs("input a; input b; output a || b;", &[a, b])
+            .expect("run")
+            .outputs[0]
+    };
+    assert_eq!([t(0, 0), t(0, 1), t(1, 0), t(1, 1)], [0, 1, 1, 1]);
+}
+
+#[test]
+fn boolean_operators_bind_looser_than_comparison() {
+    // Parsed as (a == b) || (c == d): equal first pair, unequal second, so one.
+    let r = prove_source_with_inputs(
+        "input a; input b; input c; input d; output a == b || c == d;",
+        &[5, 5, 1, 2],
+    )
+    .expect("run");
+    assert_eq!(r.outputs, vec![1]);
+    // And binds tighter than or: false || (true && false) is zero.
+    let r2 = prove_source_with_inputs("input a; input b; input c; output a || b && c;", &[0, 1, 0])
+        .expect("run");
+    assert_eq!(r2.outputs, vec![0]);
+}

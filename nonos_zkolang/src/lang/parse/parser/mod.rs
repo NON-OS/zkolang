@@ -7,6 +7,7 @@
 //! is encoded by the call chain, and one grammar rule lives per file: the cursor
 //! primitives, the top-level items, the statements, and the expression levels.
 
+mod and;
 mod array_expr;
 mod atom;
 mod const_def;
@@ -21,6 +22,7 @@ mod if_expr;
 mod input_secret;
 mod inv_expr;
 mod number;
+mod or;
 mod primary;
 mod product;
 mod program;

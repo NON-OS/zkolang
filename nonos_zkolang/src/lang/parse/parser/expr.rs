@@ -10,8 +10,8 @@ use crate::lang::parse::ast::Expr;
 use crate::lang::CompileError;
 
 impl<'a> Parser<'a> {
-    /// An expression, lowest precedence first.
+    /// An expression, lowest precedence first: logical or binds loosest.
     pub(crate) fn expr(&mut self) -> Result<Expr, CompileError> {
-        self.equality()
+        self.logic_or()
     }
 }
