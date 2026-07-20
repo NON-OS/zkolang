@@ -1,0 +1,27 @@
+// Membership in a depth four Merkle tree of MiMC nodes. A leaf and four sibling hashes
+// are folded up the tree, level by level, ordered at each step by the path bit that
+// says whether the leaf sits left or right. The output is the root the path climbs to,
+// so a prover with a leaf and its authentication path shows the leaf is in the tree
+// under a public root, revealing neither the leaf's position nor the path.
+// Run: zkolang hash/merkle4.zkl
+include "hash.zkl";
+include "logic.zkl";
+
+input leaf;
+input s0; input s1; input s2; input s3;
+input p0; input p1; input p2; input p3;
+
+let sib = [s0, s1, s2, s3];
+let pb = [p0, p1, p2, p3];
+let node = leaf;
+for lvl in 0 .. 4 {
+    let b = pb[lvl];
+    let left = mux(b, sib[lvl], node);
+    let right = mux(b, node, sib[lvl]);
+    let acc = left;
+    for i in 0 .. 4 { let acc = mimc_round(acc, MIMC_C[i]); }
+    let acc = acc + right;
+    for i in 4 .. 8 { let acc = mimc_round(acc, MIMC_C[i]); }
+    let node = acc;
+}
+output node;

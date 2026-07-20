@@ -1,0 +1,16 @@
+// An eight to one multiplexer selected by three bits. The eight data lines are reduced
+// by the low bit, then by the middle bit, then by the high bit, each stage halving the
+// candidates, so the output is the line the three bit index names.
+// Run: zkolang logic/mux8.zkl
+include "logic.zkl";
+
+input d0; input d1; input d2; input d3; input d4; input d5; input d6; input d7;
+input s0; input s1; input s2;
+
+let a0 = mux(s0, d1, d0);
+let a1 = mux(s0, d3, d2);
+let a2 = mux(s0, d5, d4);
+let a3 = mux(s0, d7, d6);
+let b0 = mux(s1, a1, a0);
+let b1 = mux(s1, a3, a2);
+output mux(s2, b1, b0);

@@ -13,7 +13,35 @@
 use std::fs;
 use std::path::PathBuf;
 
-use nonos_zkolang::{expand_includes, prove_source_with_witness};
+use nonos_zkolang::{compile_source, expand_includes, prove_source_with_witness};
+
+// Collect every .zkl file under examples/, at any depth.
+fn all_programs(dir: PathBuf, out: &mut Vec<PathBuf>) {
+    for entry in fs::read_dir(dir).expect("read dir").flatten() {
+        let path = entry.path();
+        if path.is_dir() {
+            all_programs(path, out);
+        } else if path.extension().is_some_and(|e| e == "zkl") {
+            out.push(path);
+        }
+    }
+}
+
+// Every program in the corpus is valid zKolang: its includes resolve and it compiles to
+// an op list. This is the guarantee that the whole .zkl tree is real, not illustrative.
+#[test]
+fn every_program_compiles() {
+    let mut files = Vec::new();
+    all_programs(root().join("examples"), &mut files);
+    assert!(files.len() >= 40, "expected a large corpus, found {}", files.len());
+    for path in files {
+        let src = fs::read_to_string(&path).expect("read");
+        let expanded = expand_includes(&src, &mut resolve)
+            .unwrap_or_else(|e| panic!("include {}: {:?}", path.display(), e));
+        compile_source(&expanded)
+            .unwrap_or_else(|e| panic!("compile {}: {:?}", path.display(), e));
+    }
+}
 
 fn root() -> PathBuf {
     let mut base = PathBuf::from(env!("CARGO_MANIFEST_DIR"));

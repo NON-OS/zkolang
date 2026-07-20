@@ -1,0 +1,7 @@
+// Ten factorial, the product of one through ten accumulated over a range. A larger
+// instance of the product pattern, exact over the field. Run: zkolang math/factorial10.zkl
+let acc = 1;
+for i in 1 .. 11 {
+    let acc = acc * i;
+}
+output acc;

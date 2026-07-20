@@ -1,0 +1,11 @@
+// The sum of the first eight powers of the input, one through x to the seventh, built
+// by carrying a running power and adding it each step. For input one this is eight; in
+// general it is the geometric series. Run: zkolang math/geometric8.zkl
+input x;
+let term = 1;
+let sum = 1;
+for i in 1 .. 8 {
+    let term = term * x;
+    let sum = sum + term;
+}
+output sum;

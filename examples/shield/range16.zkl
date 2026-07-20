@@ -1,0 +1,19 @@
+// A sixteen bit range proof: the input is shown to lie in [0, 65536) by exhibiting its
+// sixteen bits as a private witness, constraining each to be a bit, and constraining
+// their weighted sum to equal the input. The low and high bytes are checked in turn so
+// the register footprint stays small. Run: zkolang shield/range16.zkl
+include "bits.zkl";
+
+input v;
+
+secret b0; secret b1; secret b2; secret b3; secret b4; secret b5; secret b6; secret b7;
+assert bit(b0); assert bit(b1); assert bit(b2); assert bit(b3);
+assert bit(b4); assert bit(b5); assert bit(b6); assert bit(b7);
+let lo = compose8(b0, b1, b2, b3, b4, b5, b6, b7);
+
+secret b8; secret b9; secret b10; secret b11; secret b12; secret b13; secret b14; secret b15;
+assert bit(b8); assert bit(b9); assert bit(b10); assert bit(b11);
+assert bit(b12); assert bit(b13); assert bit(b14); assert bit(b15);
+let hi = compose8(b8, b9, b10, b11, b12, b13, b14, b15);
+
+assert v - (lo + 256 * hi);

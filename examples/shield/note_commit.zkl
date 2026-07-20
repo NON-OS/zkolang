@@ -1,0 +1,19 @@
+// The full commitment of a shielded note: its amount, the owner's public key, and a
+// random blinding are absorbed together through the MiMC sponge, so the output binds
+// all three while hiding each. The leaf a note inserts into the commitment tree is
+// exactly this value. Two notes with the same fields commit equally; any difference
+// changes the commitment, so a note cannot be forged from another's commitment.
+// Run: zkolang shield/note_commit.zkl
+include "hash.zkl";
+
+input amount;
+input pubkey;
+secret blinding;
+
+let s = amount;
+for i in 0 .. 16 { let s = mimc_round(s, MIMC_C[i]); }
+let s = s + pubkey;
+for i in 0 .. 16 { let s = mimc_round(s, MIMC_C[i]); }
+let s = s + blinding;
+for i in 0 .. 16 { let s = mimc_round(s, MIMC_C[i]); }
+output s;

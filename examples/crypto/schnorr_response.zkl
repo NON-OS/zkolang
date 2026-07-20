@@ -1,0 +1,9 @@
+// The response equation of a Schnorr identification, checked in the scalar field. The
+// prover's secret is the private key; given a public nonce, a challenge, and the key,
+// the response is the nonce plus the challenge times the key. A verifier who recomputes
+// this and matches it against the prover's commitment learns nothing of the key. Here
+// the relation itself is the statement proven. Run: zkolang crypto/schnorr_response.zkl
+input nonce;
+input challenge;
+secret key;
+output nonce + challenge * key;

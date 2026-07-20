@@ -1,0 +1,14 @@
+// A four block MiMC sponge over an input vector, absorbing each block with a full
+// permutation between. Written with an array and a loop so the absorb structure is
+// explicit and the block count is one constant to change. Run: zkolang hash/sponge4.zkl
+include "hash.zkl";
+
+input x0; input x1; input x2; input x3;
+let m = [x0, x1, x2, x3];
+
+let s = 0;
+for blk in 0 .. 4 {
+    let s = s + m[blk];
+    for i in 0 .. 16 { let s = mimc_round(s, MIMC_C[i]); }
+}
+output s;

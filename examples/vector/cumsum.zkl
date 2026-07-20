@@ -1,0 +1,9 @@
+// The running total of a constant vector, each output the sum of the entries up to its
+// position. The prefix sum shape, useful wherever a range query reduces to a difference
+// of prefixes. Run: zkolang vector/cumsum.zkl
+const V = [3, 1, 4, 1, 5];
+let acc = 0;
+for i in 0 .. 5 {
+    let acc = acc + V[i];
+    output acc;
+}

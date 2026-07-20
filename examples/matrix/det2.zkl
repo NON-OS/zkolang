@@ -1,0 +1,5 @@
+// The determinant of a two by two matrix given as four inputs, the difference of the
+// diagonal products. Run: zkolang matrix/det2.zkl
+input a; input b;
+input c; input d;
+output a * d - b * c;

@@ -1,0 +1,16 @@
+// A four by four matrix, held row major in a constant table, times an input four
+// vector, with the four components of the result as public outputs.
+// Run: zkolang matrix/matvec4.zkl
+const M = [ 1,  2,  3,  4,
+            5,  6,  7,  8,
+            9, 10, 11, 12,
+           13, 14, 15, 16];
+input x0; input x1; input x2; input x3;
+let x = [x0, x1, x2, x3];
+for r in 0 .. 4 {
+    let acc = 0;
+    for c in 0 .. 4 {
+        let acc = acc + M[r * 4 + c] * x[c];
+    }
+    output acc;
+}

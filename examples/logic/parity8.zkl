@@ -1,0 +1,12 @@
+// The parity of eight bits, the exclusive or of them all, folded pairwise. One when an
+// odd number of the eight bits is set. Run: zkolang logic/parity8.zkl
+include "logic.zkl";
+
+input b0; input b1; input b2; input b3; input b4; input b5; input b6; input b7;
+let bits = [b0, b1, b2, b3, b4, b5, b6, b7];
+
+let p = 0;
+for i in 0 .. 8 {
+    let p = xor(p, bits[i]);
+}
+output p;

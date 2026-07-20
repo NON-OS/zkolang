@@ -1,0 +1,11 @@
+// A weighted sum: a fixed weight vector in a constant table, dotted with an input
+// vector. The pattern of a linear layer, a fixed matrix row applied to data.
+// Run: zkolang vector/weighted_sum.zkl
+const W = [2, 3, 5, 7, 11, 13];
+input x0; input x1; input x2; input x3; input x4; input x5;
+let x = [x0, x1, x2, x3, x4, x5];
+let acc = 0;
+for i in 0 .. 6 {
+    let acc = acc + W[i] * x[i];
+}
+output acc;

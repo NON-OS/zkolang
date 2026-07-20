@@ -1,0 +1,10 @@
+// The squared Euclidean length of a four vector, the dot product of the vector with
+// itself, summed over the components. Run: zkolang vector/l2_sq.zkl
+include "math.zkl";
+input a0; input a1; input a2; input a3;
+let a = [a0, a1, a2, a3];
+let acc = 0;
+for i in 0 .. 4 {
+    let acc = acc + sq(a[i]);
+}
+output acc;

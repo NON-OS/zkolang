@@ -1,0 +1,13 @@
+// The bare MiMC permutation over Goldilocks: sixteen rounds of the x^7 S-box, each
+// offset by a round constant. This is the primitive the sponge, the commitment, and
+// the Merkle compression all build on, isolated here as a single permutation of the
+// field. The output is a bijective image of the input, so distinct inputs never
+// collide. Run: zkolang hash/mimc_perm.zkl
+include "hash.zkl";
+
+input x;
+let s = x;
+for i in 0 .. 16 {
+    let s = mimc_round(s, MIMC_C[i]);
+}
+output s;

@@ -1,0 +1,6 @@
+// The trace of a three by three input matrix, the sum of its diagonal entries.
+// Run: zkolang matrix/trace3.zkl
+input a; input b; input c;
+input d; input e; input f;
+input g; input h; input i;
+output a + e + i;

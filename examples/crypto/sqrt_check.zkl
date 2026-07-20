@@ -1,0 +1,7 @@
+// A proof of knowledge of a square root: the prover exhibits a witness whose square is
+// the public input, so the input is a quadratic residue in the field. The witness stays
+// private. Run: zkolang crypto/sqrt_check.zkl
+input x;
+secret r;
+assert r * r - x;
+output x;

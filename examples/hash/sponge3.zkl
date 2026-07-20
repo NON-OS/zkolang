@@ -1,0 +1,17 @@
+// A three block MiMC sponge: three field elements are absorbed one at a time, with a
+// full permutation between each, and the state is squeezed as the digest. This hashes
+// a three element message, the pattern a variable length hash follows by absorbing one
+// block per permutation. Run: zkolang hash/sponge3.zkl
+include "hash.zkl";
+
+input x0;
+input x1;
+input x2;
+
+let s = x0;
+for i in 0 .. 16 { let s = mimc_round(s, MIMC_C[i]); }
+let s = s + x1;
+for i in 0 .. 16 { let s = mimc_round(s, MIMC_C[i]); }
+let s = s + x2;
+for i in 0 .. 16 { let s = mimc_round(s, MIMC_C[i]); }
+output s;

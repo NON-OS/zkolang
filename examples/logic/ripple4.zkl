@@ -1,0 +1,18 @@
+// A four bit ripple carry adder. Two four bit numbers, given as bits, are added bit by
+// bit: at each position the sum bit is the exclusive or of the two input bits and the
+// incoming carry, and the outgoing carry is their majority. The four sum bits and the
+// final carry are the five bit result. Run: zkolang logic/ripple4.zkl
+include "logic.zkl";
+
+input a0; input a1; input a2; input a3;
+input b0; input b1; input b2; input b3;
+
+assert is_bit(a0); assert is_bit(a1); assert is_bit(a2); assert is_bit(a3);
+assert is_bit(b0); assert is_bit(b1); assert is_bit(b2); assert is_bit(b3);
+
+let c = 0;
+let s0 = xor(xor(a0, b0), c); let c = majority(a0, b0, c);
+let s1 = xor(xor(a1, b1), c); let c = majority(a1, b1, c);
+let s2 = xor(xor(a2, b2), c); let c = majority(a2, b2, c);
+let s3 = xor(xor(a3, b3), c); let c = majority(a3, b3, c);
+output s0; output s1; output s2; output s3; output c;

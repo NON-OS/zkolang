@@ -1,0 +1,6 @@
+// The determinant of a three by three matrix given row major as nine inputs, expanded
+// along the first row as a combination of two by two minors. Run: zkolang matrix/det3.zkl
+input a; input b; input c;
+input d; input e; input f;
+input g; input h; input i;
+output a * (e * i - f * h) - b * (d * i - f * g) + c * (d * h - e * g);

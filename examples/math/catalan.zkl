@@ -1,0 +1,8 @@
+// The product form of a falling factorial, the numerator of the fifth Catalan number
+// before division. Accumulates the product of a descending range, an exact integer
+// computation over the field. Run: zkolang math/catalan.zkl
+let acc = 1;
+for i in 6 .. 11 {
+    let acc = acc * i;
+}
+output acc;

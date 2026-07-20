@@ -1,0 +1,15 @@
+// A MiMC message authentication code over a two block message: the key seeds the state,
+// each message block is absorbed with a permutation between, and the final state is the
+// tag. Only a holder of the key can produce the tag, and the tag binds both blocks.
+// Run: zkolang hash/mimc_mac2.zkl
+include "hash.zkl";
+
+secret key;
+input m0;
+input m1;
+
+let s = key + m0;
+for i in 0 .. 16 { let s = mimc_round(s, MIMC_C[i]); }
+let s = s + m1;
+for i in 0 .. 16 { let s = mimc_round(s, MIMC_C[i]); }
+output s;

@@ -1,0 +1,13 @@
+// Doubling a point on a short Weierstrass curve y^2 = x^3 + a x + b over the field. The
+// tangent slope at the point is the ratio of the derivative terms, computed with the
+// field inverse, and the doubled point follows. The curve coefficient a is a scalar
+// constant. The point must have nonzero y, or the inverse has no witness.
+// Run: zkolang crypto/point_double.zkl
+const A = 0;
+input x1; input y1;
+
+let slope = (3 * x1 * x1 + A) / (2 * y1);
+let x3 = slope * slope - 2 * x1;
+let y3 = slope * (x1 - x3) - y1;
+output x3;
+output y3;

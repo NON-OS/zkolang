@@ -1,0 +1,14 @@
+// Addition of two distinct points on a short Weierstrass curve over the field. The
+// slope through the two points is the ratio of the coordinate differences, computed
+// with the field inverse, and the sum's coordinates follow from it. This is the group
+// law that underlies elliptic curve signatures, expressed directly as field arithmetic
+// the STARK proves. The points must be distinct in x, or the inverse has no witness.
+// Run: zkolang crypto/point_add.zkl
+input x1; input y1;
+input x2; input y2;
+
+let slope = (y2 - y1) / (x2 - x1);
+let x3 = slope * slope - x1 - x2;
+let y3 = slope * (x1 - x3) - y1;
+output x3;
+output y3;

@@ -1,0 +1,15 @@
+// A note spend: the prover shows knowledge of the secret key that owns a note and
+// publishes the note's nullifier, without revealing the key. The nullifier is the key
+// and the note position absorbed through the permutation; it is deterministic, so the
+// same note yields the same nullifier and a double spend is caught, yet it leaks
+// nothing about the key. The spend authority is the ability to produce it at all.
+// Run: zkolang shield/spend.zkl
+include "hash.zkl";
+
+secret sk;
+input position;
+
+// The nullifier that marks this note spent.
+let n = sk + position;
+for i in 0 .. 16 { let n = mimc_round(n, MIMC_C[i]); }
+output n;

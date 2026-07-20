@@ -5,6 +5,13 @@ nonos-stark/** linguist-vendored
 # The research paper and its build assets are documentation.
 paper/** linguist-documentation
 
+# The proof crate is the test harness for the compiler, not the compiler itself, so it
+# is not part of what the repository is written in.
+nonos_zkolang_proofs/** linguist-vendored
+
+# The Lean soundness proofs are a separate verification artifact.
+lean/** linguist-documentation
+
 # zKolang programs. Mark the extension detectable so the language is counted once
 # a Linguist definition for it exists.
 *.zkl linguist-detectable=true

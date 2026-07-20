@@ -1,0 +1,7 @@
+// A proof that a public pair are field inverses: their product is one. A cheap check
+// that a claimed reciprocal is correct without recomputing the inverse.
+// Run: zkolang crypto/inverse_check.zkl
+input x;
+input z;
+assert x * z - 1;
+output z;

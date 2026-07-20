@@ -1,0 +1,31 @@
+// A two input, two output confidential transaction, the shape a shielded transfer on
+// NOX proves. The circuit shows that the inputs equal the outputs plus the fee, so no
+// value is created or destroyed, and that each output amount is a byte, so an output
+// cannot be a negative value dressed up as a huge field element to mint coins. The
+// input amounts are openings of notes already proven in range when they were created,
+// so only the new outputs need a fresh range proof here. Every amount stays private.
+//
+// Each output is range checked in turn, its bit witnesses declared, constrained, and
+// consumed before the balance is asserted. Compose with note_commit and spend for the
+// note commitments and nullifiers. Run: zkolang shield/confidential_tx.zkl
+include "bits.zkl";
+
+input in0;
+input in1;
+input out0;
+input out1;
+input fee;
+
+secret c0; secret c1; secret c2; secret c3; secret c4; secret c5; secret c6; secret c7;
+assert bit(c0); assert bit(c1); assert bit(c2); assert bit(c3);
+assert bit(c4); assert bit(c5); assert bit(c6); assert bit(c7);
+assert out0 - compose8(c0, c1, c2, c3, c4, c5, c6, c7);
+
+secret d0; secret d1; secret d2; secret d3; secret d4; secret d5; secret d6; secret d7;
+assert bit(d0); assert bit(d1); assert bit(d2); assert bit(d3);
+assert bit(d4); assert bit(d5); assert bit(d6); assert bit(d7);
+assert out1 - compose8(d0, d1, d2, d3, d4, d5, d6, d7);
+
+// Value is conserved: the two inputs equal the two outputs plus the fee.
+assert (in0 + in1) - (out0 + out1 + fee);
+output out0 + out1;

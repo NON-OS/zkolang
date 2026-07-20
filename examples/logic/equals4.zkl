@@ -1,0 +1,13 @@
+// A four bit equality comparator. Two nibbles given as bits are equal exactly when each
+// pair of bits agrees, so the result is the product of the per bit agreements. One when
+// the nibbles are equal, zero otherwise. Run: zkolang logic/equals4.zkl
+include "logic.zkl";
+
+input a0; input a1; input a2; input a3;
+input b0; input b1; input b2; input b3;
+
+let e0 = xnor(a0, b0);
+let e1 = xnor(a1, b1);
+let e2 = xnor(a2, b2);
+let e3 = xnor(a3, b3);
+output e0 * e1 * e2 * e3;
