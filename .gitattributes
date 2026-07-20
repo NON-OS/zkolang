@@ -1,0 +1,10 @@
+# The transparent STARK backend is a vendored dependency, not part of the language
+# implementation, so it should not count toward the repository's language stats.
+nonos-stark/** linguist-vendored
+
+# The research paper and its build assets are documentation.
+paper/** linguist-documentation
+
+# zKolang programs. Mark the extension detectable so the language is counted once
+# a Linguist definition for it exists.
+*.zkl linguist-detectable=true
