@@ -14,8 +14,8 @@ use std::process::exit;
 use std::{env, fs};
 
 use nonos_zkolang::{
-    commit, compile_source, expand_includes, prove_source_with_witness, render_error, to_asm, to_c,
-    to_python, verifier_key, REGISTRATION_RATE,
+    commit, compile_source, expand_includes, prove_source_with_witness, quote, render_error,
+    to_asm, to_c, to_python, verifier_key, REGISTRATION_RATE,
 };
 
 fn main() {
@@ -26,6 +26,7 @@ fn main() {
         Some("check") => cmd_check(rest),
         Some("build") => cmd_build(rest),
         Some("key") => cmd_key(rest),
+        Some("fee") => cmd_fee(rest),
         Some("version" | "--version" | "-V") => {
             println!("zkolang {}", env!("CARGO_PKG_VERSION"));
             0
@@ -36,6 +37,9 @@ fn main() {
             eprintln!("  check <file>                                 compile only");
             eprintln!("  build <file> --target c|asm|python [--out f] emit a native backend");
             eprintln!("  key   <file>                                 commitment and verifier key");
+            eprintln!(
+                "  fee   <file> [--input a,b] [--witness x,y]   the pay-to-prove cost in NOX"
+            );
             1
         }
     };
@@ -182,5 +186,37 @@ fn cmd_key(a: &[String]) -> i32 {
             0
         }
         Err(e) => err(&format!("key error: {e:?}")),
+    }
+}
+
+fn cmd_fee(a: &[String]) -> i32 {
+    let Some(file) = file_arg(a) else {
+        return err("usage: zkolang fee <file> [--input a,b] [--witness x,y]");
+    };
+    let src = match load(file) {
+        Ok(s) => s,
+        Err(e) => return err(&e),
+    };
+    let inputs = nums(flag(a, "--input"));
+    let witness = nums(flag(a, "--witness"));
+    match prove_source_with_witness(&src, &inputs, &witness) {
+        Ok(r) if r.verified => {
+            let q = quote(&r);
+            println!(
+                "cells {}  ({} rows x {} width)",
+                q.cells, r.trace_len, r.trace_width
+            );
+            println!(
+                "base {} + compute {} = {} micronox",
+                q.base_micronox, q.compute_micronox, q.total_micronox
+            );
+            println!(
+                "protocol {} micronox, prover {} micronox",
+                q.protocol_fee_micronox, q.prover_micronox
+            );
+            0
+        }
+        Ok(_) => err("proof did not verify"),
+        Err(e) => err(&format!("run error: {e:?}")),
     }
 }

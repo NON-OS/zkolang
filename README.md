@@ -33,8 +33,9 @@ outputs [729]
 steps 5  trace 2^3
 ```
 
-The tool has four verbs: `run` compiles and proves, `check` compiles only, `build` emits
-a native backend, and `key` prints a circuit's registration key.
+The tool has five verbs: `run` compiles and proves, `check` compiles only, `build` emits
+a native backend, `key` prints a circuit's registration key, and `fee` prices the
+pay-to-prove cost of a run in NOX.
 
 ## A first program
 
