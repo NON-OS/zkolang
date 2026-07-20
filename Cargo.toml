@@ -1,0 +1,11 @@
+# zKolang, a verifiable-compute language whose execution trace is proven by the
+# NONOS transparent STARK. The workspace holds the STARK primitives the prover
+# draws on, the language and its prover binding, and the host proof suite that
+# keeps the two honest.
+
+[workspace]
+resolver = "2"
+members = [
+    "nonos-stark",
+    "nonos_zkolang",
+]
