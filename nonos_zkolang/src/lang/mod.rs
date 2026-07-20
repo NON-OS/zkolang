@@ -42,10 +42,12 @@
 //! it reads as "e must be zero"; write `assert x - y` to require `x == y`.
 
 mod compile;
+mod include;
 mod lex;
 mod parse;
 
 pub use compile::compile;
+pub use include::expand_includes;
 
 /// Anything that can go wrong turning source into a program. The front-end never
 /// panics: a malformed program is one of these, with the byte offset when the
@@ -84,6 +86,10 @@ pub enum CompileError {
     /// An array used where a single value is required, such as an operand of
     /// arithmetic or an argument. Arrays are read through an index, not whole.
     ArrayNotScalar,
+    /// An included file the resolver could not find.
+    IncludeNotFound,
+    /// An include chain nested past the depth bound, which a cycle would cause.
+    IncludeTooDeep,
 }
 
 use crate::isa::Op;

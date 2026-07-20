@@ -1,0 +1,9 @@
+// zKolang standard library: small arithmetic gadgets, reused by including this file.
+fn sq(x)   = x * x;
+fn cube(x) = x * x * x;
+fn pow4(x) = sq(sq(x));
+fn pow7(x) = x * x * x * x * x * x * x;
+
+// A branchless minimum of a boolean-selected pair: sel is the primitive, this names
+// the common shape of choosing by a computed bit.
+fn choose(bit, a, b) = sel(bit, a, b);

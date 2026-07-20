@@ -38,7 +38,7 @@ pub use driver::{
     RunError,
 };
 pub use isa::{Op, Program, REGS};
-pub use lang::{compile_source, CompileError};
+pub use lang::{compile_source, expand_includes, CompileError};
 pub use nox::{quote, Quote, MICRONOX_PER_NOX};
 pub use trace::{OpTag, Row, Trace};
 pub use vkey::{

@@ -1,0 +1,10 @@
+// MiMC written against the library: the constants and S-box come from hash.zkl, and
+// only the round loop lives here. Run: zkolang mimc_lib.zkl
+include "hash.zkl";
+
+input x;
+let s = x;
+for i in 0 .. 16 {
+    let s = pow7(s + MIMC_C[i]);
+}
+output s;

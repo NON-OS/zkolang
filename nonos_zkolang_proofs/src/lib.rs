@@ -26,6 +26,8 @@ mod fn_tests;
 #[cfg(test)]
 mod hash_tests;
 #[cfg(test)]
+mod include_tests;
+#[cfg(test)]
 mod io_tests;
 #[cfg(test)]
 mod lang_tests;

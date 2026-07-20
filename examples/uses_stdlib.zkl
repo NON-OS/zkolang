@@ -1,0 +1,6 @@
+// A program built from the standard library: include the math gadgets and use them.
+// Run: zkolang uses_stdlib.zkl   (with the stdlib on the include path)
+include "math.zkl";
+
+input x;
+output pow7(x) + sq(x) + cube(x);
