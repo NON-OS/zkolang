@@ -18,6 +18,7 @@ mod build_trace;
 mod compile;
 mod error;
 mod for_key;
+mod generic_transition;
 mod layout;
 mod pad;
 mod step_air;

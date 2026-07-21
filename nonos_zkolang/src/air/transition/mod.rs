@@ -38,4 +38,11 @@ impl StepAir {
         cs.extend(register_binding(window, periodic, &c));
         cs
     }
+
+    /// The same transition, exposed for a recursive verifier that arithmetizes this
+    /// AIR as its inner statement. Identical to `transition_impl`; challenge-free, so
+    /// no transcript state is threaded in.
+    pub fn transition_over<F: Felt>(&self, window: &[F], periodic: &[F]) -> Vec<F> {
+        self.transition_impl(window, periodic)
+    }
 }
