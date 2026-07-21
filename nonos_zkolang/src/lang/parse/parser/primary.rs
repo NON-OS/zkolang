@@ -17,10 +17,11 @@ impl<'a> Parser<'a> {
     pub(crate) fn primary(&mut self) -> Result<Expr, CompileError> {
         let mut base = self.atom()?;
         while matches!(self.peek(), Some(Tok::LBracket)) {
+            let at = self.at();
             self.pos += 1;
             let index = self.expr()?;
             self.expect(&Tok::RBracket)?;
-            base = Expr::Index(Box::new(base), Box::new(index));
+            base = Expr::Index(Box::new(base), Box::new(index), at);
         }
         Ok(base)
     }

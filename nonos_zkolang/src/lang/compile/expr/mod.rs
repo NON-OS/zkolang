@@ -41,7 +41,7 @@ impl Compiler {
             Expr::Sel(c, l, r) => self.select(c, l, r),
             Expr::If(c, l, r) => self.select(c, l, r),
             Expr::Call(name, args) => self.call(name, args),
-            Expr::Index(base, idx) => self.index(base, idx),
+            Expr::Index(base, idx, at) => self.index(base, idx, *at),
             Expr::Array(_) => Err(CompileError::ArrayNotScalar),
         }
     }

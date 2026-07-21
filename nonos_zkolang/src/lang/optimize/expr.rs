@@ -106,7 +106,7 @@ pub(super) fn fold(e: &Expr) -> Expr {
         Expr::Sel(c, a, b) => select(fold(c), fold(a), fold(b), Expr::Sel),
         Expr::If(c, a, b) => select(fold(c), fold(a), fold(b), Expr::If),
         Expr::Call(n, args) => Expr::Call(n.clone(), args.iter().map(fold).collect()),
-        Expr::Index(base, idx) => Expr::Index(Box::new(fold(base)), Box::new(fold(idx))),
+        Expr::Index(base, idx, at) => Expr::Index(Box::new(fold(base)), Box::new(fold(idx)), *at),
         Expr::Array(xs) => Expr::Array(xs.iter().map(fold).collect()),
     }
 }

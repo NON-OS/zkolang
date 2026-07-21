@@ -27,6 +27,7 @@ pub enum Expr {
     Sel(Box<Expr>, Box<Expr>, Box<Expr>),
     If(Box<Expr>, Box<Expr>, Box<Expr>),
     Call(String, Vec<Expr>),
-    Index(Box<Expr>, Box<Expr>),
+    /// `base[index]`, carrying the byte offset of the index access for diagnostics.
+    Index(Box<Expr>, Box<Expr>, usize),
     Array(Vec<Expr>),
 }

@@ -26,7 +26,7 @@ impl Compiler {
             Expr::Sub(l, r) => Ok(self.const_eval(l)? - self.const_eval(r)?),
             Expr::Mul(l, r) => Ok(self.const_eval(l)? * self.const_eval(r)?),
             Expr::Neg(x) => Ok(-self.const_eval(x)?),
-            Expr::Index(base, idx) => Ok(self.resolve_index(base, idx)? as i128),
+            Expr::Index(base, idx, at) => Ok(self.resolve_index(base, idx, *at)? as i128),
             _ => Err(CompileError::NonConstantIndex),
         }
     }

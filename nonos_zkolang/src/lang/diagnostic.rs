@@ -20,7 +20,9 @@ pub fn span_of(err: &CompileError) -> Option<usize> {
         CompileError::UnexpectedChar { at }
         | CompileError::NumberTooLarge { at }
         | CompileError::UnexpectedEof { at }
-        | CompileError::UnexpectedToken { at } => Some(*at),
+        | CompileError::UnexpectedToken { at }
+        | CompileError::NotIndexable { at }
+        | CompileError::IndexOutOfBounds { at } => Some(*at),
         _ => None,
     }
 }
@@ -46,10 +48,10 @@ pub fn message(err: &CompileError) -> String {
             format!("function `{name}` takes {expected} arguments but got {got}")
         }
         CompileError::RecursionTooDeep => "function inlining nested too deep".into(),
-        CompileError::NotIndexable => "indexing a value that is not a table or array".into(),
+        CompileError::NotIndexable { .. } => "indexing a value that is not a table or array".into(),
         CompileError::UnknownConst { name } => format!("unknown constant `{name}`"),
         CompileError::NonConstantIndex => "index is not a compile-time constant".into(),
-        CompileError::IndexOutOfBounds => "index out of bounds".into(),
+        CompileError::IndexOutOfBounds { .. } => "index out of bounds".into(),
         CompileError::ArrayNotScalar => "array used where a single value is required".into(),
         CompileError::IncludeNotFound => "included file not found".into(),
         CompileError::IncludeTooDeep => "include nested too deep".into(),

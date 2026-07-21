@@ -74,3 +74,21 @@ fn an_unknown_name_points_at_the_use_and_skips_a_comment() {
     assert!(d.contains("3:9"), "did not point at the use:\n{d}");
     assert!(d.contains('^'), "no caret:\n{d}");
 }
+
+#[test]
+fn an_index_error_points_at_the_access() {
+    // An out-of-range index and a non-indexable base both point a caret at the access.
+    let oob = diag("const W = [1, 2, 3];\noutput W[5];");
+    assert!(oob.contains("index out of bounds"), "{oob}");
+    assert!(
+        oob.contains("2:9"),
+        "out-of-bounds not located at the access:\n{oob}"
+    );
+    assert!(oob.contains('^'), "no caret:\n{oob}");
+    let ni = diag("let x = 5;\noutput x[0];");
+    assert!(ni.contains("not a table or array"), "{ni}");
+    assert!(
+        ni.contains("2:9"),
+        "non-indexable not located at the access:\n{ni}"
+    );
+}

@@ -35,14 +35,14 @@ pub enum CompileError {
     },
     /// Function inlining nested too deep, which a recursive call would cause.
     RecursionTooDeep,
-    /// An index into a name that is neither a constant table nor an array.
-    NotIndexable,
+    /// An index into a name that is neither a constant table nor an array, at this offset.
+    NotIndexable { at: usize },
     /// A reference to a constant table that was never declared.
     UnknownConst { name: String },
     /// A table or array index that is not a compile-time constant.
     NonConstantIndex,
-    /// A table or array index outside its elements.
-    IndexOutOfBounds,
+    /// A table or array index outside its elements, at this offset.
+    IndexOutOfBounds { at: usize },
     /// An array used where a single value is required.
     ArrayNotScalar,
     /// An included file the resolver could not find.

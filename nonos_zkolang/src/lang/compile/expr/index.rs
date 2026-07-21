@@ -15,14 +15,19 @@ impl Compiler {
     /// Resolve against an array binding first, returning the register that element
     /// occupies, and otherwise against a constant table, where the value folds to one
     /// immediate. Both need a compile-time index.
-    pub(crate) fn index(&mut self, base: &Expr, idx: &Expr) -> Result<Val, CompileError> {
+    pub(crate) fn index(
+        &mut self,
+        base: &Expr,
+        idx: &Expr,
+        at: usize,
+    ) -> Result<Val, CompileError> {
         if let Expr::Var(name) = base {
             if self.lookup_array(name).is_some() {
-                let reg = self.array_element(name, idx)?;
+                let reg = self.array_element(name, idx, at)?;
                 return Ok(Val { reg, temp: false });
             }
         }
-        let v = self.resolve_index(base, idx)?;
+        let v = self.resolve_index(base, idx, at)?;
         let d = self.alloc()?;
         self.ops.push(Op::Imm {
             d,

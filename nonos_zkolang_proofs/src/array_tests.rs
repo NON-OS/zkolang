@@ -76,7 +76,7 @@ fn an_out_of_range_array_index_is_an_error() {
     let src = "let v = [1, 2, 3]; output v[3];";
     assert!(matches!(
         compile_source(src),
-        Err(CompileError::IndexOutOfBounds)
+        Err(CompileError::IndexOutOfBounds { .. })
     ));
 }
 

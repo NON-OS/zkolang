@@ -56,7 +56,7 @@ fn an_out_of_range_index_is_a_compile_error() {
     let src = "const T = [1, 2]; output T[2];";
     assert!(matches!(
         compile_source(src),
-        Err(CompileError::IndexOutOfBounds)
+        Err(CompileError::IndexOutOfBounds { .. })
     ));
 }
 
@@ -84,7 +84,7 @@ fn indexing_a_non_table_is_an_error() {
     let src = "let x = 5; output x[0];";
     assert!(matches!(
         compile_source(src),
-        Err(CompileError::NotIndexable)
+        Err(CompileError::NotIndexable { .. })
     ));
 }
 
@@ -108,6 +108,6 @@ fn scalar_and_table_constants_coexist() {
 fn indexing_a_scalar_is_a_type_error() {
     assert!(matches!(
         compile_source("const N = 5; output N[0];"),
-        Err(CompileError::NotIndexable)
+        Err(CompileError::NotIndexable { .. })
     ));
 }

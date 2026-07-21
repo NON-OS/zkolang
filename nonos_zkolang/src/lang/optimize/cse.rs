@@ -37,7 +37,7 @@ fn children(e: &Expr) -> Vec<&Expr> {
     match e {
         // An index must fold to a compile-time constant, so nothing inside one may be
         // hoisted into a binding; treat the whole index expression as opaque.
-        Expr::Num(_) | Expr::Var(_) | Expr::Index(_, _) => Vec::new(),
+        Expr::Num(_) | Expr::Var(_) | Expr::Index(_, _, _) => Vec::new(),
         Expr::Neg(x) | Expr::Inv(x) => vec![x.as_ref()],
         Expr::Add(a, b)
         | Expr::Sub(a, b)
@@ -107,7 +107,7 @@ fn replace(e: &Expr, n: &Expr, name: &str) -> Expr {
             args.iter().map(|a| replace(a, n, name)).collect(),
         ),
         // Left opaque so an index expression is never rewritten and stays constant.
-        Expr::Index(a, b) => Expr::Index(a.clone(), b.clone()),
+        Expr::Index(a, b, at) => Expr::Index(a.clone(), b.clone(), *at),
         Expr::Array(xs) => Expr::Array(xs.iter().map(|a| replace(a, n, name)).collect()),
     }
 }

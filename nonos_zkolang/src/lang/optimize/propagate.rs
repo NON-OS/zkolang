@@ -50,7 +50,7 @@ fn subst(e: &Expr, env: &Env) -> Expr {
         Expr::Sel(c, a, b) => Expr::Sel(bx(subst(c, env)), bx(subst(a, env)), bx(subst(b, env))),
         Expr::If(c, a, b) => Expr::If(bx(subst(c, env)), bx(subst(a, env)), bx(subst(b, env))),
         Expr::Call(n, args) => Expr::Call(n.clone(), args.iter().map(|a| subst(a, env)).collect()),
-        Expr::Index(base, idx) => Expr::Index(bx(subst(base, env)), bx(subst(idx, env))),
+        Expr::Index(base, idx, at) => Expr::Index(bx(subst(base, env)), bx(subst(idx, env)), *at),
         Expr::Array(xs) => Expr::Array(xs.iter().map(|a| subst(a, env)).collect()),
     }
 }
