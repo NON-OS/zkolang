@@ -9,8 +9,11 @@ paper/** linguist-documentation
 # is not part of what the repository is written in.
 nonos_zkolang_proofs/** linguist-vendored
 
-# The Lean soundness proofs are a separate verification artifact.
+# The Lean directory is a separate verification artifact, so its README and build files
+# are documentation, but the proof source itself is Lean and is counted as a language.
 lean/** linguist-documentation
+*.lean -linguist-documentation
+*.lean linguist-detectable=true
 
 # zKolang programs. Mark the extension detectable so the language is counted once
 # a Linguist definition for it exists.
