@@ -12,7 +12,9 @@ mod exp;
 mod ext;
 mod felt;
 mod ops;
+mod tower;
 
 pub use element::{Fp, P};
 pub use ext::Fp2;
 pub use felt::Felt;
+pub use tower::Ext2;
