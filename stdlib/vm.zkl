@@ -1,0 +1,14 @@
+// zKolang virtual machine gadgets, so a zKolang program can verify a zKolang execution: the
+// language checking a run of itself. A step of the register machine selects one operation by a
+// one-hot opcode and produces its result on the operands, exactly as the step AIR gates the
+// opcodes. `step_result` is that gated result; `is_onehot3` is zero when the selectors name one
+// operation. Assert each selector a bit, assert is_onehot3, and bind the result to step_result,
+// and a trace of these is a proof that a run followed the machine's rules.
+
+// The result of the selected operation, add or subtract or multiply the operands. Exact when
+// the selectors are a one-hot triple, the same one-hot-times-op gating the step AIR uses.
+fn step_result(is_add, is_sub, is_mul, a, b) =
+    is_add * (a + b) + is_sub * (a - b) + is_mul * (a * b);
+
+// Zero exactly when three bit selectors sum to one, so a step names exactly one operation.
+fn is_onehot3(is_add, is_sub, is_mul) = (is_add + is_sub + is_mul) - 1;

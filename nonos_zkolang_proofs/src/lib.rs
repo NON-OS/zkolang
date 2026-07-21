@@ -70,4 +70,6 @@ mod step_tests;
 #[cfg(test)]
 mod vkey_tests;
 #[cfg(test)]
+mod vm_tests;
+#[cfg(test)]
 mod witness_tests;

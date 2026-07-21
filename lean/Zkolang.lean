@@ -14,6 +14,7 @@ import Zkolang.Math
 import Zkolang.Poly
 import Zkolang.Hash
 import Zkolang.Field
+import Zkolang.Vm
 import Zkolang.Transfer
 
 /-!
@@ -27,8 +28,9 @@ line their bits address, the encoding gadgets pack a tuple losslessly and inject
 each part is in range, the arithmetic gates add their input bits exactly, the power gadgets
 compute the power they name, the polynomial gadgets evaluate their Horner form to the
 polynomial they name, the MiMC S-box exponent is coprime to the field's multiplicative order
-so the round map is a permutation, and the transfer balance constraint is exactly value
-conservation. A field module defines Goldilocks as the integers modulo the prime and proves
+so the round map is a permutation, the virtual machine's opcode gate is exact so a step's
+result is the operation its one-hot names, and the transfer balance constraint is exactly
+value conservation. A field module defines Goldilocks as the integers modulo the prime and proves
 the transfer principle under which every one of these integer identities is a field
 identity; the multiplicative inverse, which needs the prime's primality and Fermat's
 theorem, is noted as beyond the core library rather than assumed.

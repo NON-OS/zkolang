@@ -1,0 +1,42 @@
+// A zKolang program verifying a zKolang execution trace: the language running on itself. A
+// two step run computes (in0 + in1) * in2. The trace gives, for each step, its one-hot opcode
+// and its claimed result. The circuit proves every step names exactly one operation, computes
+// that operation on the operands the trace binds, and carries the result forward from one step
+// to the next, then reveals the output. This is the step AIR's own opcode gating, written in
+// the language it checks, so a passing proof attests the run followed the machine's rules.
+// Run: zkolang vm/verify_run.zkl
+include "vm.zkl";
+include "bits.zkl";
+
+input in0;
+input in1;
+input in2;
+
+// Step 0: t0 = in0 + in1, opcode add.
+input s0_add;
+input s0_sub;
+input s0_mul;
+input t0;
+
+// Step 1: t1 = t0 * in2, opcode mul, reading step 0's result.
+input s1_add;
+input s1_sub;
+input s1_mul;
+input t1;
+
+// Each step names exactly one operation: three bit selectors summing to one.
+assert bit(s0_add);
+assert bit(s0_sub);
+assert bit(s0_mul);
+assert is_onehot3(s0_add, s0_sub, s0_mul);
+assert bit(s1_add);
+assert bit(s1_sub);
+assert bit(s1_mul);
+assert is_onehot3(s1_add, s1_sub, s1_mul);
+
+// Each step's result is the gated operation on the operands the trace binds. Step 0 reads the
+// inputs; step 1 reads step 0's result and the third input, so the dataflow is bound.
+assert t0 - step_result(s0_add, s0_sub, s0_mul, in0, in1);
+assert t1 - step_result(s1_add, s1_sub, s1_mul, t0, in2);
+
+reveal t1;
