@@ -1,24 +1,10 @@
-// A two-to-one compression, the node of a hash tree. Two children are folded into
-// one field element by absorbing them through the MiMC rounds, so a proof over this
-// program attests a correct internal node. Depth comes from composing this step,
-// which the memory extension will make direct.
-// Run: zkolang merkle2.zkl
-const C = [11400714819323198485, 16088033396387240378, 18339175128185271363,
-           6250726733345258880, 860606576581593985, 211947541457481110,
-           4899937286522103119, 4031048130325877628];
-
-fn pow7(x) = x * x * x * x * x * x * x;
+// A two-to-one compression, the node of a hash tree. Two children are folded into one
+// field element by the MiMC compression, so a proof over this program attests a correct
+// internal node. Depth comes from composing this step, which the memory extension will
+// make direct. Run: zkolang merkle2.zkl
+include "merkle.zkl";
 
 input left;
 input right;
 
-// Absorb the left child, then fold in the right, then finish the rounds.
-let s = left;
-for i in 0 .. 4 {
-    let s = pow7(s + C[i]);
-}
-let s = s + right;
-for i in 4 .. 8 {
-    let s = pow7(s + C[i]);
-}
-output s;
+output compress2(left, right);

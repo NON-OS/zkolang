@@ -10,9 +10,7 @@ public expected;
 witness block0;
 witness block1;
 
-let s = block0;
-for i in 0 .. 16 { let s = mimc_round(s, MIMC_C[i]); }
-let s = s + block1;
-for i in 0 .. 16 { let s = mimc_round(s, MIMC_C[i]); }
+let s = permute(block0);
+let s = permute(s + block1);
 
 prove s - expected;

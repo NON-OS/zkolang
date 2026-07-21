@@ -7,9 +7,5 @@ public capsule_id;
 public syscall;
 public token;
 witness broker_key;
-let t = broker_key + capsule_id;
-for i in 0 .. 8 { let t = mimc_round(t, MIMC_C[i]); }
-let t = t + syscall;
-for i in 8 .. 16 { let t = mimc_round(t, MIMC_C[i]); }
-prove t - token;
+prove compress_wide(broker_key + capsule_id, syscall) - token;
 reveal syscall;

@@ -10,6 +10,4 @@ secret sk;
 input position;
 
 // The nullifier that marks this note spent.
-let n = sk + position;
-for i in 0 .. 16 { let n = mimc_round(n, MIMC_C[i]); }
-output n;
+output permute(sk + position);

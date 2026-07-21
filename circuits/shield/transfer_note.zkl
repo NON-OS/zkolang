@@ -6,7 +6,7 @@
 // created, and that value was conserved, no amount revealed.
 // Run: zkolang circuits/shield/transfer_note.zkl
 include "hash.zkl";
-include "logic.zkl";
+include "merkle.zkl";
 include "bits.zkl";
 
 witness in_value;
@@ -20,27 +20,17 @@ witness out_key;
 witness out_blind;
 
 // The input note authenticates to the public root along its path.
-let note = in_value + in_key;
-for i in 0 .. 16 { let note = mimc_round(note, MIMC_C[i]); }
+let note = permute(in_value + in_key);
 let sib = [s0, s1, s2];
 let pb = [p0, p1, p2];
 let node = note;
 for lvl in 0 .. 3 {
-    let b = pb[lvl];
-    let left = mux(b, sib[lvl], node);
-    let right = mux(b, node, sib[lvl]);
-    let acc = left;
-    for i in 0 .. 4 { let acc = mimc_round(acc, MIMC_C[i]); }
-    let acc = acc + right;
-    for i in 4 .. 8 { let acc = mimc_round(acc, MIMC_C[i]); }
-    let node = acc;
+    let node = merkle_step(node, sib[lvl], pb[lvl]);
 }
 prove node - root;
 
 // The nullifier retires the input note.
-let nf = in_key + position;
-for i in 0 .. 16 { let nf = mimc_round(nf, MIMC_C[i]); }
-reveal nf;
+reveal permute(in_key + position);
 
 // Value is conserved: the output value is the input less the fee, range proven a byte,
 // which is unprovable when the fee exceeds the input.
@@ -52,8 +42,5 @@ prove bit(o4); prove bit(o5); prove bit(o6); prove bit(o7);
 prove out_value - compose8(o0, o1, o2, o3, o4, o5, o6, o7);
 
 // The output note commits the output value under the recipient key and a fresh blinding.
-let onote = out_value + out_key;
-for i in 0 .. 16 { let onote = mimc_round(onote, MIMC_C[i]); }
-let onote = onote + out_blind;
-for i in 0 .. 16 { let onote = mimc_round(onote, MIMC_C[i]); }
-reveal onote;
+let onote = permute(out_value + out_key);
+reveal permute(onote + out_blind);

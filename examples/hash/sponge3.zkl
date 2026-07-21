@@ -8,10 +8,6 @@ input x0;
 input x1;
 input x2;
 
-let s = x0;
-for i in 0 .. 16 { let s = mimc_round(s, MIMC_C[i]); }
-let s = s + x1;
-for i in 0 .. 16 { let s = mimc_round(s, MIMC_C[i]); }
-let s = s + x2;
-for i in 0 .. 16 { let s = mimc_round(s, MIMC_C[i]); }
-output s;
+let s = permute(x0);
+let s = permute(s + x1);
+output permute(s + x2);

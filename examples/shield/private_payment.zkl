@@ -13,8 +13,6 @@ public in_amount;
 public out_amount;
 public fee;
 
-let nf = key + position;
-for i in 0 .. 16 { let nf = mimc_round(nf, MIMC_C[i]); }
-reveal nf;
+reveal permute(key + position);
 
 prove in_amount - (out_amount + fee);

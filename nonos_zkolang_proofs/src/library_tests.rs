@@ -137,4 +137,15 @@ fn hashing_and_membership_programs() {
     );
     assert!(proves("merkle3.zkl", &[7, 11, 13, 17, 0, 1, 0], &[]));
     assert!(proves("merkle3.zkl", &[7, 11, 13, 17, 1, 1, 1], &[]));
+    // The deeper paths share the merkle_step gadget; prove them at four and eight levels.
+    assert!(proves(
+        "hash/merkle4.zkl",
+        &[7, 11, 13, 17, 19, 0, 1, 0, 1],
+        &[]
+    ));
+    assert!(proves(
+        "hash/merkle8.zkl",
+        &[7, 11, 13, 17, 19, 23, 29, 31, 37, 0, 1, 0, 1, 1, 0, 1, 0],
+        &[]
+    ));
 }

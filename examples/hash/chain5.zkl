@@ -6,6 +6,6 @@ include "hash.zkl";
 input seed;
 let s = seed;
 for step in 0 .. 5 {
-    for i in 0 .. 16 { let s = mimc_round(s, MIMC_C[i]); }
+    let s = permute(s);
 }
 output s;

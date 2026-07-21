@@ -10,10 +10,6 @@ input amount;
 input pubkey;
 secret blinding;
 
-let s = amount;
-for i in 0 .. 16 { let s = mimc_round(s, MIMC_C[i]); }
-let s = s + pubkey;
-for i in 0 .. 16 { let s = mimc_round(s, MIMC_C[i]); }
-let s = s + blinding;
-for i in 0 .. 16 { let s = mimc_round(s, MIMC_C[i]); }
-output s;
+let s = permute(amount);
+let s = permute(s + pubkey);
+output permute(s + blinding);

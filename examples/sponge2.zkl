@@ -7,8 +7,5 @@ include "hash.zkl";
 input x0;
 input x1;
 
-let s = x0;
-for i in 0 .. 16 { let s = mimc_round(s, MIMC_C[i]); }
-let s = s + x1;
-for i in 0 .. 16 { let s = mimc_round(s, MIMC_C[i]); }
-output s;
+let s = permute(x0);
+output permute(s + x1);

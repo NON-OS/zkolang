@@ -1,14 +1,10 @@
-// A two to one compression: two field elements fold into one through the permutation,
-// absorbing the first, mixing in the second, and permuting again. This is the internal
-// node function of a MiMC Merkle tree, the building block a membership path repeats at
-// every level. Run: zkolang hash/compress.zkl
+// A wide two-to-one compression: two field elements fold into one over sixteen rounds,
+// absorbing the first through eight rounds, mixing in the second, and finishing the last
+// eight. This is the shared compress_wide gadget the kernel's syscall token also uses; the
+// Merkle examples fold with the lighter compress2. Run: zkolang hash/compress.zkl
 include "hash.zkl";
 
 input left;
 input right;
 
-let s = left;
-for i in 0 .. 8 { let s = mimc_round(s, MIMC_C[i]); }
-let s = s + right;
-for i in 8 .. 16 { let s = mimc_round(s, MIMC_C[i]); }
-output s;
+output compress_wide(left, right);

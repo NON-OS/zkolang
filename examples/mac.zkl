@@ -6,8 +6,4 @@ include "hash.zkl";
 secret key;
 input msg;
 
-let s = key + msg;
-for i in 0 .. 16 {
-    let s = mimc_round(s, MIMC_C[i]);
-}
-output s;
+output permute(key + msg);

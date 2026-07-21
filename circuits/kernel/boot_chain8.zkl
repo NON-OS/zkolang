@@ -7,7 +7,6 @@ public m4; public m5; public m6; public m7;
 let ms = [m0, m1, m2, m3, m4, m5, m6, m7];
 let root = 0;
 for k in 0 .. 8 {
-    let root = root + ms[k];
-    for i in 0 .. 16 { let root = mimc_round(root, MIMC_C[i]); }
+    let root = permute(root + ms[k]);
 }
 reveal root;

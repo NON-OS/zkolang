@@ -3,8 +3,7 @@
 // node is paired with the given sibling in the order the path bit dictates and folded
 // through the compression. A single proof over this program attests a leaf's presence
 // under a public root with an eight step authentication path. Run: zkolang hash/merkle8.zkl
-include "hash.zkl";
-include "logic.zkl";
+include "merkle.zkl";
 
 input leaf;
 input s0; input s1; input s2; input s3; input s4; input s5; input s6; input s7;
@@ -14,13 +13,6 @@ let sib = [s0, s1, s2, s3, s4, s5, s6, s7];
 let pb = [p0, p1, p2, p3, p4, p5, p6, p7];
 let node = leaf;
 for lvl in 0 .. 8 {
-    let b = pb[lvl];
-    let left = mux(b, sib[lvl], node);
-    let right = mux(b, node, sib[lvl]);
-    let acc = left;
-    for i in 0 .. 4 { let acc = mimc_round(acc, MIMC_C[i]); }
-    let acc = acc + right;
-    for i in 4 .. 8 { let acc = mimc_round(acc, MIMC_C[i]); }
-    let node = acc;
+    let node = merkle_step(node, sib[lvl], pb[lvl]);
 }
 output node;

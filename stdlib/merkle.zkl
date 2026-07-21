@@ -1,0 +1,23 @@
+// Merkle tree gadgets over the MiMC two-to-one compression. A node absorbs its left
+// child through four rounds, folds in the right child, and absorbs four more, so
+// `compress2` is the internal node these trees are built from. `merkle_step` climbs one
+// level of an authentication path: it orders the running node and its sibling by the
+// path bit, then compresses the ordered pair. Fold the step over a path of siblings to
+// verify membership under a public root; the shield note tree and the merkle examples
+// share this one construction. Path bits and any decomposed inputs must be constrained
+// as bits by the caller.
+include "hash.zkl";
+include "logic.zkl";
+
+// The first four rounds, from the first four round constants.
+fn absorb_lo(s) = mimc_round(mimc_round(mimc_round(mimc_round(s, MIMC_C[0]), MIMC_C[1]), MIMC_C[2]), MIMC_C[3]);
+
+// The next four rounds, from the following four constants.
+fn absorb_hi(s) = mimc_round(mimc_round(mimc_round(mimc_round(s, MIMC_C[4]), MIMC_C[5]), MIMC_C[6]), MIMC_C[7]);
+
+// Two-to-one compression: absorb the left child, fold in the right, absorb four more.
+fn compress2(left, right) = absorb_hi(absorb_lo(left) + right);
+
+// One level of an authentication path. The path bit b is one when the running node sits
+// on the right, so the sibling becomes the left child; order the pair by b and compress.
+fn merkle_step(node, sib, b) = compress2(mux(b, sib, node), mux(b, node, sib));

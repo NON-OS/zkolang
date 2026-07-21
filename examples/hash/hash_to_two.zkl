@@ -4,9 +4,5 @@
 include "hash.zkl";
 
 input x;
-let a = x;
-for i in 0 .. 16 { let a = mimc_round(a, MIMC_C[i]); }
-let b = x + 1;
-for i in 0 .. 16 { let b = mimc_round(b, MIMC_C[i]); }
-output a;
-output b;
+output permute(x);
+output permute(x + 1);

@@ -9,8 +9,4 @@ include "hash.zkl";
 input value;
 secret blinding;
 
-let s = value + blinding;
-for i in 0 .. 16 {
-    let s = mimc_round(s, MIMC_C[i]);
-}
-output s;
+output permute(value + blinding);

@@ -6,7 +6,6 @@ include "hash.zkl";
 public measurement;
 public sealed;
 witness data;
-let k = measurement + data;
-for i in 0 .. 16 { let k = mimc_round(k, MIMC_C[i]); }
+let k = permute(measurement + data);
 prove k - sealed;
 reveal measurement;

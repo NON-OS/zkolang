@@ -8,7 +8,6 @@ let m = [x0, x1, x2, x3];
 
 let s = 0;
 for blk in 0 .. 4 {
-    let s = s + m[blk];
-    for i in 0 .. 16 { let s = mimc_round(s, MIMC_C[i]); }
+    let s = permute(s + m[blk]);
 }
 output s;

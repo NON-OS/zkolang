@@ -7,6 +7,4 @@ include "hash.zkl";
 input chain;
 input message;
 
-let s = chain + message;
-for i in 0 .. 16 { let s = mimc_round(s, MIMC_C[i]); }
-output s + chain;
+output permute(chain + message) + chain;

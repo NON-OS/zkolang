@@ -11,15 +11,24 @@
 use std::fs;
 use std::path::PathBuf;
 
-use nonos_zkolang::{prove_source, prove_source_with_inputs};
+use nonos_zkolang::{expand_includes, prove_source, prove_source_with_inputs};
 
-// Read an example program by name from the repository's examples directory.
+// Read an example program by name and resolve its includes from stdlib and examples, the
+// way the command-line tool does, so an example may draw on the standard library.
 fn program(name: &str) -> String {
-    let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    path.pop();
-    path.push("examples");
-    path.push(name);
-    fs::read_to_string(&path).unwrap_or_else(|e| panic!("read {}: {e}", path.display()))
+    let mut root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    root.pop();
+    let path = root.join("examples").join(name);
+    let src = fs::read_to_string(&path).unwrap_or_else(|e| panic!("read {}: {e}", path.display()));
+    let mut resolve = |inc: &str| {
+        for dir in ["stdlib", "examples"] {
+            if let Ok(s) = fs::read_to_string(root.join(dir).join(inc)) {
+                return Some(s);
+            }
+        }
+        None
+    };
+    expand_includes(&src, &mut resolve).unwrap_or_else(|e| panic!("expand {name}: {e:?}"))
 }
 
 #[test]

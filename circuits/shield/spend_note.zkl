@@ -9,7 +9,7 @@
 // array indexed by an unrolled loop, a nested loop over the path, the range gadget, and
 // the cypherpunk register. Run: zkolang circuits/shield/spend_note.zkl
 include "hash.zkl";
-include "logic.zkl";
+include "merkle.zkl";
 include "bits.zkl";
 
 witness value;
@@ -27,26 +27,16 @@ prove bit(v4); prove bit(v5); prove bit(v6); prove bit(v7);
 prove value - compose8(v0, v1, v2, v3, v4, v5, v6, v7);
 
 // The note is the commitment to the value under the key.
-let note = value + key;
-for i in 0 .. 16 { let note = mimc_round(note, MIMC_C[i]); }
+let note = permute(value + key);
 
 // The note authenticates to the public root along its path.
 let sib = [s0, s1, s2];
 let pb = [p0, p1, p2];
 let node = note;
 for lvl in 0 .. 3 {
-    let b = pb[lvl];
-    let left = mux(b, sib[lvl], node);
-    let right = mux(b, node, sib[lvl]);
-    let acc = left;
-    for i in 0 .. 4 { let acc = mimc_round(acc, MIMC_C[i]); }
-    let acc = acc + right;
-    for i in 4 .. 8 { let acc = mimc_round(acc, MIMC_C[i]); }
-    let node = acc;
+    let node = merkle_step(node, sib[lvl], pb[lvl]);
 }
 prove node - root;
 
 // The nullifier retires the note, deterministic in the key and position.
-let nf = key + position;
-for i in 0 .. 16 { let nf = mimc_round(nf, MIMC_C[i]); }
-reveal nf;
+reveal permute(key + position);

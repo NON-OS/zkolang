@@ -8,8 +8,5 @@ secret key;
 input m0;
 input m1;
 
-let s = key + m0;
-for i in 0 .. 16 { let s = mimc_round(s, MIMC_C[i]); }
-let s = s + m1;
-for i in 0 .. 16 { let s = mimc_round(s, MIMC_C[i]); }
-output s;
+let s = permute(key + m0);
+output permute(s + m1);

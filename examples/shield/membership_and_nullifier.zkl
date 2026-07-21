@@ -4,7 +4,7 @@
 // prevents spending it twice, and neither reveals which leaf was spent.
 // Run: zkolang shield/membership_and_nullifier.zkl
 include "hash.zkl";
-include "logic.zkl";
+include "merkle.zkl";
 
 input leaf;
 input s0; input s1; input s2;
@@ -15,17 +15,8 @@ let sib = [s0, s1, s2];
 let pb = [p0, p1, p2];
 let node = leaf;
 for lvl in 0 .. 3 {
-    let b = pb[lvl];
-    let left = mux(b, sib[lvl], node);
-    let right = mux(b, node, sib[lvl]);
-    let acc = left;
-    for i in 0 .. 4 { let acc = mimc_round(acc, MIMC_C[i]); }
-    let acc = acc + right;
-    for i in 4 .. 8 { let acc = mimc_round(acc, MIMC_C[i]); }
-    let node = acc;
+    let node = merkle_step(node, sib[lvl], pb[lvl]);
 }
 output node;
 
-let nf = sk + leaf;
-for i in 0 .. 16 { let nf = mimc_round(nf, MIMC_C[i]); }
-output nf;
+output permute(sk + leaf);

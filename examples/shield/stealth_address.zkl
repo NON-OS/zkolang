@@ -7,6 +7,4 @@ include "hash.zkl";
 
 input view_key;
 secret nonce;
-let s = view_key + nonce;
-for i in 0 .. 16 { let s = mimc_round(s, MIMC_C[i]); }
-output s;
+output permute(view_key + nonce);

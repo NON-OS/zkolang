@@ -13,7 +13,6 @@ public m3;
 let ms = [m0, m1, m2, m3];
 let root = 0;
 for k in 0 .. 4 {
-    let root = root + ms[k];
-    for i in 0 .. 16 { let root = mimc_round(root, MIMC_C[i]); }
+    let root = permute(root + ms[k]);
 }
 reveal root;

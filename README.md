@@ -77,9 +77,14 @@ for.
 
 Under [stdlib](stdlib), included with `include`: `math` (powers and small gadgets),
 `logic` (the boolean gates and a multiplexer and a majority), `cmp` (equality and zero
-tests), `field` (reciprocal and division), `bits` (bit recomposition for range proofs),
-and `hash` (the MiMC round and its constants). Every gadget is written in zKølang and its
-soundness is proven, in the suite and, for the core gadgets, in Lean 4 under [lean](lean).
+tests), `order` (min, max, clamp on the comparison range), `field` (reciprocal and
+division), `bits` (bit recomposition for range proofs), `poly` (Horner evaluation and
+interpolation), `select` (multiplexers over the branchless primitive), `gate` (half and
+full adders on bits), `encode` (packing small values into a field element), `curve` (short
+Weierstrass point arithmetic), `hash` (the MiMC round, the sixteen-round `permute`, and the
+`compress_wide` two-to-one node), and `merkle` (`compress2` and the `merkle_step` that
+climbs an authentication path). Every gadget is written in zKølang and its soundness is
+proven, in the suite and, for the core gadgets, in Lean 4 under [lean](lean).
 
 ## Backends
 

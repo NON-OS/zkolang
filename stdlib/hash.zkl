@@ -14,3 +14,21 @@ const MIMC_C = [11400714819323198485, 16088033396387240378, 18339175128185271363
 // sponge builds a variable-input hash by absorbing between calls.
 fn pow7(x) = x * x * x * x * x * x * x;
 fn mimc_round(s, c) = pow7(s + c);
+
+// The first eight rounds and the last eight, each a single nested chain so only one round
+// constant is live at a time, the same register cost as the loop they replace.
+fn half0(s) = mimc_round(mimc_round(mimc_round(mimc_round(mimc_round(mimc_round(mimc_round(mimc_round(
+    s, MIMC_C[0]), MIMC_C[1]), MIMC_C[2]), MIMC_C[3]), MIMC_C[4]), MIMC_C[5]), MIMC_C[6]), MIMC_C[7]);
+fn half1(s) = mimc_round(mimc_round(mimc_round(mimc_round(mimc_round(mimc_round(mimc_round(mimc_round(
+    s, MIMC_C[8]), MIMC_C[9]), MIMC_C[10]), MIMC_C[11]), MIMC_C[12]), MIMC_C[13]), MIMC_C[14]), MIMC_C[15]);
+
+// The full sixteen round MiMC permutation, the fixed hash the utilities share. A program
+// hashes by adding its inputs into the state and permuting; a sponge permutes between
+// absorbed blocks. It is the two halves in sequence, so it applies the constant table in
+// order and equals the loop those programs spelled out by hand.
+fn permute(s) = half1(half0(s));
+
+// A wide two-to-one compression: absorb the left child through the first eight rounds,
+// fold in the right, absorb the last eight. Sixteen rounds over one field element, the
+// binding the kernel's syscall token and the compress example share.
+fn compress_wide(left, right) = half1(half0(left) + right);
