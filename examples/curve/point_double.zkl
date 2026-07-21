@@ -1,0 +1,28 @@
+// Elliptic curve point doubling, proven. A point P on a short Weierstrass curve
+// y^2 = x^3 + a*x + b is doubled to R = 2P by the tangent-line group law, and the proof
+// attests that R is exactly 2P: P lies on the curve, R is the tangent-slope double, and R
+// itself lies on the curve. Doubling is the other half of the group law, the step a
+// scalar multiplication repeats. The point and curve are public here for legibility.
+// Run: zkolang curve/point_double.zkl
+include "curve.zkl";
+
+input a;
+input b;
+input x;
+input y;
+input x3;
+input y3;
+
+// P is on the curve.
+assert on_curve(x, y, a, b);
+
+// R = 2P: the tangent slope at P, then the reflected second intersection.
+let s = double_slope(x, y, a);
+assert x3 - add_x(s, x, x);
+assert y3 - add_y(s, x, x3, y);
+
+// and the double lands back on the curve.
+assert on_curve(x3, y3, a, b);
+
+output x3;
+output y3;

@@ -1,0 +1,32 @@
+// Elliptic curve point addition, proven. Two points P and Q on a short Weierstrass curve
+// y^2 = x^3 + a*x + b are added by the group law to a third point R, and the proof attests
+// that R is exactly P + Q on that curve: P and Q lie on it, R is the slope-form sum, and R
+// itself lies on it. The curve parameters and all three points are public here for a legible
+// demonstration; a real circuit would witness the scalar and keep the points private. This is
+// the arithmetic under an elliptic curve signature, written in the language and checked by the
+// prover. Run: zkolang curve/point_add.zkl
+include "curve.zkl";
+
+input a;
+input b;
+input x1;
+input y1;
+input x2;
+input y2;
+input x3;
+input y3;
+
+// P and Q are on the curve.
+assert on_curve(x1, y1, a, b);
+assert on_curve(x2, y2, a, b);
+
+// R is the group-law sum: the chord's slope, then the reflected intersection.
+let s = add_slope(x1, y1, x2, y2);
+assert x3 - add_x(s, x1, x2);
+assert y3 - add_y(s, x1, x3, y1);
+
+// and the sum lands back on the curve.
+assert on_curve(x3, y3, a, b);
+
+output x3;
+output y3;

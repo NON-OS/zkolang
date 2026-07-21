@@ -22,6 +22,8 @@ mod const_table_tests;
 #[cfg(test)]
 mod corpus_tests;
 #[cfg(test)]
+mod curve_tests;
+#[cfg(test)]
 mod diagnostic_tests;
 #[cfg(test)]
 mod equivalence_tests;
