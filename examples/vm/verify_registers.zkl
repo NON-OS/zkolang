@@ -1,0 +1,64 @@
+// The language verifying a register-machine run of itself. A two-register machine executes two
+// steps: each reads two operands from the register file by a one-bit source selector, applies its
+// one-hot opcode, and writes the result to a destination register while the other register carries
+// forward. The circuit proves the whole register dataflow, not just fixed wiring: the operands bind
+// to the registers named, the result to the destination, and the untouched register is preserved.
+// The sample program computes r0 = r0 + r1 then r1 = r0 * r1. Run: zkolang vm/verify_registers.zkl
+include "vm.zkl";
+include "bits.zkl";
+
+input r0;
+input r1;
+
+// Step 0: opcode, source A and B selectors, destination selector, claimed result.
+input s0_add;
+input s0_sub;
+input s0_mul;
+input s0_sa;
+input s0_sb;
+input s0_sd;
+input s0_res;
+
+// Step 1.
+input s1_add;
+input s1_sub;
+input s1_mul;
+input s1_sa;
+input s1_sb;
+input s1_sd;
+input s1_res;
+
+// Step 0 names one operation and its selectors are bits.
+assert bit(s0_add);
+assert bit(s0_sub);
+assert bit(s0_mul);
+assert is_onehot3(s0_add, s0_sub, s0_mul);
+assert bit(s0_sa);
+assert bit(s0_sb);
+assert bit(s0_sd);
+
+// Read operands from the register file, compute the gated result, write it to the destination
+// register while the other carries. A selector of one names r1, of zero names r0.
+let a0 = sel(s0_sa, r1, r0);
+let b0 = sel(s0_sb, r1, r0);
+assert s0_res - step_result(s0_add, s0_sub, s0_mul, a0, b0);
+let r0a = sel(s0_sd, r0, s0_res);
+let r1a = sel(s0_sd, s0_res, r1);
+
+// Step 1 reads the updated file.
+assert bit(s1_add);
+assert bit(s1_sub);
+assert bit(s1_mul);
+assert is_onehot3(s1_add, s1_sub, s1_mul);
+assert bit(s1_sa);
+assert bit(s1_sb);
+assert bit(s1_sd);
+
+let a1 = sel(s1_sa, r1a, r0a);
+let b1 = sel(s1_sb, r1a, r0a);
+assert s1_res - step_result(s1_add, s1_sub, s1_mul, a1, b1);
+let r0b = sel(s1_sd, r0a, s1_res);
+let r1b = sel(s1_sd, s1_res, r1a);
+
+output r0b;
+output r1b;
