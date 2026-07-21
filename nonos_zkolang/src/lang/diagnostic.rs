@@ -11,6 +11,7 @@
 use alloc::format;
 use alloc::string::String;
 
+use super::lex::{lex, Tok};
 use super::CompileError;
 
 /// The byte offset an error points at, when it carries one.
@@ -55,10 +56,33 @@ pub fn message(err: &CompileError) -> String {
     }
 }
 
+/// The offending name for an error whose name is undefined, so every occurrence of it in
+/// the source is a use and the first is a correct place to point. An arity mismatch is left
+/// out, because its name is defined and the first occurrence is the definition, not the call.
+fn unknown_name(err: &CompileError) -> Option<&str> {
+    match err {
+        CompileError::UnknownVariable { name }
+        | CompileError::UnknownFunction { name }
+        | CompileError::UnknownConst { name } => Some(name.as_str()),
+        _ => None,
+    }
+}
+
+/// The byte offset of the first identifier token equal to `name`, found by lexing, so the
+/// location is a real token and never a match inside a comment or a string.
+fn locate_name(src: &str, name: &str) -> Option<usize> {
+    let (toks, spans) = lex(src).ok()?;
+    toks.iter().zip(spans).find_map(|(t, at)| match t {
+        Tok::Ident(n) if n.as_str() == name => Some(at),
+        _ => None,
+    })
+}
+
 /// Render an error as a diagnostic over its source.
 pub fn render(src: &str, err: &CompileError) -> String {
     let msg = message(err);
-    let Some(at) = span_of(err) else {
+    let locate = || unknown_name(err).and_then(|n| locate_name(src, n));
+    let Some(at) = span_of(err).or_else(locate) else {
         return format!("error: {msg}");
     };
     let at = at.min(src.len());
