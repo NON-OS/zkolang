@@ -82,15 +82,17 @@ division), `bits` (bit recomposition for range proofs), `poly` (Horner evaluatio
 interpolation), `select` (multiplexers over the branchless primitive), `gate` (half and
 full adders on bits), `encode` (packing small values into a field element), `curve` (short
 Weierstrass point arithmetic), `hash` (the MiMC round, the sixteen-round `permute`, and the
-`compress_wide` two-to-one node), and `merkle` (`compress2` and the `merkle_step` that
-climbs an authentication path). Every gadget is written in zKølang and its soundness is
-proven, in the suite and, for the core gadgets, in Lean 4 under [lean](lean).
+`compress_wide` two-to-one node), `merkle` (`compress2` and the `merkle_step` that climbs an
+authentication path), and `vm` (the register machine's one-hot opcode gate, so a program can
+verify a run of the language itself). Every gadget is written in zKølang and its soundness is
+proven in the suite and, gadget by gadget, in Lean 4 under [lean](lean).
 
 ## Backends
 
 One source, four targets, all over the same field. The STARK prover; native **x86_64
 assembly** (`zkolang build --target asm`); native **C**; and **Python**. The natives are
-checked against the prover, bit for bit, so run and prove are the same verb.
+checked against the prover bit for bit, and fuzzed against the VM on random programs, so run
+and prove are the same verb.
 
 ```
 zkolang build examples/cube.zkl --target asm --out cube.S
@@ -100,14 +102,16 @@ cc cube.S -o cube && ./cube 9        # 729, native, no prover
 ## The compiler
 
 A constant-folding and algebraic-simplification optimizer runs before lowering, so the
-trace is smaller while the proof is unchanged. Errors are diagnostics, not kinds:
+trace is smaller while the proof is unchanged. Errors are diagnostics, not kinds: a syntax
+error, an undefined name, or an out-of-range index is reported with its line, its column, and
+a caret under the offending place.
 
 ```
-error: unexpected token
-  --> 2:13
+error: unknown variable `foo`
+  --> 2:9
    |
-   | let y = x * ;
-   |             ^
+   | let y = foo + x;
+   |         ^
 ```
 
 ## The utilities
@@ -127,6 +131,25 @@ A circuit becomes real by registration. Its verifier key is
 `blake3` over the serialized ops, and a pay-to-prove fee settles per use in NOX. Read any
 key with `zkolang key <file.zkl>`.
 
+## What it can express
+
+Beyond the utilities, the [examples](examples) reach for real cryptography and for the
+language itself. The curve programs prove elliptic curve arithmetic over the field:
+`point_add` and `point_double` are the short Weierstrass group law, and `scalar_mul` climbs
+the double-and-add ladder to `5*P`, the arithmetic under an elliptic curve signature. The vm
+programs turn the language on itself: `verify_run` checks an execution trace and
+`verify_registers` checks a register machine run, each using the same one-hot opcode gate the
+step AIR uses, so a zKølang proof attests a zKølang execution. Every one is proven end to end,
+and each rejects a forged input.
+
+## Recursion
+
+The step AIR is exposed as a standalone `AirExt`, with the transition written once over any
+field (`transition_over`) and a `GenericTransition` seam, so a recursive verifier can
+arithmetize it as its inner statement and prove that a zKølang proof itself verifies. The
+generic composition check lives in the vendored STARK primitives; the registration key a
+recursion targets is reproducible from `verifier_key(program, 3)`.
+
 ## Proving and verification
 
 ```
@@ -135,8 +158,18 @@ cargo test -p nonos_zkolang_proofs
 
 The suite proves the language end to end: the AIR tamper set and register binding, the
 public statement, the optimizer, the operators including comparison, the standard library
-gadgets, the shield and kernel utilities with their accept and reject cases, the
-verifier-key binding, and the fee model. Nothing here only compiles; it proves.
+gadgets, the shield and kernel utilities and the curve and vm examples with their accept and
+reject cases, the verifier-key binding, and the fee model. Nothing here only compiles; it
+proves.
+
+It is also fuzzed and machine-checked. The front end must answer any input, however
+malformed, with an Ok or an Err and never a panic; the C and assembly backends are checked
+against the VM on random programs; and the optimizer is required to preserve every output.
+The standard library's soundness is proven in Lean 4 under [lean](lean): the boolean gates
+and the byte range, the ordered comparison and the ordering, the encoders and the arithmetic
+gates, the powers and the polynomials, the MiMC S-box as a permutation, the opcode gate, and
+the field itself with the transfer principle that carries each integer identity into
+Goldilocks, with no `sorry` and no axioms.
 
 ## Tooling
 

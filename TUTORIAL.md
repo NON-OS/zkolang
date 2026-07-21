@@ -168,6 +168,8 @@ zkolang key cube.zkl
 - The [standard library](stdlib) is small and readable; every gadget is one expression.
 - The [circuits](circuits) are the real utilities: a shielded spend and transfer, and the
   kernel's attestation and anti-rollback.
+- The [examples](examples) reach further: elliptic curve point addition, doubling, and
+  scalar multiplication, and a circuit that verifies a run of the language itself.
 - The [manifesto](MANIFESTO.md) says what the language is for.
 
 Write a `.zkl`, prove it, and you have a checkable statement no one has to trust you for.
