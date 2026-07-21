@@ -14,6 +14,6 @@ impl Compiler {
         self.consts
             .iter()
             .find(|c| c.name.as_str() == name && c.scalar)
-            .map(|c| c.values[0])
+            .and_then(|c| c.values.first().copied())
     }
 }

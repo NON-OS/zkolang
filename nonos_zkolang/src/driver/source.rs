@@ -37,7 +37,7 @@ pub fn prove_source_with_witness(
     // Ordered comparisons decompose values whose bits the prover must supply. Extend the
     // witness with the advice region and fill it from an evaluation run of the program.
     if compiled.n_advice > 0 {
-        inputs.extend(core::iter::repeat(Fp::ZERO).take(compiled.n_advice as usize));
+        inputs.resize(inputs.len() + compiled.n_advice as usize, Fp::ZERO);
         fill_advice(&compiled, &mut inputs, public_inputs.len())?;
     }
     run_and_prove(&compiled.ops, &inputs, public_inputs.len())

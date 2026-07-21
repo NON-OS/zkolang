@@ -38,63 +38,71 @@ pub(super) fn fold(e: &Expr) -> Expr {
     match e {
         Expr::Num(v) => Expr::Num(*v),
         Expr::Var(n) => Expr::Var(n.clone()),
-        Expr::Add(a, b) => match (fold(a), fold(b)) {
-            (a, b) => match (as_num(&a), as_num(&b)) {
+        Expr::Add(a, b) => {
+            let (a, b) = (fold(a), fold(b));
+            match (as_num(&a), as_num(&b)) {
                 (Some(x), Some(y)) => num(x + y),
                 (_, Some(y)) if y == Fp::ZERO => a,
                 (Some(x), _) if x == Fp::ZERO => b,
                 _ => Expr::Add(Box::new(a), Box::new(b)),
-            },
-        },
-        Expr::Sub(a, b) => match (fold(a), fold(b)) {
-            (a, b) => match (as_num(&a), as_num(&b)) {
+            }
+        }
+        Expr::Sub(a, b) => {
+            let (a, b) = (fold(a), fold(b));
+            match (as_num(&a), as_num(&b)) {
                 (Some(x), Some(y)) => num(x - y),
                 (_, Some(y)) if y == Fp::ZERO => a,
                 _ => Expr::Sub(Box::new(a), Box::new(b)),
-            },
-        },
-        Expr::Mul(a, b) => match (fold(a), fold(b)) {
-            (a, b) => match (as_num(&a), as_num(&b)) {
+            }
+        }
+        Expr::Mul(a, b) => {
+            let (a, b) = (fold(a), fold(b));
+            match (as_num(&a), as_num(&b)) {
                 (Some(x), Some(y)) => num(x * y),
                 (_, Some(y)) if y == Fp::ZERO => num(Fp::ZERO),
                 (Some(x), _) if x == Fp::ZERO => num(Fp::ZERO),
                 (_, Some(y)) if y == Fp::ONE => a,
                 (Some(x), _) if x == Fp::ONE => b,
                 _ => Expr::Mul(Box::new(a), Box::new(b)),
-            },
-        },
-        Expr::Div(a, b) => match (fold(a), fold(b)) {
-            (a, b) => match (as_num(&a), as_num(&b)) {
+            }
+        }
+        Expr::Div(a, b) => {
+            let (a, b) = (fold(a), fold(b));
+            match (as_num(&a), as_num(&b)) {
                 (Some(x), Some(y)) if y != Fp::ZERO => num(x * y.inv()),
                 (_, Some(y)) if y == Fp::ONE => a,
                 _ => Expr::Div(Box::new(a), Box::new(b)),
-            },
-        },
-        Expr::Neg(x) => match fold(x) {
-            x => match as_num(&x) {
+            }
+        }
+        Expr::Neg(x) => {
+            let x = fold(x);
+            match as_num(&x) {
                 Some(v) => num(Fp::ZERO - v),
                 None => Expr::Neg(Box::new(x)),
-            },
-        },
-        Expr::Eq(a, b) => match (fold(a), fold(b)) {
-            (a, b) => match (as_num(&a), as_num(&b)) {
+            }
+        }
+        Expr::Eq(a, b) => {
+            let (a, b) = (fold(a), fold(b));
+            match (as_num(&a), as_num(&b)) {
                 (Some(x), Some(y)) => num(if x == y { Fp::ONE } else { Fp::ZERO }),
                 _ => Expr::Eq(Box::new(a), Box::new(b)),
-            },
-        },
-        Expr::Ne(a, b) => match (fold(a), fold(b)) {
-            (a, b) => match (as_num(&a), as_num(&b)) {
+            }
+        }
+        Expr::Ne(a, b) => {
+            let (a, b) = (fold(a), fold(b));
+            match (as_num(&a), as_num(&b)) {
                 (Some(x), Some(y)) => num(if x != y { Fp::ONE } else { Fp::ZERO }),
                 _ => Expr::Ne(Box::new(a), Box::new(b)),
-            },
-        },
+            }
+        }
         Expr::Lt(a, b) => Expr::Lt(Box::new(fold(a)), Box::new(fold(b))),
-        Expr::Inv(x) => match fold(x) {
-            x => match as_num(&x) {
+        Expr::Inv(x) => {
+            let x = fold(x);
+            match as_num(&x) {
                 Some(v) if v != Fp::ZERO => num(v.inv()),
                 _ => Expr::Inv(Box::new(x)),
-            },
-        },
+            }
+        }
         Expr::Sel(c, a, b) => select(fold(c), fold(a), fold(b), Expr::Sel),
         Expr::If(c, a, b) => select(fold(c), fold(a), fold(b), Expr::If),
         Expr::Call(n, args) => Expr::Call(n.clone(), args.iter().map(fold).collect()),
