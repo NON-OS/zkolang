@@ -29,6 +29,15 @@ impl Rng {
     }
 }
 
+// A bit-valued expression, an equality test, which the VM computes with no witness and
+// which is a valid select condition.
+fn gen_bit(rng: &mut Rng, depth: u32, vars: &[String]) -> String {
+    let op = ["==", "!="][rng.below(2) as usize];
+    let a = gen_expr(rng, depth, vars);
+    let b = gen_expr(rng, depth, vars);
+    format!("({a} {op} {b})")
+}
+
 fn gen_expr(rng: &mut Rng, depth: u32, vars: &[String]) -> String {
     if depth == 0 || rng.below(3) == 0 {
         if rng.below(2) == 0 {
@@ -37,10 +46,24 @@ fn gen_expr(rng: &mut Rng, depth: u32, vars: &[String]) -> String {
             rng.below(10).to_string()
         }
     } else {
-        let op = ["+", "-", "*"][rng.below(3) as usize];
-        let a = gen_expr(rng, depth - 1, vars);
-        let b = gen_expr(rng, depth - 1, vars);
-        format!("({a} {op} {b})")
+        // The select needs a bit condition, and the equality tests produce one, so route
+        // selects through a generated bit and let equalities also appear as plain 0/1
+        // values. Both exercise the fold arms the pure arithmetic grammar misses.
+        match rng.below(5) {
+            0 => {
+                let c = gen_bit(rng, depth - 1, vars);
+                let a = gen_expr(rng, depth - 1, vars);
+                let b = gen_expr(rng, depth - 1, vars);
+                format!("sel({c}, {a}, {b})")
+            }
+            1 => gen_bit(rng, depth - 1, vars),
+            _ => {
+                let op = ["+", "-", "*"][rng.below(3) as usize];
+                let a = gen_expr(rng, depth - 1, vars);
+                let b = gen_expr(rng, depth - 1, vars);
+                format!("({a} {op} {b})")
+            }
+        }
     }
 }
 
@@ -118,6 +141,7 @@ fn native_c(src: &str, inputs: &[u64], tag: usize) -> Vec<u64> {
     let status = std::process::Command::new("cc")
         .arg(&cpath)
         .arg("-O2")
+        .arg("-w")
         .arg("-o")
         .arg(&bpath)
         .status()
