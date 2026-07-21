@@ -115,3 +115,58 @@ fn point_doubling_proves_and_binds_the_double() {
         .unwrap_or(false);
     assert!(!verified, "a forged point double verified");
 }
+
+// Compute `5*P` by double-and-add over the field: P, 2P, 4P, then 5P = 4P + P. Returns
+// `(a, b, px, py, p2x, p2y, p4x, p4y, p5x, p5y)` as field values.
+fn reference_scalar() -> [u64; 10] {
+    let (px, py) = (Fp::from_u64(2), Fp::from_u64(3));
+    let a = Fp::from_u64(5);
+    let cube = |x: Fp| x * x * x;
+    let b = py * py - cube(px) - a * px;
+    let dbl = |x: Fp, y: Fp| {
+        let s = (Fp::from_u64(3) * x * x + a) * (Fp::from_u64(2) * y).inv();
+        let x3 = s * s - x - x;
+        (x3, s * (x - x3) - y)
+    };
+    let add = |x1: Fp, y1: Fp, x2: Fp, y2: Fp| {
+        let s = (y2 - y1) * (x2 - x1).inv();
+        let x3 = s * s - x1 - x2;
+        (x3, s * (x1 - x3) - y1)
+    };
+    let (p2x, p2y) = dbl(px, py);
+    let (p4x, p4y) = dbl(p2x, p2y);
+    let (p5x, p5y) = add(p4x, p4y, px, py);
+    let on = |x: Fp, y: Fp| y * y - (cube(x) + a * x + b);
+    for (x, y) in [(px, py), (p2x, p2y), (p4x, p4y), (p5x, p5y)] {
+        assert_eq!(on(x, y), Fp::ZERO);
+    }
+    [
+        a.value(),
+        b.value(),
+        px.value(),
+        py.value(),
+        p2x.value(),
+        p2y.value(),
+        p4x.value(),
+        p4y.value(),
+        p5x.value(),
+        p5y.value(),
+    ]
+}
+
+#[test]
+fn scalar_multiplication_proves_five_p() {
+    let src = load("examples/curve/scalar_mul.zkl");
+    let v = reference_scalar();
+    let report = prove_source_with_inputs(&src, &v).expect("run");
+    assert!(report.verified, "an honest 5*P was rejected");
+    assert_eq!(report.outputs, vec![v[8], v[9]], "the 5*P coordinates");
+
+    // A wrong final point has no proof: a broken rung fails the chain.
+    let mut bad = v;
+    bad[8] = bad[8].wrapping_add(1);
+    let verified = prove_source_with_inputs(&src, &bad)
+        .map(|r| r.verified)
+        .unwrap_or(false);
+    assert!(!verified, "a forged 5*P verified");
+}

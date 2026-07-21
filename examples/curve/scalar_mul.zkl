@@ -1,0 +1,43 @@
+// Elliptic curve scalar multiplication, proven. The point 5*P is computed by double-and-add,
+// the ladder every scalar multiplication climbs: P is doubled to 2P, doubled again to 4P, then
+// P is added to reach 5P, since 5 = 101 in binary. Each rung is the group law, and the proof
+// attests the whole chain: P is on the curve, every double and the final add are correct, and
+// every intermediate point lands back on the curve. This is the arithmetic under an elliptic
+// curve signature and key derivation, written in the language and checked by the prover.
+// Run: zkolang curve/scalar_mul.zkl
+include "curve.zkl";
+
+input a;
+input b;
+input px;
+input py;
+input p2x;
+input p2y;
+input p4x;
+input p4y;
+input p5x;
+input p5y;
+
+// P is on the curve.
+assert on_curve(px, py, a, b);
+
+// 2P = double(P).
+let s0 = double_slope(px, py, a);
+assert p2x - add_x(s0, px, px);
+assert p2y - add_y(s0, px, p2x, py);
+assert on_curve(p2x, p2y, a, b);
+
+// 4P = double(2P).
+let s1 = double_slope(p2x, p2y, a);
+assert p4x - add_x(s1, p2x, p2x);
+assert p4y - add_y(s1, p2x, p4x, p2y);
+assert on_curve(p4x, p4y, a, b);
+
+// 5P = 4P + P.
+let s2 = add_slope(p4x, p4y, px, py);
+assert p5x - add_x(s2, p4x, px);
+assert p5y - add_y(s2, p4x, p5x, p4y);
+assert on_curve(p5x, p5y, a, b);
+
+output p5x;
+output p5y;
