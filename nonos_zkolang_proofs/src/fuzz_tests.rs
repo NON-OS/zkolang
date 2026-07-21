@@ -3,14 +3,15 @@
  AGPL-3.0-or-later
 */
 
-//! Property-based fuzzing of the optimizer. Thousands of random arithmetic programs are
-//! generated, each compiled with the optimizer and without, run on random inputs, and
-//! required to agree. Where the curated equivalence test covers the shapes a bug is known
-//! to hide in, this covers the shapes nobody thought of. The generated grammar uses only
-//! add, subtract, multiply, bindings, and small constants, so every program always runs
-//! and stays inside the register file, which isolates the optimizer as the only variable.
+//! Property-based fuzzing of the optimizer and the native backend. Thousands of random
+//! arithmetic programs are generated; each is compiled with the optimizer and without, run
+//! on random inputs, and required to agree, and a sample is also emitted as C, compiled, and
+//! required to match the VM. Where the curated tests cover the shapes a bug is known to hide
+//! in, this covers the shapes nobody thought of. The generated grammar uses only add,
+//! subtract, multiply, bindings, and small constants, so every program always runs and stays
+//! inside the register file, which isolates the transform under test as the only variable.
 
-use nonos_zkolang::{compile_source, compile_source_unoptimized, evaluate};
+use nonos_zkolang::{compile_source, compile_source_unoptimized, evaluate, to_c};
 
 // A small deterministic generator, so a failure reproduces from the seed.
 struct Rng(u64);
@@ -101,5 +102,58 @@ fn the_optimizer_is_equivalent_under_loop_fuzzing() {
     for _ in 0..2000 {
         let (src, inputs) = gen_loop_program(&mut rng);
         agree(&src, &inputs);
+    }
+}
+
+// Emit a program as C, compile it with the system compiler exactly as the shipping path
+// does, run it on the inputs, and parse the field outputs it prints. A divergence from the
+// VM is an emitter bug, because the native and the proven trace are the same op list.
+fn native_c(src: &str, inputs: &[u64], tag: usize) -> Vec<u64> {
+    let program = compile_source(src).expect("compile");
+    let c = to_c(&program);
+    let dir = std::env::temp_dir();
+    let cpath = dir.join(format!("zkfuzz_{tag}.c"));
+    let bpath = dir.join(format!("zkfuzz_{tag}.bin"));
+    std::fs::write(&cpath, &c).expect("write c");
+    let status = std::process::Command::new("cc")
+        .arg(&cpath)
+        .arg("-O2")
+        .arg("-o")
+        .arg(&bpath)
+        .status()
+        .expect("cc");
+    assert!(status.success(), "cc failed for a fuzzed program");
+    let mut cmd = std::process::Command::new(&bpath);
+    for v in inputs {
+        cmd.arg(v.to_string());
+    }
+    let out = cmd.output().expect("run native");
+    assert!(
+        out.status.success(),
+        "native run failed for a fuzzed program"
+    );
+    String::from_utf8(out.stdout)
+        .unwrap()
+        .split_whitespace()
+        .map(|t| t.parse().unwrap())
+        .collect()
+}
+
+#[test]
+fn the_c_backend_agrees_with_the_vm_under_fuzzing() {
+    // The native backend and the VM must compute the same field arithmetic on the same op
+    // list. Where the curated backend tests cover a handful of shapes, this throws random
+    // expression trees at the C emitter and checks each against the VM. Bounded by the cost
+    // of invoking the C compiler once per program.
+    let mut rng = Rng(0xB1305);
+    for i in 0..100 {
+        let (src, inputs) = gen_program(&mut rng);
+        let program = compile_source(&src).unwrap_or_else(|e| panic!("compile:\n{src}\n{e:?}"));
+        let vm = evaluate(&program, &inputs, &[]).unwrap_or_else(|e| panic!("vm:\n{src}\n{e:?}"));
+        let native = native_c(&src, &inputs, i);
+        assert_eq!(
+            vm, native,
+            "the C backend diverged from the VM on:\n{src}\ninputs {inputs:?}"
+        );
     }
 }
