@@ -5,13 +5,14 @@
 
 //! Property-based fuzzing of the optimizer and the native backend. Thousands of random
 //! arithmetic programs are generated; each is compiled with the optimizer and without, run
-//! on random inputs, and required to agree, and a sample is also emitted as C, compiled, and
-//! required to match the VM. Where the curated tests cover the shapes a bug is known to hide
+//! on random inputs, and required to agree, and a sample is also emitted as C and as
+//! assembly, built, and required to match the VM. Where the curated tests cover the shapes a
+//! bug is known to hide
 //! in, this covers the shapes nobody thought of. The generated grammar uses only add,
 //! subtract, multiply, bindings, and small constants, so every program always runs and stays
 //! inside the register file, which isolates the transform under test as the only variable.
 
-use nonos_zkolang::{compile_source, compile_source_unoptimized, evaluate, to_c};
+use nonos_zkolang::{compile_source, compile_source_unoptimized, evaluate, to_asm, to_c};
 
 // A small deterministic generator, so a failure reproduces from the seed.
 struct Rng(u64);
@@ -178,6 +179,54 @@ fn the_c_backend_agrees_with_the_vm_under_fuzzing() {
         assert_eq!(
             vm, native,
             "the C backend diverged from the VM on:\n{src}\ninputs {inputs:?}"
+        );
+    }
+}
+
+// Emit a program as x86_64 assembly, assemble and link it with the C runtime, run it, and
+// parse the field outputs. The assembly emitter hand-writes the field arithmetic, so this is
+// where a reduction or carry bug the higher backends do not share would show.
+fn native_asm(src: &str, inputs: &[u64], tag: usize) -> Vec<u64> {
+    let program = compile_source(src).expect("compile");
+    let asm = to_asm(&program);
+    let dir = std::env::temp_dir();
+    let spath = dir.join(format!("zkfuzz_{tag}.S"));
+    let bpath = dir.join(format!("zkfuzz_{tag}_asm.bin"));
+    std::fs::write(&spath, &asm).expect("write asm");
+    let status = std::process::Command::new("cc")
+        .arg(&spath)
+        .arg("-o")
+        .arg(&bpath)
+        .status()
+        .expect("cc");
+    assert!(status.success(), "assemble failed for a fuzzed program");
+    let mut cmd = std::process::Command::new(&bpath);
+    for v in inputs {
+        cmd.arg(v.to_string());
+    }
+    let out = cmd.output().expect("run asm");
+    assert!(out.status.success(), "asm run failed for a fuzzed program");
+    String::from_utf8(out.stdout)
+        .unwrap()
+        .split_whitespace()
+        .map(|t| t.parse().unwrap())
+        .collect()
+}
+
+#[test]
+fn the_asm_backend_agrees_with_the_vm_under_fuzzing() {
+    // The assembly emitter is the lowest and hand-written of the backends, so it carries the
+    // field arithmetic itself. Throw random expression trees at it and check each against the
+    // VM. Bounded by the cost of assembling once per program.
+    let mut rng = Rng(0xA55E33);
+    for i in 0..80 {
+        let (src, inputs) = gen_program(&mut rng);
+        let program = compile_source(&src).unwrap_or_else(|e| panic!("compile:\n{src}\n{e:?}"));
+        let vm = evaluate(&program, &inputs, &[]).unwrap_or_else(|e| panic!("vm:\n{src}\n{e:?}"));
+        let native = native_asm(&src, &inputs, i);
+        assert_eq!(
+            vm, native,
+            "the asm backend diverged from the VM on:\n{src}\ninputs {inputs:?}"
         );
     }
 }
