@@ -40,6 +40,7 @@ pub use lang::{
 pub use nox::{quote, Quote, MICRONOX_PER_NOX};
 pub use trace::{OpTag, Row, Trace};
 pub use vkey::{
-    periodic_root, registration_key, registration_root, verifier_key, KeyError, REGISTRATION_RATE,
+    periodic_root, program_log_t, registration_key, registration_root, verifier_key, KeyError,
+    REGISTRATION_RATE,
 };
 pub use vm::{ProveError, Vm};

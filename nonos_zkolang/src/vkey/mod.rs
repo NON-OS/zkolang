@@ -14,6 +14,7 @@ mod periodic_root;
 mod registration;
 mod verifier_key;
 
+pub use air_for::program_log_t;
 pub use periodic_root::periodic_root;
 pub use registration::{registration_key, registration_root};
 pub use verifier_key::verifier_key;

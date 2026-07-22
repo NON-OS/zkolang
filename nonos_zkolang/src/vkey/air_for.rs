@@ -18,6 +18,14 @@ pub(super) fn step_count(program: &[Op]) -> Option<usize> {
         .map(|i| i + 1)
 }
 
+/// The canonical padded trace-length exponent for `program`, the same sizing the
+/// verifier key and a real proof use. A recursive verifier must build its inner at
+/// this `log_t` so the inner it attests matches `verifier_key(program, _)`; this is
+/// the single source of that rule, so the two never drift.
+pub fn program_log_t(program: &[Op]) -> Option<u32> {
+    choose_log_t(step_count(program)?)
+}
+
 /// The wiring-only AIR, sized exactly as the driver sizes it, so the periodic columns
 /// match a real proof's.
 pub(super) fn air_for(program: &[Op]) -> Result<StepAir, KeyError> {

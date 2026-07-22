@@ -12,8 +12,8 @@
 use nonos_stark::air::{stark_prove_ext_preprocessed, stark_verify_ext_preprocessed};
 use nonos_stark::field::Fp;
 use nonos_zkolang::{
-    compile_source, periodic_root, registration_key, registration_root, verifier_key, StepAir, Vm,
-    REGISTRATION_RATE,
+    compile_source, periodic_root, program_log_t, prove_source_with_inputs, registration_key,
+    registration_root, verifier_key, StepAir, Vm, REGISTRATION_RATE,
 };
 
 const QUERIES: usize = 32;
@@ -134,5 +134,21 @@ fn a_proof_at_the_registration_rate_verifies_against_the_registration_root() {
     assert!(
         !stark_verify_ext_preprocessed(&air, &proof, QUERIES, GRIND, rate, &wrong),
         "a flipped registration root verified"
+    );
+}
+
+#[test]
+fn program_log_t_is_the_sizing_a_proof_uses() {
+    // A recursive verifier builds its inner at `program_log_t(program)`, so it must equal the
+    // trace length a real proof of the same program uses, or the inner it attests would not be
+    // the one the verifier key derives. This pins the sizing rule to one value.
+    let src = "input x; let y = x * x; output y;";
+    let program = compile_source(src).expect("compile");
+    let report = prove_source_with_inputs(src, &[3]).expect("run");
+    assert!(report.verified);
+    assert_eq!(
+        program_log_t(&program),
+        Some(report.log_trace_len),
+        "the exposed sizing must match the proof's trace length"
     );
 }
