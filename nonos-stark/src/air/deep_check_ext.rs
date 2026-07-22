@@ -128,9 +128,16 @@ impl DeepCheckExt {
             }
             acc = acc + term.coeff * q;
         }
-        let base = self.terms.len() * w;
-        trace[base + 2] = acc.c0;
-        trace[base + 3] = acc.c1;
+        // The running sum after the last term is carried through every padding
+        // row: the accumulator constraint holds `acc` constant where the selector
+        // is zero, so leaving the pad at zero would break it on the final-acc row
+        // whenever the term count leaves padding (i.e. terms + 1 is not a power of
+        // two). The assembly binds the sum at row `terms.len()`, which is
+        // unchanged.
+        for r in self.terms.len()..rows {
+            trace[r * w + 2] = acc.c0;
+            trace[r * w + 3] = acc.c1;
+        }
         trace
     }
 
