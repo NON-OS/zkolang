@@ -153,6 +153,41 @@ impl<A: AirExt + GenericTransition> ComposeCheckGen<A> {
         }
     }
 
+    // The cell-column accessors: this region is the single source of truth for
+    // its own slot layout, so a recursive assembly binds its frame, periodic,
+    // point, coefficient, and composition cells to their sources without
+    // duplicating the slot formula (which would drift from `trace`). Each returns
+    // the base column of the `c0` lane; the `c1` lane is the next column.
+
+    /// The base column of frame value `i`.
+    pub fn frame_col(&self, i: usize) -> usize {
+        2 * self.slots.frame(i)
+    }
+    /// The base column of periodic value `j` at the point.
+    pub fn periodic_col(&self, j: usize) -> usize {
+        2 * self.slots.periodic(j)
+    }
+    /// The base column of the out-of-domain point `z`.
+    pub fn z_col(&self) -> usize {
+        2 * self.slots.z()
+    }
+    /// The base column of batching coefficient `i`.
+    pub fn coeff_col(&self, i: usize) -> usize {
+        2 * self.slots.coeff(i)
+    }
+    /// The base column of the claimed composition value.
+    pub fn comp_z_col(&self) -> usize {
+        2 * self.slots.comp_z()
+    }
+    /// The frame length, so a binding loop sizes to the inner AIR.
+    pub fn frame_len(&self) -> usize {
+        self.slots.w
+    }
+    /// The batching-coefficient count (transitions plus boundaries).
+    pub fn num_coeff(&self) -> usize {
+        self.slots.nt + self.slots.b
+    }
+
     /// The witness: row 0 holds the frame, the periodic and coefficient values, the
     /// point, the witnessed intermediates (vanishing tower, `z_h_inv`, `E`, the
     /// recomputed transitions, the boundary quotients) and the claimed composition;
