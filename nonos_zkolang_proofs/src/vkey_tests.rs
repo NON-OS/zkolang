@@ -12,9 +12,13 @@
 use nonos_stark::air::{stark_prove_ext_preprocessed, stark_verify_ext_preprocessed};
 use nonos_stark::field::Fp;
 use nonos_zkolang::{
-    compile_source, periodic_root, program_log_t, prove_source_with_inputs, registration_key,
-    registration_root, verifier_key, StepAir, Vm, REGISTRATION_RATE,
+    commit, compile_source, periodic_root, program_log_t, prove_source_with_inputs,
+    registration_key, registration_root, verifier_key, StepAir, Vm, REGISTRATION_RATE,
 };
+
+fn hex(b: &[u8]) -> String {
+    b.iter().map(|x| format!("{x:02x}")).collect()
+}
 
 const QUERIES: usize = 32;
 const GRIND: u32 = 8;
@@ -134,6 +138,30 @@ fn a_proof_at_the_registration_rate_verifies_against_the_registration_root() {
     assert!(
         !stark_verify_ext_preprocessed(&air, &proof, QUERIES, GRIND, rate, &wrong),
         "a flipped registration root verified"
+    );
+}
+
+#[test]
+fn the_golden_vk_reproduces_from_main() {
+    // The exact descriptor a recursive verifier's golden-vk carries, pinned so the
+    // commitment, registration root, verifier key, and sizing derivations can never drift
+    // from what a recursion built against this repo expects.
+    let program = compile_source("input x; let y = x * x; output y;").expect("compile");
+    assert_eq!(program_log_t(&program), Some(2), "sizing");
+    assert_eq!(
+        hex(&commit(&program)),
+        "838349ee8f5b7c7e8e875ae93aeed277db7f582435c2e9ac14f1c0c89e382e4a",
+        "program commitment"
+    );
+    assert_eq!(
+        hex(&registration_root(&program).expect("root")),
+        "3f3379da0618013376bfd84bec2507df8d254d8011c2bdf27b5182fca5d31da7",
+        "registration root"
+    );
+    assert_eq!(
+        hex(&verifier_key(&program, REGISTRATION_RATE).expect("key")),
+        "0b16d67a588a447e2ca08b847c5b5fee32aa4930f77b55da160f5cb199ab928a",
+        "verifier key"
     );
 }
 
