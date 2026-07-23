@@ -22,6 +22,7 @@ mod driver;
 mod isa;
 mod lang;
 mod nox;
+mod stdlib;
 mod trace;
 mod vkey;
 mod vm;
@@ -38,6 +39,7 @@ pub use lang::{
     compile_source, compile_source_unoptimized, expand_includes, render_error, CompileError,
 };
 pub use nox::{quote, Quote, MICRONOX_PER_NOX};
+pub use stdlib::{expand_with_stdlib, stdlib_source};
 pub use trace::{OpTag, Row, Trace};
 pub use vkey::{
     periodic_root, program_log_t, registration_key, registration_root, verifier_key, KeyError,
