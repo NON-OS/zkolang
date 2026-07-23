@@ -31,9 +31,10 @@ pub enum Expr {
     Index(Box<Expr>, Box<Expr>, usize),
     Array(Vec<Expr>),
     /// A block: a run of local `let` bindings and a result expression, `{ let a = e; ... r }`.
-    /// Each binding is visible to the ones after it and to the result, and to nothing outside
-    /// the braces. This is what gives a function a body of steps rather than one expression.
-    Block(Vec<(String, Expr)>, Box<Expr>),
+    /// Each binding names one value, or several with `let (x, y) = e;`, is visible to the ones
+    /// after it and to the result, and to nothing outside the braces. This is what gives a
+    /// function a body of steps rather than one expression.
+    Block(Vec<(Vec<String>, Expr)>, Box<Expr>),
     /// A tuple, `(a, b, ...)`: several values at once, what a function returns when it returns
     /// more than one thing. A tuple is not a scalar; it is destructured by `let (x, y) = ...`
     /// or returned from a function, never stored in a single binding.

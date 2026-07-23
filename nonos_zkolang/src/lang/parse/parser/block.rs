@@ -23,11 +23,26 @@ impl<'a> Parser<'a> {
             match self.peek() {
                 Some(Tok::Let) => {
                     self.pos += 1;
-                    let name = self.ident()?;
+                    let mut names = Vec::new();
+                    if matches!(self.peek(), Some(Tok::LParen)) {
+                        // `let (x, y) = e;`: bind several of the values e produces.
+                        self.pos += 1;
+                        loop {
+                            names.push(self.ident()?);
+                            if matches!(self.peek(), Some(Tok::Comma)) {
+                                self.pos += 1;
+                            } else {
+                                break;
+                            }
+                        }
+                        self.expect(&Tok::RParen)?;
+                    } else {
+                        names.push(self.ident()?);
+                    }
                     self.expect(&Tok::Assign)?;
                     let value = self.expr()?;
                     self.expect(&Tok::Semi)?;
-                    locals.push((name, value));
+                    locals.push((names, value));
                 }
                 Some(Tok::Return) => {
                     self.pos += 1;

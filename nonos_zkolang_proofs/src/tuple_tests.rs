@@ -58,6 +58,32 @@ fn a_direct_tuple_destructures() {
 }
 
 #[test]
+fn a_block_body_destructures_the_tuple_it_calls() {
+    // A function computes the median of three by destructuring the compare-swap it calls,
+    // three times, inside its own body. This composition needs a block that can bind more
+    // than one name, so it is the proof the feature reaches inside a function.
+    let src = format!(
+        "{MINMAX}fn median3(a, b, c) {{\n\
+         \x20   let (lo1, hi1) = minmax(a, b);\n\
+         \x20   let (lo2, hi2) = minmax(hi1, c);\n\
+         \x20   let (m, mid) = minmax(lo1, lo2);\n\
+         \x20   return mid;\n\
+         }}\ninput x;\ninput y;\ninput z;\noutput median3(x, y, z);"
+    );
+    let cases = [
+        ([3u64, 1, 2], 2u64),
+        ([5, 9, 1], 5),
+        ([100, 50, 75], 75),
+        ([7, 7, 7], 7),
+    ];
+    for (input, want) in cases {
+        let report = prove_source_with_inputs(&src, &input).expect("run");
+        assert!(report.verified, "a median was rejected");
+        assert_eq!(report.outputs, vec![want], "wrong median");
+    }
+}
+
+#[test]
 fn the_name_count_must_match_the_arity() {
     // minmax returns two values; naming three of them is an error the compiler reports.
     let three = format!("{MINMAX}input a;\ninput b;\nlet (x, y, z) = minmax(a, b);\noutput x;");

@@ -88,31 +88,16 @@ impl Compiler {
     }
 
     /// A block in tuple mode: open the local bindings, compile the result in tuple mode, then
-    /// drop the locals and reclaim the registers no result carries out, under the same alias
-    /// check a scalar block uses.
+    /// close the scope, keeping the registers the several results carry out.
     fn block_tuple(
         &mut self,
-        locals: &[(alloc::string::String, Expr)],
+        locals: &[(alloc::vec::Vec<alloc::string::String>, Expr)],
         result: &Expr,
     ) -> Result<Vec<Val>, CompileError> {
-        let mark = self.syms.len();
-        for (name, value) in locals {
-            let v = self.expr(value)?;
-            self.syms.push((name.clone(), v.reg));
-        }
+        let mark = self.open_block(locals)?;
         let results = self.expr_tuple(result)?;
-        let held: Vec<u8> = self
-            .syms
-            .split_off(mark)
-            .into_iter()
-            .map(|(_, r)| r)
-            .collect();
         let result_regs: Vec<u8> = results.iter().map(|v| v.reg).collect();
-        for r in held {
-            if !result_regs.contains(&r) && !self.reg_in_use(r) && !self.free.contains(&r) {
-                self.free.push(r);
-            }
-        }
+        self.close_block(mark, &result_regs);
         Ok(results)
     }
 }

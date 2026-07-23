@@ -1,0 +1,27 @@
+// The median of three values, computed inside a function that destructures the compare-swap
+// it calls. This is the composition the language could not express until a block body could
+// bind more than one name: a function that uses another function's two return values in its
+// own steps. The median comes out for any inputs in the sixteen-bit comparison range.
+// Run: zkolang median3.zkl
+
+// The compare-swap: order a pair, smaller first, as a tuple.
+fn minmax(a, b) {
+    let ordered = a < b;
+    return (sel(ordered, a, b), sel(ordered, b, a));
+}
+
+// The middle value is the larger of the two smallest: order the first pair, fold the third
+// in against the larger, then take the larger of the two low values. Each step destructures
+// a compare-swap inside this body.
+fn median3(a, b, c) {
+    let (lo1, hi1) = minmax(a, b);
+    let (lo2, hi2) = minmax(hi1, c);
+    let (m, mid) = minmax(lo1, lo2);
+    return mid;
+}
+
+input x;
+input y;
+input z;
+
+output median3(x, y, z);
