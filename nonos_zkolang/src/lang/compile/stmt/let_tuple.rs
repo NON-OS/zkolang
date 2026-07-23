@@ -27,6 +27,14 @@ impl Compiler {
             });
         }
         for (name, v) in names.iter().zip(&vals) {
+            if name == "_" {
+                // A wildcard ignores its value: bind nothing, and return the register to the
+                // pool when no live name holds it.
+                if !self.reg_in_use(v.reg) && !self.free.contains(&v.reg) {
+                    self.free.push(v.reg);
+                }
+                continue;
+            }
             let old = self.lookup(name);
             if let Some(old_array) = self.take_array(name) {
                 for r in old_array {

@@ -35,6 +35,13 @@ impl Compiler {
                     });
                 }
                 for (n, v) in names.iter().zip(&vals) {
+                    if n == "_" {
+                        // A wildcard binds nothing; free its register if no live name holds it.
+                        if !self.reg_in_use(v.reg) && !self.free.contains(&v.reg) {
+                            self.free.push(v.reg);
+                        }
+                        continue;
+                    }
                     self.syms.push((n.clone(), v.reg));
                 }
             }

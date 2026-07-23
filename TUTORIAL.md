@@ -132,6 +132,7 @@ output hi;
 ```
 
 The name count must match how many values the function returns, or the compiler says so.
+Use `_` for a value you do not need: `let (_, hi) = minmax(x, y);` keeps only the larger.
 Destructuring works inside a function body too, so one function can build on another's two
 results, which is how a median or a small sort reads.
 

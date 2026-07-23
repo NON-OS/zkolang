@@ -84,6 +84,18 @@ fn a_block_body_destructures_the_tuple_it_calls() {
 }
 
 #[test]
+fn a_wildcard_ignores_a_returned_value() {
+    // `_` in a destructuring binds nothing, so you can take one of the two values a
+    // compare-swap returns without naming the other.
+    let src = format!(
+        "{MINMAX}input x;\ninput y;\nlet (_, hi) = minmax(x, y);\nlet (lo, _) = minmax(x, y);\noutput hi;\noutput lo;"
+    );
+    let report = prove_source_with_inputs(&src, &[3, 7]).expect("run");
+    assert!(report.verified);
+    assert_eq!(report.outputs, vec![7, 3], "the max, then the min");
+}
+
+#[test]
 fn the_name_count_must_match_the_arity() {
     // minmax returns two values; naming three of them is an error the compiler reports.
     let three = format!("{MINMAX}input a;\ninput b;\nlet (x, y, z) = minmax(a, b);\noutput x;");
