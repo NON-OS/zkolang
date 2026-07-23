@@ -1,0 +1,28 @@
+// A private ballot tally. Seven voters each cast a secret yes-or-no ballot, and the program
+// proves that every ballot was a real bit, a one or a zero and nothing else, and that they
+// sum to the public tally. The result is verifiable while no single vote is revealed, and
+// no voter can slip in a weight larger than one. It is the count a private election
+// publishes: the total is trustworthy, the ballots stay secret. Run: zkolang vote_tally.zkl
+include "bits.zkl";
+
+secret v0;
+secret v1;
+secret v2;
+secret v3;
+secret v4;
+secret v5;
+secret v6;
+
+input tally;
+
+// No ballot may be anything but zero or one, so no voter can count for more than one vote.
+assert bit(v0);
+assert bit(v1);
+assert bit(v2);
+assert bit(v3);
+assert bit(v4);
+assert bit(v5);
+assert bit(v6);
+
+// The published tally is the honest sum of the ballots.
+assert (v0 + v1 + v2 + v3 + v4 + v5 + v6) == tally;

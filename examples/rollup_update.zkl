@@ -1,0 +1,58 @@
+// A rollup account update. One account sits at a leaf of a Merkle tree of accounts. Its
+// old state hashes to a leaf under the old root, and after crediting a secret delta its new
+// state hashes to a leaf at the same path under the new root. The program proves the whole
+// transition at once: the old leaf was really in the old tree, the balance update is
+// honest and stays in range, and the new root is exactly the old tree with only this leaf
+// changed. Both roots are public; the account, its balance, the delta, and the path stay
+// secret. It is the core step a zero-knowledge rollup proves for every state transition.
+//
+// The witness is declared near where it is used, so the range check's bit decomposition
+// shares the register file only with the two balances, not the whole path.
+// Run: zkolang rollup_update.zkl
+include "merkle.zkl";
+include "order.zkl";
+include "bits.zkl";
+
+// An account leaf commits to a balance and the owner's key, so a leaf binds the balance to
+// whoever may spend it.
+fn account_leaf(owner, balance) {
+    let bound = compress2(owner, balance);
+    return bound;
+}
+
+// Climb two levels of the same authentication path, ordering each pair by its bit. The path
+// is shared between the old and new leaf, since only the one account changes.
+fn climb(leaf, sib0, sib1, dir0, dir1) {
+    let n0 = merkle_step(leaf, sib0, dir0);
+    return merkle_step(n0, sib1, dir1);
+}
+
+// The balance update, checked first and on its own.
+secret old_balance;
+secret delta;
+
+let new_balance = old_balance + delta;
+
+// The credit keeps the new balance in the sixteen-bit range, so no update can wrap the
+// field into a huge balance.
+assert (new_balance <= 65535) == 1;
+
+// The account and its shared authentication path.
+secret owner;
+secret sib0;
+secret sib1;
+secret dir0;
+secret dir1;
+
+input old_root;
+input new_root;
+
+// The path directions must be real bits, or a leaf could be placed on the wrong side.
+assert bit(dir0);
+assert bit(dir1);
+
+// The old account really sat under the old root.
+assert climb(account_leaf(owner, old_balance), sib0, sib1, dir0, dir1) == old_root;
+
+// And the new root is the same tree with only this account's leaf updated.
+assert climb(account_leaf(owner, new_balance), sib0, sib1, dir0, dir1) == new_root;

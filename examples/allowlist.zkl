@@ -1,0 +1,29 @@
+// Private allowlist membership. A prover shows a secret identifier is one of a public
+// list of allowed values, without revealing which. The list is encoded as the roots of a
+// vanishing polynomial: the product of (secret - allowed) over every entry is zero exactly
+// when the secret equals one of them. Nothing about the secret leaks but the fact that it
+// is on the list. It is the gate a private membership pass runs at the door. Run: zkolang
+// allowlist.zkl
+
+// The vanishing product over a five-entry allowlist, built up one factor at a time so each
+// partial product is named rather than written as one long chain.
+fn vanishes(x, a0, a1, a2, a3, a4) {
+    let p = x - a0;
+    let p = p * (x - a1);
+    let p = p * (x - a2);
+    let p = p * (x - a3);
+    let p = p * (x - a4);
+    return p;
+}
+
+secret id;
+
+input allow0;
+input allow1;
+input allow2;
+input allow3;
+input allow4;
+
+// Zero exactly when the secret is one of the allowed values, so asserting it proves
+// membership while keeping which entry it matched private.
+assert vanishes(id, allow0, allow1, allow2, allow3, allow4) == 0;

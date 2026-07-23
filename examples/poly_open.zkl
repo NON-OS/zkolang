@@ -1,0 +1,41 @@
+// Opening a committed polynomial. A prover commits to four secret coefficients by folding
+// them through the MiMC compression, publishes that commitment, and later proves that the
+// polynomial those coefficients define takes a claimed value at a public point, without
+// revealing the coefficients. It is the opening step a polynomial commitment scheme runs:
+// the verifier learns one evaluation and that it is consistent with the commitment, and
+// nothing more about the polynomial. Run: zkolang poly_open.zkl
+include "merkle.zkl";
+
+// The commitment to the coefficients: absorb them in order through the compression, so a
+// change to any one changes the digest. The block body names each folded stage.
+fn commit4(c0, c1, c2, c3) {
+    let a = compress2(c0, c1);
+    let b = compress2(a, c2);
+    return compress2(b, c3);
+}
+
+// Evaluate the degree-three polynomial at x by Horner, reusing the running accumulator so
+// only one intermediate is ever live.
+fn horner4(c0, c1, c2, c3, x) {
+    let t = c3;
+    let t = t * x + c2;
+    let t = t * x + c1;
+    let t = t * x + c0;
+    return t;
+}
+
+secret c0;
+secret c1;
+secret c2;
+secret c3;
+
+input digest;
+input x;
+input y;
+
+// The coefficients must be the ones the public commitment fixed, or a prover could open a
+// different polynomial than the one committed.
+assert commit4(c0, c1, c2, c3) == digest;
+
+// And the committed polynomial takes the claimed value at the public point.
+assert horner4(c0, c1, c2, c3, x) == y;

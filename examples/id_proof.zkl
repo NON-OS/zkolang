@@ -1,0 +1,22 @@
+// A hash-based identification. A secret key has a public identity, the MiMC hash of the
+// key, published once. To identify against a fresh public challenge, the prover shows both
+// that it knows the key behind the identity and that it can bind that key to the challenge,
+// each through the one-way permutation. Neither the identity nor the response reveals the
+// key, and because the response is tied to the challenge, a transcript cannot be replayed
+// against a different one. It is the login a zero-knowledge identity proves. Run: zkolang
+// id_proof.zkl
+include "hash.zkl";
+
+secret sk;
+
+input identity;
+input challenge;
+input response;
+
+// The public identity is the one-way hash of the secret key, so knowing a preimage of it
+// is knowing the key.
+assert permute(sk) == identity;
+
+// The response binds the key to this challenge. Only the holder of the key can produce it,
+// and it discloses nothing about the key on its own.
+assert permute(sk + challenge) == response;
