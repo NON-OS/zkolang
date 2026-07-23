@@ -9,8 +9,11 @@
 //! program that includes a standard gadget compiles with no file access at all.
 
 use alloc::string::String;
+use alloc::vec::Vec;
 
-use crate::lang::{expand_includes, CompileError};
+use crate::driver::{prove_source_with_witness, Report, RunError};
+use crate::isa::Op;
+use crate::lang::{compile_source, expand_includes, CompileError};
 
 /// The source of a standard-library module by its include name, or `None` if there is no such
 /// module. This is the whole standard library, baked into the binary.
@@ -39,4 +42,19 @@ pub fn stdlib_source(name: &str) -> Option<&'static str> {
 /// with its own files layers its own resolver over `stdlib_source`.
 pub fn expand_with_stdlib(src: &str) -> Result<String, CompileError> {
     expand_includes(src, &mut |name| stdlib_source(name).map(String::from))
+}
+
+/// Compile a program against the embedded standard library, the one call an editor makes to
+/// check a file: it expands the includes and compiles, returning the op list or the diagnostic
+/// error to render under the source.
+pub fn check(src: &str) -> Result<Vec<Op>, CompileError> {
+    compile_source(&expand_with_stdlib(src)?)
+}
+
+/// Compile and prove a program against the embedded standard library, the one call a terminal
+/// makes to run a file. The public inputs are the prefix the statement binds; the rest is the
+/// private witness. The report says whether it verified and what it output.
+pub fn run(src: &str, public: &[u64], secret: &[u64]) -> Result<Report, RunError> {
+    let expanded = expand_with_stdlib(src).map_err(RunError::Compile)?;
+    prove_source_with_witness(&expanded, public, secret)
 }

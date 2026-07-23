@@ -8,7 +8,36 @@
 //! way the kernel terminal and editor run it; an include the standard library does not name is
 //! reported, not silently dropped.
 
-use nonos_zkolang::{expand_with_stdlib, prove_source_with_inputs, stdlib_source};
+use nonos_zkolang::{check, expand_with_stdlib, prove_source_with_inputs, run, stdlib_source};
+
+#[test]
+fn the_terminal_run_proves_in_one_call() {
+    // The terminal's one call: source in, a proven report out, includes resolved from the binary.
+    let report = run(
+        "include \"math.zkl\";\ninput x;\noutput cube(x);",
+        &[5],
+        &[],
+    )
+    .expect("run");
+    assert!(
+        report.verified,
+        "the terminal run rejected an honest program"
+    );
+    assert_eq!(report.outputs, vec![125], "cube of five");
+}
+
+#[test]
+fn the_editor_check_compiles_and_reports() {
+    // The editor's one call: a good program compiles, a bad one returns a diagnostic to render.
+    assert!(
+        check("include \"logic.zkl\";\ninput a;\noutput not(a);").is_ok(),
+        "the editor check rejected a valid program"
+    );
+    assert!(
+        check("input x;\noutput foo;").is_err(),
+        "the editor check accepted an unknown variable"
+    );
+}
 
 #[test]
 fn a_program_proves_against_the_embedded_stdlib() {
