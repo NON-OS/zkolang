@@ -56,7 +56,8 @@ bit decomposition, which the compiler fills for you.
 - Bindings and values: `let`, `const` (a scalar read by name or a table read by a
   constant index), `input`, `secret`, `output`.
 - Control and structure: bounded `for` loops unrolled at compile time, first-class arrays,
-  functions inlined at each call, and `include "name.zkl";`.
+  functions inlined at each call, each with a one-line body or a `{ let ...; return ... }`
+  block, and `include "name.zkl";`.
 - Operators: field `+ - * /`, unary `-`, the field inverse `inv`, equality `== !=`,
   ordered comparison `< <= > >=`, logical `! && ||`, the branchless `sel` and its `if`
   and `match` forms.

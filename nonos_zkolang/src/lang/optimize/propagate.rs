@@ -52,6 +52,9 @@ fn subst(e: &Expr, env: &Env) -> Expr {
         Expr::Call(n, args) => Expr::Call(n.clone(), args.iter().map(|a| subst(a, env)).collect()),
         Expr::Index(base, idx, at) => Expr::Index(bx(subst(base, env)), bx(subst(idx, env)), *at),
         Expr::Array(xs) => Expr::Array(xs.iter().map(|a| subst(a, env)).collect()),
+        // Opaque: a block rebinds names in its own scope, so an outer constant must not be
+        // pushed inside where a local of the same name could shadow it.
+        Expr::Block(locals, r) => Expr::Block(locals.clone(), r.clone()),
     }
 }
 

@@ -30,4 +30,8 @@ pub enum Expr {
     /// `base[index]`, carrying the byte offset of the index access for diagnostics.
     Index(Box<Expr>, Box<Expr>, usize),
     Array(Vec<Expr>),
+    /// A block: a run of local `let` bindings and a result expression, `{ let a = e; ... r }`.
+    /// Each binding is visible to the ones after it and to the result, and to nothing outside
+    /// the braces. This is what gives a function a body of steps rather than one expression.
+    Block(Vec<(String, Expr)>, Box<Expr>),
 }

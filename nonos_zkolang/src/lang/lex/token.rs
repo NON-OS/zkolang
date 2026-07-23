@@ -24,6 +24,7 @@ pub enum Tok {
     Fn,
     Const,
     Match,
+    Return,
     FatArrow,
     Ident(String),
     Num(u64),

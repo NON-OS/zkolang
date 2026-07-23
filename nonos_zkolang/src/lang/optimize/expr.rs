@@ -108,5 +108,11 @@ pub(super) fn fold(e: &Expr) -> Expr {
         Expr::Call(n, args) => Expr::Call(n.clone(), args.iter().map(fold).collect()),
         Expr::Index(base, idx, at) => Expr::Index(Box::new(fold(base)), Box::new(fold(idx)), *at),
         Expr::Array(xs) => Expr::Array(xs.iter().map(fold).collect()),
+        // Fold inside the bindings and the result; the scope is untouched, since folding
+        // only collapses constant arithmetic and never moves a name across the braces.
+        Expr::Block(locals, r) => Expr::Block(
+            locals.iter().map(|(n, e)| (n.clone(), fold(e))).collect(),
+            Box::new(fold(r)),
+        ),
     }
 }

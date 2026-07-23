@@ -98,6 +98,23 @@ for i in 0 .. 5 {
 output acc;
 ```
 
+A function does not have to be one expression. Open a block and it has a body: name the
+intermediate steps, then return the result.
+
+```
+fn quadratic(x, a, b, c) {
+    let sq = x * x;
+    let linear = b * x;
+    return a * sq + linear + c;
+}
+input x;
+output quadratic(x, 2, 3, 1);
+```
+
+The bindings scope to the block and to each other in order; the last statement is the
+value, written `return e;` or as a trailing expression with no `return`. A block is an
+expression like any other, so it can stand anywhere a value can, not only as a body.
+
 Functions inline at each call, loops unroll at compile time, arrays are indexed by a
 constant. There is also ordered comparison (`< <= > >=`), boolean logic (`! && ||`), a
 branchless `sel`, and a `match`:

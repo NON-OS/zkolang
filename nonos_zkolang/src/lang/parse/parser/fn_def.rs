@@ -12,8 +12,9 @@ use crate::lang::CompileError;
 use alloc::vec::Vec;
 
 impl<'a> Parser<'a> {
-    /// `fn name(a, b) = expr;`: the body is one expression, inlined at each call, so
-    /// there is no statement block and no return keyword.
+    /// `fn name(a, b) = expr;` or `fn name(a, b) { let ...; return expr; }`: the body is
+    /// either one expression or a block of local bindings and a result, inlined at each
+    /// call. There is still no call stack and no recursion, only substitution.
     pub(crate) fn fn_def(&mut self) -> Result<FnDef, CompileError> {
         self.pos += 1;
         let name = self.ident()?;
@@ -30,9 +31,17 @@ impl<'a> Parser<'a> {
             }
         }
         self.expect(&Tok::RParen)?;
-        self.expect(&Tok::Assign)?;
-        let body = self.expr()?;
-        self.expect(&Tok::Semi)?;
+        // Two body forms: `= expr;` for a one-line function, or a braced block for one
+        // with local bindings and a result. A block reads to the closing brace itself.
+        let body = if matches!(self.peek(), Some(Tok::LBrace)) {
+            self.pos += 1;
+            self.block_body()?
+        } else {
+            self.expect(&Tok::Assign)?;
+            let e = self.expr()?;
+            self.expect(&Tok::Semi)?;
+            e
+        };
         Ok(FnDef { name, params, body })
     }
 }

@@ -27,6 +27,7 @@ impl<'a> Parser<'a> {
                 Ok(e)
             }
             Some(Tok::LBracket) => self.array_expr(),
+            Some(Tok::LBrace) => self.block_body(),
             Some(Tok::Inv) => self.inv_expr(),
             Some(Tok::Sel) => self.sel_expr(),
             Some(Tok::If) => self.if_expr(),

@@ -6,6 +6,7 @@
 //! Expression lowering: the dispatcher routes each node to its own lowering file.
 
 mod binary;
+mod block;
 mod call;
 mod compare;
 mod decompose;
@@ -43,6 +44,7 @@ impl Compiler {
             Expr::Call(name, args) => self.call(name, args),
             Expr::Index(base, idx, at) => self.index(base, idx, *at),
             Expr::Array(_) => Err(CompileError::ArrayNotScalar),
+            Expr::Block(locals, result) => self.block_expr(locals, result),
         }
     }
 }

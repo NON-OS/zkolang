@@ -10,6 +10,7 @@
 mod and;
 mod array_expr;
 mod atom;
+mod block;
 mod const_def;
 mod cursor;
 mod equality;

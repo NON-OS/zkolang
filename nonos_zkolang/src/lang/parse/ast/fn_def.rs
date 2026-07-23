@@ -3,8 +3,9 @@
  AGPL-3.0-or-later
 */
 
-//! A function definition. Functions are compile-time inlined, so the body is a single
-//! expression substituted at each call site; there is no call stack and no recursion.
+//! A function definition. Functions are compile-time inlined, so the body is one
+//! expression, possibly a block of local bindings and a result, substituted at each call
+//! site; there is no call stack and no recursion.
 
 use alloc::string::String;
 use alloc::vec::Vec;
