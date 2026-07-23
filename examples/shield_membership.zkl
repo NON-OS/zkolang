@@ -1,0 +1,54 @@
+// Private membership in a committed set. A note commits to a secret value and a secret
+// blinding factor; that note sits at a leaf of a Merkle tree whose root is public. This
+// proves the note belongs to the tree, and so to the set, revealing neither the value,
+// the blinding, the leaf, nor the path, only that some note the prover holds is in the
+// set under the published root. It is the shielded-note check a private ledger runs to
+// spend a note it never has to show. Run: zkolang shield_membership.zkl
+include "merkle.zkl";
+include "bits.zkl";
+
+// The note is a two-field commitment folded through the MiMC compression: absorb the
+// value, fold in the blinding, absorb again. Naming the stages is what a block body is
+// for; the hiding comes from the blinding no one but the prover knows.
+fn note_commit(value, blinding) {
+    let absorbed = absorb_lo(value);
+    let hidden = absorbed + blinding;
+    return absorb_hi(hidden);
+}
+
+// The private note.
+secret value;
+secret blinding;
+
+// The authentication path: a sibling node and a direction bit at each of four levels, so
+// the tree holds up to sixteen leaves. Every field here is secret; only the root is not.
+secret sib0;
+secret sib1;
+secret sib2;
+secret sib3;
+secret dir0;
+secret dir1;
+secret dir2;
+secret dir3;
+
+// The set commitment everyone agrees on.
+input root;
+
+// A direction bit says whether the running node is the left or the right child at its
+// level. It must be a real bit, or the ordering at that level could be forged.
+assert bit(dir0);
+assert bit(dir1);
+assert bit(dir2);
+assert bit(dir3);
+
+// Climb from the committed note to the root, ordering each pair by its direction bit and
+// compressing. Each step is one level of the authentication path.
+let leaf = note_commit(value, blinding);
+let n0 = merkle_step(leaf, sib0, dir0);
+let n1 = merkle_step(n0, sib1, dir1);
+let n2 = merkle_step(n1, sib2, dir2);
+let n3 = merkle_step(n2, sib3, dir3);
+
+// The climb must land on the published root. A note outside the set cannot reach it, so
+// there is no proof for one.
+assert n3 == root;
