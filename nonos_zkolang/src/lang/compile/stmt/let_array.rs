@@ -29,4 +29,17 @@ impl Compiler {
         self.bind_array(name, regs);
         Ok(())
     }
+
+    /// Bind a name to the array an expression produces, a function that returns a vector or an
+    /// existing array passed through, reclaiming a shadowed scalar the way a literal does.
+    pub(crate) fn let_array_expr(&mut self, name: &str, e: &Expr) -> Result<(), CompileError> {
+        let regs = self.expr_array(e)?;
+        if let Some(old) = self.take_scalar(name) {
+            if !regs.contains(&old) && !self.reg_in_use(old) {
+                self.free.push(old);
+            }
+        }
+        self.bind_array(name, regs);
+        Ok(())
+    }
 }

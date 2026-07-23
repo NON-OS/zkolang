@@ -12,6 +12,8 @@ pub mod mimc;
 #[cfg(test)]
 mod array_param_tests;
 #[cfg(test)]
+mod array_return_tests;
+#[cfg(test)]
 mod array_tests;
 #[cfg(test)]
 mod backend_tests;

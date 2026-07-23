@@ -147,6 +147,17 @@ let w = [s, t, u];
 output dot3(v, w);
 ```
 
+A function can also return an array, so an elementwise operation builds a vector the caller
+binds and indexes. To feed one function's vector into another, bind it first.
+
+```
+fn scale3(v, k) = [v[0] * k, v[1] * k, v[2] * k];
+input a; input b; input c;
+let u = [a, b, c];
+let s = scale3(u, 3);
+output s[0]; output s[1]; output s[2];
+```
+
 Functions inline at each call, loops unroll at compile time, arrays are indexed by a
 constant. There is also ordered comparison (`< <= > >=`), boolean logic (`! && ||`), a
 branchless `sel`, and a `match`:

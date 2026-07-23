@@ -27,6 +27,7 @@ impl Compiler {
     pub(crate) fn stmt(&mut self, s: &Stmt) -> Result<(), CompileError> {
         match s {
             Stmt::Let(name, Expr::Array(elems)) => self.let_array(name, elems),
+            Stmt::Let(name, e) if self.produces_array(e) => self.let_array_expr(name, e),
             Stmt::Let(name, e) => self.let_scalar(name, e),
             Stmt::LetTuple(names, e) => self.let_tuple(names, e),
             Stmt::Assert(e) => self.assert(e),

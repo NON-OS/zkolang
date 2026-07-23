@@ -57,8 +57,8 @@ bit decomposition, which the compiler fills for you.
   constant index), `input`, `secret`, `output`.
 - Control and structure: bounded `for` loops unrolled at compile time, first-class arrays,
   functions inlined at each call, each with a one-line body or a `{ let ...; return ... }`
-  block, taking scalars or whole arrays and able to return several values a `let (a, b)`
-  destructures, and `include "name.zkl";`.
+  block, taking and returning scalars or whole arrays and able to return several values a
+  `let (a, b)` destructures, and `include "name.zkl";`.
 - Operators: field `+ - * /`, unary `-`, the field inverse `inv`, equality `== !=`,
   ordered comparison `< <= > >=`, logical `! && ||`, the branchless `sel` and its `if`
   and `match` forms.

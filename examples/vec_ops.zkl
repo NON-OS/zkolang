@@ -1,0 +1,25 @@
+// Functions that return vectors. A function can build and return a whole array, so an
+// elementwise operation on a vector is written once and its result named, indexed, and fed
+// into the next operation. Here one function scales a vector by a factor and another adds
+// two vectors, and the results are bound like any array. An array value flows through a
+// named binding; to feed one function's vector into another, bind it first.
+// Run: zkolang vec_ops.zkl
+
+fn scale3(v, k) = [v[0] * k, v[1] * k, v[2] * k];
+fn add3(a, b) = [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+
+input x0;
+input x1;
+input x2;
+input k;
+
+let u = [x0, x1, x2];
+let scaled = scale3(u, k);
+let summed = add3(u, scaled);
+
+output scaled[0];
+output scaled[1];
+output scaled[2];
+output summed[0];
+output summed[1];
+output summed[2];
