@@ -15,10 +15,12 @@ use super::super::compiler::{Compiler, Val};
 use crate::lang::parse::Expr;
 use crate::lang::CompileError;
 
-/// One evaluated argument: a single value, or a whole array passed by name.
+/// One evaluated argument: a single value, or a whole array. An array argument's registers
+/// are owned when the argument built them, a literal or a function that returned a vector, so
+/// they are freed after the call; a named array's registers belong to the caller and are not.
 pub(crate) enum Arg {
     Scalar(Val),
-    Array(Vec<u8>),
+    Array { regs: Vec<u8>, owned: bool },
 }
 
 /// The caller scope a call saved, to restore when the body is compiled.
@@ -29,27 +31,21 @@ pub(crate) struct SavedScope {
 }
 
 impl Compiler {
-    /// Evaluate each argument. A name bound to an array becomes that array's registers, so it
-    /// passes as a vector; everything else is a scalar value.
+    /// Evaluate each argument. An argument that produces an array, a named array, an array
+    /// literal, or a call that returns a vector, passes as that vector; everything else is a
+    /// scalar value. A named array is borrowed from the caller; a built one is owned, so it is
+    /// freed once the call is done. The array precedence matches a bare reference, so a scalar
+    /// parameter named like a caller's array still passes by value.
     pub(crate) fn eval_args(&mut self, args: &[Expr]) -> Result<Vec<Arg>, CompileError> {
         let mut out = Vec::with_capacity(args.len());
         for a in args {
-            if let Expr::Var(n) = a {
-                // A scalar binding shadows an array of the same name, the same precedence a
-                // bare reference uses, so a parameter named like a caller's array is passed by
-                // value, not resolved to that array. Only a name that is an array and nothing
-                // else passes as a vector.
-                let shadowed = self.lookup(n).is_some()
-                    || self.loop_const(n).is_some()
-                    || self.scalar_const(n).is_some();
-                if !shadowed {
-                    if let Some(regs) = self.lookup_array(n) {
-                        out.push(Arg::Array(regs.to_vec()));
-                        continue;
-                    }
-                }
+            if self.produces_array(a) {
+                let regs = self.expr_array(a)?;
+                let owned = !matches!(a, Expr::Var(_));
+                out.push(Arg::Array { regs, owned });
+            } else {
+                out.push(Arg::Scalar(self.expr(a)?));
             }
-            out.push(Arg::Scalar(self.expr(a)?));
         }
         Ok(out)
     }
@@ -63,7 +59,7 @@ impl Compiler {
         for (p, a) in params.iter().zip(args) {
             match a {
                 Arg::Scalar(v) => scope.push((p.clone(), v.reg)),
-                Arg::Array(regs) => self.arrays.push((p.clone(), regs.clone())),
+                Arg::Array { regs, .. } => self.arrays.push((p.clone(), regs.clone())),
             }
         }
         let syms = core::mem::replace(&mut self.syms, scope);
@@ -75,18 +71,32 @@ impl Compiler {
         }
     }
 
-    /// Restore the caller's scope, drop the parameter arrays without freeing their registers,
-    /// since an array argument's registers belong to the caller, then free the scalar-argument
-    /// temporaries that no result carries out.
+    /// Restore the caller's scope, drop the parameter-array bindings, then free the argument
+    /// temporaries no result carries out: a scalar argument's register, and an owned array
+    /// argument's elements. A borrowed array's registers belong to the caller and are left
+    /// alone.
     pub(crate) fn close_params(&mut self, saved: SavedScope, args: &[Arg], result_regs: &[u8]) {
         self.syms = saved.syms;
         self.loop_consts = saved.loops;
         self.arrays.truncate(saved.arrays_len);
         for a in args {
-            if let Arg::Scalar(v) = a {
-                if v.temp && !result_regs.contains(&v.reg) && !self.free.contains(&v.reg) {
-                    self.free.push(v.reg);
+            match a {
+                Arg::Scalar(v) => {
+                    if v.temp && !result_regs.contains(&v.reg) && !self.free.contains(&v.reg) {
+                        self.free.push(v.reg);
+                    }
                 }
+                Arg::Array { regs, owned: true } => {
+                    for r in regs {
+                        if !result_regs.contains(r)
+                            && !self.reg_in_use(*r)
+                            && !self.free.contains(r)
+                        {
+                            self.free.push(*r);
+                        }
+                    }
+                }
+                Arg::Array { owned: false, .. } => {}
             }
         }
     }

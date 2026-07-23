@@ -72,3 +72,24 @@ fn a_binding_aliases_an_array() {
     assert!(report.verified);
     assert_eq!(report.outputs, vec![3, 4]);
 }
+
+#[test]
+fn an_array_argument_need_not_be_named_first() {
+    // A returned vector and an array literal pass directly as arguments, not only named ones.
+    let src = "\
+fn scale3(v, k) = [v[0] * k, v[1] * k, v[2] * k];
+fn add3(a, b) = [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+fn dot3(a, b) = a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+input x;
+input y;
+input z;
+let u = [x, y, z];
+let s = add3(scale3(u, 2), u);
+output s[0];
+output s[1];
+output s[2];
+output dot3([1, 2, 3], u);";
+    let report = prove_source_with_inputs(src, &[1, 2, 3]).expect("run");
+    assert!(report.verified);
+    assert_eq!(report.outputs, vec![3, 6, 9, 14], "2u + u elementwise, then dot");
+}
