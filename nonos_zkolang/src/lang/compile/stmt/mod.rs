@@ -14,6 +14,7 @@ mod for_loop;
 mod input;
 mod let_array;
 mod let_scalar;
+mod let_tuple;
 mod output;
 mod secret;
 
@@ -27,6 +28,7 @@ impl Compiler {
         match s {
             Stmt::Let(name, Expr::Array(elems)) => self.let_array(name, elems),
             Stmt::Let(name, e) => self.let_scalar(name, e),
+            Stmt::LetTuple(names, e) => self.let_tuple(names, e),
             Stmt::Assert(e) => self.assert(e),
             Stmt::Input(name) => self.input(name),
             Stmt::Secret(name) => self.secret(name),

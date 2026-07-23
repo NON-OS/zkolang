@@ -17,6 +17,24 @@ impl<'a> Parser<'a> {
         match self.peek() {
             Some(Tok::Let) => {
                 self.pos += 1;
+                if matches!(self.peek(), Some(Tok::LParen)) {
+                    // `let (x, y, ...) = e;` destructures the tuple e produces into names.
+                    self.pos += 1;
+                    let mut names = alloc::vec::Vec::new();
+                    loop {
+                        names.push(self.ident()?);
+                        if matches!(self.peek(), Some(Tok::Comma)) {
+                            self.pos += 1;
+                        } else {
+                            break;
+                        }
+                    }
+                    self.expect(&Tok::RParen)?;
+                    self.expect(&Tok::Assign)?;
+                    let e = self.expr()?;
+                    self.expect(&Tok::Semi)?;
+                    return Ok(Stmt::LetTuple(names, e));
+                }
                 let name = self.ident()?;
                 self.expect(&Tok::Assign)?;
                 let e = self.expr()?;

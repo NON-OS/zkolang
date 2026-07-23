@@ -76,6 +76,8 @@ mod stdlib_tests;
 #[cfg(test)]
 mod step_tests;
 #[cfg(test)]
+mod tuple_tests;
+#[cfg(test)]
 mod vkey_tests;
 #[cfg(test)]
 mod vm_tests;

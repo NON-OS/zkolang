@@ -55,6 +55,7 @@ fn subst(e: &Expr, env: &Env) -> Expr {
         // Opaque: a block rebinds names in its own scope, so an outer constant must not be
         // pushed inside where a local of the same name could shadow it.
         Expr::Block(locals, r) => Expr::Block(locals.clone(), r.clone()),
+        Expr::Tuple(xs) => Expr::Tuple(xs.iter().map(|a| subst(a, env)).collect()),
     }
 }
 
@@ -71,6 +72,13 @@ fn loop_bound(stmts: &[Stmt], set: &mut Vec<String>, in_loop: bool) {
             Stmt::Let(n, _) | Stmt::Input(n) | Stmt::Secret(n) if in_loop => {
                 if !set.contains(n) {
                     set.push(n.clone());
+                }
+            }
+            Stmt::LetTuple(names, _) if in_loop => {
+                for n in names {
+                    if !set.contains(n) {
+                        set.push(n.clone());
+                    }
                 }
             }
             Stmt::For { body, .. } => loop_bound(body, set, true),
@@ -106,6 +114,14 @@ fn go(stmts: &[Stmt], env: &mut Env, depth: usize, varying: &[String]) -> Vec<St
                     env.push((name.clone(), None));
                     out.push(Stmt::Let(name.clone(), e2));
                 }
+            }
+            Stmt::LetTuple(names, e) => {
+                // The destructured values are runtime, so their names are not constants.
+                let e2 = norm(e, env);
+                for n in names {
+                    env.push((n.clone(), None));
+                }
+                out.push(Stmt::LetTuple(names.clone(), e2));
             }
             Stmt::Input(n) => {
                 env.push((n.clone(), None));

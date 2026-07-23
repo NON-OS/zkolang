@@ -48,7 +48,7 @@ fn children(e: &Expr) -> Vec<&Expr> {
         | Expr::Ne(a, b)
         | Expr::Lt(a, b) => vec![a.as_ref(), b.as_ref()],
         Expr::Sel(c, a, b) | Expr::If(c, a, b) => vec![c.as_ref(), a.as_ref(), b.as_ref()],
-        Expr::Call(_, args) | Expr::Array(args) => args.iter().collect(),
+        Expr::Call(_, args) | Expr::Array(args) | Expr::Tuple(args) => args.iter().collect(),
     }
 }
 
@@ -112,6 +112,7 @@ fn replace(e: &Expr, n: &Expr, name: &str) -> Expr {
         Expr::Array(xs) => Expr::Array(xs.iter().map(|a| replace(a, n, name)).collect()),
         // Opaque: a block owns its scope, so a share is never rewritten across its braces.
         Expr::Block(locals, r) => Expr::Block(locals.clone(), r.clone()),
+        Expr::Tuple(xs) => Expr::Tuple(xs.iter().map(|a| replace(a, n, name)).collect()),
     }
 }
 
@@ -155,6 +156,10 @@ fn go(stmts: &[Stmt], ctr: &mut usize) -> Vec<Stmt> {
             Stmt::Let(n, e) => {
                 let e2 = hoist(e.clone(), &mut out, ctr);
                 out.push(Stmt::Let(n.clone(), e2));
+            }
+            Stmt::LetTuple(names, e) => {
+                let e2 = hoist(e.clone(), &mut out, ctr);
+                out.push(Stmt::LetTuple(names.clone(), e2));
             }
             Stmt::Output(e) => {
                 let e2 = hoist(e.clone(), &mut out, ctr);

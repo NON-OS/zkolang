@@ -115,6 +115,24 @@ The bindings scope to the block and to each other in order; the last statement i
 value, written `return e;` or as a trailing expression with no `return`. A block is an
 expression like any other, so it can stand anywhere a value can, not only as a body.
 
+A function can return more than one value. A compare-swap, the step every sorting network
+is built from, returns the smaller and the larger of a pair, and the caller destructures
+the two with `let (a, b)`.
+
+```
+fn minmax(a, b) {
+    let ordered = a < b;
+    return (sel(ordered, a, b), sel(ordered, b, a));
+}
+input x;
+input y;
+let (lo, hi) = minmax(x, y);
+output lo;
+output hi;
+```
+
+The name count must match how many values the function returns, or the compiler says so.
+
 Functions inline at each call, loops unroll at compile time, arrays are indexed by a
 constant. There is also ordered comparison (`< <= > >=`), boolean logic (`! && ||`), a
 branchless `sel`, and a `match`:

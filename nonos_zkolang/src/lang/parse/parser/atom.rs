@@ -23,8 +23,20 @@ impl<'a> Parser<'a> {
             }
             Some(Tok::LParen) => {
                 let e = self.expr()?;
-                self.expect(&Tok::RParen)?;
-                Ok(e)
+                if matches!(self.peek(), Some(Tok::Comma)) {
+                    // More than one value between the parentheses is a tuple, the shape a
+                    // function returns when it returns several things.
+                    let mut elems = alloc::vec![e];
+                    while matches!(self.peek(), Some(Tok::Comma)) {
+                        self.pos += 1;
+                        elems.push(self.expr()?);
+                    }
+                    self.expect(&Tok::RParen)?;
+                    Ok(Expr::Tuple(elems))
+                } else {
+                    self.expect(&Tok::RParen)?;
+                    Ok(e)
+                }
             }
             Some(Tok::LBracket) => self.array_expr(),
             Some(Tok::LBrace) => self.block_body(),

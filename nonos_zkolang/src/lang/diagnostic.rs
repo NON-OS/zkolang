@@ -53,6 +53,10 @@ pub fn message(err: &CompileError) -> String {
         CompileError::NonConstantIndex => "index is not a compile-time constant".into(),
         CompileError::IndexOutOfBounds { .. } => "index out of bounds".into(),
         CompileError::ArrayNotScalar => "array used where a single value is required".into(),
+        CompileError::TupleNotScalar => "tuple used where a single value is required".into(),
+        CompileError::TupleArity { names, values } => {
+            format!("this binding names {names} values but the right side has {values}")
+        }
         CompileError::IncludeNotFound => "included file not found".into(),
         CompileError::IncludeTooDeep => "include nested too deep".into(),
     }

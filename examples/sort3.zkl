@@ -1,0 +1,28 @@
+// Sort three values with a network of compare-and-swaps. A compare-swap is the operation
+// sorting is built from, and it returns two values at once, the smaller and the larger of a
+// pair, so it could not be written as a function until the language could return more than
+// one thing. Now it can, and a three-input sorting network is three of them. The outputs
+// come out in order for any inputs in the sixteen-bit comparison range. Run: zkolang
+// sort3.zkl
+include "logic.zkl";
+
+// The compare-swap: order a pair, smaller first. It returns a tuple, and the caller
+// destructures it. This is the primitive every sorting network is made of.
+fn minmax(a, b) {
+    let ordered = a < b;
+    return (sel(ordered, a, b), sel(ordered, b, a));
+}
+
+input x;
+input y;
+input z;
+
+// Order the last pair, then settle the smallest to the front, then order the middle and the
+// largest. Three compare-swaps sort three values.
+let (m0, hi) = minmax(y, z);
+let (lo, m1) = minmax(x, m0);
+let (mid, top) = minmax(m1, hi);
+
+output lo;
+output mid;
+output top;

@@ -18,6 +18,7 @@ mod ne;
 mod neg;
 mod num;
 mod select;
+mod tuple;
 mod var;
 use super::compiler::{Compiler, Val};
 use crate::isa::Op;
@@ -45,6 +46,7 @@ impl Compiler {
             Expr::Index(base, idx, at) => self.index(base, idx, *at),
             Expr::Array(_) => Err(CompileError::ArrayNotScalar),
             Expr::Block(locals, result) => self.block_expr(locals, result),
+            Expr::Tuple(_) => Err(CompileError::TupleNotScalar),
         }
     }
 }

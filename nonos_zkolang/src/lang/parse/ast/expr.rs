@@ -34,4 +34,8 @@ pub enum Expr {
     /// Each binding is visible to the ones after it and to the result, and to nothing outside
     /// the braces. This is what gives a function a body of steps rather than one expression.
     Block(Vec<(String, Expr)>, Box<Expr>),
+    /// A tuple, `(a, b, ...)`: several values at once, what a function returns when it returns
+    /// more than one thing. A tuple is not a scalar; it is destructured by `let (x, y) = ...`
+    /// or returned from a function, never stored in a single binding.
+    Tuple(Vec<Expr>),
 }

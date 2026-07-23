@@ -45,6 +45,10 @@ pub enum CompileError {
     IndexOutOfBounds { at: usize },
     /// An array used where a single value is required.
     ArrayNotScalar,
+    /// A tuple used where a single value is required.
+    TupleNotScalar,
+    /// A destructuring binding whose name count does not match the value's arity.
+    TupleArity { names: usize, values: usize },
     /// An included file the resolver could not find.
     IncludeNotFound,
     /// An include chain nested past the depth bound, which a cycle would cause.

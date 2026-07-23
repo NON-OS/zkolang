@@ -114,5 +114,6 @@ pub(super) fn fold(e: &Expr) -> Expr {
             locals.iter().map(|(n, e)| (n.clone(), fold(e))).collect(),
             Box::new(fold(r)),
         ),
+        Expr::Tuple(xs) => Expr::Tuple(xs.iter().map(fold).collect()),
     }
 }
