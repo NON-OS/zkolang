@@ -5,6 +5,7 @@
 
 //! Expression lowering: the dispatcher routes each node to its own lowering file.
 
+mod args;
 mod binary;
 mod block;
 mod call;

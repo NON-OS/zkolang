@@ -5,14 +5,12 @@
 
 //! An inlined function call: resolution and argument compilation.
 
-use alloc::vec::Vec;
-
 use super::super::compiler::{Compiler, Val, MAX_INLINE};
 use crate::lang::parse::Expr;
 use crate::lang::CompileError;
 
 impl Compiler {
-    /// Resolve the function, check its arity and the inline depth, compile the
+    /// Resolve the function, check its arity and the inline depth, evaluate the
     /// arguments in the caller's scope, then hand off to the body inliner. Recursion
     /// is caught by the depth bound rather than looping forever.
     pub(crate) fn call(&mut self, name: &str, args: &[Expr]) -> Result<Val, CompileError> {
@@ -34,10 +32,7 @@ impl Compiler {
         if self.inline_depth >= MAX_INLINE {
             return Err(CompileError::RecursionTooDeep);
         }
-        let mut argv: Vec<Val> = Vec::with_capacity(args.len());
-        for a in args {
-            argv.push(self.expr(a)?);
-        }
+        let argv = self.eval_args(args)?;
         self.inline_body(&def, argv)
     }
 }

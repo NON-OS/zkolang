@@ -1,0 +1,21 @@
+// Functions over vectors. A function can take a whole array as one argument and index it
+// inside, so the operations on a vector are named once and reused, rather than spelled out
+// at every call. Here a dot product and a sum are each a function of the arrays passed to
+// them. Run: zkolang array_fn.zkl
+
+// The dot product of two three-vectors, and the sum of one.
+fn dot3(a, b) = a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+fn sum3(v) = v[0] + v[1] + v[2];
+
+input a0;
+input a1;
+input a2;
+input b0;
+input b1;
+input b2;
+
+let u = [a0, a1, a2];
+let w = [b0, b1, b2];
+
+output dot3(u, w);
+output sum3(u);

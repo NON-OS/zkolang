@@ -11,6 +11,7 @@
 use alloc::vec::Vec;
 
 use super::super::compiler::{Compiler, Val, MAX_INLINE};
+use super::args::Arg;
 use crate::lang::parse::{Expr, FnDef};
 use crate::lang::CompileError;
 
@@ -33,7 +34,7 @@ impl Compiler {
         }
     }
 
-    /// A call in tuple mode: resolve, check arity and inline depth, compile the arguments,
+    /// A call in tuple mode: resolve, check arity and inline depth, evaluate the arguments,
     /// then inline the body in tuple mode so a function that ends in a tuple returns several
     /// values.
     fn call_tuple(&mut self, name: &str, args: &[Expr]) -> Result<Vec<Val>, CompileError> {
@@ -55,35 +56,20 @@ impl Compiler {
         if self.inline_depth >= MAX_INLINE {
             return Err(CompileError::RecursionTooDeep);
         }
-        let mut argv: Vec<Val> = Vec::with_capacity(args.len());
-        for a in args {
-            argv.push(self.expr(a)?);
-        }
+        let argv = self.eval_args(args)?;
         self.inline_body_tuple(&def, argv)
     }
 
-    /// Inline a body in tuple mode: swap in a parameter-only scope, compile the body to its
-    /// list of values, restore, then free the argument temporaries no result carries out.
-    fn inline_body_tuple(&mut self, def: &FnDef, argv: Vec<Val>) -> Result<Vec<Val>, CompileError> {
-        let scope: Vec<(alloc::string::String, u8)> = def
-            .params
-            .iter()
-            .zip(&argv)
-            .map(|(p, v)| (p.clone(), v.reg))
-            .collect();
-        let saved_syms = core::mem::replace(&mut self.syms, scope);
-        let saved_loops = core::mem::take(&mut self.loop_consts);
+    /// Inline a body in tuple mode: open the parameter scope from the arguments, compile the
+    /// body to its list of values, then close the scope, keeping the registers the results
+    /// carry out.
+    fn inline_body_tuple(&mut self, def: &FnDef, args: Vec<Arg>) -> Result<Vec<Val>, CompileError> {
+        let saved = self.open_params(&def.params, &args);
         self.inline_depth += 1;
         let results = self.expr_tuple(&def.body)?;
         self.inline_depth -= 1;
-        self.syms = saved_syms;
-        self.loop_consts = saved_loops;
         let result_regs: Vec<u8> = results.iter().map(|v| v.reg).collect();
-        for v in &argv {
-            if v.temp && !result_regs.contains(&v.reg) && !self.free.contains(&v.reg) {
-                self.free.push(v.reg);
-            }
-        }
+        self.close_params(saved, &args, &result_regs);
         Ok(results)
     }
 

@@ -135,6 +135,18 @@ The name count must match how many values the function returns, or the compiler 
 Destructuring works inside a function body too, so one function can build on another's two
 results, which is how a median or a small sort reads.
 
+A function can take a whole array as an argument and index it inside, so an operation over
+a vector is named once instead of spelled out at every call.
+
+```
+fn dot3(a, b) = a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+input p; input q; input r;
+input s; input t; input u;
+let v = [p, q, r];
+let w = [s, t, u];
+output dot3(v, w);
+```
+
 Functions inline at each call, loops unroll at compile time, arrays are indexed by a
 constant. There is also ordered comparison (`< <= > >=`), boolean logic (`! && ||`), a
 branchless `sel`, and a `match`:
