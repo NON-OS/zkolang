@@ -9,14 +9,39 @@
 //! from the program's directory and any `stdlib` folder above it, so a program runs the
 //! same from a shell or an editor task.
 
+use std::io::IsTerminal;
 use std::path::{Path, PathBuf};
 use std::process::exit;
 use std::{env, fs};
 
+/// Wrap text in an ANSI color, but only when standard output is a terminal, so piped or
+/// captured output stays plain text.
+fn paint(s: &str, code: &str) -> String {
+    if std::io::stdout().is_terminal() {
+        format!("\x1b[{code}m{s}\x1b[0m")
+    } else {
+        s.to_string()
+    }
+}
+
 use nonos_zkolang::{
     commit, compile_source, expand_includes, prove_source_with_witness, quote, render_error,
-    to_asm, to_c, to_python, verifier_key, REGISTRATION_RATE,
+    to_asm, to_c, to_python, verifier_key, ProveError, RunError, REGISTRATION_RATE,
 };
+
+/// A one-line human message for a run failure. An unprovable statement is the honest
+/// result for a false claim, so it says so plainly rather than printing a debug dump.
+fn render_run(src: &str, e: &RunError) -> String {
+    match e {
+        RunError::Compile(c) => render_error(src, c),
+        RunError::Execute(ProveError::Unprovable { step }) => {
+            format!("unprovable: no witness satisfies the statement (step {step})")
+        }
+        RunError::Execute(pe) => format!("cannot run: {pe:?}"),
+        RunError::Layout(be) => format!("cannot lay out the trace: {be:?}"),
+        RunError::ProgramTooLong { steps } => format!("program too long: {steps} steps"),
+    }
+}
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -91,7 +116,11 @@ fn resolve_include(dir: &Path, name: &str) -> Option<String> {
 }
 
 fn err(msg: &str) -> i32 {
-    eprintln!("{msg}");
+    if std::io::stderr().is_terminal() {
+        eprintln!("\x1b[1;31m{msg}\x1b[0m");
+    } else {
+        eprintln!("{msg}");
+    }
     1
 }
 
@@ -107,13 +136,13 @@ fn cmd_run(a: &[String]) -> i32 {
     let witness = nums(flag(a, "--witness"));
     match prove_source_with_witness(&src, &inputs, &witness) {
         Ok(r) if r.verified => {
-            println!("verified");
+            println!("{}", paint("verified", "1;32"));
             println!("outputs {:?}", r.outputs);
             println!("steps {}  trace 2^{}", r.steps, r.log_trace_len);
             0
         }
         Ok(_) => err("proof did not verify"),
-        Err(e) => err(&format!("run error: {e:?}")),
+        Err(e) => err(&render_run(&src, &e)),
     }
 }
 
@@ -127,7 +156,7 @@ fn cmd_check(a: &[String]) -> i32 {
     };
     match compile_source(&src) {
         Ok(ops) => {
-            println!("ok  {} instructions", ops.len());
+            println!("{}  {} instructions", paint("ok", "1;32"), ops.len());
             0
         }
         Err(e) => err(&render_error(&src, &e)),
@@ -217,6 +246,6 @@ fn cmd_fee(a: &[String]) -> i32 {
             0
         }
         Ok(_) => err("proof did not verify"),
-        Err(e) => err(&format!("run error: {e:?}")),
+        Err(e) => err(&render_run(&src, &e)),
     }
 }

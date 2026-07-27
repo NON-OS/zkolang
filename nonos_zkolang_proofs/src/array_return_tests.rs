@@ -91,5 +91,9 @@ output s[2];
 output dot3([1, 2, 3], u);";
     let report = prove_source_with_inputs(src, &[1, 2, 3]).expect("run");
     assert!(report.verified);
-    assert_eq!(report.outputs, vec![3, 6, 9, 14], "2u + u elementwise, then dot");
+    assert_eq!(
+        report.outputs,
+        vec![3, 6, 9, 14],
+        "2u + u elementwise, then dot"
+    );
 }
