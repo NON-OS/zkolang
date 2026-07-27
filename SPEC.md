@@ -133,6 +133,13 @@ at once fits the file. Exceeding it is the `TooManyRegisters` error, an honest c
 it forces a circuit to be budgeted, and a bounded circuit is the only kind with a fixed
 proof.
 
+Two more bounds keep compilation itself finite. A single loop unrolls to at most a fixed
+number of iterations, and the total instruction count is capped, so a nest of loops each
+within the per-loop bound cannot multiply out into an unbounded program: either limit is
+a compile error rather than an expansion that exhausts memory. A program that compiles
+past the largest trace the prover will size to, `2^16` steps, is rejected rather than
+silently truncated, so a proof always covers the whole program.
+
 ## 8. The proof
 
 Running a program yields an execution trace. The step AIR binds every operand of every
@@ -143,6 +150,18 @@ and the public inputs and outputs are bound into the proof. A per-program verifi
 width, the rate, and the periodic root, ties a proof to an exact program, which is what
 lets a market register and challenge a program by its key alone. The underlying STARK is
 transparent, over the quadratic extension, with no trusted setup.
+
+The trace is committed with a Poseidon Merkle tree and opened at thirty two random query
+positions, with sixteen bits of grinding on the Fiat-Shamir challenge and three extra
+bits of FRI blowup, the parameter set the framework uses for its money-grade proofs. The
+transcript hash is Poseidon rather than a byte hash, which keeps the verifier itself
+arithmetizable, so a proof can be checked inside another proof. FRI folds the committed
+codeword down to a constant layer, and the verifier replays the same transcript to check
+every opening. Because the whole construction is hashes and field arithmetic, with no
+pairing and no discrete log, it is transparent and post-quantum: there is no trusted
+setup, and nothing in it is known to fall to a quantum computer. The proof and the
+verifier key are serialized behind a version byte, so a future change to either encoding
+is a distinct format rather than a silent collision.
 
 ## 9. Ordered comparison
 
