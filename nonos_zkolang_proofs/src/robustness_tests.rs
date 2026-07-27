@@ -13,6 +13,7 @@
 
 use std::panic::{catch_unwind, AssertUnwindSafe};
 
+use nonos_stark::air::{deserialize_proof, deserialize_proof_ext};
 use nonos_zkolang::{compile_source, compile_source_unoptimized, expand_includes, render_error};
 
 // A deterministic generator, so a failure reproduces from the seed.
@@ -191,6 +192,46 @@ fn diagnostic_rendering_never_panics_on_multibyte() {
             s.push_str(VOCAB[rng.below(VOCAB.len() as u64) as usize]);
         }
         no_panic(&s, "multibyte diagnostic");
+    }
+    std::panic::set_hook(prev);
+}
+
+#[test]
+fn the_proof_readers_never_panic_on_garbage() {
+    // A proof arrives as untrusted bytes, so the readers are as much a boundary as the
+    // compiler. Both must answer arbitrary bytes with None, never a panic: the length
+    // fields inside a proof are attacker chosen, and a reader that indexed on them
+    // instead of bounds checking would crash a verifier on a crafted input. Random
+    // lengths cover truncation and over-read; the crafted cases push the length fields
+    // to their extremes.
+    let prev = std::panic::take_hook();
+    std::panic::set_hook(Box::new(|_| {}));
+
+    let read = |bytes: &[u8]| {
+        catch_unwind(AssertUnwindSafe(|| {
+            let _ = deserialize_proof(bytes);
+            let _ = deserialize_proof_ext(bytes);
+        }))
+        .is_ok()
+    };
+
+    for craft in [
+        vec![],
+        vec![0u8; 512],
+        vec![0xffu8; 512],
+        vec![0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff],
+    ] {
+        assert!(read(&craft), "a proof reader panicked on a crafted input");
+    }
+
+    let mut rng = Rng(0x5EEDF00D);
+    for _ in 0..60000 {
+        let n = rng.below(384) as usize;
+        let bytes: Vec<u8> = (0..n).map(|_| (rng.next() & 0xff) as u8).collect();
+        if !read(&bytes) {
+            std::panic::set_hook(prev);
+            panic!("a proof reader panicked on {n} random bytes");
+        }
     }
     std::panic::set_hook(prev);
 }
