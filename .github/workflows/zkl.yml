@@ -1,0 +1,62 @@
+name: zkl
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  circuits:
+    name: compile and prove circuits
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: build the compiler
+        run: cargo build --release -p nonos_zkolang_cli
+
+      # Every circuit, example, and standard-library module must compile. This is
+      # the front-end gate: a parser or type error in any .zkl fails the build.
+      - name: compile the whole corpus
+        run: |
+          zk=target/release/zkolang
+          rc=0
+          for f in $(find circuits examples stdlib -name '*.zkl' | sort); do
+            if ! "$zk" check "$f" >/dev/null; then
+              echo "check failed: $f"
+              rc=1
+            fi
+          done
+          exit $rc
+
+      # The shielded transfer is the flagship statement. A balanced transfer proves;
+      # one that mints value from nothing has no proof, not a weak one.
+      - name: prove a shielded transfer, reject an unbalanced one
+        run: |
+          zk=target/release/zkolang
+          root=16332033885058789084
+          witness=100,7,11,13,17,0,1,0,9,5,0,1,0,1,1,0,1,0
+          "$zk" run circuits/shield/transfer_note.zkl --input "$root",5,10 --witness "$witness"
+          if "$zk" run circuits/shield/transfer_note.zkl --input "$root",5,200 --witness "$witness"; then
+            echo "an unbalanced transfer must not prove"
+            exit 1
+          fi
+          echo "unbalanced transfer correctly rejected"
+
+      # The anchor a chain would check is a pure function of the program. It must be
+      # identical across runs, or a verifier could not pin the circuit.
+      - name: the verifier key is deterministic
+        run: |
+          zk=target/release/zkolang
+          a=$("$zk" key circuits/shield/spend_note.zkl)
+          b=$("$zk" key circuits/shield/spend_note.zkl)
+          if [ "$a" != "$b" ]; then
+            echo "verifier key is not stable"
+            exit 1
+          fi
+          echo "verifier key stable"

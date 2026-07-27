@@ -1,0 +1,37 @@
+name: security
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    # Weekly, so a newly published advisory is caught even with no code change.
+    - cron: '17 6 * * 1'
+
+jobs:
+  supply-chain:
+    name: advisories, bans, licenses, sources
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # cargo-deny reads deny.toml: known advisories, banned crates, the license
+      # allowlist, and the set of trusted sources.
+      - uses: EmbarkStudios/cargo-deny-action@v2
+        with:
+          command: check all
+
+  secrets:
+    name: secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      # Scan the full history for committed keys or tokens. Pinned to a release so
+      # the check is reproducible.
+      - name: gitleaks
+        run: |
+          v=8.18.4
+          curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${v}/gitleaks_${v}_linux_x64.tar.gz" \
+            | tar -xz gitleaks
+          ./gitleaks detect --source . --no-banner --redact --exit-code 1

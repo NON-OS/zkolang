@@ -1,0 +1,36 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  check:
+    name: format, lint, and prove
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: format
+        run: cargo fmt --all --check
+
+      # Deny warnings on the language crates. nonos-stark carries its own lint
+      # backlog and is checked, not gated, so it does not block the language.
+      - name: clippy
+        run: cargo clippy -p nonos_zkolang -p nonos_zkolang_cli -p nonos_zkolang_proofs --all-targets -- -D warnings
+
+      # The proofs crate compiles every example and stdlib circuit, runs it, and
+      # for the ones with a known answer checks the output. This is where the
+      # note commitment is held byte for byte against nonos-stark.
+      - name: test
+        run: cargo test --workspace --release

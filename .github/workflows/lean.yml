@@ -1,0 +1,29 @@
+name: lean
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  proofs:
+    name: machine-checked proofs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Sets up elan, reads lean/lean-toolchain, and runs lake build. The build
+      # is the check: a theorem that did not type check would fail here.
+      - uses: leanprover/lean4-action@v1
+        with:
+          lake-package-directory: lean
+
+      # A proof that leans on sorry is not a proof. The sources must be clean,
+      # so the theorem count in the README stands for real obligations.
+      - name: no sorry, no admit
+        run: |
+          if grep -rnE '\b(sorry|admit)\b' lean --include='*.lean'; then
+            echo "found an unproven placeholder in the Lean sources"
+            exit 1
+          fi
+          echo "no sorry, no admit"
