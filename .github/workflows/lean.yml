@@ -12,11 +12,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Sets up elan, reads lean/lean-toolchain, and runs lake build. The build
-      # is the check: a theorem that did not type check would fail here.
-      - uses: leanprover/lean4-action@v1
-        with:
-          lake-package-directory: lean
+      # Install elan. It reads lean/lean-toolchain and pulls the pinned Lean on
+      # the first lake invocation in that directory.
+      - name: install elan
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -o elan-init.sh
+          chmod +x elan-init.sh
+          ./elan-init.sh -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      # The build is the check: a theorem that did not type check fails here.
+      - name: lake build
+        working-directory: lean
+        run: lake build
 
       # A proof that leans on sorry is not a proof. The sources must be clean,
       # so the theorem count in the README stands for real obligations.
