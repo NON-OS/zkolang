@@ -60,6 +60,8 @@ mod logic_tests;
 #[cfg(test)]
 mod loop_tests;
 #[cfg(test)]
+mod note_commit_tests;
+#[cfg(test)]
 mod nox_tests;
 #[cfg(test)]
 mod operator_tests;
