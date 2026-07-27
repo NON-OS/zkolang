@@ -17,6 +17,7 @@ mod const_table;
 mod count_inputs;
 mod count_secrets;
 mod expr;
+mod live;
 mod stmt;
 
 use alloc::vec::Vec;
@@ -36,8 +37,22 @@ fn lower(ast: &Ast) -> Result<Compiled, CompileError> {
     let n_public = count_inputs::count_inputs(&ast.stmts).min(u16::MAX as u64) as u16;
     let n_secret = count_secrets::count_secrets(&ast.stmts).min(u16::MAX as u64) as u16;
     let mut c = Compiler::new(ast.consts.clone(), ast.fns.clone(), n_public, n_secret);
-    for s in &ast.stmts {
+    // reads_after[i] is the sorted set of names read by statements i onward, so after
+    // lowering statement i a binding is dead exactly when its name is absent from
+    // reads_after[i + 1]. Building it from the end keeps the whole pass linear.
+    let stmts = &ast.stmts;
+    let mut reads_after: Vec<Vec<alloc::string::String>> = Vec::with_capacity(stmts.len() + 1);
+    reads_after.resize(stmts.len() + 1, Vec::new());
+    for i in (0..stmts.len()).rev() {
+        let mut names = reads_after[i + 1].clone();
+        live::reads_of_stmt(&stmts[i], &mut names);
+        names.sort_unstable();
+        names.dedup();
+        reads_after[i] = names;
+    }
+    for (i, s) in stmts.iter().enumerate() {
         c.stmt(s)?;
+        c.free_dead(&reads_after[i + 1]);
     }
     Ok(c.finish())
 }

@@ -73,3 +73,26 @@ fn overflowing_the_file_is_a_clean_error() {
         Err(CompileError::TooManyRegisters)
     ));
 }
+
+#[test]
+fn a_long_chain_of_single_use_bindings_fits_by_liveness() {
+    // What matters for the file is not how many bindings a program names but how many
+    // are live at once. This chain names far more than the file holds, but each binding
+    // is read only by the next, so the peak live count is two. Liveness returns a
+    // register the moment its binding is dead, which is the only reason a chain this
+    // long compiles rather than overflowing at binding thirty-three.
+    let depth = 50;
+    assert!(
+        depth > REGS,
+        "the chain must exceed the file to be meaningful"
+    );
+    let mut src = String::from("input x; let t0 = x; ");
+    for i in 1..depth {
+        write!(src, "let t{i} = t{prev} + t{prev}; ", prev = i - 1).unwrap();
+    }
+    write!(src, "output t{};", depth - 1).unwrap();
+    let report = prove_source_with_inputs(&src, &[1]).expect("run");
+    assert!(report.verified);
+    // t0 = 1, t_i = 2 * t_{i-1}, so the last binding is two to the depth minus one.
+    assert_eq!(report.outputs, vec![1u64 << (depth - 1)]);
+}

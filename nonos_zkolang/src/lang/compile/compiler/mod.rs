@@ -10,6 +10,7 @@
 
 mod alloc;
 mod finish;
+mod free_dead;
 mod lookup;
 mod loop_const;
 mod new;
