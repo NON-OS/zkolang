@@ -5,7 +5,7 @@
 
 //! Unroll a bounded loop.
 
-use super::super::compiler::{Compiler, MAX_UNROLL};
+use super::super::compiler::{Compiler, MAX_OPS, MAX_UNROLL};
 use crate::lang::parse::Stmt;
 use crate::lang::CompileError;
 use alloc::string::String;
@@ -31,6 +31,11 @@ impl Compiler {
                 self.stmt(s)?;
             }
             self.loop_consts.pop();
+            // Checked each iteration so a nested loop trips the bound partway through
+            // its expansion, before the emitted vector can grow without limit.
+            if self.ops.len() > MAX_OPS {
+                return Err(CompileError::ProgramTooLong);
+            }
             v += 1;
         }
         Ok(())

@@ -68,3 +68,15 @@ fn a_too_large_loop_is_a_compile_error() {
         "an oversized loop compiled"
     );
 }
+
+#[test]
+fn nested_loops_within_the_per_loop_bound_still_cannot_run_away() {
+    // Each loop is under the unroll cap, but the product is millions of
+    // instructions, past any provable trace. The total cap trips partway through
+    // the expansion instead of letting the program exhaust memory.
+    let src = "for i in 0 .. 2000 { for j in 0 .. 2000 { let x = i + j; } }";
+    assert!(
+        matches!(compile_source(src), Err(CompileError::ProgramTooLong)),
+        "a nested loop bomb compiled"
+    );
+}

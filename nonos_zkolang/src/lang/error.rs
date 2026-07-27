@@ -25,6 +25,10 @@ pub enum CompileError {
     TooManyRegisters,
     /// A loop whose range would unroll to too many iterations.
     LoopTooLarge,
+    /// The unrolled program grew past the largest provable size. Nested loops, each
+    /// within the per-loop bound, can still multiply out past what any trace can hold,
+    /// so the total instruction count is capped here rather than at prove time.
+    ProgramTooLong,
     /// A call to a function that was never defined.
     UnknownFunction { name: String },
     /// A call whose argument count does not match the parameters.

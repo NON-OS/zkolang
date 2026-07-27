@@ -37,6 +37,7 @@ pub fn message(err: &CompileError) -> String {
         CompileError::UnknownVariable { name } => format!("unknown variable `{name}`"),
         CompileError::TooManyRegisters => "too many live values for the register file".into(),
         CompileError::LoopTooLarge => "loop range unrolls too far".into(),
+        CompileError::ProgramTooLong => "program unrolls past the largest provable size".into(),
         CompileError::UnknownFunction { name } => {
             format!("call to an undefined function `{name}`")
         }
