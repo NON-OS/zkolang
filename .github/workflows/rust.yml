@@ -26,10 +26,11 @@ jobs:
       - name: format
         run: cargo fmt --check -p nonos_zkolang -p nonos_zkolang_cli -p nonos_zkolang_proofs
 
-      # Deny warnings on the language crates. nonos-stark carries its own lint
-      # backlog and is checked, not gated, so it does not block the language.
+      # Deny warnings on the language crates. --no-deps keeps the lint off the
+      # nonos-stark path dependency, which carries its own backlog and is checked,
+      # not gated, so it does not block the language.
       - name: clippy
-        run: cargo clippy -p nonos_zkolang -p nonos_zkolang_cli -p nonos_zkolang_proofs --all-targets -- -D warnings
+        run: cargo clippy --no-deps -p nonos_zkolang -p nonos_zkolang_cli -p nonos_zkolang_proofs --all-targets -- -D warnings
 
       # The proofs crate compiles every example and stdlib circuit, runs it, and
       # for the ones with a known answer checks the output. This is where the
