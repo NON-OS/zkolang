@@ -36,7 +36,7 @@ fn u(x: Fp) -> u128 {
 
 #[test]
 fn add_sub_neg_match_modular_arithmetic() {
-    let mut rng = Rng(0xF1E1D_0000_0001);
+    let mut rng = Rng(0x000F_1E1D_0000_0001);
     for _ in 0..3_000_000 {
         let a = rng.fp();
         let b = rng.fp();
@@ -61,7 +61,7 @@ fn add_sub_neg_match_modular_arithmetic() {
 
 #[test]
 fn mul_and_square_match_the_reference_and_the_ring_laws() {
-    let mut rng = Rng(0x0FF1CE_1234_5678);
+    let mut rng = Rng(0x000F_F1CE_1234_5678);
     for _ in 0..3_000_000 {
         let a = rng.fp();
         let b = rng.fp();
@@ -85,7 +85,7 @@ fn inverse_satisfies_its_defining_relation() {
     assert_eq!(Fp::ZERO.inv(), Fp::ZERO, "inv(0)");
     assert_eq!(Fp::ONE.inv(), Fp::ONE, "inv(1)");
 
-    let mut rng = Rng(0xBADF00D_CAFE);
+    let mut rng = Rng(0x0BAD_F00D_CAFE);
     for _ in 0..1_000_000 {
         let a = rng.fp();
         if a == Fp::ZERO {
