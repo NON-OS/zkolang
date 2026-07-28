@@ -14,9 +14,10 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-//! The field ring operations. Multiplication reduces through a `u128` modulo;
-//! the optimized special-form reduction is a later refinement held to the same
-//! specification the property proofs fix.
+//! The field ring operations. Addition and subtraction correct a single carry;
+//! multiplication reduces the 128-bit product through the Goldilocks special-form
+//! reduction, with no division, held to the same specification, the plain `u128`
+//! modulo, that its property test pins.
 
 use super::element::{Fp, EPSILON, P};
 
@@ -127,7 +128,10 @@ mod tests {
         let ca = Fp::from_u64(a).value();
         let cb = Fp::from_u64(b).value();
         let got = (Fp::from_u64(a) * Fp::from_u64(b)).value();
-        assert!(got < P, "product {ca} * {cb} left the canonical range: {got}");
+        assert!(
+            got < P,
+            "product {ca} * {cb} left the canonical range: {got}"
+        );
         assert_eq!(got, reference(ca, cb), "product {ca} * {cb}");
     }
 
