@@ -11,8 +11,17 @@ use alloc::vec::Vec;
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Break {
     None,
+    /// A different secret behind the nullifier key: the two derivations no
+    /// longer share one sk.
     ForeignKey,
+    /// Absorb a commitment other than the one membership proved.
     ForeignNote,
+    /// Spend a note whose committed key this secret did not derive.
+    NotOwner,
+    /// Three honest compressions that are not chained into a commitment.
+    NoteEdge,
+    /// Prove association membership of a note other than the one spent.
+    Unlisted,
 }
 
 pub(crate) struct NullifierParts {

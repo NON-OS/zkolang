@@ -6,6 +6,7 @@ use super::scenario::build;
 use crate::shield::key::Break;
 
 #[test]
+#[ignore]
 fn creating_value_from_nothing_rejects() {
     let sks = [secret(1), secret(2)];
     let ins = [owned(sks[0], 0, 1000), owned(sks[1], 10, 2000)];

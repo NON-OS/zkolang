@@ -16,11 +16,17 @@ pub(crate) struct NoteParts {
 /// level, so the note hash is three depth one openings. The edges that chain them
 /// are not implied by the region; see note::edges.
 pub(crate) fn note_parts(note: &Note) -> NoteParts {
+    note_parts_broken(note, false)
+}
+
+pub(crate) fn note_parts_broken(note: &Note, break_edge: bool) -> NoteParts {
     let h = Poseidon::new(POOL_LOG_ROUNDS, [Fp::ZERO; RATE]);
     let q = quads(&note.limbs());
     let d0 = h.compress(&q[0], &q[1]);
     let d1 = h.compress(&q[2], &q[3]);
-    let cm = h.compress(&d0, &d1);
+    // Each compression stays internally honest; only the chain breaks.
+    let left = if break_edge { let mut x = d0; x[0] = x[0] + Fp::ONE; x } else { d0 };
+    let cm = h.compress(&left, &d1);
 
     let one = |leaf: [Fp; RATE], sib: [Fp; RATE], root: [Fp; RATE]| Opening {
         leaf,
@@ -31,7 +37,7 @@ pub(crate) fn note_parts(note: &Note) -> NoteParts {
     let region = MultiMembership::new_witness(
         h,
         POOL_LOG_ROUNDS,
-        alloc::vec![one(q[0], q[1], d0), one(q[2], q[3], d1), one(d0, d1, cm)],
+        alloc::vec![one(q[0], q[1], d0), one(q[2], q[3], d1), one(left, d1, cm)],
     );
     let trace = region.trace();
     let span_op = region.opened_cells()[1].0;

@@ -6,7 +6,7 @@ use super::assoc::assoc_membership;
 use super::keys::key_hierarchies;
 use crate::shield::key::Break;
 use super::pool::pool_membership;
-use crate::shield::note::{note_parts, Note};
+use crate::shield::note::{note_parts_broken, Note};
 use alloc::boxed::Box;
 use alloc::vec::Vec;
 
@@ -32,7 +32,8 @@ pub(crate) fn stack(
     brk: Break,
     bal: (Box<dyn AirExt>, Vec<Fp>),
 ) -> Stack {
-    let parts: Vec<_> = notes.iter().map(|n| note_parts(n)).collect();
+    let parts: Vec<_> =
+        notes.iter().map(|n| note_parts_broken(n, brk == Break::NoteEdge)).collect();
     let span_op = parts[0].span_op;
     let cms: Vec<[Fp; RATE]> = parts.iter().map(|p| p.cm).collect();
 
@@ -55,7 +56,7 @@ pub(crate) fn stack(
     regions.extend(k.regions);
     traces.extend(k.traces);
 
-    let a = assoc_membership(h, &[cms[0], cms[1]], &[900, 901, 902]);
+    let a = assoc_membership(h, &[cms[0], cms[1]], &[900, 901, 902], brk == Break::Unlisted);
     regions.extend(a.regions);
     traces.extend(a.traces);
 

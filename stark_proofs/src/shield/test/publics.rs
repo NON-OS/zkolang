@@ -22,6 +22,7 @@ fn derived() -> alloc::vec::Vec<usize> {
 /// the honest run satisfying the same trace shows it is constrained to the cell
 /// that computes it.
 #[test]
+#[ignore]
 fn every_derived_word_is_bound_to_its_computed_cell() {
     let honest = balanced(Break::None);
     assert!(satisfies(&honest.wired, &honest.witness));

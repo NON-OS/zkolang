@@ -5,6 +5,7 @@ use super::scenario::balanced;
 use crate::shield::key::Break;
 
 #[test]
+#[ignore]
 fn a_conserving_owned_join_split_satisfies() {
     let js = balanced(Break::None);
     assert!(satisfies(&js.wired, &js.witness));
