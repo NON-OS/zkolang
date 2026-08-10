@@ -44,6 +44,8 @@ mod note_commit;
 #[cfg(test)]
 mod note_member;
 #[cfg(test)]
+mod nullifier;
+#[cfg(test)]
 mod join_split_balance;
 #[cfg(test)]
 mod seam2_tests;
