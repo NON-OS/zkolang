@@ -6,7 +6,8 @@ use super::assoc::assoc_membership;
 use super::keys::key_hierarchies;
 use crate::shield::key::Break;
 use super::pool::pool_membership;
-use crate::shield::note::{note_parts_broken, Note};
+use super::notes::note_regions;
+use crate::shield::note::Note;
 use alloc::boxed::Box;
 use alloc::vec::Vec;
 
@@ -34,17 +35,13 @@ pub(crate) fn stack(
     bal: (Box<dyn AirExt>, Vec<Fp>),
     depth: usize,
 ) -> Stack {
-    let parts: Vec<_> =
-        notes.iter().map(|n| note_parts_broken(n, brk == Break::NoteEdge)).collect();
-    let span_op = parts[0].span_op;
-    let cms: Vec<[Fp; RATE]> = parts.iter().map(|p| p.cm).collect();
-
+    let n = note_regions(notes, brk);
+    let span_op = n.span_op;
+    let cms = n.cms.clone();
     let mut regions: Vec<Box<dyn AirExt>> = alloc::vec![bal.0];
     let mut traces = alloc::vec![bal.1];
-    for p in parts {
-        regions.push(Box::new(p.region));
-        traces.push(p.trace);
-    }
+    regions.extend(n.regions);
+    traces.extend(n.traces);
 
     let p = pool_membership(h, &[cms[0], cms[1]], depth);
     let leaves = p.leaves.clone();

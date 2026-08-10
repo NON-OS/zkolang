@@ -7,6 +7,7 @@ mod bind_note;
 mod bind_publics;
 mod intent;
 mod keys;
+mod notes;
 mod parts;
 mod pool;
 pub(crate) mod publics;
