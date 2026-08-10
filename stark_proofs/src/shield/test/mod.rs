@@ -14,6 +14,7 @@ mod commitment;
 mod commitment_binding;
 mod mints;
 mod owns;
+mod key_vector;
 mod membership;
 mod membership_scope;
 mod pool_hash;

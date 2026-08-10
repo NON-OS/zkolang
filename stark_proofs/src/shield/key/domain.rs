@@ -3,8 +3,9 @@
 use crate::crypto::stark::air::RATE;
 use crate::crypto::stark::field::Fp;
 
-/// Proposed in SPEC.md section 4, pending wallet ratification. The wallet and the
-/// client must derive against the same values or every note is unspendable.
+/// Published in spec/shield-key-hierarchy.json, which the wallet and the client
+/// derive against. Changing either value changes every note, so amend the spec
+/// and regenerate the vector rather than editing here.
 pub(crate) const SPEND_DOMAIN: u64 = 0x5350_4E44;
 pub(crate) const NULL_DOMAIN: u64 = 0x4E55_4C4C;
 
