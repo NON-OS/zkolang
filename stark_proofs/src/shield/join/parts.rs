@@ -21,6 +21,7 @@ pub(crate) struct IntentParts {
     pub leaf_col: Vec<usize>,
     pub key_span: Vec<usize>,
     pub assoc_col: Vec<usize>,
+    pub depth: usize,
     pub intent: Vec<Fp>,
 }
 
@@ -37,6 +38,7 @@ pub(crate) fn intent_parts(
     brk: Break,
     st: Settle,
     flip: Option<usize>,
+    depth: usize,
 ) -> IntentParts {
     let notes = [inputs[0].note, inputs[1].note, outputs[0], outputs[1]];
     let values = [notes[0].value, notes[1].value, notes[2].value, notes[3].value];
@@ -44,7 +46,7 @@ pub(crate) fn intent_parts(
 
     let h = Poseidon::new(POOL_LOG_ROUNDS, [Fp::ZERO; RATE]);
     let sks = [inputs[0].sk, inputs[1].sk];
-    let mut s = stack(&h, notes, sks, brk, (Box::new(air), trace));
+    let mut s = stack(&h, notes, sks, brk, (Box::new(air), trace), depth);
 
     let (intent, pub_air) =
         publics_region(&s, public_amount, fee, notes[0].asset_id, st, flip);
@@ -58,6 +60,7 @@ pub(crate) fn intent_parts(
         leaf_col: s.leaf_col,
         key_span: s.key_span,
         assoc_col: s.assoc_col,
+        depth: s.depth,
         intent,
     }
 }

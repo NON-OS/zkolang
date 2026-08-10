@@ -15,6 +15,7 @@ pub(crate) struct Layout {
     pub leaf_col: Vec<usize>,
     pub assoc: Vec<usize>,
     pub assoc_col: Vec<usize>,
+    pub depth: usize,
     pub balance: usize,
 }
 

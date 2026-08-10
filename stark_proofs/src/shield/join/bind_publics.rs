@@ -5,7 +5,6 @@ use super::publics::{
     ASSET_ID, ASSOC_ROOT, FEE, NF0, NF1, NOTE_ROOT, OUT_CM0, OUT_CM1, PUBLIC_AMOUNT,
 };
 use crate::crypto::stark::air::{GpGroup, RATE};
-use crate::shield::member::TREE_DEPTH;
 use crate::shield::note::POOL_LOG_ROUNDS;
 use crate::shield::wire::equate;
 use alloc::vec::Vec;
@@ -18,7 +17,7 @@ pub(crate) fn public_groups(l: &Layout, pub_off: usize) -> Vec<GpGroup> {
     let word = |i: usize| pub_off + i;
 
     // The root the pool published is the root membership walked to.
-    let walked = l.member[0] + TREE_DEPTH * rounds;
+    let walked = l.member[0] + l.depth * rounds;
     for c in 0..RATE {
         g.push(equate(l.span, alloc::vec![0, c], &[(word(NOTE_ROOT + c), 0, walked, c)]));
     }
@@ -46,7 +45,7 @@ pub(crate) fn public_groups(l: &Layout, pub_off: usize) -> Vec<GpGroup> {
     g.push(equate(l.span, alloc::vec![0, 3], &[(word(FEE), 0, l.balance + 5, 3)]));
     g.push(equate(l.span, alloc::vec![0, 2], &[(word(ASSET_ID), 0, l.note[0], 2)]));
 
-    let walked_assoc = l.assoc[0] + TREE_DEPTH * rounds;
+    let walked_assoc = l.assoc[0] + l.depth * rounds;
     for c in 0..RATE {
         g.push(equate(l.span, alloc::vec![0, c], &[(word(ASSOC_ROOT + c), 0, walked_assoc, c)]));
     }

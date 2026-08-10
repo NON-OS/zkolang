@@ -4,26 +4,39 @@ use crate::crypto::stark::air::{Poseidon, RATE};
 use crate::crypto::stark::field::Fp;
 use alloc::vec::Vec;
 
+/// GoldilocksIncrementalTree.TREE_DEPTH.
 pub(crate) const TREE_DEPTH: usize = 32;
 
-/// GoldilocksIncrementalTree: zeros[0] = 0, zeros[i+1] = hash2(zeros[i], zeros[i]),
-/// frontier insert taking the node left when the index bit is zero. Leaves are kept
-/// so a path can be produced for a past leaf, which the frontier alone cannot do.
+/// zeros[0] = 0, zeros[i+1] = hash2(zeros[i], zeros[i]), frontier insert taking
+/// the node left when the index bit is zero. Leaves are kept so a path can be
+/// produced for a past leaf, which the frontier alone cannot do.
+///
+/// Depth is a field so a forgery can run on a minimal instance: violating a
+/// binding rejects through the permutation structure, not the tree size.
 pub(crate) struct PoolTree {
     h: Poseidon,
+    depth: usize,
     zeros: Vec<[Fp; RATE]>,
     leaves: Vec<[Fp; RATE]>,
 }
 
 impl PoolTree {
     pub fn new(h: Poseidon) -> PoolTree {
-        let mut zeros = Vec::with_capacity(TREE_DEPTH + 1);
+        Self::with_depth(h, TREE_DEPTH)
+    }
+
+    pub fn with_depth(h: Poseidon, depth: usize) -> PoolTree {
+        let mut zeros = Vec::with_capacity(depth + 1);
         let mut z = [Fp::ZERO; RATE];
-        for _ in 0..=TREE_DEPTH {
+        for _ in 0..=depth {
             zeros.push(z);
             z = h.compress(&z, &z);
         }
-        PoolTree { h, zeros, leaves: Vec::new() }
+        PoolTree { h, depth, zeros, leaves: Vec::new() }
+    }
+
+    pub fn depth(&self) -> usize {
+        self.depth
     }
 
     pub fn insert(&mut self, leaf: [Fp; RATE]) -> usize {
@@ -44,14 +57,14 @@ impl PoolTree {
     }
 
     pub fn root(&self) -> [Fp; RATE] {
-        self.node(TREE_DEPTH, 0)
+        self.node(self.depth, 0)
     }
 
     pub fn path(&self, index: usize) -> (Vec<[Fp; RATE]>, Vec<bool>) {
-        let mut sibs = Vec::with_capacity(TREE_DEPTH);
-        let mut dirs = Vec::with_capacity(TREE_DEPTH);
+        let mut sibs = Vec::with_capacity(self.depth);
+        let mut dirs = Vec::with_capacity(self.depth);
         let mut idx = index;
-        for level in 0..TREE_DEPTH {
+        for level in 0..self.depth {
             sibs.push(self.node(level, idx ^ 1));
             dirs.push(idx & 1 == 1);
             idx >>= 1;

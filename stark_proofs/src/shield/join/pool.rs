@@ -14,8 +14,8 @@ pub(crate) struct Pool {
     pub leaves: Vec<usize>,
 }
 
-pub(crate) fn pool_membership(h: &Poseidon, cms: &[[Fp; RATE]; 2]) -> Pool {
-    let mut tree = PoolTree::new(h.clone());
+pub(crate) fn pool_membership(h: &Poseidon, cms: &[[Fp; RATE]; 2], depth: usize) -> Pool {
+    let mut tree = PoolTree::with_depth(h.clone(), depth);
     let leaves: Vec<usize> = cms.iter().map(|cm| tree.insert(*cm)).collect();
     let mut regions: Vec<Box<dyn AirExt>> = Vec::with_capacity(2);
     let mut traces = Vec::with_capacity(2);

@@ -7,7 +7,6 @@ use crate::shield::key::Break;
 
 /// The total is pinned at both ends, so an unbalanced batch fails either way.
 #[test]
-#[ignore]
 fn destroying_value_rejects() {
     let sks = [secret(1), secret(2)];
     let ins = [owned(sks[0], 0, 1000), owned(sks[1], 10, 2000)];

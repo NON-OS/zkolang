@@ -21,8 +21,9 @@ pub(crate) fn assoc_membership(
     cms: &[[Fp; RATE]; 2],
     others: &[u64],
     unlisted: bool,
+    depth: usize,
 ) -> Assoc {
-    let mut tree = PoolTree::new(h.clone());
+    let mut tree = PoolTree::with_depth(h.clone(), depth);
     for s in others {
         let mut pad = [Fp::ZERO; RATE];
         pad[0] = Fp::from_u64(*s);

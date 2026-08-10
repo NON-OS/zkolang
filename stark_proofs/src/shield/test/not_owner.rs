@@ -8,7 +8,6 @@ use crate::shield::key::Break;
 /// Spend a note whose committed key this secret never derived. The key
 /// hierarchy is internally honest; only the tie to the commitment fails.
 #[test]
-#[ignore]
 fn a_secret_cannot_spend_a_note_it_does_not_key() {
     let sks = [secret(1), secret(2)];
     let ins = [plain(0, 1000), plain(10, 2000)];

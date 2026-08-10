@@ -9,7 +9,6 @@ use crate::shield::join::publics::CLEARING_PRICE;
 /// and balance in the same trace, each intent binding its own words, and the
 /// price tied across both.
 #[test]
-#[ignore]
 fn a_two_intent_batch_settles_under_one_proof() {
     let b = assemble(alloc::vec![intent(1, 1_000_000, None), intent(2, 1_000_000, None)]);
     assert!(satisfies(&b.wired, &b.witness));

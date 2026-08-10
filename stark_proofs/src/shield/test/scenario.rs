@@ -27,7 +27,8 @@ pub(super) fn build(
     flip: Option<usize>,
 ) -> JoinSplit {
     let st = Settle { clearing_price: 1_000_000, recipient: 0xBEEF };
-    join_split(
+    crate::shield::join::join_split_at(
+        super::depth::MINIMAL,
         [Spend { note: &ins[0], sk: sks[0] }, Spend { note: &ins[1], sk: sks[1] }],
         [&outs[0], &outs[1]],
         public_amount,

@@ -13,7 +13,6 @@ use crate::shield::key::Break;
 /// The clearing price is declared per intent; uniformity across a batch is a
 /// separate constraint and lives with the batch.
 #[test]
-#[ignore]
 fn settlement_terms_are_transcript_bound_not_constraint_bound() {
     for i in [CLEARING_PRICE, RECIPIENT] {
         let js = balanced_flip(Break::None, Some(i));

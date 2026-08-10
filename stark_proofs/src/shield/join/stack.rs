@@ -21,6 +21,7 @@ pub(crate) struct Stack {
     pub out_cm: [[Fp; RATE]; 2],
     pub assoc_root: [Fp; RATE],
     pub assoc_col: Vec<usize>,
+    pub depth: usize,
 }
 
 /// Region order: balance, four notes, two memberships, two key hierarchies. The
@@ -31,6 +32,7 @@ pub(crate) fn stack(
     sks: [[Fp; RATE]; 2],
     brk: Break,
     bal: (Box<dyn AirExt>, Vec<Fp>),
+    depth: usize,
 ) -> Stack {
     let parts: Vec<_> =
         notes.iter().map(|n| note_parts_broken(n, brk == Break::NoteEdge)).collect();
@@ -44,7 +46,7 @@ pub(crate) fn stack(
         traces.push(p.trace);
     }
 
-    let p = pool_membership(h, &[cms[0], cms[1]]);
+    let p = pool_membership(h, &[cms[0], cms[1]], depth);
     let leaves = p.leaves.clone();
     let leaf_col = p.leaf_col.clone();
     regions.extend(p.regions);
@@ -56,7 +58,7 @@ pub(crate) fn stack(
     regions.extend(k.regions);
     traces.extend(k.traces);
 
-    let a = assoc_membership(h, &[cms[0], cms[1]], &[900, 901, 902], brk == Break::Unlisted);
+    let a = assoc_membership(h, &[cms[0], cms[1]], &[900, 901, 902], brk == Break::Unlisted, depth);
     regions.extend(a.regions);
     traces.extend(a.traces);
 
@@ -71,5 +73,6 @@ pub(crate) fn stack(
         out_cm: [cms[2], cms[3]],
         assoc_root: a.root,
         assoc_col: a.leaf_col,
+        depth,
     }
 }

@@ -6,6 +6,7 @@ use crate::crypto::stark::air::WiredMultiExt;
 use crate::crypto::stark::field::Fp;
 use crate::shield::batch::assemble;
 use crate::shield::key::Break;
+use crate::shield::member::TREE_DEPTH;
 use crate::shield::note::Note;
 use alloc::vec::Vec;
 
@@ -15,7 +16,6 @@ pub(crate) struct JoinSplit {
     pub intent: Vec<Fp>,
 }
 
-/// One intent is a batch of one, so the layout lives in a single place.
 pub(crate) fn join_split(
     inputs: [Spend; 2],
     outputs: [&Note; 2],
@@ -25,7 +25,22 @@ pub(crate) fn join_split(
     st: Settle,
     flip: Option<usize>,
 ) -> JoinSplit {
-    let p = intent_parts(inputs, outputs, public_amount, fee, brk, st, flip);
+    join_split_at(TREE_DEPTH, inputs, outputs, public_amount, fee, brk, st, flip)
+}
+
+/// One intent is a batch of one, so the layout lives in a single place. Depth is
+/// open so a forgery can run on a minimal instance.
+pub(crate) fn join_split_at(
+    depth: usize,
+    inputs: [Spend; 2],
+    outputs: [&Note; 2],
+    public_amount: u64,
+    fee: u64,
+    brk: Break,
+    st: Settle,
+    flip: Option<usize>,
+) -> JoinSplit {
+    let p = intent_parts(inputs, outputs, public_amount, fee, brk, st, flip, depth);
     let mut b = assemble(alloc::vec![p]);
     JoinSplit { wired: b.wired, witness: b.witness, intent: b.intents.remove(0) }
 }

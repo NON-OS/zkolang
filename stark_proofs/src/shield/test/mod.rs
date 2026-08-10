@@ -12,6 +12,8 @@
 //!
 //!   cargo test --release -p stark_proofs shield::test -- --ignored
 
+mod depth;
+mod deployed_depth;
 mod fixture;
 mod intents;
 mod inventory;
