@@ -40,13 +40,7 @@ mod recursion_assembly;
 #[cfg(test)]
 mod recursion_assembly_tests;
 #[cfg(test)]
-mod note_commit;
-#[cfg(test)]
-mod note_member;
-#[cfg(test)]
-mod nullifier;
-#[cfg(test)]
-mod join_split_balance;
+mod shield;
 #[cfg(test)]
 mod seam2_tests;
 #[cfg(test)]
