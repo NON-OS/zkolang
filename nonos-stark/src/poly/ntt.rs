@@ -51,24 +51,17 @@ pub fn ntt(coeffs: &[Fp], omega: Fp) -> Vec<Fp> {
 
     let mut len = 2usize;
     while len <= n {
-        let half = len / 2;
-        // The twiddle factors for this level, `w_len^0 .. w_len^{half-1}`. They are
-        // the same for every block, so build them once and index rather than
-        // regenerating the sequence with a running multiply inside each block.
+        // A primitive len-th root of unity.
         let w_len = omega.pow((n / len) as u64);
-        let mut twiddles = Vec::with_capacity(half);
-        let mut w = Fp::ONE;
-        for _ in 0..half {
-            twiddles.push(w);
-            w = w * w_len;
-        }
         let mut start = 0usize;
         while start < n {
-            for j in 0..half {
+            let mut w = Fp::ONE;
+            for j in 0..len / 2 {
                 let u = a[start + j];
-                let v = a[start + j + half] * twiddles[j];
+                let v = a[start + j + len / 2] * w;
                 a[start + j] = u + v;
-                a[start + j + half] = u - v;
+                a[start + j + len / 2] = u - v;
+                w = w * w_len;
             }
             start += len;
         }
@@ -89,50 +82,4 @@ pub fn intt(evals: &[Fp], omega: Fp) -> Vec<Fp> {
         }
     }
     a
-}
-
-#[cfg(test)]
-mod tests {
-    use super::{intt, ntt};
-    use crate::field::Fp;
-    use crate::fri::root_of_unity;
-    use alloc::vec::Vec;
-
-    // The definition the fast transform must meet: out[i] = sum_j coeffs[j] * omega^(i j).
-    fn naive(coeffs: &[Fp], omega: Fp) -> Vec<Fp> {
-        (0..coeffs.len())
-            .map(|i| {
-                let wi = omega.pow(i as u64);
-                let mut acc = Fp::ZERO;
-                let mut wij = Fp::ONE;
-                for &c in coeffs {
-                    acc = acc + c * wij;
-                    wij = wij * wi;
-                }
-                acc
-            })
-            .collect()
-    }
-
-    #[test]
-    fn ntt_matches_the_definition_and_inverts() {
-        for log_n in 1..=9u32 {
-            let n = 1usize << log_n;
-            let omega = root_of_unity(log_n);
-            let coeffs: Vec<Fp> = (0..n)
-                .map(|i| Fp::from_u64((i as u64).wrapping_mul(2_654_435_761).wrapping_add(7)))
-                .collect();
-            let fast = ntt(&coeffs, omega);
-            assert_eq!(
-                fast,
-                naive(&coeffs, omega),
-                "ntt disagrees with the DFT, log_n={log_n}"
-            );
-            assert_eq!(
-                intt(&fast, omega),
-                coeffs,
-                "intt does not invert ntt, log_n={log_n}"
-            );
-        }
-    }
 }

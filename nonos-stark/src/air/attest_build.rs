@@ -54,7 +54,14 @@ pub fn build_attestation_trailer(
     let air =
         MerkleMembership::new(hasher.clone(), log_rounds, tree.root(), path.clone(), directions);
     let trace = air.trace(leaves[index]);
-    let proof = stark_prove_ext_blown_bound(&air, &trace, n_queries, grind_bits, extra_blowup_bits, context);
+    let proof = stark_prove_ext_blown_bound(
+        &air,
+        &trace,
+        n_queries,
+        grind_bits,
+        extra_blowup_bits,
+        context,
+    );
 
     let mut out = Vec::new();
     out.extend_from_slice(MAGIC);

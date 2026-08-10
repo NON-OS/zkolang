@@ -9,4 +9,8 @@ description = "Transparent post-quantum STARK primitives shared by the kernel an
 name = "nonos_stark"
 
 [dependencies]
+rayon = { version = "1", optional = true }
 blake3 = { version = "1.0", default-features = false }
+
+[features]
+parallel = ["dep:rayon"]
