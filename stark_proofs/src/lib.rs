@@ -49,6 +49,8 @@ mod stark_selftest_gen;
 mod step_assembly_tests;
 #[cfg(test)]
 mod dims_tests;
+#[cfg(test)]
+mod dims_join_tests;
 
 // Machine-checked proof harnesses, compiled only under `cargo kani`.
 #[cfg(kani)]
