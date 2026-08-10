@@ -55,6 +55,7 @@ mod multi_membership;
 mod periodic_root;
 mod periodic_z;
 mod permutation;
+mod permutation_arg;
 mod permutation2;
 mod poseidon;
 mod power_chain;
@@ -84,6 +85,7 @@ mod wired_ext;
 mod wired_multi_ext;
 
 pub use accumulator::Accumulator;
+pub use permutation_arg::{classes_are_disjoint, Cell, WirePermutation};
 pub use publics::Publics;
 pub use value_balance::{Leg, ValueBalance, LIMB_SHIFT};
 pub use wide_mul::{split, wide_mul, Product, LIMB_BITS, LIMB_MASK, N_LIMBS, N_OUT};
