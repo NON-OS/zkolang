@@ -1,11 +1,13 @@
 // NONOS Operating System (AGPL-3.0-or-later)
 
 mod fixture;
+mod intents;
 mod satisfies;
 mod scenario;
 
 mod conserves;
 mod foreign_key;
+mod batch_assembly;
 mod batch_price;
 mod burns;
 mod commitment;
