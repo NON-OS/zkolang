@@ -6,6 +6,7 @@ mod scenario;
 
 mod conserves;
 mod foreign_key;
+mod batch_price;
 mod burns;
 mod commitment;
 mod commitment_binding;

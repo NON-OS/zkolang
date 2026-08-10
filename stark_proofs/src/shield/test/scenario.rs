@@ -41,3 +41,21 @@ pub(super) fn build(
         flip,
     )
 }
+
+pub(super) fn intent_at_price(price: u64) -> alloc::vec::Vec<crate::crypto::stark::field::Fp> {
+    use crate::crypto::stark::air::RATE;
+    use crate::crypto::stark::field::Fp;
+    use crate::shield::join::publics::Intent;
+    Intent {
+        note_root: [Fp::from_u64(1); RATE],
+        assoc_root: [Fp::from_u64(2); RATE],
+        nf: [[Fp::from_u64(3); RATE], [Fp::from_u64(4); RATE]],
+        out_cm: [[Fp::from_u64(5); RATE], [Fp::from_u64(6); RATE]],
+        public_amount: 200,
+        fee: 100,
+        asset_id: 0,
+        clearing_price: price,
+        recipient: 0xBEEF,
+    }
+    .words()
+}
