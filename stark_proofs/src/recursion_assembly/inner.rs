@@ -16,8 +16,12 @@ pub(crate) const NQ: usize = 32;
 pub(crate) const GRIND: u32 = 16;
 pub(crate) const EXTRA: u32 = 3;
 
+/// The recursion hash. Must equal the round count every in circuit compression
+/// runs, or the membership regions prove a permutation the hash never computed.
+pub(crate) const LOG_ROUNDS: u32 = 5;
+
 pub(crate) fn hasher() -> Poseidon {
-    Poseidon::new(2, [Fp::ZERO; RATE])
+    Poseidon::new(LOG_ROUNDS, [Fp::ZERO; RATE])
 }
 
 /// The inner proof the assembly verifies, generic over its AIR. The join-split

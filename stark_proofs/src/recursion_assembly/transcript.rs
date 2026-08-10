@@ -4,7 +4,7 @@
 //! DEEP coefficient squeezes so every challenge the other regions consume
 //! exists as a bindable squeeze cell.
 
-use super::inner::Inner;
+use super::inner::{Inner, LOG_ROUNDS};
 use super::sponge::{absorb, squeeze};
 use crate::crypto::stark::air::{AirExt, Poseidon, TranscriptCheck, TranscriptOp, WIDTH};
 use crate::crypto::stark::field::Fp;
@@ -52,7 +52,7 @@ pub(crate) fn stark_transcript<A: AirExt>(
         squeeze(h, &mut ops, &mut st);
         squeeze(h, &mut ops, &mut st);
     }
-    let region = TranscriptCheck::new_witness(h.clone(), 2, ops);
+    let region = TranscriptCheck::new_witness(h.clone(), LOG_ROUNDS, ops);
     let trace = region.trace();
     StarkTranscript { region, trace, z_op, deep_coeff_op }
 }

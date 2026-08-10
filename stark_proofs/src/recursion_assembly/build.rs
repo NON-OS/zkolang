@@ -8,6 +8,7 @@
 
 use super::layout::{offsets, Layout};
 use super::tamper::Tamper;
+use super::inner::LOG_ROUNDS;
 use super::{auth, compose, compose_step, deep, fri, groups, inner, periodic, points, transcript};
 use crate::crypto::stark::air::{Air, AirExt, GpGroup, WiredMultiExt};
 use crate::crypto::stark::field::Fp;
@@ -119,7 +120,7 @@ pub(crate) fn assemble_capped(tamper: Tamper, tamper_q: usize, cap: usize) -> As
 
     let lay = Layout {
         span,
-        l: 4,
+        l: 1usize << LOG_ROUNDS,
         n_q,
         i0,
         c_off,
@@ -218,7 +219,7 @@ pub(crate) fn assemble_step(tamper: Tamper) -> Assembly {
 
     let lay = Layout {
         span,
-        l: 4,
+        l: 1usize << LOG_ROUNDS,
         n_q: 1,
         i0: au.cons_dirs.iter().enumerate().fold(0, |a, (lv, &b)| a | ((b as usize) << lv)),
         c_off: off[1],

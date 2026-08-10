@@ -6,7 +6,7 @@
 //! authenticates the deep and comp values under each other's commitment; the
 //! honest AIR must reject the resulting trace.
 
-use super::inner::{Inner, EXTRA};
+use super::inner::{Inner, EXTRA, LOG_ROUNDS};
 use super::tamper::Tamper;
 use crate::crypto::stark::air::{query_openings_queryk, AirExt, MultiMembership, Opening, Poseidon};
 use crate::crypto::stark::field::Fp;
@@ -62,11 +62,11 @@ pub(crate) fn auth_side_k<A: AirExt>(
     let depth = honest[0].siblings.len();
     let n_open = honest.len();
     let cons_dirs = honest[1].directions.clone();
-    let region = MultiMembership::new_witness(h.clone(), 2, honest);
+    let region = MultiMembership::new_witness(h.clone(), LOG_ROUNDS, honest);
     let trace = if tamper == Tamper::SwappedRoot {
         let mut swapped = openings(h, inner, ik, query);
         swapped.swap(1, 2);
-        MultiMembership::new_witness(h.clone(), 2, swapped).trace()
+        MultiMembership::new_witness(h.clone(), LOG_ROUNDS, swapped).trace()
     } else {
         region.trace()
     };

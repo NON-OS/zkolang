@@ -5,7 +5,7 @@
 //! points, inverses, and position bits the square-and-sign chain derives from its
 //! query index `q_k`. Query 0 is `qs[0]`; closing coverage folds every `q_k`.
 
-use super::inner::{Inner, GRIND};
+use super::inner::{Inner, GRIND, LOG_ROUNDS};
 use super::sponge::{absorb, squeeze};
 use crate::crypto::stark::air::{
     AirExt, Poseidon, TraceFoldExt, TranscriptCheck, TranscriptOp, WIDTH,
@@ -53,7 +53,7 @@ pub(crate) fn fri_transcript<A: AirExt>(h: &Poseidon, inner: &Inner<A>) -> FriTr
     assert!(fs.verify_pow(fri.pow_nonce, GRIND), "the FRI proof-of-work did not check");
     // One index per FRI query, drawn in order; qs[k] is query k's fold position.
     let qs: Vec<usize> = (0..fri.queries.len()).map(|_| fs.challenge_index(n)).collect();
-    let transcript = TranscriptCheck::new_witness(h.clone(), 2, ops);
+    let transcript = TranscriptCheck::new_witness(h.clone(), LOG_ROUNDS, ops);
     let ttrace = transcript.trace();
 
     FriTranscript { transcript, ttrace, betas, n_folds, log_n, qs }
