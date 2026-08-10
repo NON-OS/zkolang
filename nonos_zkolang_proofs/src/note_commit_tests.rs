@@ -28,7 +28,7 @@ fn circuit() -> String {
 
 // The reference: nonos-stark's own note commitment over eleven limbs.
 fn reference(limbs: &[u64; NOTE_LIMBS]) -> Vec<u64> {
-    let hasher = Poseidon::new(2, [Fp::ZERO; RATE]);
+    let hasher = Poseidon::new(5, [Fp::ZERO; RATE]);
     let fps: [Fp; NOTE_LIMBS] = core::array::from_fn(|i| Fp::from_u64(limbs[i]));
     hasher.commit_note(&fps).iter().map(|f| f.value()).collect()
 }
@@ -91,4 +91,30 @@ fn distinct_limbs_give_distinct_commitments() {
     let a = in_language(&[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
     let b = in_language(&[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12]);
     assert_ne!(a, b, "changing a limb must change the commitment");
+}
+
+/// The deployed digest, not a locally built one.
+///
+/// Every test above compares the circuit against a `Poseidon` this crate
+/// constructs, which any self consistent pair of round counts satisfies. That is
+/// how the circuit spent time on a four round hash while `ShieldedPool` commits
+/// under thirty two: the comparison was internally honest and pointed at the
+/// wrong target, so a note this circuit produced would hash to something
+/// `deposit` never computes and would sit in no tree.
+///
+/// This value is the `commit_note([1..11])` entry in the poseidon constants the
+/// contracts gate `PoseidonGoldilocks.commitNote` against, so the chain runs from
+/// the circuit through nonos-stark to the deployed hasher. If it fails, the
+/// circuit is committing notes the pool cannot recognise. Regenerate the circuit
+/// rather than editing the expectation.
+#[test]
+fn matches_the_deployed_commitment() {
+    let got = in_language(&[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
+    let deployed: [u64; RATE] = [
+        6455909588408588117,
+        11340027322162162298,
+        9042362242223743603,
+        14573159163843564693,
+    ];
+    assert_eq!(got, deployed, "the circuit does not compute the deployed note commitment");
 }
