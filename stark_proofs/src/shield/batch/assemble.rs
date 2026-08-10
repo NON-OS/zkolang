@@ -22,13 +22,13 @@ pub(crate) fn assemble(parts: Vec<IntentParts>) -> BatchProof {
     let mut regions: Vec<Box<dyn AirExt>> = Vec::new();
     let mut traces: Vec<Vec<Fp>> = Vec::new();
     let mut intents = Vec::with_capacity(parts.len());
-    let meta: Vec<(usize, Vec<usize>, Vec<usize>)> = parts
+    let meta: Vec<(usize, Vec<usize>, Vec<usize>, Vec<usize>)> = parts
         .into_iter()
         .map(|p| {
             intents.push(p.intent);
             regions.extend(p.regions);
             traces.extend(p.traces);
-            (p.span_op, p.leaf_col, p.key_span)
+            (p.span_op, p.leaf_col, p.key_span, p.assoc_col)
         })
         .collect();
 
@@ -37,7 +37,7 @@ pub(crate) fn assemble(parts: Vec<IntentParts>) -> BatchProof {
 
     let mut g: Vec<GpGroup> = Vec::new();
     let mut pub_off = Vec::with_capacity(meta.len());
-    for (i, (span_op, leaf_col, key_span)) in meta.into_iter().enumerate() {
+    for (i, (span_op, leaf_col, key_span, assoc_col)) in meta.into_iter().enumerate() {
         let b = i * REGIONS_PER_INTENT;
         let lay = Layout {
             span,
@@ -47,11 +47,13 @@ pub(crate) fn assemble(parts: Vec<IntentParts>) -> BatchProof {
             key: off[b + 7..b + 9].to_vec(),
             key_span,
             leaf_col,
+            assoc: off[b + 9..b + 11].to_vec(),
+            assoc_col,
             balance: off[b],
         };
         g.extend(bind_groups(&lay));
-        g.extend(public_groups_at(&lay, off[b + 9]));
-        pub_off.push(off[b + 9]);
+        g.extend(public_groups_at(&lay, off[b + 11]));
+        pub_off.push(off[b + 11]);
     }
     g.extend(price_uniform(span, &pub_off));
 

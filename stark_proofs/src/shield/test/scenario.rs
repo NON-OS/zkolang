@@ -26,11 +26,7 @@ pub(super) fn build(
     brk: Break,
     flip: Option<usize>,
 ) -> JoinSplit {
-    let st = Settle {
-        assoc_root: [crate::crypto::stark::field::Fp::from_u64(9); crate::crypto::stark::air::RATE],
-        clearing_price: 1_000_000,
-        recipient: 0xBEEF,
-    };
+    let st = Settle { clearing_price: 1_000_000, recipient: 0xBEEF };
     join_split(
         [Spend { note: &ins[0], sk: sks[0] }, Spend { note: &ins[1], sk: sks[1] }],
         [&outs[0], &outs[1]],

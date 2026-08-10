@@ -19,7 +19,7 @@ pub(crate) fn publics_region(
 ) -> (Vec<Fp>, Publics) {
     let intent = Intent {
         note_root: s.root,
-        assoc_root: st.assoc_root,
+        assoc_root: s.assoc_root,
         nf: s.nf,
         out_cm: s.out_cm,
         public_amount,

@@ -1,9 +1,14 @@
 // NONOS Operating System (AGPL-3.0-or-later)
 
+mod assoc;
 mod bind;
+mod bind_key;
+mod bind_note;
 mod bind_publics;
 mod intent;
+mod keys;
 mod parts;
+mod pool;
 pub(crate) mod publics;
 mod settle;
 mod stack;

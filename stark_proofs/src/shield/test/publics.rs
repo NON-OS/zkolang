@@ -3,7 +3,7 @@
 use super::satisfies::satisfies;
 use super::scenario::{balanced, balanced_flip};
 use crate::shield::join::publics::{
-    ASSET_ID, FEE, NF0, NF1, NOTE_ROOT, OUT_CM0, OUT_CM1, PUBLIC_AMOUNT, WORDS,
+    ASSET_ID, ASSOC_ROOT, FEE, NF0, NF1, NOTE_ROOT, OUT_CM0, OUT_CM1, PUBLIC_AMOUNT, WORDS,
 };
 use crate::shield::key::Break;
 
@@ -11,7 +11,7 @@ use crate::shield::key::Break;
 /// so flipping the claim contradicts the trace.
 fn derived() -> alloc::vec::Vec<usize> {
     let mut v = alloc::vec::Vec::new();
-    for base in [NOTE_ROOT, NF0, NF1, OUT_CM0, OUT_CM1] {
+    for base in [NOTE_ROOT, ASSOC_ROOT, NF0, NF1, OUT_CM0, OUT_CM1] {
         v.extend(base..base + 4);
     }
     v.extend([PUBLIC_AMOUNT, FEE, ASSET_ID]);

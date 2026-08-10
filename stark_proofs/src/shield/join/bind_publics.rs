@@ -1,7 +1,9 @@
 // NONOS Operating System (AGPL-3.0-or-later)
 
 use super::bind::Layout;
-use super::publics::{ASSET_ID, FEE, NF0, NF1, NOTE_ROOT, OUT_CM0, OUT_CM1, PUBLIC_AMOUNT};
+use super::publics::{
+    ASSET_ID, ASSOC_ROOT, FEE, NF0, NF1, NOTE_ROOT, OUT_CM0, OUT_CM1, PUBLIC_AMOUNT,
+};
 use crate::crypto::stark::air::{GpGroup, RATE};
 use crate::shield::member::TREE_DEPTH;
 use crate::shield::note::POOL_LOG_ROUNDS;
@@ -43,5 +45,10 @@ pub(crate) fn public_groups(l: &Layout, pub_off: usize) -> Vec<GpGroup> {
     g.push(equate(l.span, alloc::vec![0, 3], &[(word(PUBLIC_AMOUNT), 0, l.balance + 4, 3)]));
     g.push(equate(l.span, alloc::vec![0, 3], &[(word(FEE), 0, l.balance + 5, 3)]));
     g.push(equate(l.span, alloc::vec![0, 2], &[(word(ASSET_ID), 0, l.note[0], 2)]));
+
+    let walked_assoc = l.assoc[0] + TREE_DEPTH * rounds;
+    for c in 0..RATE {
+        g.push(equate(l.span, alloc::vec![0, c], &[(word(ASSOC_ROOT + c), 0, walked_assoc, c)]));
+    }
     g
 }

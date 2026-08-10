@@ -12,7 +12,7 @@ use alloc::boxed::Box;
 use alloc::vec::Vec;
 
 /// balance, four notes, two memberships, two key hierarchies, the tuple.
-pub(crate) const REGIONS_PER_INTENT: usize = 10;
+pub(crate) const REGIONS_PER_INTENT: usize = 12;
 
 pub(crate) struct IntentParts {
     pub regions: Vec<Box<dyn AirExt>>,
@@ -20,6 +20,7 @@ pub(crate) struct IntentParts {
     pub span_op: usize,
     pub leaf_col: Vec<usize>,
     pub key_span: Vec<usize>,
+    pub assoc_col: Vec<usize>,
     pub intent: Vec<Fp>,
 }
 
@@ -56,6 +57,7 @@ pub(crate) fn intent_parts(
         span_op: s.span_op,
         leaf_col: s.leaf_col,
         key_span: s.key_span,
+        assoc_col: s.assoc_col,
         intent,
     }
 }

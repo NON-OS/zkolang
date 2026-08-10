@@ -2,8 +2,10 @@
 
 use crate::crypto::stark::air::{AirExt, Poseidon, RATE};
 use crate::crypto::stark::field::Fp;
-use crate::shield::key::{nullifier_parts, Break};
-use crate::shield::member::{note_member, PoolTree};
+use super::assoc::assoc_membership;
+use super::keys::key_hierarchies;
+use crate::shield::key::Break;
+use super::pool::pool_membership;
 use crate::shield::note::{note_parts, Note};
 use alloc::boxed::Box;
 use alloc::vec::Vec;
@@ -17,6 +19,8 @@ pub(crate) struct Stack {
     pub root: [Fp; RATE],
     pub nf: [[Fp; RATE]; 2],
     pub out_cm: [[Fp; RATE]; 2],
+    pub assoc_root: [Fp; RATE],
+    pub assoc_col: Vec<usize>,
 }
 
 /// Region order: balance, four notes, two memberships, two key hierarchies. The
@@ -39,27 +43,21 @@ pub(crate) fn stack(
         traces.push(p.trace);
     }
 
-    let mut tree = PoolTree::new(h.clone());
-    let leaves: Vec<usize> = (0..2).map(|i| tree.insert(cms[i])).collect();
+    let p = pool_membership(h, &[cms[0], cms[1]]);
+    let leaves = p.leaves.clone();
+    let leaf_col = p.leaf_col.clone();
+    regions.extend(p.regions);
+    traces.extend(p.traces);
 
-    let mut leaf_col = Vec::with_capacity(2);
-    for i in 0..2 {
-        let (sibs, dirs) = tree.path(leaves[i]);
-        leaf_col.push(if dirs[0] { RATE } else { 0 });
-        let m = note_member(h, cms[i], sibs, dirs, tree.root());
-        regions.push(Box::new(m.region));
-        traces.push(m.witness);
-    }
+    let k = key_hierarchies(sks, &[cms[0], cms[1]], &leaves, brk);
+    let key_span = k.key_span.clone();
+    let nfs = k.nf;
+    regions.extend(k.regions);
+    traces.extend(k.traces);
 
-    let mut key_span = Vec::with_capacity(2);
-    let mut nfs = alloc::vec![[Fp::ZERO; RATE]; 2];
-    for i in 0..2 {
-        let k = nullifier_parts(sks[i], cms[i], leaves[i] as u64, brk);
-        key_span.push(k.span_op);
-        nfs[i] = k.nf;
-        regions.push(Box::new(k.region));
-        traces.push(k.trace);
-    }
+    let a = assoc_membership(h, &[cms[0], cms[1]], &[900, 901, 902]);
+    regions.extend(a.regions);
+    traces.extend(a.traces);
 
     Stack {
         regions,
@@ -67,8 +65,10 @@ pub(crate) fn stack(
         span_op,
         leaf_col,
         key_span,
-        root: tree.root(),
+        root: p.root,
         nf: [nfs[0], nfs[1]],
         out_cm: [cms[2], cms[3]],
+        assoc_root: a.root,
+        assoc_col: a.leaf_col,
     }
 }

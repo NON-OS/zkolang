@@ -2,7 +2,7 @@
 
 use super::satisfies::satisfies;
 use super::scenario::balanced_flip;
-use crate::shield::join::publics::{ASSOC_ROOT, CLEARING_PRICE, RECIPIENT};
+use crate::shield::join::publics::{CLEARING_PRICE, RECIPIENT};
 use crate::shield::key::Break;
 
 /// The settlement terms are inputs to the statement, not outputs of it, so no
@@ -10,13 +10,11 @@ use crate::shield::key::Break;
 /// here. They are bound where such terms are always bound: absorbed into the
 /// transcript, so a proof is void for any other tuple.
 ///
-/// Two consequences worth stating rather than discovering. The association root
-/// is only declared, so association set membership is not proven by this circuit.
-/// The clearing price is only declared, so uniformity across a batch is not
-/// proven either; that is the batch assembly's constraint.
+/// The clearing price is declared per intent; uniformity across a batch is a
+/// separate constraint and lives with the batch.
 #[test]
 fn settlement_terms_are_transcript_bound_not_constraint_bound() {
-    for i in [ASSOC_ROOT, CLEARING_PRICE, RECIPIENT] {
+    for i in [CLEARING_PRICE, RECIPIENT] {
         let js = balanced_flip(Break::None, Some(i));
         assert!(
             satisfies(&js.wired, &js.witness),
