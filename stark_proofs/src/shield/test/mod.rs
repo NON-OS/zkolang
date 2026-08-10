@@ -14,4 +14,5 @@ mod owns;
 mod membership;
 mod membership_scope;
 mod pool_hash;
+mod publics;
 mod tree_zeros;

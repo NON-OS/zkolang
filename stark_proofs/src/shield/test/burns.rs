@@ -11,6 +11,6 @@ fn destroying_value_rejects() {
     let sks = [secret(1), secret(2)];
     let ins = [owned(sks[0], 0, 1000), owned(sks[1], 10, 2000)];
     let outs = [plain(20, 1), plain(30, 1)];
-    let js = build(&ins, &outs, sks, 200, 100, Break::None);
+    let js = build(&ins, &outs, sks, 200, 100, Break::None, None);
     assert!(!satisfies(&js.wired, &js.witness));
 }

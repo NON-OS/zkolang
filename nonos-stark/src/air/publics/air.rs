@@ -14,19 +14,27 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-use super::super::super::field::{Fp, Fp2};
 use super::super::spec::{Air, AirExt};
-use super::air::ValueBalance;
+use super::super::super::field::{Fp, Fp2};
 use alloc::vec;
 use alloc::vec::Vec;
 
-impl Air for ValueBalance {
+/// One public word per row, pinned by a boundary. A caller copy constrains each
+/// row to wherever the circuit computes that word, which is what makes the
+/// binding positive: the word is tied to its computed cell, not merely
+/// constrained to something.
+pub struct Publics {
+    pub log_t: u32,
+    pub words: Vec<Fp>,
+}
+
+impl Air for Publics {
     fn log_trace_len(&self) -> u32 {
         self.log_t
     }
 
     fn trace_width(&self) -> usize {
-        4
+        1
     }
 
     fn window_size(&self) -> usize {
@@ -38,25 +46,29 @@ impl Air for ValueBalance {
     }
 
     fn num_transition(&self) -> usize {
-        2
+        0
     }
 
-    fn periodic_columns(&self) -> Vec<Vec<Fp>> {
-        vec![self.signs()]
-    }
-
-    fn transition(&self, window: &[Fp], periodic: &[Fp]) -> Vec<Fp> {
-        self.transition_impl(window, periodic)
+    fn transition(&self, _w: &[Fp], _p: &[Fp]) -> Vec<Fp> {
+        vec![]
     }
 
     fn boundary(&self) -> Vec<(usize, usize, Fp)> {
-        let last = (1usize << self.log_t) - 1;
-        vec![(0, 0, Fp::ZERO), (0, last, Fp::ZERO)]
+        self.words.iter().enumerate().map(|(r, v)| (0, r, *v)).collect()
     }
 }
 
-impl AirExt for ValueBalance {
-    fn transition_ext(&self, window: &[Fp2], periodic: &[Fp2]) -> Vec<Fp2> {
-        self.transition_impl(window, periodic)
+impl AirExt for Publics {
+    fn transition_ext(&self, _w: &[Fp2], _p: &[Fp2]) -> Vec<Fp2> {
+        vec![]
+    }
+}
+
+impl Publics {
+    pub fn trace(&self) -> Vec<Fp> {
+        let n = 1usize << self.log_t;
+        let mut t = vec![Fp::ZERO; n];
+        t[..self.words.len()].copy_from_slice(&self.words);
+        t
     }
 }

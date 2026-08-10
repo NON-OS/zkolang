@@ -31,10 +31,16 @@ pub struct ValueBalance {
 }
 
 impl ValueBalance {
+    /// Column three carries the recomposed value, so a caller can bind the whole
+    /// amount to a public word. A copy constraint cannot scale a cell, so the
+    /// recomposition has to be a constraint rather than a binding.
     pub(super) fn transition_impl<F: Felt>(&self, window: &[F], periodic: &[F]) -> Vec<F> {
-        let (acc, lo, hi) = (window[0], window[1], window[2]);
-        let value = lo + hi * F::from_base(Fp::from_u64(LIMB_SHIFT));
-        vec![window[3] - acc - periodic[0] * value]
+        let (acc, lo, hi, value) = (window[0], window[1], window[2], window[3]);
+        let shift = F::from_base(Fp::from_u64(LIMB_SHIFT));
+        vec![
+            value - lo - hi * shift,
+            window[4] - acc - periodic[0] * value,
+        ]
     }
 
     pub(super) fn signs(&self) -> Vec<Fp> {

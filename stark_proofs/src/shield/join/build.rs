@@ -1,6 +1,8 @@
 // NONOS Operating System (AGPL-3.0-or-later)
 
 use super::bind::{groups, Layout};
+use super::bind_publics::public_groups;
+use super::intent::publics_region;
 use super::stack::stack;
 use super::terms::balance;
 use crate::crypto::stark::air::{Air, Poseidon, WiredMultiExt, RATE};
@@ -14,6 +16,7 @@ use alloc::vec::Vec;
 pub(crate) struct JoinSplit {
     pub wired: WiredMultiExt,
     pub witness: Vec<Fp>,
+    pub intent: Vec<Fp>,
 }
 
 pub(crate) struct Spend<'a> {
@@ -27,6 +30,7 @@ pub(crate) fn join_split(
     public_amount: u64,
     fee: u64,
     brk: Break,
+    flip: Option<usize>,
 ) -> JoinSplit {
     let notes = [inputs[0].note, inputs[1].note, outputs[0], outputs[1]];
     let values = [notes[0].value, notes[1].value, notes[2].value, notes[3].value];
@@ -34,7 +38,12 @@ pub(crate) fn join_split(
 
     let h = Poseidon::new(POOL_LOG_ROUNDS, [Fp::ZERO; RATE]);
     let sks = [inputs[0].sk, inputs[1].sk];
-    let s = stack(&h, notes, sks, brk, (Box::new(air), trace));
+    let mut s = stack(&h, notes, sks, brk, (Box::new(air), trace));
+
+    let (intent, pub_air) =
+        publics_region(&s, public_amount, fee, notes[0].asset_id, flip);
+    s.traces.push(pub_air.trace());
+    s.regions.push(Box::new(pub_air));
 
     let rows: Vec<usize> = s.regions.iter().map(|r| 1usize << r.log_trace_len()).collect();
     let (off, span) = offsets(&rows);
@@ -48,7 +57,9 @@ pub(crate) fn join_split(
         leaf_col: s.leaf_col,
         balance: off[0],
     };
-    let wired = WiredMultiExt::new(s.regions, groups(&lay));
+    let mut g = groups(&lay);
+    g.extend(public_groups(&lay, off[9]));
+    let wired = WiredMultiExt::new(s.regions, g);
     let witness = wired.trace(&s.traces);
-    JoinSplit { wired, witness }
+    JoinSplit { wired, witness, intent }
 }

@@ -14,6 +14,9 @@ pub(crate) struct Stack {
     pub span_op: usize,
     pub leaf_col: Vec<usize>,
     pub key_span: Vec<usize>,
+    pub root: [Fp; RATE],
+    pub nf: [[Fp; RATE]; 2],
+    pub out_cm: [[Fp; RATE]; 2],
 }
 
 /// Region order: balance, four notes, two memberships, two key hierarchies. The
@@ -49,12 +52,23 @@ pub(crate) fn stack(
     }
 
     let mut key_span = Vec::with_capacity(2);
+    let mut nfs = alloc::vec![[Fp::ZERO; RATE]; 2];
     for i in 0..2 {
         let k = nullifier_parts(sks[i], cms[i], leaves[i] as u64, brk);
         key_span.push(k.span_op);
+        nfs[i] = k.nf;
         regions.push(Box::new(k.region));
         traces.push(k.trace);
     }
 
-    Stack { regions, traces, span_op, leaf_col, key_span }
+    Stack {
+        regions,
+        traces,
+        span_op,
+        leaf_col,
+        key_span,
+        root: tree.root(),
+        nf: [nfs[0], nfs[1]],
+        out_cm: [cms[2], cms[3]],
+    }
 }

@@ -25,15 +25,16 @@ impl ValueBalance {
     /// column cannot drift apart.
     pub fn trace(&self, terms: &[(Fp, Fp)]) -> Vec<Fp> {
         let n = 1usize << self.log_t;
-        let mut t = vec![Fp::ZERO; n * 3];
+        let mut t = vec![Fp::ZERO; n * 4];
         let mut acc = Fp::ZERO;
         for r in 0..n {
             let (lo, hi) = terms.get(r).copied().unwrap_or((Fp::ZERO, Fp::ZERO));
-            t[r * 3] = acc;
-            t[r * 3 + 1] = lo;
-            t[r * 3 + 2] = hi;
-            let leg = self.legs.get(r).copied().unwrap_or(Leg::Pad);
-            acc = acc + leg.sign() * (lo + hi * Fp::from_u64(LIMB_SHIFT));
+            let value = lo + hi * Fp::from_u64(LIMB_SHIFT);
+            t[r * 4] = acc;
+            t[r * 4 + 1] = lo;
+            t[r * 4 + 2] = hi;
+            t[r * 4 + 3] = value;
+            acc = acc + self.legs.get(r).copied().unwrap_or(Leg::Pad).sign() * value;
         }
         t
     }

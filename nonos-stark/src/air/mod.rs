@@ -23,6 +23,7 @@
 //! verifier is proven against forgeries, not assumed sound.
 
 mod accumulator;
+mod publics;
 mod value_balance;
 mod attest;
 mod attest_build;
@@ -82,6 +83,7 @@ mod wired_ext;
 mod wired_multi_ext;
 
 pub use accumulator::Accumulator;
+pub use publics::Publics;
 pub use value_balance::{Leg, ValueBalance, LIMB_SHIFT};
 pub use attest::verify_membership_attestation;
 pub use attest_build::build_attestation_trailer;
