@@ -3,6 +3,7 @@
 use super::bind::{groups, Layout};
 use super::bind_publics::public_groups;
 use super::intent::publics_region;
+use super::settle::Settle;
 use super::stack::stack;
 use super::terms::balance;
 use crate::crypto::stark::air::{Air, Poseidon, WiredMultiExt, RATE};
@@ -30,6 +31,7 @@ pub(crate) fn join_split(
     public_amount: u64,
     fee: u64,
     brk: Break,
+    st: Settle,
     flip: Option<usize>,
 ) -> JoinSplit {
     let notes = [inputs[0].note, inputs[1].note, outputs[0], outputs[1]];
@@ -41,7 +43,7 @@ pub(crate) fn join_split(
     let mut s = stack(&h, notes, sks, brk, (Box::new(air), trace));
 
     let (intent, pub_air) =
-        publics_region(&s, public_amount, fee, notes[0].asset_id, flip);
+        publics_region(&s, public_amount, fee, notes[0].asset_id, st, flip);
     s.traces.push(pub_air.trace());
     s.regions.push(Box::new(pub_air));
 

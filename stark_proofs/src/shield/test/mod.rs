@@ -15,4 +15,5 @@ mod membership;
 mod membership_scope;
 mod pool_hash;
 mod publics;
+mod publics_scope;
 mod tree_zeros;

@@ -1,6 +1,7 @@
 // NONOS Operating System (AGPL-3.0-or-later)
 
 use super::publics::Intent;
+use super::settle::Settle;
 use super::stack::Stack;
 use crate::crypto::stark::air::Publics;
 use crate::crypto::stark::field::Fp;
@@ -13,15 +14,19 @@ pub(crate) fn publics_region(
     public_amount: u64,
     fee: u64,
     asset_id: u64,
+    st: Settle,
     flip: Option<usize>,
 ) -> (Vec<Fp>, Publics) {
     let intent = Intent {
         note_root: s.root,
+        assoc_root: st.assoc_root,
         nf: s.nf,
         out_cm: s.out_cm,
         public_amount,
         fee,
         asset_id,
+        clearing_price: st.clearing_price,
+        recipient: st.recipient,
     }
     .words();
     let mut claimed = intent.clone();
