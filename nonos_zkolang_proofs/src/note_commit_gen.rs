@@ -226,3 +226,27 @@ fn the_reconstructed_permutation_matches_the_hash() {
         "reconstructed permutation disagrees with nonos-stark"
     );
 }
+
+/// The commitment costs three permutations and compiles to a little under
+/// twenty four thousand operations, so a permutation is roughly eight thousand.
+///
+/// That number is worth keeping in front of anyone who proposes moving a Shield
+/// hot path into the language. A depth thirty two membership climb is one
+/// permutation per level, so it lands near a quarter of a million operations for
+/// a statement the hand written air proves in a two thousand row region. The
+/// language earns its place on programs whose shape is not known in advance,
+/// which is the proving market; a fixed protocol circuit that runs on every
+/// transfer does not benefit from a general machine.
+///
+/// The bound is here to catch a regression in the compiler or the generator, not
+/// to be tuned. If it trips, find out what grew.
+#[test]
+fn the_commitment_circuit_fits_its_op_budget() {
+    let ops = nonos_zkolang::compile_source(&std::fs::read_to_string(circuit_path()).unwrap())
+        .expect("compile");
+    assert!(
+        ops.len() < 30_000,
+        "note_commit compiles to {} ops",
+        ops.len()
+    );
+}

@@ -1,3 +1,9 @@
+// SCOPE: a demonstration of the language, not the deployed Shield protocol. This
+// builds its note and its tree from the standard library's MiMC permutation over a
+// short path. The pool commits notes with the thirty two round Poseidon over eleven
+// limbs (see note_commit.zkl) and authenticates them against a depth thirty two
+// tree, so nothing here interoperates with a real note. Read it for the language,
+// not for the protocol.
 // A confidential transfer: spend one note and create another, conserving value, in one
 // circuit. The spender proves an input note sits under the public root and retires it
 // with a nullifier, then forms an output note whose value is the input value less the
