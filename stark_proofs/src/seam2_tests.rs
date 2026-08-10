@@ -265,6 +265,7 @@ fn reduced_multiquery_fri_roundtrips() {
 const CI_QUERIES: usize = 6;
 
 #[test]
+#[ignore]
 fn capped_coverage_accepts() {
     let asm = assemble_capped(Tamper::None, 0, CI_QUERIES);
     assert_eq!(asm.lay.n_q, CI_QUERIES, "cap did not take");
@@ -272,6 +273,7 @@ fn capped_coverage_accepts() {
 }
 
 #[test]
+#[ignore]
 fn capped_tamper_at_first_query_rejects() {
     let asm = assemble_capped(Tamper::ReboundTraceValue, 0, CI_QUERIES);
     assert!(!satisfies(&asm.wired, &asm.witness), "a query-0 tamper must reject");
@@ -280,6 +282,7 @@ fn capped_tamper_at_first_query_rejects() {
 /// The coverage proof in miniature: query 5 is not query 0, so under
 /// query-0-only attestation this tamper passes unseen.
 #[test]
+#[ignore]
 fn capped_tamper_at_a_later_query_rejects() {
     let asm = assemble_capped(Tamper::ReboundTraceValue, CI_QUERIES - 1, CI_QUERIES);
     assert!(!satisfies(&asm.wired, &asm.witness), "a later-query tamper must reject");

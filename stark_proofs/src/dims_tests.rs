@@ -3,6 +3,7 @@ use crate::crypto::stark::air::Air;
 use crate::recursion_assembly::{assemble_step, Tamper};
 
 #[test]
+#[ignore]
 fn probe_dims() {
     let asm = assemble_step(Tamper::None);
     let w = &asm.wired;

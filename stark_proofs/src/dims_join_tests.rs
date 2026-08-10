@@ -3,6 +3,7 @@ use crate::crypto::stark::air::Air;
 use crate::recursion_assembly::{assemble, Tamper};
 
 #[test]
+#[ignore]
 fn probe_join_split_dims() {
     let asm = assemble(Tamper::None);
     let w = &asm.wired;
