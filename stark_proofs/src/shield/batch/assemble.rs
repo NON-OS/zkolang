@@ -8,7 +8,7 @@ use crate::shield::join::{
 };
 use crate::crypto::stark::air::classes_are_disjoint;
 use crate::shield::wire::offsets;
-use crate::shield::wire_class::group_of;
+use crate::shield::wire_class::global_group;
 use alloc::boxed::Box;
 use alloc::vec::Vec;
 
@@ -64,8 +64,10 @@ pub(crate) fn assemble(parts: Vec<IntentParts>) -> BatchProof {
     // Disjointness is a precondition of merging them, so it is proven before the
     // mechanism is allowed to assume it.
     debug_assert!(classes_are_disjoint(&g), "binding classes overlap");
-    let groups: Vec<_> = g.iter().map(|c| group_of(span, c)).collect();
-    let wired = WiredMultiExt::new(regions, groups);
+    // Regions stack vertically and share columns, so the addressable width is the
+    // widest region, not the sum.
+    let width = regions.iter().map(|r| r.trace_width()).max().unwrap_or(1);
+    let wired = WiredMultiExt::new(regions, alloc::vec![global_group(span, width, &g)]);
     let witness = wired.trace(&traces);
     BatchProof { wired, witness, intents }
 }
