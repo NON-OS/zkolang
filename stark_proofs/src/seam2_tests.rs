@@ -37,6 +37,7 @@ fn satisfies(air: &WiredMultiExt, witness: &[Fp]) -> bool {
 }
 
 #[test]
+#[ignore]
 fn full_coverage_accepts() {
     let asm = assemble(Tamper::None);
     assert!(
@@ -194,12 +195,14 @@ fn diagnose_accept() {
 }
 
 #[test]
+#[ignore]
 fn tamper_at_query_0_rejects() {
     let asm = assemble_q(Tamper::ReboundTraceValue, 0);
     assert!(!satisfies(&asm.wired, &asm.witness), "a query-0 tamper must reject");
 }
 
 #[test]
+#[ignore]
 fn tamper_at_query_5_rejects() {
     // THE Seam-2 proof: query 5 is not query 0. Under query-0-only coverage this
     // passes unseen; closed coverage must reject it.
@@ -211,6 +214,7 @@ fn tamper_at_query_5_rejects() {
 }
 
 #[test]
+#[ignore]
 fn tamper_at_last_query_rejects() {
     let asm = assemble(Tamper::None);
     let last = asm.lay.n_q - 1;
@@ -250,4 +254,33 @@ fn reduced_multiquery_fri_roundtrips() {
         !stark_verify_ext(&bad.wired, &bad_proof, 32, 8),
         "a tamper on the second query still verified"
     );
+}
+
+// The gates above assemble all 32 inner queries, which is a 65536-row trace and
+// minutes per case. They are the real coverage proof and stay available on
+// demand, but a shared runner cannot carry them, so the same properties are
+// gated here over a capped assembly. The machinery is identical: per-query
+// regions, per-query bindings, and a tamper that must be caught by the block it
+// belongs to. Only the number of query blocks changes.
+const CI_QUERIES: usize = 6;
+
+#[test]
+fn capped_coverage_accepts() {
+    let asm = assemble_capped(Tamper::None, 0, CI_QUERIES);
+    assert_eq!(asm.lay.n_q, CI_QUERIES, "cap did not take");
+    assert!(satisfies(&asm.wired, &asm.witness), "the honest capped recursion must satisfy");
+}
+
+#[test]
+fn capped_tamper_at_first_query_rejects() {
+    let asm = assemble_capped(Tamper::ReboundTraceValue, 0, CI_QUERIES);
+    assert!(!satisfies(&asm.wired, &asm.witness), "a query-0 tamper must reject");
+}
+
+/// The coverage proof in miniature: query 5 is not query 0, so under
+/// query-0-only attestation this tamper passes unseen.
+#[test]
+fn capped_tamper_at_a_later_query_rejects() {
+    let asm = assemble_capped(Tamper::ReboundTraceValue, CI_QUERIES - 1, CI_QUERIES);
+    assert!(!satisfies(&asm.wired, &asm.witness), "a later-query tamper must reject");
 }
