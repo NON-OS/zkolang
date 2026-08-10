@@ -4,9 +4,11 @@ use super::uniform::price_uniform;
 use crate::crypto::stark::air::{Air, AirExt, GpGroup, WiredMultiExt};
 use crate::crypto::stark::field::Fp;
 use crate::shield::join::{
-    bind_groups, public_groups_at, IntentParts, Layout, REGIONS_PER_INTENT,
+    bind_classes, public_classes_at, IntentParts, Layout, REGIONS_PER_INTENT,
 };
+use crate::crypto::stark::air::classes_are_disjoint;
 use crate::shield::wire::offsets;
+use crate::shield::wire_class::group_of;
 use alloc::boxed::Box;
 use alloc::vec::Vec;
 
@@ -35,7 +37,7 @@ pub(crate) fn assemble(parts: Vec<IntentParts>) -> BatchProof {
     let rows: Vec<usize> = regions.iter().map(|r| 1usize << r.log_trace_len()).collect();
     let (off, span) = offsets(&rows);
 
-    let mut g: Vec<GpGroup> = Vec::new();
+    let mut g: Vec<crate::shield::wire_class::Class> = Vec::new();
     let mut pub_off = Vec::with_capacity(meta.len());
     for (i, (span_op, leaf_col, key_span, assoc_col, depth)) in meta.into_iter().enumerate() {
         let b = i * REGIONS_PER_INTENT;
@@ -52,13 +54,18 @@ pub(crate) fn assemble(parts: Vec<IntentParts>) -> BatchProof {
             depth,
             balance: off[b],
         };
-        g.extend(bind_groups(&lay));
-        g.extend(public_groups_at(&lay, off[b + 11]));
+        g.extend(bind_classes(&lay));
+        g.extend(public_classes_at(&lay, off[b + 11]));
         pub_off.push(off[b + 11]);
     }
-    g.extend(price_uniform(span, &pub_off));
+    g.extend(price_uniform(&pub_off));
 
-    let wired = WiredMultiExt::new(regions, g);
+    // Classes are the bindings; one group each is how they are enforced today.
+    // Disjointness is a precondition of merging them, so it is proven before the
+    // mechanism is allowed to assume it.
+    debug_assert!(classes_are_disjoint(&g), "binding classes overlap");
+    let groups: Vec<_> = g.iter().map(|c| group_of(span, c)).collect();
+    let wired = WiredMultiExt::new(regions, groups);
     let witness = wired.trace(&traces);
     BatchProof { wired, witness, intents }
 }

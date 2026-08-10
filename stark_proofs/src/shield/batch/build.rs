@@ -4,6 +4,7 @@ use super::uniform::price_uniform;
 use crate::crypto::stark::air::{Air, AirExt, Publics, WiredMultiExt};
 use crate::crypto::stark::field::Fp;
 use crate::shield::wire::offsets;
+use crate::shield::wire_class::group_of;
 use alloc::boxed::Box;
 use alloc::vec::Vec;
 
@@ -25,7 +26,9 @@ pub(crate) fn batch(tuples: &[Vec<Fp>]) -> Batch {
     }
     let rows: Vec<usize> = regions.iter().map(|r| 1usize << r.log_trace_len()).collect();
     let (off, span) = offsets(&rows);
-    let wired = WiredMultiExt::new(regions, price_uniform(span, &off));
+    let classes = price_uniform(&off);
+    let groups: Vec<_> = classes.iter().map(|c| group_of(span, c)).collect();
+    let wired = WiredMultiExt::new(regions, groups);
     let witness = wired.trace(&traces);
     Batch { wired, witness }
 }

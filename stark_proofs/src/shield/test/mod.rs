@@ -17,6 +17,7 @@ mod deployed_depth;
 mod fixture;
 mod intents;
 mod inventory;
+mod roundtrip;
 mod satisfies;
 mod scenario;
 

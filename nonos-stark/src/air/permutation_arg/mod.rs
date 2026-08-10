@@ -14,8 +14,10 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+mod arg;
 mod cycles;
 mod disjoint;
 
 pub use cycles::{Cell, WirePermutation};
+pub use arg::WiredPermutationArg;
 pub use disjoint::classes_are_disjoint;
