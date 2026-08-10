@@ -6,6 +6,7 @@ pub(crate) mod key;
 pub(crate) mod member;
 pub(crate) mod note;
 pub(crate) mod wire;
+mod wide;
 
 #[cfg(test)]
 mod test;

@@ -25,6 +25,7 @@
 mod accumulator;
 mod publics;
 mod value_balance;
+mod wide_mul;
 mod attest;
 mod attest_build;
 mod attest_trailer;
@@ -85,6 +86,7 @@ mod wired_multi_ext;
 pub use accumulator::Accumulator;
 pub use publics::Publics;
 pub use value_balance::{Leg, ValueBalance, LIMB_SHIFT};
+pub use wide_mul::{split, wide_mul, Product, LIMB_BITS, LIMB_MASK, N_LIMBS, N_OUT};
 pub use attest::verify_membership_attestation;
 pub use attest_build::build_attestation_trailer;
 pub use attest_trailer::verify_attestation_trailer;
