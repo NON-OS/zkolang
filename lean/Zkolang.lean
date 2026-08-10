@@ -16,6 +16,7 @@ import Zkolang.Hash
 import Zkolang.Field
 import Zkolang.Vm
 import Zkolang.Transfer
+import Zkolang.Wiring
 
 /-!
 The soundness of the zKølang standard library gadgets, in Lean 4 over the core library
