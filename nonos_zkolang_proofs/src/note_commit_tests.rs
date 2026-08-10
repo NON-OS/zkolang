@@ -5,7 +5,7 @@
 
 //! The Poseidon note commitment, cross-checked against its reference. The circuit
 //! in circuits/shield/note_commit.zkl reimplements the width-8 Poseidon-Goldilocks
-//! commit_note from nonos-stark: four full rounds, the Cauchy MDS, the BLAKE3 round
+//! commit_note from nonos-stark: the full round schedule, the Cauchy MDS, the round
 //! constants, and the same eleven-limb-plus-domain layout. These tests run the
 //! circuit on a witness and require its revealed digest to equal, field element for
 //! field element, what nonos-stark computes for the same input. A commitment that
@@ -116,5 +116,8 @@ fn matches_the_deployed_commitment() {
         9042362242223743603,
         14573159163843564693,
     ];
-    assert_eq!(got, deployed, "the circuit does not compute the deployed note commitment");
+    assert_eq!(
+        got, deployed,
+        "the circuit does not compute the deployed note commitment"
+    );
 }
