@@ -12,4 +12,16 @@ pub(crate) enum Tamper {
     SwappedRoot,
     /// A DEEP batching coefficient the transcript never squeezed.
     OffTranscriptCoeff,
+    /// The periodic columns recomputed at a point the composition never used.
+    /// Both regions stay internally consistent, so only the periodic binding
+    /// can reject it.
+    PeriodicOffPoint,
+    /// A fold chain descending on a beta the FRI transcript never squeezed. The
+    /// chain is built from the beta it uses, so the fold algebra holds and only
+    /// the transcript binding is left to catch it.
+    OffTranscriptBeta,
+    /// A DEEP divisor derived from an index other than the one query k's own
+    /// openings authenticate. The point chain is an honest walk of whatever
+    /// index it was given, so only the index binding ties it to the opened path.
+    ForeignConsistencyIndex,
 }

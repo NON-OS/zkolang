@@ -53,7 +53,7 @@ pub(crate) fn assemble_capped(tamper: Tamper, tamper_q: usize, cap: usize) -> As
     // transcript (drawing every FRI index), and the periodic recompute.
     let (cregion, ctrace) = compose::compose_region(&inner);
     let ft = fri::fri_transcript(&h, &inner);
-    let (pzregion, pztrace) = periodic::periodic_region(&inner);
+    let (pzregion, pztrace) = periodic::periodic_region(&inner, tamper);
 
     // One dependent-region block per query, in [deep, fold, auth, ip, fp] order.
     // The per-query metadata is uniform, taken from query 0.
@@ -66,9 +66,9 @@ pub(crate) fn assemble_capped(tamper: Tamper, tamper_q: usize, cap: usize) -> As
     for k in 0..n_q {
         let tk = if k == tamper_q { tamper } else { Tamper::None };
         let (dreg, dtr, nt) = deep::deep_region_k(&h, &inner, k, tk);
-        let fold = fri::fri_fold_k(&inner, &ft, k);
+        let fold = fri::fri_fold_k(&inner, &ft, k, tk);
         let au = auth::auth_side_k(&h, &inner, fold.ik, k, tk);
-        let pts = points::point_regions_k(&au.cons_dirs, fold.ik, ft.log_n);
+        let pts = points::point_regions_k(&au.cons_dirs, fold.ik, ft.log_n, tk);
         if k == 0 {
             n_terms = nt;
             depth = au.depth;
@@ -174,6 +174,7 @@ fn build_groups(lay: &Layout) -> Vec<GpGroup> {
     gps
 }
 
+
 /// The parked step-AIR path: a single-query (query-0-only) recursion over a
 /// zkolang inner, kept building against the per-query Layout with n_q = 1.
 pub(crate) fn assemble_step(tamper: Tamper) -> Assembly {
@@ -182,10 +183,10 @@ pub(crate) fn assemble_step(tamper: Tamper) -> Assembly {
 
     let (dregion, dtrace, n_terms) = deep::deep_region(&h, &inner, tamper);
     let ts = transcript::stark_transcript(&h, &inner, n_terms);
-    let fs = fri::fri_side(&h, &inner);
+    let fs = fri::fri_side(&h, &inner, tamper);
     let au = auth::auth_side(&h, &inner, fs.i0, tamper);
-    let pts = points::point_regions(&fs, &au);
-    let (pzregion, pztrace) = periodic::periodic_region(&inner);
+    let pts = points::point_regions(&fs, &au, tamper);
+    let (pzregion, pztrace) = periodic::periodic_region(&inner, tamper);
 
     let width_inner = au.ocells.len() - 3;
     let t_inner = inner.t as usize;
