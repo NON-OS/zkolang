@@ -78,6 +78,8 @@ mod register_file_tests;
 #[cfg(test)]
 mod robustness_tests;
 #[cfg(test)]
+mod shield_key_kat;
+#[cfg(test)]
 mod shield_membership_tests;
 #[cfg(test)]
 mod shield_tests;

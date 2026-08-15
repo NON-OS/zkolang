@@ -14,12 +14,12 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-//! Extracting the DEEP-consistency witness of a Poseidon-committed proof's first
-//! query: replay the transcript exactly as the verifier does, recover the
-//! out-of-domain point, the batching coefficients, and the query position, then
-//! assemble the per-term data (opened value, out-of-domain claim, point,
-//! coefficient) a recursive verifier feeds to `DeepCheckExt`. This is the bridge
-//! that turns a real proof into the terms an in-circuit DEEP check consumes.
+//! Extracting the DEEP-consistency witness of a Poseidon-committed proof's query
+//! `k`: replay the transcript exactly as the verifier does, recover the
+//! out-of-domain point, the batching coefficients, and the k-th consistency query
+//! position, then assemble the per-term data (opened value, out-of-domain claim,
+//! point, coefficient) a recursive verifier feeds to `DeepCheckExt`. Query 0 is
+//! the first draw; closing inner-query coverage replays every k in `0..n_queries`.
 
 use super::super::air::Poseidon;
 use super::super::field::{Fp, Fp2};
@@ -47,13 +47,29 @@ pub fn deep_terms_query0<A: AirExt>(
     deep_terms_query0_pub(air, proof, extra_blowup_bits, hasher, &[])
 }
 
-/// The same extraction, replaying `publics` into the transcript first.
+/// The query-0 form, preserved for callers that only attest the first query.
 pub fn deep_terms_query0_pub<A: AirExt>(
     air: &A,
     proof: &StarkProofExtP,
     extra_blowup_bits: u32,
     hasher: &Poseidon,
     publics: &[Fp],
+) -> (Vec<DeepTerm>, Fp2, Fp2) {
+    deep_terms_queryk_pub(air, proof, extra_blowup_bits, hasher, publics, 0)
+}
+
+/// The DEEP terms of `proof`'s query `k`, its evaluation point `shift * omega^p_k`,
+/// and the query's DEEP value. The transcript replay is identical to
+/// `stark_verify_poseidon_ext`; the k-th consistency index is the (k+1)-th
+/// consecutive `challenge_index` after the FRI deep root, so the first `k` draws
+/// are consumed and discarded, matching the verifier's `0..n_queries` loop.
+pub fn deep_terms_queryk_pub<A: AirExt>(
+    air: &A,
+    proof: &StarkProofExtP,
+    extra_blowup_bits: u32,
+    hasher: &Poseidon,
+    publics: &[Fp],
+    query: usize,
 ) -> (Vec<DeepTerm>, Fp2, Fp2) {
     let log_t = air.log_trace_len();
     let t = 1usize << log_t;
@@ -96,9 +112,13 @@ pub fn deep_terms_query0_pub<A: AirExt>(
     let comp_z = compose_ext(air, g, z, &proof.ood_frame, &periodic_z, &coeffs);
 
     ts.absorb_digest(&proof.fri.roots[0]);
+    // Consume the first `query` consistency draws; the k-th is the query index.
+    for _ in 0..query {
+        ts.challenge_index(n);
+    }
     let p = ts.challenge_index(n);
 
-    let qd = &proof.queries[0];
+    let qd = &proof.queries[query];
     let x = Fp2::from_base(shift * omega.pow(p as u64));
 
     let mut terms: Vec<DeepTerm> = Vec::with_capacity(width * window_size + 1);

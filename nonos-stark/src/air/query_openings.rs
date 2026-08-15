@@ -14,9 +14,9 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-//! Extracting a Poseidon-committed proof's query-zero authentication openings: the
+//! Extracting a Poseidon-committed proof's query-`k` authentication openings: the
 //! DEEP value against the FRI root, the composition against the composition root,
-//! and every trace column against its trace root, all at the consistency query
+//! and every trace column against its trace root, all at the k-th consistency query
 //! position. These are exactly the openings the inner verifier authenticates before
 //! it trusts the DEEP algebra (`verify_poseidon_ext` runs the same three checks). A
 //! recursive verifier authenticates them with one batched membership region, closing
@@ -37,15 +37,29 @@ use alloc::vec::Vec;
 
 const SHIFT: u64 = 7;
 
-/// The query-zero openings, replaying the transcript to the consistency query index
-/// exactly as `stark_verify_poseidon_ext` does, then packaging each authenticated
-/// opening (leaf, root, path, directions) the same batched membership consumes.
+/// The query-0 openings, preserved for callers that only attest the first query.
 pub fn query_openings_query0<A: AirExt>(
     air: &A,
     proof: &StarkProofExtP,
     extra_blowup_bits: u32,
     hasher: &Poseidon,
     publics: &[Fp],
+) -> Vec<Opening> {
+    query_openings_queryk(air, proof, extra_blowup_bits, hasher, publics, 0)
+}
+
+/// The query-`k` openings, replaying the transcript to the k-th consistency query
+/// index exactly as `stark_verify_poseidon_ext` does (the first `k` draws consumed
+/// and discarded), then packaging each authenticated opening (leaf, root, path,
+/// directions) the same batched membership consumes. The `directions` are the bits
+/// of `p_k`, so authenticating them binds the openings to that index.
+pub fn query_openings_queryk<A: AirExt>(
+    air: &A,
+    proof: &StarkProofExtP,
+    extra_blowup_bits: u32,
+    hasher: &Poseidon,
+    publics: &[Fp],
+    query: usize,
 ) -> Vec<Opening> {
     let log_t = air.log_trace_len();
     let t = 1usize << log_t;
@@ -71,9 +85,12 @@ pub fn query_openings_query0<A: AirExt>(
     }
     let _deep_coeffs: Vec<Fp2> = (0..width * window_size + 1).map(|_| ts.challenge_fp2()).collect();
     ts.absorb_digest(&proof.fri.roots[0]);
+    for _ in 0..query {
+        ts.challenge_index(n);
+    }
     let p = ts.challenge_index(n);
 
-    let qd = &proof.queries[0];
+    let qd = &proof.queries[query];
     let depth = qd.deep_path.len();
     let directions: Vec<bool> = (0..depth).map(|lv| (p >> lv) & 1 == 1).collect();
 

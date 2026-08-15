@@ -10,4 +10,5 @@ members = [
     "nonos_zkolang",
     "nonos_zkolang_cli",
     "nonos_zkolang_proofs",
+    "stark_proofs",
 ]

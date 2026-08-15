@@ -24,7 +24,7 @@
 //! same code, so the Fiat-Shamir keccak and the measurement blake3 are
 //! byte-identical on the prover and the verifier.
 
-#![no_std]
+#![cfg_attr(not(feature = "parallel"), no_std)]
 
 extern crate alloc;
 
@@ -41,3 +41,4 @@ pub mod poly;
 pub mod poseidon_merkle;
 pub mod poseidon_transcript;
 pub mod transcript;
+pub(crate) mod par;

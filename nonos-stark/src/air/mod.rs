@@ -23,6 +23,9 @@
 //! verifier is proven against forgeries, not assumed sound.
 
 mod accumulator;
+mod publics;
+mod value_balance;
+mod wide_mul;
 mod attest;
 mod attest_build;
 mod attest_trailer;
@@ -50,7 +53,9 @@ mod measure;
 mod merkle_membership;
 mod multi_membership;
 mod periodic_root;
+mod periodic_z;
 mod permutation;
+mod permutation_arg;
 mod permutation2;
 mod poseidon;
 mod power_chain;
@@ -80,6 +85,12 @@ mod wired_ext;
 mod wired_multi_ext;
 
 pub use accumulator::Accumulator;
+pub use permutation_arg::{
+    classes_are_disjoint, Cell, WirePermutation, WiredPermutationArg,
+};
+pub use publics::Publics;
+pub use value_balance::{Leg, ValueBalance, LIMB_SHIFT};
+pub use wide_mul::{split, wide_mul, Product, LIMB_BITS, LIMB_MASK, N_LIMBS, N_OUT};
 pub use attest::verify_membership_attestation;
 pub use attest_build::build_attestation_trailer;
 pub use attest_trailer::verify_attestation_trailer;
@@ -91,7 +102,7 @@ pub use composition::{compose, compose_ext};
 pub use copy_constraint::CopyConstraint;
 pub use deep_check::DeepCheck;
 pub use deep_check_ext::{DeepCheckExt, DeepTerm};
-pub use deep_terms::{deep_terms_query0, deep_terms_query0_pub};
+pub use deep_terms::{deep_terms_query0, deep_terms_query0_pub, deep_terms_queryk_pub};
 pub use deserialize::deserialize_proof;
 pub use deserialize_ext::deserialize_proof_ext;
 pub use enroll::enroll_policy_root;
@@ -105,6 +116,7 @@ pub use measure::measure_capsule;
 pub use merkle_membership::MerkleMembership;
 pub use multi_membership::{MultiMembership, Opening};
 pub use periodic_root::periodic_root;
+pub use periodic_z::PeriodicZ;
 pub use permutation::Permutation;
 pub use permutation2::Permutation2;
 pub use poseidon::{Poseidon, NOTE_DOMAIN, NOTE_LIMBS, RATE, WIDTH};
@@ -113,7 +125,7 @@ pub use prove::{stark_prove, stark_prove_bound};
 pub use prove_ext::{stark_prove_ext, stark_prove_ext_blown, stark_prove_ext_blown_bound};
 pub use prove_ext_pre::stark_prove_ext_preprocessed;
 pub use prove_poseidon_ext::{stark_prove_poseidon_ext, stark_prove_poseidon_ext_pub};
-pub use query_openings::query_openings_query0;
+pub use query_openings::{query_openings_query0, query_openings_queryk};
 pub use range_check::RangeCheck;
 pub use serialize::serialize_proof;
 pub use serialize_ext::serialize_proof_ext;
