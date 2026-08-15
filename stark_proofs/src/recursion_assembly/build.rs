@@ -156,7 +156,7 @@ pub(crate) fn assemble_capped(tamper: Tamper, tamper_q: usize, cap: usize) -> As
         c_comp_z_col: 54,
     };
 
-    let gps = build_groups(&lay);
+    let gps = fuse(build_groups(&lay), &lay, &regions);
     let n_groups = gps.len();
     let wired = WiredMultiExt::new(regions, gps);
     let witness = wired.trace(&traces);
@@ -172,6 +172,13 @@ fn build_groups(lay: &Layout) -> Vec<GpGroup> {
     groups::index(lay, &mut gps);
     groups::periodic(lay, &mut gps);
     gps
+}
+
+/// Regions stack vertically over shared columns, so the addressable width is the
+/// widest region rather than the sum.
+fn fuse(gps: Vec<GpGroup>, lay: &Layout, regions: &[Box<dyn AirExt>]) -> Vec<GpGroup> {
+    let width = regions.iter().map(|r| r.trace_width()).max().unwrap_or(1);
+    alloc::vec![groups::collapse(&gps, lay.span, width)]
 }
 
 
@@ -256,7 +263,7 @@ pub(crate) fn assemble_step(tamper: Tamper) -> Assembly {
         c_comp_z_col,
     };
 
-    let gps = build_groups(&lay);
+    let gps = fuse(build_groups(&lay), &lay, &regions);
     let n_groups = gps.len();
     let wired = WiredMultiExt::new(regions, gps);
     let witness = wired.trace(&[
