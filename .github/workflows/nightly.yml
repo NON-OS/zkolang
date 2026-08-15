@@ -1,0 +1,28 @@
+name: nightly
+
+on:
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  heavy:
+    name: every gate, serialized
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      # The recursion bindings, the deployed-depth shield gate and the transfer
+      # roundtrip are all #[ignore]d off the PR path because each builds a trace
+      # too large to share a runner. Without this they run nowhere, so the trust
+      # root would be exercised only by hand.
+      - name: every gate
+        run: cargo test --workspace --release -- --include-ignored --test-threads=1
