@@ -6,6 +6,7 @@
 //! query index `q_k`. Query 0 is `qs[0]`; closing coverage folds every `q_k`.
 
 use super::inner::{Inner, GRIND, LOG_ROUNDS};
+use super::tamper::Tamper;
 use super::sponge::{absorb, squeeze};
 use crate::crypto::stark::air::{
     AirExt, Poseidon, TraceFoldExt, TranscriptCheck, TranscriptOp, WIDTH,
@@ -71,6 +72,7 @@ pub(crate) fn fri_fold_k<A: AirExt>(
     inner: &Inner<A>,
     ft: &FriTranscript,
     query: usize,
+    tamper: Tamper,
 ) -> FoldSide {
     let fri = &inner.proof.fri;
     let n = 1usize << ft.log_n;
@@ -90,7 +92,15 @@ pub(crate) fn fri_fold_k<A: AirExt>(
     b.push(final_value);
     let log_layers = (ft.n_folds + 1).next_power_of_two().trailing_zeros();
     let fold = TraceFoldExt::new_witness(log_layers, ft.n_folds, xi, dir, final_value);
-    let ftrace = fold.trace(&ft.betas, &a, &b);
+    let betas = match tamper {
+        Tamper::OffTranscriptBeta => {
+            let mut v = ft.betas.clone();
+            v[0] = v[0] + Fp2::ONE;
+            v
+        }
+        _ => ft.betas.clone(),
+    };
+    let ftrace = fold.trace(&betas, &a, &b);
     FoldSide { fold, ftrace, ik: qk % (n >> 1) }
 }
 
@@ -107,9 +117,9 @@ pub(crate) struct FriSide {
     pub i0: usize,
 }
 
-pub(crate) fn fri_side<A: AirExt>(h: &Poseidon, inner: &Inner<A>) -> FriSide {
+pub(crate) fn fri_side<A: AirExt>(h: &Poseidon, inner: &Inner<A>, tamper: Tamper) -> FriSide {
     let ft = fri_transcript(h, inner);
-    let f0 = fri_fold_k(inner, &ft, 0);
+    let f0 = fri_fold_k(inner, &ft, 0, tamper);
     FriSide {
         transcript: ft.transcript,
         ttrace: ft.ttrace,

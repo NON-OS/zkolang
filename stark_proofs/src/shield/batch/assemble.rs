@@ -1,7 +1,7 @@
 // NONOS Operating System (AGPL-3.0-or-later)
 
 use super::uniform::price_uniform;
-use crate::crypto::stark::air::{Air, AirExt, GpGroup, WiredMultiExt};
+use crate::crypto::stark::air::{Air, AirExt, WiredMultiExt};
 use crate::crypto::stark::field::Fp;
 use crate::shield::join::{
     bind_classes, public_classes_at, IntentParts, Layout, REGIONS_PER_INTENT,
