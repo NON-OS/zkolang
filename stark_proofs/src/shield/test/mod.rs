@@ -14,7 +14,7 @@
 
 mod depth;
 mod deployed_depth;
-mod fixture;
+pub(crate) mod fixture;
 mod intents;
 mod inventory;
 mod roundtrip;
