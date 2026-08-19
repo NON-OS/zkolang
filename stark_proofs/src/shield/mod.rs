@@ -11,4 +11,4 @@ mod perm;
 mod wide;
 
 #[cfg(test)]
-mod test;
+pub(crate) mod test;
