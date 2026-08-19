@@ -78,9 +78,17 @@ column is closed form and already shared; sigma is the one that still costs.
 participant cannot spend a deposited note, which makes it the longest pole and the only
 remaining item that is not an optimisation.
 
-**A proof for the opening boundary.** Moving the opening state to the witness is
-justified here by the bindings that hold it and by every forgery still rejecting. That
-is evidence, not proof, and this is the trust root.
+## The opening boundary is proven, not just tested
+
+Leaving the opening's first state to the witness rests on the copy constraint that pins
+the half of it the leaf occupies. `Zkolang.Opening.injected_of_nodeHalf` proves that a
+state whose node half is the bound leaf is an injection of that leaf, so pinning the
+half is not weaker than constructing the whole, and the prover's remaining freedom is
+the sibling. `nodeHalf_inject` proves the pin reads back what was injected, so the
+constraint the assembly places is the one the argument assumes.
+
+Both hold over all states rather than the ones a prover happens to produce, in Lean 4
+over the core library alone, and neither depends on any axiom.
 
 ## Corrections
 
