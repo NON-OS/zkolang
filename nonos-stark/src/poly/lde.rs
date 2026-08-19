@@ -28,16 +28,22 @@ use alloc::vec::Vec;
 /// respective orders. The result equals evaluating the interpolating polynomial
 /// at each coset point, computed by transform rather than point by point.
 pub fn lde(values: &[Fp], trace_gen: Fp, shift: Fp, coset_gen: Fp, target_len: usize) -> Vec<Fp> {
-    // Interpolate to coefficients over the trace subgroup.
-    let mut coeffs = intt(values, trace_gen);
+    lde_from_coeffs(&intt(values, trace_gen), shift, coset_gen, target_len)
+}
+
+/// The same extension, from coefficients already in hand. A caller evaluating one
+/// polynomial over many cosets interpolates once and calls this per coset, rather
+/// than paying the interpolation again for every one of them.
+pub fn lde_from_coeffs(coeffs: &[Fp], shift: Fp, coset_gen: Fp, target_len: usize) -> Vec<Fp> {
+    let mut c = coeffs.to_vec();
     // Extend the coefficient list to the target degree with zeros.
-    coeffs.resize(target_len, Fp::ZERO);
+    c.resize(target_len, Fp::ZERO);
     // Fold the coset shift into the coefficients: evaluating `sum c_i (shift*x)^i`
     // is evaluating `sum (c_i shift^i) x^i`, so scale then transform.
     let mut s = Fp::ONE;
-    for c in coeffs.iter_mut() {
-        *c = *c * s;
+    for v in c.iter_mut() {
+        *v = *v * s;
         s = s * shift;
     }
-    ntt(&coeffs, coset_gen)
+    ntt(&c, coset_gen)
 }

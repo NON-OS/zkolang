@@ -24,7 +24,7 @@ use super::super::air::{Poseidon, RATE};
 use super::super::field::{Fp, Fp2};
 use super::super::fri::root_of_unity;
 use super::super::fri_poseidon_ext::fri_prove_poseidon_ext;
-use super::super::poly::{eval_ext, eval_lagrange_ext, intt, lde};
+use super::super::poly::{eval_ext, eval_lagrange_ext, intt, lde, lde_from_coeffs};
 use super::super::poseidon_merkle::{pack_base, pack_ext, PoseidonMerkleTree};
 use super::super::poseidon_transcript::PoseidonTranscript;
 use super::composition::{compose_ext, domain_params_blown, num_coeffs};
@@ -103,11 +103,14 @@ pub fn stark_prove_poseidon_ext_pub<A: AirExt>(
     // n_periodic * t values rather than n_periodic * n. For the recursion that is
     // the difference between a hundred and thirty gigabytes and half of one.
     let sub = omega.pow(blowup as u64);
+    // Interpolate once. Each coset then costs one transform rather than a fresh
+    // interpolation of the same column.
+    let periodic_coeffs: Vec<Vec<Fp>> = periodic_cols.iter().map(|col| intt(col, g)).collect();
     let mut comp_d: Vec<Fp2> = alloc::vec![Fp2::ZERO; n];
     for c in 0..blowup {
         let shift_c = shift * omega.pow(c as u64);
         let periodic_c: Vec<Vec<Fp>> =
-            periodic_cols.iter().map(|col| lde(col, g, shift_c, sub, t)).collect();
+            periodic_coeffs.iter().map(|cf| lde_from_coeffs(cf, shift_c, sub, t)).collect();
         let mut x = shift_c;
         for i in 0..t {
             let j = c + blowup * i;
