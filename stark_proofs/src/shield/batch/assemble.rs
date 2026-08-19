@@ -8,7 +8,7 @@ use crate::shield::join::{
 };
 use crate::crypto::stark::air::classes_are_disjoint;
 use crate::shield::wire::offsets;
-use crate::shield::wire_class::global_group;
+use crate::shield::wire_pack::{packed_groups, CAP};
 use alloc::boxed::Box;
 use alloc::vec::Vec;
 
@@ -66,8 +66,15 @@ pub(crate) fn assemble(parts: Vec<IntentParts>) -> BatchProof {
     debug_assert!(classes_are_disjoint(&g), "binding classes overlap");
     // Regions stack vertically and share columns, so the addressable width is the
     // widest region, not the sum.
-    let width = regions.iter().map(|r| r.trace_width()).max().unwrap_or(1);
-    let wired = WiredMultiExt::new(regions, alloc::vec![global_group(span, width, &g)]);
+    // An intent lays out balance, four note commitments, two pool memberships, two
+    // key derivations, two association memberships, then its publics. The four and
+    // the pairs are one AIR over different witnesses, and every intent repeats the
+    // same twelve, so the whole batch carries six kinds.
+    let kinds: Vec<usize> = (0..regions.len() / REGIONS_PER_INTENT)
+        .flat_map(|_| alloc::vec![0usize, 1, 1, 1, 1, 2, 2, 3, 3, 4, 4, 5])
+        .collect();
+    let groups = packed_groups(span, &g, CAP);
+    let wired = WiredMultiExt::new_kinds(regions, &kinds, groups);
     let witness = wired.trace(&traces);
     BatchProof { wired, witness, intents }
 }

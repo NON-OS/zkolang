@@ -22,8 +22,8 @@ tree before the fix to watch it fail, which is the only way to know a gate works
 
 ## A private transfer works
 
-`shield::test::roundtrip`, at the deployed tree depth of 32, two inputs and two
-outputs:
+`shield::test::roundtrip`, two inputs and two outputs. Prover runs, FRI commits,
+verifier accepts. Not a witness satisfaction check.
 
 | | |
 |---|---|
@@ -32,7 +32,15 @@ outputs:
 | wall clock, both cases | 1147 s |
 | peak resident | 438 MB |
 
-Prover runs, FRI commits, verifier accepts. Not a witness satisfaction check.
+**That gate runs at `depth::MINIMAL`, which is 3, not the deployed 32.** It is built
+that way on purpose: a forgery rejects through the permutation structure rather than
+the tree size, so the binding suite stays a change gate. Reading its runtime as the
+cost of a transfer is a mistake, and one this document made until it was caught.
+
+`probe_deployed_transfer_proves` is the one that proves a spend against the tree the
+pool deploys. The circuit is the same shape at either depth, 14 trace columns and 64
+periodic, with only `log_trace_len` moving from 13 to 15, so the evaluation domain
+goes from 2.1M to 8.4M.
 
 ## What binds
 
