@@ -6,6 +6,7 @@ mod deep;
 mod fold;
 mod helpers;
 mod index;
+mod pack;
 mod periodic;
 mod roots;
 mod statement;

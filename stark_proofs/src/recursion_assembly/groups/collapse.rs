@@ -1,9 +1,14 @@
 // NONOS Operating System (AGPL-3.0-or-later)
 
+use super::pack::pack;
 use super::uf::Uf;
 use crate::crypto::stark::air::GpGroup;
-use crate::crypto::stark::field::Fp;
 use alloc::vec::Vec;
+
+/// A running product over k wired columns carries degree k+1, so one group over
+/// the whole trace width costs as much evaluation domain as it saves in columns.
+/// Eight keeps the fused degree at the level the rest of the AIR already sets.
+const CAP: usize = 8;
 
 fn cell(g: &GpGroup, pos: usize, width: usize) -> usize {
     let k = g.wired_cols.len();
@@ -11,9 +16,13 @@ fn cell(g: &GpGroup, pos: usize, width: usize) -> usize {
 }
 
 /// Each group holds its own cells equal, so the conjunction of all of them is the
-/// transitive closure of those equalities. One sigma over the full width carries
-/// that same closure, and cells outside every class stay identity and cancel.
-pub(crate) fn collapse(gps: &[GpGroup], span: usize, width: usize) -> GpGroup {
+/// transitive closure of those equalities. The closure is what gets re-cut, into
+/// groups narrow enough to keep the degree down.
+pub(crate) fn collapse(gps: &[GpGroup], span: usize, width: usize) -> Vec<GpGroup> {
+    pack(closure(gps, span, width), span, width, CAP)
+}
+
+fn closure(gps: &[GpGroup], span: usize, width: usize) -> Vec<Vec<usize>> {
     let n = span * width;
     let mut uf = Uf::new(n);
     for g in gps {
@@ -23,27 +32,16 @@ pub(crate) fn collapse(gps: &[GpGroup], span: usize, width: usize) -> GpGroup {
             }
         }
     }
-    let mut sigma: Vec<usize> = (0..n).collect();
-    let mut head = alloc::vec![usize::MAX; n];
-    let mut prev = alloc::vec![usize::MAX; n];
+    let mut seen = alloc::vec![usize::MAX; n];
+    let mut out: Vec<Vec<usize>> = Vec::new();
     for c in 0..n {
         let r = uf.find(c);
-        if head[r] == usize::MAX {
-            head[r] = c;
-        } else {
-            sigma[prev[r]] = c;
+        if seen[r] == usize::MAX {
+            seen[r] = out.len();
+            out.push(Vec::new());
         }
-        prev[r] = c;
+        out[seen[r]].push(c);
     }
-    for r in 0..n {
-        if head[r] != usize::MAX && prev[r] != head[r] {
-            sigma[prev[r]] = head[r];
-        }
-    }
-    GpGroup {
-        wired_cols: (0..width).collect(),
-        sigma,
-        beta: Fp::from_u64(5),
-        gamma: Fp::from_u64(7),
-    }
+    out.retain(|class| class.len() >= 2);
+    out
 }

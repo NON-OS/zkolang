@@ -178,7 +178,7 @@ fn build_groups(lay: &Layout) -> Vec<GpGroup> {
 /// widest region rather than the sum.
 fn fuse(gps: Vec<GpGroup>, lay: &Layout, regions: &[Box<dyn AirExt>]) -> Vec<GpGroup> {
     let width = regions.iter().map(|r| r.trace_width()).max().unwrap_or(1);
-    alloc::vec![groups::collapse(&gps, lay.span, width)]
+    groups::collapse(&gps, lay.span, width)
 }
 
 

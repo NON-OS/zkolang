@@ -16,6 +16,19 @@ fn probe_join_split_dims() {
     let np = w.periodic_columns().len();
     let trace_gb = (tw as u128 * n as u128 * 8) / (1024 * 1024 * 1024);
     let periodic_gb = (np as u128 * n as u128 * 8) / (1024 * 1024 * 1024);
+    let nr = asm.region_offsets.len();
+    let zeros: usize = w
+        .periodic_columns()
+        .iter()
+        .map(|c| c.iter().filter(|v| **v == crate::crypto::stark::field::Fp::ZERO).count())
+        .sum();
+    let cells = np * (1usize << lt);
+    std::eprintln!(
+        "REGIONS n={nr} selectors={nr} region_periodic={} per_region={:.1} zero_frac={:.4}",
+        np - nr,
+        (np - nr) as f64 / nr as f64,
+        zeros as f64 / cells as f64
+    );
     std::eprintln!(
         "JOINSPLIT trace_width={tw} degree={deg} log_trace_len={lt} t={t} n_periodic={np} n_groups={} n_q={} eval_domain={n} trace_lde_GB={trace_gb} periodic_lde_GB={periodic_gb} total_GB={}",
         asm.n_groups,
