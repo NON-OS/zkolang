@@ -55,6 +55,8 @@ mod step_assembly_tests;
 mod dims_tests;
 #[cfg(test)]
 mod dims_join_tests;
+#[cfg(test)]
+mod dims_kind_tests;
 
 // Machine-checked proof harnesses, compiled only under `cargo kani`.
 #[cfg(kani)]

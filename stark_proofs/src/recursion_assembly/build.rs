@@ -158,7 +158,15 @@ pub(crate) fn assemble_capped(tamper: Tamper, tamper_q: usize, cap: usize) -> As
 
     let gps = fuse(build_groups(&lay), &lay, &regions);
     let n_groups = gps.len();
-    let wired = WiredMultiExt::new(regions, gps);
+    // Four shared regions, then a block of five per query in [deep, fold, auth,
+    // ip, fp] order. Deep, fold and the two point regions carry the same periodic
+    // pattern for every query, so they are one kind each. Auth does not: its
+    // columns follow the opened-cell choice, which follows the query's index
+    // parity, and all n_q of them differ. It stays one kind per query.
+    let kinds: Vec<usize> = (0..4)
+        .chain((0..n_q).flat_map(|k| alloc::vec![4, 5, 8 + k, 6, 7]))
+        .collect();
+    let wired = WiredMultiExt::new_kinds(regions, &kinds, gps);
     let witness = wired.trace(&traces);
     Assembly { wired, witness, lay, publics: inner.publics, n_groups, region_offsets: off }
 }
