@@ -5,7 +5,8 @@
 //! non-membership, which a sparse tree answers with a 256 deep empty-leaf proof
 //! and this answers with one short path to the leaf below the key.
 
-mod hash;
+mod fold;
+pub(crate) mod hash;
 mod insert;
 mod last;
 mod leaf;
@@ -14,6 +15,7 @@ mod order;
 #[cfg(test)]
 mod test;
 
+pub(crate) use fold::{refold, Tree};
 pub(crate) use insert::{chain, Low};
 pub(crate) use last::last_is_the_maximum;
 pub(crate) use leaf::{Leaf, IMT_LEAF_DOMAIN, IMT_LEAF_LIMBS};

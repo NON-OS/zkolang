@@ -2,6 +2,7 @@
 
 mod bounds;
 mod encoding;
+mod fold;
 mod insert;
 mod kat;
 mod last;
