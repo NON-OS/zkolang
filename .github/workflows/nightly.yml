@@ -9,6 +9,32 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  kani:
+    name: model checked
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      # The harnesses cover the deserialiser, which reads an untrusted trailer, so
+      # a model checker settles totality over every byte sequence in the bound
+      # rather than the ones a fuzzer reached.
+      #
+      # Nightly rather than per push: building the verifier from source runs past
+      # an hour, and the prebuilt action's installer is broken on its version
+      # parse. A gate that hangs the pull request teaches people to ignore red.
+      - name: install kani
+        run: |
+          cargo install --locked kani-verifier
+          cargo kani setup
+
+      - name: kani
+        run: cargo kani -p stark_proofs --output-format terse
+
   heavy:
     name: every gate, serialized
     runs-on: ubuntu-latest

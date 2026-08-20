@@ -23,6 +23,21 @@ fn two_transfers_share_one_verifier_key() {
     let (pa, pb) = (a.wired.periodic_columns(), b.wired.periodic_columns());
     assert_eq!(pa.len(), pb.len(), "the two transfers do not even have the same AIR shape");
 
+    // The columns a verifier key commits to, digested so two runs are comparable
+    // by eye. Printed rather than asserted; the assert below is the gate.
+    let digest = |cols: &[alloc::vec::Vec<crate::crypto::stark::field::Fp>]| {
+        let mut h: u64 = 0xcbf2_9ce4_8422_2325;
+        for col in cols {
+            for v in col {
+                h ^= v.value();
+                h = h.wrapping_mul(0x0000_0100_0000_01b3);
+            }
+        }
+        h
+    };
+    std::println!("  transfer A  {} columns  {:016x}", pa.len(), digest(&pa));
+    std::println!("  transfer B  {} columns  {:016x}", pb.len(), digest(&pb));
+
     let moved: alloc::vec::Vec<usize> = pa
         .iter()
         .zip(pb.iter())
