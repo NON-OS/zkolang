@@ -329,9 +329,11 @@ fn the_merkle_witness_form_authenticates_the_real_opening() {
     let directions: Vec<bool> = (0..depth).map(|l| (i >> l) & 1 == 1).collect();
     let opening = Opening { leaf: pack_ext(op.a), root: fri.roots[0], siblings, directions };
     let mem = MultiMembership::new_witness(h.clone(), 2, alloc::vec![opening]);
-    // Instance-independent AIR: direction plus RATE sibling columns in the trace,
-    // no pinned boundary.
-    assert_eq!(mem.trace_width(), WIDTH + 1 + RATE);
+    // Instance-independent AIR: direction, RATE sibling columns and the opened leaf
+    // in the trace, no pinned boundary. The leaf rides its own columns so a caller
+    // binds it at one place whatever the first path bit is, which is what keeps the
+    // layout, and the verifier key with it, off the witness.
+    assert_eq!(mem.trace_width(), WIDTH + 1 + RATE + RATE);
     assert_eq!(mem.boundary().len(), 0);
     let mtrace = mem.trace();
     let mproof = stark_prove_ext(&mem, &mtrace, 32, 8);

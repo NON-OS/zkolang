@@ -17,10 +17,10 @@ pub(crate) fn index_classes(l: &Layout) -> Vec<Class> {
     let mut c = Vec::new();
     let rounds = 1usize << POOL_LOG_ROUNDS;
     for (i, &base) in l.index.iter().enumerate() {
-        // Level m's direction rides the membership trace on the last round row of
-        // level m-1: the trace carries directions[1..depth], because directions[0]
-        // was consumed building the opening's initial state and lives only in which
-        // half of that state the leaf occupies. Bit zero is not bound here.
+        // The first bit sits on the opening's own first row, where the initial
+        // state is built from it. Every later bit sits on the last round row of
+        // the level before the one it steers.
+        c.push(pair(base, IndexScalar::BIT, l.member[i], WIDTH));
         for m in 1..l.depth {
             let dir_row = l.member[i] + (m - 1) * rounds + rounds - 1;
             c.push(pair(base + m, IndexScalar::BIT, dir_row, WIDTH));

@@ -55,7 +55,10 @@ pub(crate) fn nullifier_parts(
 
     let spend_pk = derive(&h, sk).spend_pk;
     let nk = derive(&h, nk_sk).nk;
-    let idx = if brk == Break::ForeignIndex { leaf_index + 1 } else { leaf_index };
+    // Flipping the lowest bit alone is the sharp case: it is the bit the opening
+    // consumes building its initial state, so it is the last one to become a cell
+    // a binding can reach.
+    let idx = if brk == Break::ForeignIndex { leaf_index ^ 1 } else { leaf_index };
     let t = h.compress(&nk, &target);
     let nf = h.compress(&t, &tag(idx));
 

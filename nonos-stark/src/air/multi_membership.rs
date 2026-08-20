@@ -118,7 +118,12 @@ impl MultiMembership {
             // trace, at exactly the rows the transition reads them.
             if self.witness_path {
                 let m = (within + 1) / l;
-                let (dir, sib) = if is_slot_bnd && opening < count && m < depth {
+                // An opening's first row carries the data its own initial state is
+                // built from: the leaf, the first sibling, and the first path bit.
+                // No slot boundary lands there, so the columns are free.
+                let (dir, sib) = if within == 0 && opening < count {
+                    (self.openings[opening].directions[0], self.openings[opening].siblings[0])
+                } else if is_slot_bnd && opening < count && m < depth {
                     (self.openings[opening].directions[m], self.openings[opening].siblings[m])
                 } else {
                     (false, [Fp::ZERO; RATE])
@@ -126,6 +131,12 @@ impl MultiMembership {
                 trace[r * w + WIDTH] = if dir { Fp::ONE } else { Fp::ZERO };
                 for (c, s) in sib.iter().enumerate() {
                     trace[r * w + WIDTH + 1 + c] = *s;
+                }
+                if within == 0 && opening < count {
+                    let leaf = self.openings[opening].leaf;
+                    for (c, v) in leaf.iter().enumerate() {
+                        trace[r * w + WIDTH + 1 + RATE + c] = *v;
+                    }
                 }
             }
             if is_op_bnd {
@@ -155,14 +166,20 @@ impl MultiMembership {
     /// opened value, so the fold runs on exactly what the opening committed.
     pub fn opened_cells(&self) -> alloc::vec::Vec<(usize, usize)> {
         let span = self.span();
-        self.openings
-            .iter()
-            .enumerate()
-            .map(|(o, opening)| {
-                let col = if opening.directions[0] { RATE } else { 0 };
-                (o * span, col)
-            })
-            .collect()
+        // The production form carries the leaf in its own columns, so the cell is
+        // the same wherever the first path bit points. The per-proof form has no
+        // such columns and still reads the half the bit selects, which is why its
+        // layout follows the witness and the production form's does not.
+        let col = |o: usize| {
+            if self.witness_path {
+                WIDTH + 1 + RATE
+            } else if self.openings[o].directions[0] {
+                RATE
+            } else {
+                0
+            }
+        };
+        (0..self.openings.len()).map(|o| (o * span, col(o))).collect()
     }
 }
 
@@ -226,6 +243,23 @@ impl MultiMembership {
         // The witnessed direction must be a bit, so it cannot blend the two children.
         if self.witness_path {
             out.push(dir * (one - dir));
+
+            // An opening's first state is its leaf injected against its first
+            // sibling, in the order its first path bit gives. Without this the
+            // state is free and the leaf columns say nothing about the walk; with
+            // it the first bit is a cell a caller can bind, rather than a choice
+            // buried in which half of the state the leaf happened to occupy.
+            let op_first = periodic[WIDTH + 2];
+            let mut leaf = [F::ZERO; RATE];
+            leaf.copy_from_slice(&window[WIDTH + 1 + RATE..WIDTH + 1 + RATE + RATE]);
+            for j in 0..WIDTH {
+                let injected = if j < RATE {
+                    (one - dir) * leaf[j] + dir * sib[j]
+                } else {
+                    (one - dir) * sib[j - RATE] + dir * leaf[j - RATE]
+                };
+                out.push(op_first * (state[j] - injected));
+            }
         }
         out
     }
@@ -244,7 +278,10 @@ impl Air for MultiMembership {
 
     fn trace_width(&self) -> usize {
         if self.witness_path {
-            WIDTH + 1 + RATE
+            // state, direction, sibling, and the opened leaf. The leaf rides its
+            // own columns so a caller binds it at one place whatever the first
+            // path bit is, rather than at a column that bit selects.
+            WIDTH + 1 + RATE + RATE
         } else {
             WIDTH
         }
@@ -260,7 +297,9 @@ impl Air for MultiMembership {
 
     fn num_transition(&self) -> usize {
         if self.witness_path {
-            WIDTH + 1
+            // The state chain, the direction bit, and the opening's first state
+            // built from its own leaf, sibling and first bit.
+            WIDTH + 1 + WIDTH
         } else {
             WIDTH
         }
@@ -274,10 +313,12 @@ impl Air for MultiMembership {
         let count = self.openings.len();
 
         // Per-proof: rc[WIDTH], slot_bnd, op_bnd, dir, sib[RATE], reset[WIDTH].
-        // Production: rc[WIDTH], slot_bnd, op_bnd. Dir and sib are trace, and the
-        // reset is gone: it held the next opening's leaf and sibling, which is
-        // witness, and witness in these columns moves the verifier key per proof.
-        let cols_len = if self.witness_path { WIDTH + 2 } else { WIDTH + 3 + RATE + WIDTH };
+        // Production: rc[WIDTH], slot_bnd, op_bnd, op_first. Dir, sib and the leaf
+        // are trace, and the reset is gone: it held the next opening's leaf and
+        // sibling, which is witness, and witness in these columns moves the
+        // verifier key per proof. op_first marks where an opening begins, which is
+        // structure and does not.
+        let cols_len = if self.witness_path { WIDTH + 3 } else { WIDTH + 3 + RATE + WIDTH };
         let mut cols: Vec<Vec<Fp>> = (0..cols_len).map(|_| Vec::with_capacity(n)).collect();
 
         for r in 0..n {
@@ -296,6 +337,15 @@ impl Air for MultiMembership {
 
             cols[WIDTH].push(if is_slot_boundary && !is_op_boundary { Fp::ONE } else { Fp::ZERO });
             cols[WIDTH + 1].push(if is_op_boundary { Fp::ONE } else { Fp::ZERO });
+            if self.witness_path {
+                // An opening's first row, where its state is built rather than
+                // carried. Which rows those are is layout, not witness.
+                cols[WIDTH + 2].push(if within == 0 && opening < count {
+                    Fp::ONE
+                } else {
+                    Fp::ZERO
+                });
+            }
 
             if !self.witness_path {
                 // Reset state to the next opening's initial, at an opening boundary
