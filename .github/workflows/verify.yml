@@ -16,21 +16,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: dtolnay/rust-toolchain@stable
-
-      - uses: Swatinem/rust-cache@v2
-
-      - name: install kani
-        run: |
-          cargo install --locked kani-verifier
-          cargo kani setup
-
       # The harnesses cover the deserialiser, which reads an untrusted trailer.
       # A model checker settles totality over every byte sequence in the bound
       # rather than the ones a fuzzer happened to reach, which is the property
       # that keeps the spawn gate safe.
-      - name: kani
-        run: cargo kani -p stark_proofs --output-format terse
+      #
+      # The action ships a prebuilt Kani. Building the verifier from source ran
+      # past an hour on its own and left no budget for the checking.
+      - uses: model-checking/kani-github-action@v1.1
+        with:
+          args: -p stark_proofs --output-format terse
 
   axioms:
     name: no axioms beyond the core
