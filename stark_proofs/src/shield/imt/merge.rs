@@ -1,63 +1,43 @@
 // NONOS Operating System (AGPL-3.0-or-later)
 
+use super::leaf::Leaf;
 use super::order::cmp;
-use crate::crypto::stark::air::RATE;
-use crate::crypto::stark::field::Fp;
 use alloc::vec::Vec;
 use core::cmp::Ordering;
 
-/// What a subtree does to the chain: the pointers it sets, and the range it owns.
-///
-/// `low` is the pre-batch leaf its first key follows. Two subtrees whose ranges
-/// fall in the same gap both start from that leaf, and both would set its pointer
-/// if they were merged as written.
+/// The chain as a subtree sees it: every leaf, in order.
+pub(crate) type State = Vec<Leaf>;
+
+pub(crate) fn same(a: &State, b: &State) -> bool {
+    a.len() == b.len()
+        && a.iter().zip(b).all(|(x, y)| {
+            cmp(&x.value, &y.value) == Ordering::Equal
+                && cmp(&x.next_value, &y.next_value) == Ordering::Equal
+                && x.next_index == y.next_index
+                && x.is_last == y.is_last
+        })
+}
+
+/// What one subtree attests: the chain it started from and the chain it left.
 pub(crate) struct Range {
-    pub low: [Fp; RATE],
-    /// Every `(holder, points_at)` this subtree writes, in chain order.
-    pub sets: Vec<([Fp; RATE], [Fp; RATE])>,
+    pub old: State,
+    pub new: State,
 }
 
-impl Range {
-    pub fn first(&self) -> Option<[Fp; RATE]> {
-        self.sets.first().map(|(_, to)| *to)
-    }
-
-    pub fn last(&self) -> Option<[Fp; RATE]> {
-        self.sets.last().map(|(from, _)| *from)
-    }
-}
-
-/// Merge two adjacent subtree ranges into one.
+/// Merge two subtree ranges.
 ///
-/// The seam is the whole problem. Both were computed against the pre-batch tree,
-/// so if they share a gap they each believe they own the low leaf's pointer. Left
-/// alone, the second overwrites the first and that subtree's whole range leaves
-/// the chain, while the product still closes and every other binding still holds.
+/// One equality, not a list of shapes it recognises. A disjunction of accept
+/// cases fails closed on the topology nobody drew: it refuses valid work, every
+/// refusal test still passes, and only a positive case shows it. That happened
+/// here once already, and to the disjointness precondition before it.
 ///
-/// So: no leaf may be written by both, and what A's last key points at has to be
-/// what B starts from. That second condition is children-chain wearing the linked
-/// list's clothes, A.new == B.old carried across the seam.
+/// So B started from the chain A left, or there is no merge. Separate gaps, a
+/// stitched seam and the case where A's last key points at the leaf B starts from
+/// all satisfy it without being named; two subtrees that both started from the
+/// pre-batch chain do not, which is the double update.
 pub(crate) fn stitch(a: &Range, b: &Range) -> Option<Range> {
-    let (last, first) = match (a.last(), b.first()) {
-        (Some(l), Some(f)) => (l, f),
-        _ => return None,
-    };
-    if cmp(&last, &first) != Ordering::Less {
+    if !same(&a.new, &b.old) {
         return None;
     }
-    // A leaf written twice is a range dropped.
-    for (from, _) in &a.sets {
-        if b.sets.iter().any(|(other, _)| cmp(from, other) == Ordering::Equal) {
-            return None;
-        }
-    }
-    // Sharing a gap means both believe they own the same low leaf's pointer. B
-    // either follows A's last key or starts from a leaf A never touched; starting
-    // where A started is the double update.
-    if cmp(&a.low, &b.low) == Ordering::Equal {
-        return None;
-    }
-    let mut sets = a.sets.clone();
-    sets.extend(b.sets.iter().copied());
-    Some(Range { low: a.low, sets })
+    Some(Range { old: a.old.clone(), new: b.new.clone() })
 }

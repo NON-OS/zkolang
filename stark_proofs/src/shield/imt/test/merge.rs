@@ -2,7 +2,7 @@
 
 use crate::crypto::stark::air::RATE;
 use crate::crypto::stark::field::Fp;
-use crate::shield::imt::{stitch, Range};
+use crate::shield::imt::{stitch, Leaf, Range, State};
 
 fn key(v: u64) -> [Fp; RATE] {
     let mut k = [Fp::ZERO; RATE];
@@ -10,63 +10,97 @@ fn key(v: u64) -> [Fp; RATE] {
     k
 }
 
-fn range(low: u64, sets: &[(u64, u64)]) -> Range {
-    Range {
-        low: key(low),
-        sets: sets.iter().map(|(f, t)| (key(*f), key(*t))).collect(),
+fn leaf(v: u64, next: u64, is_last: bool) -> Leaf {
+    Leaf {
+        value: key(v),
+        next_index: 0,
+        next_value: if is_last { [Fp::ZERO; RATE] } else { key(next) },
+        is_last,
     }
 }
 
-/// Different gaps: A follows leaf 0, B follows leaf 100, neither touches the
-/// other's leaf and B starts from a leaf A left alone.
+/// The chain after inserting each of `keys` into the gap they fall in.
+fn insert(mut s: State, keys: &[u64]) -> State {
+    for k in keys {
+        let at = s
+            .iter()
+            .position(|l| l.value[0].value() < *k && (l.is_last || l.next_value[0].value() > *k))
+            .expect("no gap");
+        let (next, last) = (s[at].next_value[0].value(), s[at].is_last);
+        s[at].next_value = key(*k);
+        s[at].is_last = false;
+        s.push(leaf(*k, next, last));
+        s.sort_by_key(|l| l.value[0].value());
+    }
+    s
+}
+
+fn genesis() -> State {
+    alloc::vec![leaf(0, 0, true)]
+}
+
+/// B started from the chain A left, so the two compose. Nothing here names a
+/// topology: the equality is the whole condition.
 #[test]
-fn ranges_in_separate_gaps_merge() {
-    let a = range(0, &[(0, 10), (10, 100)]);
-    let b = range(100, &[(100, 150), (150, 200)]);
+fn a_range_starting_where_the_last_one_ended_merges() {
+    let s0 = genesis();
+    let s1 = insert(s0.clone(), &[10, 20]);
+    let s2 = insert(s1.clone(), &[30, 40]);
+    let a = Range { old: s0, new: s1.clone() };
+    let b = Range { old: s1, new: s2 };
     assert!(stitch(&a, &b).is_some());
 }
 
-/// The seam. Both ranges land between leaf 0 and leaf 100, so both were computed
-/// believing they set leaf 0's pointer. Merged as written, B's write to leaf 0
-/// lands on top of A's and A's whole range leaves the chain, while the product
-/// still closes.
+/// Keys that fall between A's, not after them. Never drawn as a case, still
+/// merges, because it satisfies the equality.
 #[test]
-fn ranges_sharing_a_gap_do_not_merge_as_written() {
-    let a = range(0, &[(0, 10), (10, 100)]);
-    let b = range(0, &[(0, 50), (50, 100)]);
-    assert!(stitch(&a, &b).is_none(), "two subtrees wrote the same leaf and one range vanished");
-}
-
-/// Stitched: B follows A's last key rather than the leaf they both started from,
-/// which is A.new == B.old carried across the seam.
-#[test]
-fn a_stitched_seam_merges() {
-    let a = range(0, &[(0, 10), (10, 20)]);
-    let b = range(20, &[(20, 50), (50, 100)]);
+fn a_range_interleaving_with_the_last_one_merges() {
+    let s0 = genesis();
+    let s1 = insert(s0.clone(), &[10, 40]);
+    let s2 = insert(s1.clone(), &[20, 30]);
+    let a = Range { old: s0, new: s1.clone() };
+    let b = Range { old: s1, new: s2 };
     assert!(stitch(&a, &b).is_some());
 }
 
-/// Out of order across the seam: B's first key is below A's last, so the chain
-/// would not be increasing through the join.
+/// Both started from the pre-batch chain, which is the double update: each
+/// believes it owns the low leaf's pointer and the second overwrites the first.
 #[test]
-fn a_seam_that_runs_backwards_does_not_merge() {
-    let a = range(0, &[(0, 50), (50, 100)]);
-    let b = range(50, &[(50, 10), (10, 100)]);
-    assert!(stitch(&b, &a).is_none());
+fn two_ranges_both_starting_from_the_pre_batch_chain_do_not_merge() {
+    let s0 = genesis();
+    let a = Range { old: s0.clone(), new: insert(s0.clone(), &[10, 20]) };
+    let b = Range { old: s0.clone(), new: insert(s0, &[30, 40]) };
+    assert!(stitch(&a, &b).is_none(), "one range's writes would vanish");
 }
 
-/// B starting from a leaf A pointed at, without following A's last key, leaves
-/// A's tail and B's head claiming the same successor.
+/// B started from a chain that is A's with one pointer moved: close enough to
+/// pass a shape check, not equal.
 #[test]
-fn a_seam_that_reuses_a_pointer_target_does_not_merge() {
-    let a = range(0, &[(0, 10), (10, 100)]);
-    let b = range(100, &[(100, 10), (10, 200)]);
+fn a_range_starting_from_a_doctored_chain_does_not_merge() {
+    let s0 = genesis();
+    let s1 = insert(s0.clone(), &[10, 20]);
+    let mut doctored = s1.clone();
+    doctored[1].next_value = key(99);
+    let a = Range { old: s0, new: s1 };
+    let b = Range { old: doctored.clone(), new: insert(doctored, &[30]) };
     assert!(stitch(&a, &b).is_none());
 }
 
-/// An empty side has no seam to check and nothing to stitch to.
+/// Composition is associative over the equality, so a tree of merges is the same
+/// chain as a run of them. Without that, depth would change the answer.
 #[test]
-fn an_empty_range_does_not_merge() {
-    let a = range(0, &[(0, 10)]);
-    assert!(stitch(&a, &range(10, &[])).is_none());
+fn merging_is_associative() {
+    let s0 = genesis();
+    let s1 = insert(s0.clone(), &[10]);
+    let s2 = insert(s1.clone(), &[20]);
+    let s3 = insert(s2.clone(), &[30]);
+    let (a, b, c) = (
+        Range { old: s0.clone(), new: s1.clone() },
+        Range { old: s1, new: s2.clone() },
+        Range { old: s2, new: s3.clone() },
+    );
+    let left = stitch(&stitch(&a, &b).unwrap(), &c).unwrap();
+    let right = stitch(&a, &stitch(&b, &c).unwrap()).unwrap();
+    assert!(crate::shield::imt::same(&left.new, &right.new));
+    assert!(crate::shield::imt::same(&left.new, &s3));
 }
