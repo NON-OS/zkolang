@@ -16,10 +16,14 @@ pub(crate) fn public_classes(l: &Layout, pub_off: usize) -> Vec<Class> {
     let rounds = 1usize << POOL_LOG_ROUNDS;
     let word = |i: usize| pub_off + i;
 
-    // The root the pool published is the root membership walked to.
-    let walked = l.member[0] + l.depth * rounds;
-    for c in 0..RATE {
-        g.push(pair(word(NOTE_ROOT + c), 0, walked, c));
+    // The root the pool published is the root every membership walked to. Tying
+    // only the first leaves the second walking to a root nobody named, which is a
+    // note that was never deposited being spent.
+    for &m in l.member.iter() {
+        let walked = m + l.depth * rounds;
+        for c in 0..RATE {
+            g.push(pair(word(NOTE_ROOT + c), 0, walked, c));
+        }
     }
 
     // Each retired nullifier is the one its key hierarchy produced.
@@ -45,9 +49,13 @@ pub(crate) fn public_classes(l: &Layout, pub_off: usize) -> Vec<Class> {
     g.push(pair(word(FEE), 0, l.balance + 5, 3));
     g.push(pair(word(ASSET_ID), 0, l.note[0], 2));
 
-    let walked_assoc = l.assoc[0] + l.depth * rounds;
-    for c in 0..RATE {
-        g.push(pair(word(ASSOC_ROOT + c), 0, walked_assoc, c));
+    // Same for the association list: every walk ends at the published root, not
+    // just the first one's.
+    for &a in l.assoc.iter() {
+        let walked = a + l.depth * rounds;
+        for c in 0..RATE {
+            g.push(pair(word(ASSOC_ROOT + c), 0, walked, c));
+        }
     }
     g
 }

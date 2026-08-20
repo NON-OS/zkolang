@@ -43,7 +43,7 @@ pub(crate) fn stack(
     regions.extend(n.regions);
     traces.extend(n.traces);
 
-    let p = pool_membership(h, &[cms[0], cms[1]], depth);
+    let p = pool_membership(h, &[cms[0], cms[1]], depth, brk);
     let leaves = p.leaves.clone();
     let leaf_col = p.leaf_col.clone();
     regions.extend(p.regions);

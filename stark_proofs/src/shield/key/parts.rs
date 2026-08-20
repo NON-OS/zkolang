@@ -27,6 +27,10 @@ pub(crate) enum Break {
     /// nullifier hashes moves. Two of these over one note are two nullifiers, and
     /// two nullifiers over one note is that note spent twice.
     ForeignIndex,
+    /// Walk the second note's membership to a pool of its own. Only the first
+    /// note's walked root is compared to the published one, so the second walks
+    /// to a root nobody named and the note need not be in the pool at all.
+    ForeignPoolRoot,
 }
 
 pub(crate) struct NullifierParts {

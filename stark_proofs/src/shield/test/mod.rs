@@ -36,6 +36,7 @@ mod batch_price;
 mod burns;
 mod conserves;
 mod foreign_key;
+mod foreign_pool;
 mod mints;
 mod not_owner;
 mod note_edge;
