@@ -1,5 +1,6 @@
 // NONOS Operating System (AGPL-3.0-or-later)
 
+use super::bind_asset::asset_classes;
 use super::bind_index::index_classes;
 use super::bind_key::key_classes;
 use super::bind_note::note_classes;
@@ -26,5 +27,6 @@ pub(crate) fn classes(l: &Layout) -> Vec<Class> {
     let mut c = note_classes(l);
     c.extend(key_classes(l));
     c.extend(index_classes(l));
+    c.extend(asset_classes(l));
     c
 }
