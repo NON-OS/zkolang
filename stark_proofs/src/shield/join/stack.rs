@@ -34,6 +34,7 @@ pub(crate) fn stack(
     brk: Break,
     bal: (Box<dyn AirExt>, Vec<Fp>),
     depth: usize,
+    at: Option<&super::witness::Places>,
 ) -> Stack {
     let n = note_regions(notes, brk);
     let span_op = n.span_op;
@@ -43,7 +44,10 @@ pub(crate) fn stack(
     regions.extend(n.regions);
     traces.extend(n.traces);
 
-    let p = pool_membership(h, &[cms[0], cms[1]], depth, brk);
+    let p = match at {
+        Some(places) => super::pool::pool_membership_at(h, &[cms[0], cms[1]], places),
+        None => pool_membership(h, &[cms[0], cms[1]], depth, brk),
+    };
     let leaves = p.leaves.clone();
     let leaf_col = p.leaf_col.clone();
     regions.extend(p.regions);

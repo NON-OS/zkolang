@@ -39,6 +39,7 @@ pub(crate) fn intent_parts(
     st: Settle,
     flip: Option<usize>,
     depth: usize,
+    at: Option<&super::witness::Places>,
 ) -> IntentParts {
     let notes = [inputs[0].note, inputs[1].note, outputs[0], outputs[1]];
     let values = [notes[0].value, notes[1].value, notes[2].value, notes[3].value];
@@ -46,7 +47,7 @@ pub(crate) fn intent_parts(
 
     let h = Poseidon::new(POOL_LOG_ROUNDS, [Fp::ZERO; RATE]);
     let sks = [inputs[0].sk, inputs[1].sk];
-    let mut s = stack(&h, notes, sks, brk, (Box::new(air), trace), depth);
+    let mut s = stack(&h, notes, sks, brk, (Box::new(air), trace), depth, at);
 
     let (intent, pub_air) =
         publics_region(&s, public_amount, fee, notes[0].asset_id, st, flip);

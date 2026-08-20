@@ -2,6 +2,7 @@
 
 use crate::crypto::stark::air::{AirExt, Poseidon, RATE};
 use crate::crypto::stark::field::Fp;
+use super::witness::Places;
 use crate::shield::key::Break;
 use crate::shield::member::{note_member, PoolTree};
 use alloc::boxed::Box;
@@ -15,6 +16,26 @@ pub(crate) struct Pool {
     pub leaves: Vec<usize>,
 }
 
+/// Membership against a tree the caller already holds. This is the spend path: the
+/// contract owns the pool and publishes the root, a wallet reads the paths out.
+pub(crate) fn pool_membership_at(h: &Poseidon, cms: &[[Fp; RATE]; 2], at: &Places) -> Pool {
+    let mut regions: Vec<Box<dyn AirExt>> = Vec::with_capacity(2);
+    let mut traces = Vec::with_capacity(2);
+    let mut leaf_col = Vec::with_capacity(2);
+    let mut leaves = Vec::with_capacity(2);
+    for (i, cm) in cms.iter().enumerate() {
+        let p = &at.note[i];
+        leaf_col.push(if p.directions[0] { RATE } else { 0 });
+        leaves.push(p.leaf_index);
+        let m = note_member(h, *cm, p.siblings.clone(), p.directions.clone(), at.root);
+        regions.push(Box::new(m.region));
+        traces.push(m.witness);
+    }
+    Pool { regions, traces, leaf_col, root: at.root, leaves }
+}
+
+/// The same, building the tree first. A test has to produce a witness from
+/// nothing; a spend never does.
 pub(crate) fn pool_membership(
     h: &Poseidon,
     cms: &[[Fp; RATE]; 2],

@@ -28,6 +28,7 @@ mod commitment_binding;
 mod key_vector;
 mod membership;
 mod membership_scope;
+mod placed;
 mod pool_hash;
 mod tree_zeros;
 

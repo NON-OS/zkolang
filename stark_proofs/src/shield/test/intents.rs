@@ -20,5 +20,6 @@ pub(super) fn intent(seed: u64, price: u64, flip: Option<usize>) -> IntentParts 
         st,
         flip,
         super::depth::MINIMAL,
+        None,
     )
 }

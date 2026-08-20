@@ -2,6 +2,7 @@
 
 use super::parts::{intent_parts, Spend};
 use super::settle::Settle;
+use super::witness::Places;
 use crate::crypto::stark::air::WiredMultiExt;
 use crate::crypto::stark::field::Fp;
 use crate::shield::batch::assemble;
@@ -40,7 +41,26 @@ pub(crate) fn join_split_at(
     st: Settle,
     flip: Option<usize>,
 ) -> JoinSplit {
-    let p = intent_parts(inputs, outputs, public_amount, fee, brk, st, flip, depth);
+    let p = intent_parts(inputs, outputs, public_amount, fee, brk, st, flip, depth, None);
+    let mut b = assemble(alloc::vec![p]);
+    JoinSplit { wired: b.wired, witness: b.witness, intent: b.intents.remove(0) }
+}
+
+/// A spend against the pool the contract owns: the caller reads the paths and the
+/// published root out of it. The circuit never builds a tree, which is the whole
+/// difference between proving membership and proving you can build a tree holding
+/// your own note.
+pub(crate) fn join_split_placed(
+    inputs: [Spend; 2],
+    outputs: [&Note; 2],
+    public_amount: u64,
+    fee: u64,
+    st: Settle,
+    at: &Places,
+) -> JoinSplit {
+    let depth = at.note[0].depth();
+    let p =
+        intent_parts(inputs, outputs, public_amount, fee, Break::None, st, None, depth, Some(at));
     let mut b = assemble(alloc::vec![p]);
     JoinSplit { wired: b.wired, witness: b.witness, intent: b.intents.remove(0) }
 }
