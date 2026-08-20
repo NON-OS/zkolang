@@ -6,7 +6,7 @@ use crate::crypto::stark::field::Fp;
 use crate::shield::join::{
     bind_classes, public_classes_at, IntentParts, Layout, REGIONS_PER_INTENT,
 };
-use crate::crypto::stark::air::classes_are_disjoint;
+use crate::crypto::stark::air::classes_are_layable;
 use crate::shield::wire::offsets;
 use crate::shield::wire_pack::{packed_groups, CAP};
 use alloc::boxed::Box;
@@ -63,9 +63,9 @@ pub(crate) fn assemble(parts: Vec<IntentParts>) -> BatchProof {
 
     // These overlap by design: a commitment cell is shared by both memberships and
     // the nullifier that absorbs it, and laying a class splices onto the image
-    // already there, so they merge. Disjointness is sufficient, not necessary, so
-    // this stays a debug check until the real condition is written down.
-    debug_assert!(classes_are_disjoint(&g), "binding classes overlap");
+    // already there, so they merge. What must not happen is a class whose cells are
+    // already connected, which closes the chain early and drops a binding.
+    assert!(classes_are_layable(&g), "a binding class would split a cycle");
     // Regions stack vertically and share columns, so the addressable width is the
     // widest region, not the sum.
     // An intent lays out balance, four note commitments, two pool memberships, two
