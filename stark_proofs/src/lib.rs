@@ -60,6 +60,8 @@ mod dims_kind_tests;
 #[cfg(test)]
 mod dims_transfer_tests;
 #[cfg(test)]
+mod parallel_bytes_tests;
+#[cfg(test)]
 mod vk_stability_tests;
 
 // Machine-checked proof harnesses, compiled only under `cargo kani`.

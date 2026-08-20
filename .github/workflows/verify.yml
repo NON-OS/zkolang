@@ -27,6 +27,42 @@ jobs:
         with:
           args: -p stark_proofs --output-format terse
 
+  bytes:
+    name: serial and parallel emit the same proof
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      # `parallel` is a compile-time cfg, so the two provers can never run in one
+      # process and no single test can compare them. Each build prints a digest of
+      # a proof over the same fixed witness; the two lines have to match.
+      #
+      # A divergence means a parallel map that is not order preserving, or a search
+      # returning a different witness than the serial one. Either emits a proof
+      # that still verifies against itself, so nothing else catches it.
+      - name: serial
+        run: |
+          cargo test --release -p stark_proofs emit_proof_digest -- --ignored --nocapture \
+            | grep PROOFDIGEST | tee /tmp/serial.txt
+
+      - name: parallel
+        run: |
+          cargo test --release -p stark_proofs --features parallel emit_proof_digest \
+            -- --ignored --nocapture | grep PROOFDIGEST | tee /tmp/parallel.txt
+
+      - name: compare
+        run: |
+          cat /tmp/serial.txt /tmp/parallel.txt
+          diff /tmp/serial.txt /tmp/parallel.txt || {
+            echo "the two prover forms emit different proofs"
+            exit 1
+          }
+
   axioms:
     name: no axioms beyond the core
     runs-on: ubuntu-latest

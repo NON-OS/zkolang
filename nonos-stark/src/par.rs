@@ -16,10 +16,15 @@
 
 //! One dispatch point for the prover's data-parallel maps. With the `parallel`
 //! feature the maps run across every core; without it they are the ordinary
-//! serial iterators the kernel builds. Both forms are indexed and
-//! order-preserving, so the output is identical either way — the callers pass
-//! pure functions of the index or element, and a bit-exact gate proves the two
-//! prover forms emit the same proof bytes.
+//! serial iterators the kernel builds. Both forms are indexed and order
+//! preserving, so the output is identical either way, and the callers pass pure
+//! functions of the index or element.
+//!
+//! That identity is gated rather than asserted. `emit_proof_digest` prints a
+//! digest of a proof over a fixed witness, CI runs it under both settings, and
+//! the two lines have to match. This comment claimed such a gate for a while
+//! with nothing behind it, which is worth remembering before writing another
+//! sentence like it.
 
 use alloc::vec::Vec;
 
