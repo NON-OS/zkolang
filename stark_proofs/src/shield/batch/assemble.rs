@@ -46,17 +46,18 @@ pub(crate) fn assemble(parts: Vec<IntentParts>) -> BatchProof {
             span_op,
             note: off[b + 1..b + 5].to_vec(),
             member: off[b + 5..b + 7].to_vec(),
-            key: off[b + 7..b + 9].to_vec(),
+            index: off[b + 7..b + 9].to_vec(),
+            key: off[b + 9..b + 11].to_vec(),
             key_span,
             leaf_col,
-            assoc: off[b + 9..b + 11].to_vec(),
+            assoc: off[b + 11..b + 13].to_vec(),
             assoc_col,
             depth,
             balance: off[b],
         };
         g.extend(bind_classes(&lay));
-        g.extend(public_classes_at(&lay, off[b + 11]));
-        pub_off.push(off[b + 11]);
+        g.extend(public_classes_at(&lay, off[b + 13]));
+        pub_off.push(off[b + 13]);
     }
     g.extend(price_uniform(&pub_off));
 
@@ -67,11 +68,11 @@ pub(crate) fn assemble(parts: Vec<IntentParts>) -> BatchProof {
     // Regions stack vertically and share columns, so the addressable width is the
     // widest region, not the sum.
     // An intent lays out balance, four note commitments, two pool memberships, two
-    // key derivations, two association memberships, then its publics. The four and
-    // the pairs are one AIR over different witnesses, and every intent repeats the
-    // same twelve, so the whole batch carries six kinds.
+    // position recoveries, two key derivations, two association memberships, then
+    // its publics. The four and the pairs are one AIR over different witnesses, and
+    // every intent repeats the same fourteen, so the whole batch carries seven kinds.
     let kinds: Vec<usize> = (0..regions.len() / REGIONS_PER_INTENT)
-        .flat_map(|_| alloc::vec![0usize, 1, 1, 1, 1, 2, 2, 3, 3, 4, 4, 5])
+        .flat_map(|_| alloc::vec![0usize, 1, 1, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6])
         .collect();
     let groups = packed_groups(span, &g, CAP);
     let wired = WiredMultiExt::new_kinds(regions, &kinds, groups);

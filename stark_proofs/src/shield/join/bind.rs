@@ -1,5 +1,6 @@
 // NONOS Operating System (AGPL-3.0-or-later)
 
+use super::bind_index::index_classes;
 use super::bind_key::key_classes;
 use super::bind_note::note_classes;
 use crate::shield::wire_class::Class;
@@ -15,6 +16,8 @@ pub(crate) struct Layout {
     pub leaf_col: Vec<usize>,
     pub assoc: Vec<usize>,
     pub assoc_col: Vec<usize>,
+    /// First row of each spent note's position recovery chain.
+    pub index: Vec<usize>,
     pub depth: usize,
     pub balance: usize,
 }
@@ -22,5 +25,6 @@ pub(crate) struct Layout {
 pub(crate) fn classes(l: &Layout) -> Vec<Class> {
     let mut c = note_classes(l);
     c.extend(key_classes(l));
+    c.extend(index_classes(l));
     c
 }

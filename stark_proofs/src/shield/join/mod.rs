@@ -2,9 +2,11 @@
 
 mod assoc;
 mod bind;
+mod bind_index;
 mod bind_key;
 mod bind_note;
 mod bind_publics;
+mod index;
 mod intent;
 mod keys;
 mod notes;

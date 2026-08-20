@@ -49,6 +49,13 @@ pub(crate) fn stack(
     regions.extend(p.regions);
     traces.extend(p.traces);
 
+    // The position each membership authenticated, recovered as the scalar the
+    // nullifier hashes. Placed after membership so a reader meets the position
+    // where it is proven, then where it is consumed.
+    let ix = super::index::positions(&leaves, depth);
+    regions.extend(ix.regions);
+    traces.extend(ix.traces);
+
     let k = key_hierarchies(sks, &[cms[0], cms[1]], &leaves, brk);
     let key_span = k.key_span.clone();
     let nfs = k.nf;
