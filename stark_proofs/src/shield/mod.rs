@@ -5,6 +5,7 @@ pub(crate) mod join;
 pub(crate) mod key;
 pub(crate) mod member;
 pub(crate) mod note;
+pub(crate) mod imt;
 pub(crate) mod wire;
 pub(crate) mod wire_class;
 pub(crate) mod wire_pack;
