@@ -6,14 +6,9 @@ use crate::shield::key::Break;
 use crate::shield::note::Note;
 use crate::witness_satisfies::satisfies;
 
-/// Conservation sums values. It does not sum them per asset, and the public asset
-/// word is pinned to the first input only, so the other three notes carry whatever
-/// asset they like into the same total.
-///
-/// Here the second input is a different asset. Value conserves, every note is
-/// genuinely committed, every spend is genuinely owned, and the outputs are minted
-/// in the first asset. If it satisfies, a junk note of one asset has been converted
-/// into value in another.
+/// The second input is a different asset. Value conserves, every note is committed,
+/// every spend is owned, and the outputs mint in the first asset. That converts a
+/// junk asset into a real one.
 #[test]
 fn value_cannot_cross_between_assets() {
     let sks = [secret(1), secret(2)];

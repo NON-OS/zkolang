@@ -118,9 +118,8 @@ impl MultiMembership {
             // trace, at exactly the rows the transition reads them.
             if self.witness_path {
                 let m = (within + 1) / l;
-                // An opening's first row carries the data its own initial state is
-                // built from: the leaf, the first sibling, and the first path bit.
-                // No slot boundary lands there, so the columns are free.
+                // Row zero carries what the initial state is built from. No slot
+                // boundary lands there, so the columns are free.
                 let (dir, sib) = if within == 0 && opening < count {
                     (self.openings[opening].directions[0], self.openings[opening].siblings[0])
                 } else if is_slot_bnd && opening < count && m < depth {
@@ -166,10 +165,9 @@ impl MultiMembership {
     /// opened value, so the fold runs on exactly what the opening committed.
     pub fn opened_cells(&self) -> alloc::vec::Vec<(usize, usize)> {
         let span = self.span();
-        // The production form carries the leaf in its own columns, so the cell is
-        // the same wherever the first path bit points. The per-proof form has no
-        // such columns and still reads the half the bit selects, which is why its
-        // layout follows the witness and the production form's does not.
+        // Production carries the leaf in its own columns, so the cell is the same
+        // wherever the first bit points. Per-proof reads the half the bit selects,
+        // which is a layout that follows the witness.
         let col = |o: usize| {
             if self.witness_path {
                 WIDTH + 1 + RATE
@@ -244,11 +242,9 @@ impl MultiMembership {
         if self.witness_path {
             out.push(dir * (one - dir));
 
-            // An opening's first state is its leaf injected against its first
-            // sibling, in the order its first path bit gives. Without this the
-            // state is free and the leaf columns say nothing about the walk; with
-            // it the first bit is a cell a caller can bind, rather than a choice
-            // buried in which half of the state the leaf happened to occupy.
+            // The first state is the leaf injected against the first sibling, in
+            // the order the first bit gives. Without it the state is free and the
+            // bit is not a cell anyone can bind.
             let op_first = periodic[WIDTH + 2];
             let mut leaf = [F::ZERO; RATE];
             leaf.copy_from_slice(&window[WIDTH + 1 + RATE..WIDTH + 1 + RATE + RATE]);
@@ -278,9 +274,8 @@ impl Air for MultiMembership {
 
     fn trace_width(&self) -> usize {
         if self.witness_path {
-            // state, direction, sibling, and the opened leaf. The leaf rides its
-            // own columns so a caller binds it at one place whatever the first
-            // path bit is, rather than at a column that bit selects.
+            // State, direction, sibling, leaf. The leaf gets its own columns so a
+            // caller binds it at one place whatever the first bit is.
             WIDTH + 1 + RATE + RATE
         } else {
             WIDTH

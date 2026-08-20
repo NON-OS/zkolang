@@ -61,9 +61,10 @@ pub(crate) fn assemble(parts: Vec<IntentParts>) -> BatchProof {
     }
     g.extend(price_uniform(&pub_off));
 
-    // Classes are the bindings; one group each is how they are enforced today.
-    // Disjointness is a precondition of merging them, so it is proven before the
-    // mechanism is allowed to assume it.
+    // These overlap by design: a commitment cell is shared by both memberships and
+    // the nullifier that absorbs it, and laying a class splices onto the image
+    // already there, so they merge. Disjointness is sufficient, not necessary, so
+    // this stays a debug check until the real condition is written down.
     debug_assert!(classes_are_disjoint(&g), "binding classes overlap");
     // Regions stack vertically and share columns, so the addressable width is the
     // widest region, not the sum.

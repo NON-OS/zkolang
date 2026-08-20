@@ -15,14 +15,10 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 //! Recovering an index as a field element from the bits that already carry it.
-//! A Merkle opening proves a position through its path directions, and anything
-//! that hashes the same position as a scalar (a nullifier over a leaf index, say)
-//! is otherwise free to hash a different one, so the two must be tied. This runs
-//! `acc = sum_k bit_k * 2^k`, one row per bit: the bits ride the trace, where the
-//! assembly binds them to the opening directions that already carry the position,
-//! the powers of two are periodic, and the accumulator starts at a boundary of
-//! zero. The final accumulator is witness, bound to wherever the scalar is
-//! consumed. Same shape as `IndexPoint`, with a sum where that has a product.
+//! An opening proves a position through its path directions; anything hashing the
+//! same position as a scalar is otherwise free to hash a different one. Runs
+//! `acc = sum_k bit_k * 2^k`, one row per bit, bits on the trace for the assembly
+//! to bind against the directions. Same shape as `IndexPoint`, sum for product.
 
 use super::super::field::{Felt, Fp, Fp2};
 use super::spec::{Air, AirExt};
@@ -77,10 +73,9 @@ impl IndexScalar {
         let pow = periodic[0];
         let one = F::ONE;
         alloc::vec![
-            // The accumulator takes the bit at its weight, on the rows that carry
-            // one; past the last bit the selector is zero and the sum is carried.
+            // Past the last bit the weight is zero and the sum is carried.
             acc_next - (acc + bit * pow),
-            // A witnessed bit must be a bit, or one cell could stand for any index.
+            // Or one cell stands for any index.
             bit * (one - bit),
         ]
     }
@@ -109,8 +104,7 @@ impl Air for IndexScalar {
 
     fn periodic_columns(&self) -> Vec<Vec<Fp>> {
         let n = 1usize << self.log_len;
-        // Weight of the bit on each row, zero once the bits run out, so the rows
-        // past the index carry the accumulator unchanged.
+        // Zero once the bits run out, so the padding rows carry the sum.
         let mut pow = alloc::vec![Fp::ZERO; n];
         for (r, slot) in pow.iter_mut().enumerate().take(self.bits) {
             *slot = Fp::from_u64(1u64 << r);

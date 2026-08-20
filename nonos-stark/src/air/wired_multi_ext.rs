@@ -67,6 +67,21 @@ impl WiredMultiExt {
         groups: Vec<GpGroup>,
     ) -> WiredMultiExt {
         let stack = Stack::of_kinds(&regions, kinds);
+        // A kind runs one instance's constraints over every instance's rows, so
+        // instances that are not the same AIR swap one region's rules for
+        // another's. The caller declares kinds, so check the caller.
+        for (i, &k) in kinds.iter().enumerate() {
+            let rep = stack.kind_first[k];
+            assert!(
+                regions[i].trace_width() == regions[rep].trace_width()
+                    && regions[i].window_size() == regions[rep].window_size()
+                    && regions[i].log_trace_len() == regions[rep].log_trace_len()
+                    && regions[i].num_transition() == regions[rep].num_transition()
+                    && regions[i].constraint_degree() == regions[rep].constraint_degree()
+                    && regions[i].periodic_columns() == regions[rep].periodic_columns(),
+                "region {i} is declared kind {k} but does not match instance {rep}"
+            );
+        }
         let region_slots = stack.kind_slot.last().copied().unwrap_or(0)
             + stack.kind_first.last().map(|&i| regions[i].periodic_columns().len()).unwrap_or(0);
         let base = stack.n_kinds + region_slots;
