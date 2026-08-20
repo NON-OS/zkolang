@@ -12,12 +12,14 @@ mod last;
 mod leaf;
 mod merge;
 mod order;
+mod witnessed;
 #[cfg(test)]
 mod test;
 
 pub(crate) use fold::{refold, Tree};
-pub(crate) use insert::{chain, Low};
+pub(crate) use insert::{chain, writes_are_distinct, Low, Step};
 pub(crate) use last::last_is_the_maximum;
 pub(crate) use leaf::{Leaf, IMT_LEAF_DOMAIN, IMT_LEAF_LIMBS};
 pub(crate) use merge::{same, stitch, Range, State};
+pub(crate) use witnessed::{root_of, Path};
 pub(crate) use order::{cmp, excludes};

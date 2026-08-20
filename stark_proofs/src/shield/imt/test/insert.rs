@@ -2,7 +2,7 @@
 
 use crate::crypto::stark::air::RATE;
 use crate::crypto::stark::field::Fp;
-use crate::shield::imt::{chain, Leaf, Low};
+use crate::shield::imt::{chain, writes_are_distinct, Leaf, Low, Step};
 
 fn key(v: u64) -> [Fp; RATE] {
     let mut k = [Fp::ZERO; RATE];
@@ -69,4 +69,28 @@ fn a_run_past_the_last_leaf_chains() {
 fn a_key_below_the_sentinel_has_no_chain() {
     let only = [leaf(10, 0, true)];
     assert!(chain(&[key(5)], &only).is_none());
+}
+
+/// Distinctness is a consequence of same-gap chaining, not a property of its own.
+/// The chain gives it: the second key takes the first as its low leaf.
+#[test]
+fn a_chained_batch_writes_distinct_leaves() {
+    let s = chain(&[key(50), key(60)], &tree()).unwrap();
+    assert!(writes_are_distinct(&s));
+}
+
+/// And the refactor that severs it. Validating each key against the pre-batch
+/// tree looks right, since both satisfy L.value < key < L.nextValue, and both
+/// then write L.next. Separate gaps stay green, so the day it lands nothing says
+/// so. This is the check that says so.
+#[test]
+fn two_same_gap_keys_claiming_the_pre_batch_leaf_are_refused() {
+    let pre_batch = alloc::vec![
+        Step { key: key(50), low: Low::InTree(0) },
+        Step { key: key(60), low: Low::InTree(0) },
+    ];
+    assert!(
+        !writes_are_distinct(&pre_batch),
+        "both keys wrote one leaf, so the fold would lose one of them"
+    );
 }

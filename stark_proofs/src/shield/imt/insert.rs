@@ -19,6 +19,32 @@ pub(crate) struct Step {
     pub low: Low,
 }
 
+/// No two keys update the same leaf.
+///
+/// This holds today because a same-gap key takes the key before it as its low
+/// leaf rather than the leaf they both sit under. That is a consequence, not a
+/// property: validate every key against the pre-batch tree instead and both
+/// same-gap keys satisfy `L.value < key < L.nextValue`, both write `L.next`, they
+/// collide, and the fold loses one without saying so. Separate gaps stay green
+/// throughout, which is what makes it a refactor away.
+///
+/// So the circuit checks it rather than inheriting it.
+pub(crate) fn writes_are_distinct(steps: &[Step]) -> bool {
+    let mut seen: Vec<&Low> = Vec::with_capacity(steps.len());
+    for s in steps {
+        let clash = seen.iter().any(|o| match (o, &s.low) {
+            (Low::InTree(a), Low::InTree(b)) => a == b,
+            (Low::InBatch(a), Low::InBatch(b)) => a == b,
+            _ => false,
+        });
+        if clash {
+            return false;
+        }
+        seen.push(&s.low);
+    }
+    true
+}
+
 /// A batch, sorted, so sort-adjacent keys do not fight over one neighbour.
 ///
 /// An indexed tree insert mutates the low leaf's pointer, so two new keys landing

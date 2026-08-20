@@ -7,3 +7,4 @@ mod insert;
 mod kat;
 mod last;
 mod merge;
+mod witnessed;
