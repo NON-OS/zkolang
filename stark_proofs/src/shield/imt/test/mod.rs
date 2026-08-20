@@ -5,3 +5,4 @@ mod encoding;
 mod insert;
 mod kat;
 mod last;
+mod merge;
