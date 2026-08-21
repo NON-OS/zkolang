@@ -8,6 +8,7 @@
 mod chain;
 mod effect;
 mod node;
+mod wire;
 mod state;
 #[cfg(test)]
 mod test;
@@ -15,4 +16,5 @@ mod test;
 pub(crate) use chain::{chain, leaf};
 pub(crate) use effect::{induced, lift, Effect};
 pub(crate) use node::{combine, Verified};
+pub(crate) use wire::realised;
 pub(crate) use state::{Carried, Node};

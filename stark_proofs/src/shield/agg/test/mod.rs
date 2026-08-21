@@ -2,3 +2,4 @@
 
 mod chain;
 mod effect;
+mod wire;
