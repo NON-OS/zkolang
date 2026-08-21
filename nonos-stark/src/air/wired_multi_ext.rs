@@ -53,6 +53,18 @@ pub struct WiredMultiExt {
 }
 
 impl WiredMultiExt {
+    /// How wide each running product is. The widest sets the constraint degree,
+    /// which sets the evaluation domain, so this is what a shrink reads.
+    pub fn group_widths(&self) -> Vec<usize> {
+        self.groups.iter().map(|g| g.wired_cols.len()).collect()
+    }
+
+    /// Each region's own degree. The degree is the larger of this and the widest
+    /// product, so a shrink that moves one and not the other moves nothing.
+    pub fn region_degrees(&self) -> Vec<usize> {
+        self.regions.iter().map(|r| r.constraint_degree()).collect()
+    }
+
     pub fn new(regions: Vec<Box<dyn AirExt>>, groups: Vec<GpGroup>) -> WiredMultiExt {
         let kinds: Vec<usize> = (0..regions.len()).collect();
         WiredMultiExt::new_kinds(regions, &kinds, groups)
