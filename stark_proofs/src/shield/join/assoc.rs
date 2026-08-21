@@ -43,5 +43,10 @@ pub(crate) fn assoc_membership(
         regions.push(Box::new(m.region));
         traces.push(m.witness);
     }
-    Assoc { regions, traces, leaf_col, root: tree.root() }
+    Assoc {
+        regions,
+        traces,
+        leaf_col,
+        root: tree.root(),
+    }
 }

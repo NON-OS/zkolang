@@ -17,7 +17,10 @@ pub(crate) fn chain(a: &Node, b: &Node) -> Option<Node> {
     if a.new != b.old {
         return None;
     }
-    Some(Node { old: a.old, new: b.new })
+    Some(Node {
+        old: a.old,
+        new: b.new,
+    })
 }
 
 /// A leaf's claim, for the lift. One transfer moves the chain by its own two

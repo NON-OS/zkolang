@@ -5,16 +5,20 @@
 //! verifies its children and attests the move they make together, so the root is
 //! one proof over one pair of states, which is what the pool swaps.
 
+mod bind;
 mod chain;
 mod effect;
 mod node;
-mod wire;
+mod read;
 mod state;
 #[cfg(test)]
 mod test;
+mod wire;
 
+pub(crate) use bind::{cells, effect_classes, LANES};
 pub(crate) use chain::{chain, leaf};
 pub(crate) use effect::{induced, lift, Effect};
 pub(crate) use node::{combine, Verified};
-pub(crate) use wire::realised;
+pub(crate) use read::{absorbed_at, read_effect};
 pub(crate) use state::{Carried, Node};
+pub(crate) use wire::realised;

@@ -18,8 +18,18 @@ fn value_cannot_cross_between_assets() {
         n
     }];
     let outs = [
-        Note { value: 1500, asset_id: 0, spend_pk: [21, 22, 23, 24], blinding: [25, 26, 27, 28] },
-        Note { value: 1200, asset_id: 0, spend_pk: [31, 32, 33, 34], blinding: [35, 36, 37, 38] },
+        Note {
+            value: 1500,
+            asset_id: 0,
+            spend_pk: [21, 22, 23, 24],
+            blinding: [25, 26, 27, 28],
+        },
+        Note {
+            value: 1200,
+            asset_id: 0,
+            spend_pk: [31, 32, 33, 34],
+            blinding: [35, 36, 37, 38],
+        },
     ];
     let js = build(&ins, &outs, sks, 200, 100, Break::None, None);
     assert!(

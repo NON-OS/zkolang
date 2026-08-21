@@ -19,5 +19,7 @@ pub(super) fn satisfies(air: &WiredMultiExt, witness: &[Fp]) -> bool {
             return false;
         }
     }
-    air.boundary().into_iter().all(|(col, row, val)| witness[row * w + col] == val)
+    air.boundary()
+        .into_iter()
+        .all(|(col, row, val)| witness[row * w + col] == val)
 }

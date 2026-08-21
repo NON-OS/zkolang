@@ -1,12 +1,12 @@
 // NONOS Operating System (AGPL-3.0-or-later)
 
-use crate::crypto::stark::air::{AirExt, Poseidon, RATE};
-use crate::crypto::stark::field::Fp;
 use super::assoc::assoc_membership;
 use super::keys::key_hierarchies;
-use crate::shield::key::Break;
-use super::pool::pool_membership;
 use super::notes::note_regions;
+use super::pool::pool_membership;
+use crate::crypto::stark::air::{AirExt, Poseidon, RATE};
+use crate::crypto::stark::field::Fp;
+use crate::shield::key::Break;
 use crate::shield::note::Note;
 use alloc::boxed::Box;
 use alloc::vec::Vec;
@@ -66,7 +66,13 @@ pub(crate) fn stack(
     regions.extend(k.regions);
     traces.extend(k.traces);
 
-    let a = assoc_membership(h, &[cms[0], cms[1]], &[900, 901, 902], brk == Break::Unlisted, depth);
+    let a = assoc_membership(
+        h,
+        &[cms[0], cms[1]],
+        &[900, 901, 902],
+        brk == Break::Unlisted,
+        depth,
+    );
     regions.extend(a.regions);
     traces.extend(a.traces);
 

@@ -62,7 +62,11 @@ pub(crate) fn nullifier_parts(
     // Flipping the lowest bit alone is the sharp case: it is the bit the opening
     // consumes building its initial state, so it is the last one to become a cell
     // a binding can reach.
-    let idx = if brk == Break::ForeignIndex { leaf_index ^ 1 } else { leaf_index };
+    let idx = if brk == Break::ForeignIndex {
+        leaf_index ^ 1
+    } else {
+        leaf_index
+    };
     let t = h.compress(&nk, &target);
     let nf = h.compress(&t, &tag(idx));
 
@@ -84,5 +88,11 @@ pub(crate) fn nullifier_parts(
     );
     let trace = region.trace();
     let span_op = region.opened_cells()[1].0;
-    NullifierParts { region, trace, span_op, nf, spend_pk }
+    NullifierParts {
+        region,
+        trace,
+        span_op,
+        nf,
+        spend_pk,
+    }
 }

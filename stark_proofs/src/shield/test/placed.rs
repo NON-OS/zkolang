@@ -1,11 +1,11 @@
 // NONOS Operating System (AGPL-3.0-or-later)
 
 use super::fixture::{owned, plain, secret};
+use crate::crypto::stark::air::{Poseidon, RATE};
+use crate::crypto::stark::field::Fp;
 use crate::shield::join::{join_split_placed, Placed, Places, Settle, Spend};
 use crate::shield::member::PoolTree;
 use crate::shield::note::{note_parts, Note, POOL_LOG_ROUNDS};
-use crate::crypto::stark::air::{Poseidon, RATE};
-use crate::crypto::stark::field::Fp;
 use crate::witness_satisfies::satisfies;
 
 /// A spend against a pool the caller already holds, which is how a wallet spends:
@@ -26,21 +26,46 @@ fn a_spend_proves_against_a_pool_it_did_not_build() {
     // Both in, then both paths. A path authenticates the root it was read at, so
     // reading one before the next insert authenticates a tree that is already old.
     let at = {
-        let idx = [tree.insert(note_parts(&ins[0]).cm), tree.insert(note_parts(&ins[1]).cm)];
+        let idx = [
+            tree.insert(note_parts(&ins[0]).cm),
+            tree.insert(note_parts(&ins[1]).cm),
+        ];
         let mut place = |i: usize| {
             let (siblings, directions) = tree.path(i);
-            Placed { siblings, directions, leaf_index: i }
+            Placed {
+                siblings,
+                directions,
+                leaf_index: i,
+            }
         };
-        Places { note: [place(idx[0]), place(idx[1])], root: tree.root() }
+        Places {
+            note: [place(idx[0]), place(idx[1])],
+            root: tree.root(),
+        }
     };
 
     let js = join_split_placed(
-        [Spend { note: &ins[0], sk: sks[0] }, Spend { note: &ins[1], sk: sks[1] }],
+        [
+            Spend {
+                note: &ins[0],
+                sk: sks[0],
+            },
+            Spend {
+                note: &ins[1],
+                sk: sks[1],
+            },
+        ],
         [&outs[0], &outs[1]],
         200,
         100,
-        Settle { clearing_price: 1_000_000, recipient: 0xBEEF },
+        Settle {
+            clearing_price: 1_000_000,
+            recipient: 0xBEEF,
+        },
         &at,
     );
-    assert!(satisfies(&js.wired, &js.witness), "a spend against the contract's pool failed");
+    assert!(
+        satisfies(&js.wired, &js.witness),
+        "a spend against the contract's pool failed"
+    );
 }

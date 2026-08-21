@@ -12,10 +12,10 @@
 //!
 //!   cargo test --release -p stark_proofs shield::test -- --ignored
 
-mod depth;
 mod cross_asset;
-mod double_spend;
 mod deployed_depth;
+mod depth;
+mod double_spend;
 pub(crate) mod fixture;
 mod intents;
 mod inventory;

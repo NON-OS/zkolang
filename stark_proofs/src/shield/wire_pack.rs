@@ -34,7 +34,10 @@ pub(crate) fn packed_groups(span: usize, classes: &[Class], cap: usize) -> Vec<G
     let mut bins: Vec<(Vec<usize>, Vec<&Class>)> = Vec::new();
     for class in classes.iter().filter(|c| c.len() >= 2) {
         let cols = columns_of(class);
-        match bins.iter().position(|(bc, _)| merged(bc, &cols).len() <= cap) {
+        match bins
+            .iter()
+            .position(|(bc, _)| merged(bc, &cols).len() <= cap)
+        {
             Some(i) => {
                 bins[i].0 = merged(&bins[i].0, &cols);
                 bins[i].1.push(class);
@@ -42,7 +45,9 @@ pub(crate) fn packed_groups(span: usize, classes: &[Class], cap: usize) -> Vec<G
             None => bins.push((cols, alloc::vec![class])),
         }
     }
-    bins.into_iter().map(|(cols, cls)| build(span, cols, &cls)).collect()
+    bins.into_iter()
+        .map(|(cols, cls)| build(span, cols, &cls))
+        .collect()
 }
 
 fn build(span: usize, cols: Vec<usize>, classes: &[&Class]) -> GpGroup {
@@ -59,5 +64,10 @@ fn build(span: usize, cols: Vec<usize>, classes: &[&Class]) -> GpGroup {
         }
         sigma[idx[idx.len() - 1]] = first;
     }
-    GpGroup { wired_cols: cols, sigma, beta: Fp::from_u64(5), gamma: Fp::from_u64(7) }
+    GpGroup {
+        wired_cols: cols,
+        sigma,
+        beta: Fp::from_u64(5),
+        gamma: Fp::from_u64(7),
+    }
 }

@@ -32,7 +32,11 @@ pub(crate) fn induced(h: &Poseidon, old: Carried, e: &Effect) -> Carried {
     for o in &e.outputs {
         notes = h.compress(&notes, o);
     }
-    Carried { note_root: notes, next_index: old.next_index + 2, nullifier_root: nulls }
+    Carried {
+        note_root: notes,
+        next_index: old.next_index + 2,
+        nullifier_root: nulls,
+    }
 }
 
 /// A leaf of the tree: verify a transfer, then expose the transition its own

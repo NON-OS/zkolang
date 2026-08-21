@@ -29,6 +29,9 @@ fn every_derived_word_is_bound_to_its_computed_cell() {
 
     for i in derived() {
         let js = balanced_flip(Break::None, Some(i));
-        assert!(!satisfies(&js.wired, &js.witness), "derived word {i} is not bound");
+        assert!(
+            !satisfies(&js.wired, &js.witness),
+            "derived word {i} is not bound"
+        );
     }
 }

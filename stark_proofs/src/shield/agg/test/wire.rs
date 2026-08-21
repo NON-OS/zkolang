@@ -17,7 +17,10 @@ fn d(x: u64) -> [Fp; RATE] {
 }
 
 fn spend(a: u64, b: u64) -> Effect {
-    Effect { nullifiers: [d(a), d(b)], outputs: [d(a + 500), d(b + 500)] }
+    Effect {
+        nullifiers: [d(a), d(b)],
+        outputs: [d(a + 500), d(b + 500)],
+    }
 }
 
 /// A batch the tree can realise: every nullifier is new, so every one finds a gap.

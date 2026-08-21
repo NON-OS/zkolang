@@ -24,11 +24,6 @@ pub(crate) fn cmp(a: &[Fp; RATE], b: &[Fp; RATE]) -> Ordering {
 /// Both bounds strict. `v == low.value` is the key already in the set, which is a
 /// double spend; `v == low.next_value` is the next leaf's key, which is the same.
 /// They fail through different comparisons, so each carries its own forgery.
-pub(crate) fn excludes(
-    low: &[Fp; RATE],
-    next: &[Fp; RATE],
-    is_last: bool,
-    v: &[Fp; RATE],
-) -> bool {
+pub(crate) fn excludes(low: &[Fp; RATE], next: &[Fp; RATE], is_last: bool, v: &[Fp; RATE]) -> bool {
     cmp(low, v) == Ordering::Less && (is_last || cmp(v, next) == Ordering::Less)
 }

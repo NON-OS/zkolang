@@ -1,7 +1,7 @@
 // NONOS Operating System (AGPL-3.0-or-later)
 
-use crate::shield::wire_class::{pair, Class};
 use crate::shield::join::publics::{CLEARING_PRICE, WORDS};
+use crate::shield::wire_class::{pair, Class};
 use alloc::vec::Vec;
 
 /// settleBatch caps a batch at this many intents.

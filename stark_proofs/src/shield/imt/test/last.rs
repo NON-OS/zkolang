@@ -21,13 +21,21 @@ fn leaf(v: u64, next: u64, is_last: bool) -> Leaf {
 
 #[test]
 fn one_last_leaf_holding_the_largest_key_is_well_formed() {
-    assert!(last_is_the_maximum(&[leaf(0, 10, false), leaf(10, 20, false), leaf(20, 0, true)]));
+    assert!(last_is_the_maximum(&[
+        leaf(0, 10, false),
+        leaf(10, 20, false),
+        leaf(20, 0, true)
+    ]));
 }
 
 /// Two last leaves. Everything above the lower one looks excluded.
 #[test]
 fn a_second_last_leaf_rejects() {
-    assert!(!last_is_the_maximum(&[leaf(0, 10, false), leaf(10, 0, true), leaf(20, 0, true)]));
+    assert!(!last_is_the_maximum(&[
+        leaf(0, 10, false),
+        leaf(10, 0, true),
+        leaf(20, 0, true)
+    ]));
 }
 
 /// One last leaf, in the middle. This is the forgery worth having: the key 30 is
@@ -47,7 +55,10 @@ fn a_last_leaf_that_is_not_the_maximum_rejects() {
 /// pointing past it.
 #[test]
 fn a_set_with_no_last_leaf_rejects() {
-    assert!(!last_is_the_maximum(&[leaf(0, 10, false), leaf(10, 20, false)]));
+    assert!(!last_is_the_maximum(&[
+        leaf(0, 10, false),
+        leaf(10, 20, false)
+    ]));
 }
 
 /// The last leaf's own next is unused, so it is required zero rather than left to

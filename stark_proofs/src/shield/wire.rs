@@ -18,7 +18,12 @@ pub(crate) fn equate(
         let ib = cols.iter().position(|&c| c == cb).unwrap();
         sigma.swap(ra * k + ia, rb * k + ib);
     }
-    GpGroup { wired_cols: cols, sigma, beta: Fp::from_u64(5), gamma: Fp::from_u64(7) }
+    GpGroup {
+        wired_cols: cols,
+        sigma,
+        beta: Fp::from_u64(5),
+        gamma: Fp::from_u64(7),
+    }
 }
 
 pub(crate) fn offsets(rows: &[usize]) -> (Vec<usize>, usize) {

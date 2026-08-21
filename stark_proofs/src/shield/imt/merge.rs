@@ -39,5 +39,8 @@ pub(crate) fn stitch(a: &Range, b: &Range) -> Option<Range> {
     if !same(&a.new, &b.old) {
         return None;
     }
-    Some(Range { old: a.old.clone(), new: b.new.clone() })
+    Some(Range {
+        old: a.old.clone(),
+        new: b.new.clone(),
+    })
 }

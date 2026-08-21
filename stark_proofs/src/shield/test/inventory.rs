@@ -12,20 +12,62 @@ pub(super) struct Binding {
 }
 
 pub(super) const BINDINGS: &[Binding] = &[
-    Binding { what: "note compress tree stays chained", forgery: "note_edge" },
-    Binding { what: "value limbs are the balance row limbs", forgery: "unbound_value" },
-    Binding { what: "spent note is the pool membership leaf", forgery: "unproven_note" },
-    Binding { what: "spent note is the association leaf", forgery: "unlisted_note" },
-    Binding { what: "key hierarchy stays chained", forgery: "key_edge" },
-    Binding { what: "derived spend key is the committed one", forgery: "foreign_key" },
-    Binding { what: "absorbed commitment is the proven one", forgery: "owns" },
-    Binding { what: "noteRoot is the walked pool root", forgery: "publics" },
-    Binding { what: "assocRoot is the walked association root", forgery: "publics" },
-    Binding { what: "nf0 and nf1 are the derived nullifiers", forgery: "publics" },
-    Binding { what: "outCm0 and outCm1 are the created commitments", forgery: "publics" },
-    Binding { what: "public amount and fee are the summed values", forgery: "publics" },
-    Binding { what: "asset id is the committed asset", forgery: "publics" },
-    Binding { what: "the batch clears at one price", forgery: "batch_price" },
+    Binding {
+        what: "note compress tree stays chained",
+        forgery: "note_edge",
+    },
+    Binding {
+        what: "value limbs are the balance row limbs",
+        forgery: "unbound_value",
+    },
+    Binding {
+        what: "spent note is the pool membership leaf",
+        forgery: "unproven_note",
+    },
+    Binding {
+        what: "spent note is the association leaf",
+        forgery: "unlisted_note",
+    },
+    Binding {
+        what: "key hierarchy stays chained",
+        forgery: "key_edge",
+    },
+    Binding {
+        what: "derived spend key is the committed one",
+        forgery: "foreign_key",
+    },
+    Binding {
+        what: "absorbed commitment is the proven one",
+        forgery: "owns",
+    },
+    Binding {
+        what: "noteRoot is the walked pool root",
+        forgery: "publics",
+    },
+    Binding {
+        what: "assocRoot is the walked association root",
+        forgery: "publics",
+    },
+    Binding {
+        what: "nf0 and nf1 are the derived nullifiers",
+        forgery: "publics",
+    },
+    Binding {
+        what: "outCm0 and outCm1 are the created commitments",
+        forgery: "publics",
+    },
+    Binding {
+        what: "public amount and fee are the summed values",
+        forgery: "publics",
+    },
+    Binding {
+        what: "asset id is the committed asset",
+        forgery: "publics",
+    },
+    Binding {
+        what: "the batch clears at one price",
+        forgery: "batch_price",
+    },
 ];
 
 /// The list is the acceptance criterion for the shrink, so it must not rot: a

@@ -1,8 +1,8 @@
 // NONOS Operating System (AGPL-3.0-or-later)
 
+use super::witness::Places;
 use crate::crypto::stark::air::{AirExt, Poseidon, RATE};
 use crate::crypto::stark::field::Fp;
-use super::witness::Places;
 use crate::shield::key::Break;
 use crate::shield::member::{note_member, PoolTree};
 use alloc::boxed::Box;
@@ -31,7 +31,13 @@ pub(crate) fn pool_membership_at(h: &Poseidon, cms: &[[Fp; RATE]; 2], at: &Place
         regions.push(Box::new(m.region));
         traces.push(m.witness);
     }
-    Pool { regions, traces, leaf_col, root: at.root, leaves }
+    Pool {
+        regions,
+        traces,
+        leaf_col,
+        root: at.root,
+        leaves,
+    }
 }
 
 /// The same, building the tree first. A test has to produce a witness from
@@ -70,5 +76,11 @@ pub(crate) fn pool_membership(
         regions.push(Box::new(m.region));
         traces.push(m.witness);
     }
-    Pool { regions, traces, leaf_col, root: tree.root(), leaves }
+    Pool {
+        regions,
+        traces,
+        leaf_col,
+        root: tree.root(),
+        leaves,
+    }
 }

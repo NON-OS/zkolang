@@ -46,7 +46,10 @@ fn a_range_starting_where_the_last_one_ended_merges() {
     let s0 = genesis();
     let s1 = insert(s0.clone(), &[10, 20]);
     let s2 = insert(s1.clone(), &[30, 40]);
-    let a = Range { old: s0, new: s1.clone() };
+    let a = Range {
+        old: s0,
+        new: s1.clone(),
+    };
     let b = Range { old: s1, new: s2 };
     assert!(stitch(&a, &b).is_some());
 }
@@ -58,7 +61,10 @@ fn a_range_interleaving_with_the_last_one_merges() {
     let s0 = genesis();
     let s1 = insert(s0.clone(), &[10, 40]);
     let s2 = insert(s1.clone(), &[20, 30]);
-    let a = Range { old: s0, new: s1.clone() };
+    let a = Range {
+        old: s0,
+        new: s1.clone(),
+    };
     let b = Range { old: s1, new: s2 };
     assert!(stitch(&a, &b).is_some());
 }
@@ -68,8 +74,14 @@ fn a_range_interleaving_with_the_last_one_merges() {
 #[test]
 fn two_ranges_both_starting_from_the_pre_batch_chain_do_not_merge() {
     let s0 = genesis();
-    let a = Range { old: s0.clone(), new: insert(s0.clone(), &[10, 20]) };
-    let b = Range { old: s0.clone(), new: insert(s0, &[30, 40]) };
+    let a = Range {
+        old: s0.clone(),
+        new: insert(s0.clone(), &[10, 20]),
+    };
+    let b = Range {
+        old: s0.clone(),
+        new: insert(s0, &[30, 40]),
+    };
     assert!(stitch(&a, &b).is_none(), "one range's writes would vanish");
 }
 
@@ -82,7 +94,10 @@ fn a_range_starting_from_a_doctored_chain_does_not_merge() {
     let mut doctored = s1.clone();
     doctored[1].next_value = key(99);
     let a = Range { old: s0, new: s1 };
-    let b = Range { old: doctored.clone(), new: insert(doctored, &[30]) };
+    let b = Range {
+        old: doctored.clone(),
+        new: insert(doctored, &[30]),
+    };
     assert!(stitch(&a, &b).is_none());
 }
 
@@ -95,9 +110,18 @@ fn merging_is_associative() {
     let s2 = insert(s1.clone(), &[20]);
     let s3 = insert(s2.clone(), &[30]);
     let (a, b, c) = (
-        Range { old: s0.clone(), new: s1.clone() },
-        Range { old: s1, new: s2.clone() },
-        Range { old: s2, new: s3.clone() },
+        Range {
+            old: s0.clone(),
+            new: s1.clone(),
+        },
+        Range {
+            old: s1,
+            new: s2.clone(),
+        },
+        Range {
+            old: s2,
+            new: s3.clone(),
+        },
     );
     let left = stitch(&stitch(&a, &b).unwrap(), &c).unwrap();
     let right = stitch(&a, &stitch(&b, &c).unwrap()).unwrap();

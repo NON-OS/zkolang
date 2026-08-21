@@ -30,7 +30,11 @@ fn the_product_closes_on_a_satisfied_class() {
         num = num * (v + a.beta * a.id[j][r] + a.gamma);
         den = den * (v + a.beta * a.sigma[j][r] + a.gamma);
     }
-    assert_eq!(last * num * den.inv(), Fp::ONE, "a satisfied class must close");
+    assert_eq!(
+        last * num * den.inv(),
+        Fp::ONE,
+        "a satisfied class must close"
+    );
 }
 
 /// And does not close when they differ, which is what makes it a binding rather
@@ -51,5 +55,9 @@ fn the_product_does_not_close_on_a_violated_class() {
         num = num * (v + a.beta * a.id[j][r] + a.gamma);
         den = den * (v + a.beta * a.sigma[j][r] + a.gamma);
     }
-    assert_ne!(z[r] * num * den.inv(), Fp::ONE, "a violated class must not close");
+    assert_ne!(
+        z[r] * num * den.inv(),
+        Fp::ONE,
+        "a violated class must not close"
+    );
 }

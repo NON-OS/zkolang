@@ -22,9 +22,16 @@ fn a_clearing_product_runs_past_the_field() {
     let price = 1_000_000_000_000_000_000u64;
     let true_product = recompose(&wide_mul(amount, price).out);
 
-    assert!(true_product > P, "the product fits the field, so there is nothing to prove");
+    assert!(
+        true_product > P,
+        "the product fits the field, so there is nothing to prove"
+    );
 
     let other = true_product + P;
     assert_ne!(true_product, other, "distinct fills");
-    assert_eq!(true_product % P, other % P, "same residue, indistinguishable in the field");
+    assert_eq!(
+        true_product % P,
+        other % P,
+        "same residue, indistinguishable in the field"
+    );
 }

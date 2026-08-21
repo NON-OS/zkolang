@@ -30,5 +30,10 @@ pub(crate) fn key_hierarchies(
         regions.push(Box::new(k.region));
         traces.push(k.trace);
     }
-    Keys { regions, traces, key_span, nf }
+    Keys {
+        regions,
+        traces,
+        key_span,
+        nf,
+    }
 }

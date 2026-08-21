@@ -20,7 +20,10 @@ pub(crate) struct Set {
 
 impl Set {
     pub fn genesis(slots: usize) -> Set {
-        Set { leaves: alloc::vec![Leaf::sentinel()], slots }
+        Set {
+            leaves: alloc::vec![Leaf::sentinel()],
+            slots,
+        }
     }
 
     pub fn root(&self, h: &Poseidon) -> [Fp; RATE] {
@@ -62,6 +65,9 @@ impl Set {
             });
             next.sort_by(|a, b| cmp(&a.value, &b.value));
         }
-        last_is_the_maximum(&next).then_some(Set { leaves: next, slots: self.slots })
+        last_is_the_maximum(&next).then_some(Set {
+            leaves: next,
+            slots: self.slots,
+        })
     }
 }

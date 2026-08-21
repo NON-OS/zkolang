@@ -13,7 +13,10 @@ pub(crate) struct Keys {
 /// commitment yield a fresh nullifier per key, and would let anyone who has seen
 /// a commitment retire a note they do not own.
 pub(crate) fn derive(h: &Poseidon, sk: [Fp; RATE]) -> Keys {
-    Keys { spend_pk: h.compress(&sk, &tag(SPEND_DOMAIN)), nk: h.compress(&sk, &tag(NULL_DOMAIN)) }
+    Keys {
+        spend_pk: h.compress(&sk, &tag(SPEND_DOMAIN)),
+        nk: h.compress(&sk, &tag(NULL_DOMAIN)),
+    }
 }
 
 /// The leaf position is in the preimage. Identical notes commit identically, so

@@ -11,7 +11,10 @@ use crate::shield::key::Break;
 fn a_private_transfer_proves_and_verifies() {
     let js = balanced(Break::None);
     let proof = stark_prove_ext(&js.wired, &js.witness, 32, 8);
-    assert!(stark_verify_ext(&js.wired, &proof, 32, 8), "the transfer did not verify");
+    assert!(
+        stark_verify_ext(&js.wired, &proof, 32, 8),
+        "the transfer did not verify"
+    );
 }
 
 /// And a spend of a note the spender does not own has no proof at all.
@@ -20,5 +23,8 @@ fn a_private_transfer_proves_and_verifies() {
 fn a_stolen_note_has_no_proof() {
     let js = balanced(Break::ForeignNote);
     let proof = stark_prove_ext(&js.wired, &js.witness, 32, 8);
-    assert!(!stark_verify_ext(&js.wired, &proof, 32, 8), "a stolen note verified");
+    assert!(
+        !stark_verify_ext(&js.wired, &proof, 32, 8),
+        "a stolen note verified"
+    );
 }

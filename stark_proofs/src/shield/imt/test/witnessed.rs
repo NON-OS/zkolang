@@ -30,7 +30,11 @@ fn paths(changed: &[(usize, u64)]) -> (Vec<Path>, [Fp; RATE]) {
                     s
                 })
                 .collect();
-            Path { index: *i, leaf: v(*x), siblings }
+            Path {
+                index: *i,
+                leaf: v(*x),
+                siblings,
+            }
         })
         .collect();
     (ps, t.root())

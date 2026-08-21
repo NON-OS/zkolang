@@ -32,7 +32,12 @@ impl PoolTree {
             zeros.push(z);
             z = h.compress(&z, &z);
         }
-        PoolTree { h, depth, zeros, leaves: Vec::new() }
+        PoolTree {
+            h,
+            depth,
+            zeros,
+            leaves: Vec::new(),
+        }
     }
 
     pub fn depth(&self) -> usize {

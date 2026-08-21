@@ -40,8 +40,13 @@ impl Intent {
         w.extend_from_slice(&self.nf[1]);
         w.extend_from_slice(&self.out_cm[0]);
         w.extend_from_slice(&self.out_cm[1]);
-        for v in [self.public_amount, self.fee, self.asset_id, self.clearing_price, self.recipient]
-        {
+        for v in [
+            self.public_amount,
+            self.fee,
+            self.asset_id,
+            self.clearing_price,
+            self.recipient,
+        ] {
             w.push(Fp::from_u64(v));
         }
         w

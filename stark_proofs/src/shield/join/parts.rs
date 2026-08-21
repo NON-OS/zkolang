@@ -42,15 +42,19 @@ pub(crate) fn intent_parts(
     at: Option<&super::witness::Places>,
 ) -> IntentParts {
     let notes = [inputs[0].note, inputs[1].note, outputs[0], outputs[1]];
-    let values = [notes[0].value, notes[1].value, notes[2].value, notes[3].value];
+    let values = [
+        notes[0].value,
+        notes[1].value,
+        notes[2].value,
+        notes[3].value,
+    ];
     let (air, trace) = balance(&values, public_amount, fee);
 
     let h = Poseidon::new(POOL_LOG_ROUNDS, [Fp::ZERO; RATE]);
     let sks = [inputs[0].sk, inputs[1].sk];
     let mut s = stack(&h, notes, sks, brk, (Box::new(air), trace), depth, at);
 
-    let (intent, pub_air) =
-        publics_region(&s, public_amount, fee, notes[0].asset_id, st, flip);
+    let (intent, pub_air) = publics_region(&s, public_amount, fee, notes[0].asset_id, st, flip);
     s.traces.push(pub_air.trace());
     s.regions.push(Box::new(pub_air));
 

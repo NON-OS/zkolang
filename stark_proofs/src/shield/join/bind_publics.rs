@@ -4,9 +4,9 @@ use super::bind::Layout;
 use super::publics::{
     ASSET_ID, ASSOC_ROOT, FEE, NF0, NF1, NOTE_ROOT, OUT_CM0, OUT_CM1, PUBLIC_AMOUNT,
 };
+use crate::crypto::stark::air::Cell;
 use crate::crypto::stark::air::RATE;
 use crate::shield::note::POOL_LOG_ROUNDS;
-use crate::crypto::stark::air::Cell;
 use crate::shield::wire_class::{pair, Class};
 use alloc::vec::Vec;
 
@@ -21,9 +21,15 @@ pub(crate) fn public_classes(l: &Layout, pub_off: usize) -> Vec<Class> {
     // first and the second walks to a root nobody named. One class per lane, not
     // a pair per walk, or they are two classes sharing the word.
     for c in 0..RATE {
-        let mut k: Class = alloc::vec![Cell { row: word(NOTE_ROOT + c), col: 0 }];
+        let mut k: Class = alloc::vec![Cell {
+            row: word(NOTE_ROOT + c),
+            col: 0
+        }];
         for &m in l.member.iter() {
-            k.push(Cell { row: m + l.depth * rounds, col: c });
+            k.push(Cell {
+                row: m + l.depth * rounds,
+                col: c,
+            });
         }
         g.push(k);
     }
@@ -53,18 +59,30 @@ pub(crate) fn public_classes(l: &Layout, pub_off: usize) -> Vec<Class> {
     // assets, so the four notes hold theirs equal or value crosses between them.
     // A swap is not one asset in and the same out, and will need its own sum.
     const ASSET_LIMB: usize = 2;
-    let mut assets: Class = alloc::vec![Cell { row: word(ASSET_ID), col: 0 }];
+    let mut assets: Class = alloc::vec![Cell {
+        row: word(ASSET_ID),
+        col: 0
+    }];
     for &n in l.note.iter() {
-        assets.push(Cell { row: n, col: ASSET_LIMB });
+        assets.push(Cell {
+            row: n,
+            col: ASSET_LIMB,
+        });
     }
     g.push(assets);
 
     // Same for the association list: every walk ends at the published root, not
     // just the first one's.
     for c in 0..RATE {
-        let mut k: Class = alloc::vec![Cell { row: word(ASSOC_ROOT + c), col: 0 }];
+        let mut k: Class = alloc::vec![Cell {
+            row: word(ASSOC_ROOT + c),
+            col: 0
+        }];
         for &a in l.assoc.iter() {
-            k.push(Cell { row: a + l.depth * rounds, col: c });
+            k.push(Cell {
+                row: a + l.depth * rounds,
+                col: c,
+            });
         }
         g.push(k);
     }

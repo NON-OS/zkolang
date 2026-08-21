@@ -1,7 +1,7 @@
 // NONOS Operating System (AGPL-3.0-or-later)
 
-use super::satisfies::satisfies;
 use super::intents::intent;
+use super::satisfies::satisfies;
 use crate::shield::batch::assemble;
 use crate::shield::join::publics::CLEARING_PRICE;
 
@@ -10,7 +10,10 @@ use crate::shield::join::publics::CLEARING_PRICE;
 /// price tied across both.
 #[test]
 fn a_two_intent_batch_settles_under_one_proof() {
-    let b = assemble(alloc::vec![intent(1, 1_000_000, None), intent(2, 1_000_000, None)]);
+    let b = assemble(alloc::vec![
+        intent(1, 1_000_000, None),
+        intent(2, 1_000_000, None)
+    ]);
     assert!(satisfies(&b.wired, &b.witness));
     assert_eq!(b.intents.len(), 2);
 }
@@ -19,13 +22,19 @@ fn a_two_intent_batch_settles_under_one_proof() {
 /// per intent bindings.
 #[test]
 fn a_tampered_word_in_the_second_intent_rejects() {
-    let b = assemble(alloc::vec![intent(1, 1_000_000, None), intent(2, 1_000_000, Some(0))]);
+    let b = assemble(alloc::vec![
+        intent(1, 1_000_000, None),
+        intent(2, 1_000_000, Some(0))
+    ]);
     assert!(!satisfies(&b.wired, &b.witness));
 }
 
 #[test]
 fn intents_priced_apart_reject() {
-    let b = assemble(alloc::vec![intent(1, 1_000_000, None), intent(2, 1_000_001, None)]);
+    let b = assemble(alloc::vec![
+        intent(1, 1_000_000, None),
+        intent(2, 1_000_001, None)
+    ]);
     assert!(!satisfies(&b.wired, &b.witness));
     let _ = CLEARING_PRICE;
 }

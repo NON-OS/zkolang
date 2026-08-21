@@ -23,10 +23,22 @@ pub(crate) fn balanced_deployed(brk: Break) -> JoinSplit {
     let sks = [secret(1), secret(2)];
     let ins = [owned(sks[0], 0, 1000), owned(sks[1], 10, 2000)];
     let outs = [plain(20, 1500), plain(30, 1200)];
-    let st = Settle { clearing_price: 1_000_000, recipient: 0xBEEF };
+    let st = Settle {
+        clearing_price: 1_000_000,
+        recipient: 0xBEEF,
+    };
     crate::shield::join::join_split_at(
         super::depth::DEPLOYED,
-        [Spend { note: &ins[0], sk: sks[0] }, Spend { note: &ins[1], sk: sks[1] }],
+        [
+            Spend {
+                note: &ins[0],
+                sk: sks[0],
+            },
+            Spend {
+                note: &ins[1],
+                sk: sks[1],
+            },
+        ],
         [&outs[0], &outs[1]],
         200,
         100,
@@ -45,10 +57,22 @@ pub(crate) fn build(
     brk: Break,
     flip: Option<usize>,
 ) -> JoinSplit {
-    let st = Settle { clearing_price: 1_000_000, recipient: 0xBEEF };
+    let st = Settle {
+        clearing_price: 1_000_000,
+        recipient: 0xBEEF,
+    };
     crate::shield::join::join_split_at(
         super::depth::MINIMAL,
-        [Spend { note: &ins[0], sk: sks[0] }, Spend { note: &ins[1], sk: sks[1] }],
+        [
+            Spend {
+                note: &ins[0],
+                sk: sks[0],
+            },
+            Spend {
+                note: &ins[1],
+                sk: sks[1],
+            },
+        ],
         [&outs[0], &outs[1]],
         public_amount,
         fee,

@@ -26,7 +26,16 @@ pub(crate) fn join_split(
     st: Settle,
     flip: Option<usize>,
 ) -> JoinSplit {
-    join_split_at(TREE_DEPTH, inputs, outputs, public_amount, fee, brk, st, flip)
+    join_split_at(
+        TREE_DEPTH,
+        inputs,
+        outputs,
+        public_amount,
+        fee,
+        brk,
+        st,
+        flip,
+    )
 }
 
 /// One intent is a batch of one, so the layout lives in a single place. Depth is
@@ -41,9 +50,23 @@ pub(crate) fn join_split_at(
     st: Settle,
     flip: Option<usize>,
 ) -> JoinSplit {
-    let p = intent_parts(inputs, outputs, public_amount, fee, brk, st, flip, depth, None);
+    let p = intent_parts(
+        inputs,
+        outputs,
+        public_amount,
+        fee,
+        brk,
+        st,
+        flip,
+        depth,
+        None,
+    );
     let mut b = assemble(alloc::vec![p]);
-    JoinSplit { wired: b.wired, witness: b.witness, intent: b.intents.remove(0) }
+    JoinSplit {
+        wired: b.wired,
+        witness: b.witness,
+        intent: b.intents.remove(0),
+    }
 }
 
 /// A spend against the pool the contract owns: the caller reads the paths and the
@@ -59,8 +82,21 @@ pub(crate) fn join_split_placed(
     at: &Places,
 ) -> JoinSplit {
     let depth = at.note[0].depth();
-    let p =
-        intent_parts(inputs, outputs, public_amount, fee, Break::None, st, None, depth, Some(at));
+    let p = intent_parts(
+        inputs,
+        outputs,
+        public_amount,
+        fee,
+        Break::None,
+        st,
+        None,
+        depth,
+        Some(at),
+    );
     let mut b = assemble(alloc::vec![p]);
-    JoinSplit { wired: b.wired, witness: b.witness, intent: b.intents.remove(0) }
+    JoinSplit {
+        wired: b.wired,
+        witness: b.witness,
+        intent: b.intents.remove(0),
+    }
 }

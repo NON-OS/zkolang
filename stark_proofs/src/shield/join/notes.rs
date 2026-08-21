@@ -15,8 +15,10 @@ pub(crate) struct Notes {
 }
 
 pub(crate) fn note_regions(notes: [&Note; 4], brk: Break) -> Notes {
-    let parts: Vec<_> =
-        notes.iter().map(|n| note_parts_broken(n, brk == Break::NoteEdge)).collect();
+    let parts: Vec<_> = notes
+        .iter()
+        .map(|n| note_parts_broken(n, brk == Break::NoteEdge))
+        .collect();
     let span_op = parts[0].span_op;
     let cms: Vec<[Fp; RATE]> = parts.iter().map(|p| p.cm).collect();
     let mut regions: Vec<Box<dyn AirExt>> = Vec::with_capacity(4);
@@ -25,5 +27,10 @@ pub(crate) fn note_regions(notes: [&Note; 4], brk: Break) -> Notes {
         regions.push(Box::new(p.region));
         traces.push(p.trace);
     }
-    Notes { regions, traces, span_op, cms }
+    Notes {
+        regions,
+        traces,
+        span_op,
+        cms,
+    }
 }

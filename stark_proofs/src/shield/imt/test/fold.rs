@@ -81,8 +81,12 @@ fn dropping_any_one_change_moves_the_root() {
     let all = [(4usize, 40u64), (5, 50), (6, 60), (11, 80)];
     let full = apply(&all);
     for skip in 0..all.len() {
-        let fewer: Vec<(usize, u64)> =
-            all.iter().enumerate().filter(|(i, _)| *i != skip).map(|(_, c)| *c).collect();
+        let fewer: Vec<(usize, u64)> = all
+            .iter()
+            .enumerate()
+            .filter(|(i, _)| *i != skip)
+            .map(|(_, c)| *c)
+            .collect();
         assert_ne!(apply(&fewer), full, "a change did not reach the root");
     }
 }

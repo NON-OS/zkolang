@@ -16,11 +16,18 @@ fn d(x: u64) -> [Fp; RATE] {
 }
 
 fn genesis() -> Carried {
-    Carried { note_root: d(1), next_index: 0, nullifier_root: d(2) }
+    Carried {
+        note_root: d(1),
+        next_index: 0,
+        nullifier_root: d(2),
+    }
 }
 
 fn spend(a: u64, b: u64) -> Effect {
-    Effect { nullifiers: [d(a), d(b)], outputs: [d(a + 50), d(b + 50)] }
+    Effect {
+        nullifiers: [d(a), d(b)],
+        outputs: [d(a + 50), d(b + 50)],
+    }
 }
 
 /// The node exposes the transition its own proof induces.
@@ -67,8 +74,20 @@ fn a_lift_that_does_not_advance_the_index_does_not() {
 #[test]
 fn two_lifted_children_compose() {
     let h = h();
-    let a = lift(&h, genesis(), &spend(10, 11), induced(&h, genesis(), &spend(10, 11))).unwrap();
-    let b = lift(&h, a.new, &spend(12, 13), induced(&h, a.new, &spend(12, 13))).unwrap();
+    let a = lift(
+        &h,
+        genesis(),
+        &spend(10, 11),
+        induced(&h, genesis(), &spend(10, 11)),
+    )
+    .unwrap();
+    let b = lift(
+        &h,
+        a.new,
+        &spend(12, 13),
+        induced(&h, a.new, &spend(12, 13)),
+    )
+    .unwrap();
     let n = combine(&Verified { exposed: a }, &Verified { exposed: b }).unwrap();
     assert!(n.old == genesis() && n.new == b.new);
 }

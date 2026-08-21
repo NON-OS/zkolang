@@ -31,13 +31,13 @@ pub(crate) fn root_of(h: &Poseidon, paths: &[Path]) -> Option<[Fp; RATE]> {
 
     for p in paths {
         let (mut node, mut idx) = (p.leaf, p.index);
-        let mut note = |lvl: usize, i: usize, v: [Fp; RATE], seen: &mut BTreeMap<_, _>| {
-            match seen.get(&(lvl, i)) {
-                Some(prev) if *prev != v => false,
-                _ => {
-                    seen.insert((lvl, i), v);
-                    true
-                }
+        let mut note = |lvl: usize, i: usize, v: [Fp; RATE], seen: &mut BTreeMap<_, _>| match seen
+            .get(&(lvl, i))
+        {
+            Some(prev) if *prev != v => false,
+            _ => {
+                seen.insert((lvl, i), v);
+                true
             }
         };
         if !note(0, idx, node, &mut seen) {
@@ -49,7 +49,11 @@ pub(crate) fn root_of(h: &Poseidon, paths: &[Path]) -> Option<[Fp; RATE]> {
             if !note(lvl, idx ^ 1, *sib, &mut seen) {
                 return None;
             }
-            node = if idx & 1 == 0 { h.compress(&node, sib) } else { h.compress(sib, &node) };
+            node = if idx & 1 == 0 {
+                h.compress(&node, sib)
+            } else {
+                h.compress(sib, &node)
+            };
             idx >>= 1;
             if !note(lvl + 1, idx, node, &mut seen) {
                 return None;

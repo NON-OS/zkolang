@@ -22,7 +22,11 @@ pub(crate) fn realised(
     index: u64,
     effects: &[Effect],
 ) -> Option<(Carried, Carried)> {
-    let old = Carried { note_root: notes, next_index: index, nullifier_root: set.root(h) };
+    let old = Carried {
+        note_root: notes,
+        next_index: index,
+        nullifier_root: set.root(h),
+    };
 
     let mut keys: Vec<[Fp; RATE]> = effects.iter().flat_map(|e| e.nullifiers).collect();
     keys.sort_by(|a, b| crate::shield::imt::cmp(a, b));

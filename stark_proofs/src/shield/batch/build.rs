@@ -20,11 +20,17 @@ pub(crate) fn batch(tuples: &[Vec<Fp>]) -> Batch {
     let mut regions: Vec<Box<dyn AirExt>> = Vec::with_capacity(tuples.len());
     let mut traces: Vec<Vec<Fp>> = Vec::with_capacity(tuples.len());
     for t in tuples {
-        let air = Publics { log_t: 5, words: t.clone() };
+        let air = Publics {
+            log_t: 5,
+            words: t.clone(),
+        };
         traces.push(air.trace());
         regions.push(Box::new(air));
     }
-    let rows: Vec<usize> = regions.iter().map(|r| 1usize << r.log_trace_len()).collect();
+    let rows: Vec<usize> = regions
+        .iter()
+        .map(|r| 1usize << r.log_trace_len())
+        .collect();
     let (off, span) = offsets(&rows);
     let classes = price_uniform(&off);
     let groups: Vec<_> = classes.iter().map(|c| group_of(span, c)).collect();

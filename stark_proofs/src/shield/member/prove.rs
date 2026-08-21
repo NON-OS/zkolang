@@ -22,12 +22,21 @@ pub(crate) fn note_member(
     root: [Fp; RATE],
 ) -> NoteMember {
     let depth = sibs.len();
-    let opening = Opening { leaf, root, siblings: sibs, directions: dirs };
+    let opening = Opening {
+        leaf,
+        root,
+        siblings: sibs,
+        directions: dirs,
+    };
     let region = MultiMembership::new_witness(h.clone(), POOL_LOG_ROUNDS, alloc::vec![opening]);
     let witness = region.trace();
     let w = region.trace_width();
     let row = depth * (1usize << POOL_LOG_ROUNDS);
     let mut proven_root = [Fp::ZERO; RATE];
     proven_root.copy_from_slice(&witness[row * w..row * w + RATE]);
-    NoteMember { region, witness, proven_root }
+    NoteMember {
+        region,
+        witness,
+        proven_root,
+    }
 }

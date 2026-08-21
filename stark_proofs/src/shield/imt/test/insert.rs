@@ -86,8 +86,14 @@ fn a_chained_batch_writes_distinct_leaves() {
 #[test]
 fn two_same_gap_keys_claiming_the_pre_batch_leaf_are_refused() {
     let pre_batch = alloc::vec![
-        Step { key: key(50), low: Low::InTree(0) },
-        Step { key: key(60), low: Low::InTree(0) },
+        Step {
+            key: key(50),
+            low: Low::InTree(0)
+        },
+        Step {
+            key: key(60),
+            low: Low::InTree(0)
+        },
     ];
     assert!(
         !writes_are_distinct(&pre_batch),

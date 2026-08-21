@@ -33,5 +33,11 @@ pub(crate) fn publics_region(
     if let Some(i) = flip {
         claimed[i] = claimed[i] + Fp::ONE;
     }
-    (intent, Publics { log_t: 5, words: claimed })
+    (
+        intent,
+        Publics {
+            log_t: 5,
+            words: claimed,
+        },
+    )
 }

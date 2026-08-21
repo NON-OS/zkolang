@@ -27,5 +27,10 @@ pub(crate) fn positions(leaves: &[usize], depth: usize) -> Positions {
         value_row.push(region.value_row());
         regions.push(Box::new(region));
     }
-    Positions { regions, traces, value_row, bits: depth }
+    Positions {
+        regions,
+        traces,
+        value_row,
+        bits: depth,
+    }
 }

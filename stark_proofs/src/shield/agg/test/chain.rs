@@ -13,7 +13,11 @@ fn d(x: u64) -> [Fp; RATE] {
 /// The chain after `n` transfers: each moves both roots and advances the index by
 /// its two outputs.
 fn at(n: u64) -> Carried {
-    Carried { note_root: d(100 + n), next_index: n * 2, nullifier_root: d(200 + n) }
+    Carried {
+        note_root: d(100 + n),
+        next_index: n * 2,
+        nullifier_root: d(200 + n),
+    }
 }
 
 #[test]
@@ -30,7 +34,10 @@ fn a_child_starting_where_the_last_ended_composes() {
 fn two_children_both_starting_from_the_same_state_do_not() {
     let a = leaf(at(0), at(1));
     let b = leaf(at(0), at(2));
-    assert!(chain(&a, &b).is_none(), "a subtree's transfers would vanish");
+    assert!(
+        chain(&a, &b).is_none(),
+        "a subtree's transfers would vanish"
+    );
 }
 
 /// The note tree moved but the nullifier set did not, so half the transition is
@@ -69,8 +76,14 @@ fn composing_is_associative() {
 /// where it ended.
 #[test]
 fn the_root_exposes_the_pair_the_contract_binds() {
-    let n = chain(&chain(&leaf(at(0), at(1)), &leaf(at(1), at(2))).unwrap(), &leaf(at(2), at(3)))
-        .unwrap();
-    assert!(n.old == at(0), "settleAggregate requires this equals what it holds");
+    let n = chain(
+        &chain(&leaf(at(0), at(1)), &leaf(at(1), at(2))).unwrap(),
+        &leaf(at(2), at(3)),
+    )
+    .unwrap();
+    assert!(
+        n.old == at(0),
+        "settleAggregate requires this equals what it holds"
+    );
     assert!(n.new == at(3));
 }

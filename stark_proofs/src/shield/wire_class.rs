@@ -27,7 +27,12 @@ pub(crate) fn group_of(span: usize, class: &Class) -> GpGroup {
         let ib = cols.iter().position(|&c| c == w[1].col).unwrap();
         sigma.swap(w[0].row * k + ia, w[1].row * k + ib);
     }
-    GpGroup { wired_cols: cols, sigma, beta: Fp::from_u64(5), gamma: Fp::from_u64(7) }
+    GpGroup {
+        wired_cols: cols,
+        sigma,
+        beta: Fp::from_u64(5),
+        gamma: Fp::from_u64(7),
+    }
 }
 
 /// Every class in one product over the whole trace: identity on all columns with
@@ -51,5 +56,10 @@ pub(crate) fn global_group(span: usize, width: usize, classes: &[Class]) -> GpGr
         }
         sigma[idx[idx.len() - 1]] = first;
     }
-    GpGroup { wired_cols: cols, sigma, beta: Fp::from_u64(5), gamma: Fp::from_u64(7) }
+    GpGroup {
+        wired_cols: cols,
+        sigma,
+        beta: Fp::from_u64(5),
+        gamma: Fp::from_u64(7),
+    }
 }

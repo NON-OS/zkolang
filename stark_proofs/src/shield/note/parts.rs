@@ -25,7 +25,13 @@ pub(crate) fn note_parts_broken(note: &Note, break_edge: bool) -> NoteParts {
     let d0 = h.compress(&q[0], &q[1]);
     let d1 = h.compress(&q[2], &q[3]);
     // Each compression stays internally honest; only the chain breaks.
-    let left = if break_edge { let mut x = d0; x[0] = x[0] + Fp::ONE; x } else { d0 };
+    let left = if break_edge {
+        let mut x = d0;
+        x[0] = x[0] + Fp::ONE;
+        x
+    } else {
+        d0
+    };
     let cm = h.compress(&left, &d1);
 
     let one = |leaf: [Fp; RATE], sib: [Fp; RATE], root: [Fp; RATE]| Opening {
@@ -41,5 +47,10 @@ pub(crate) fn note_parts_broken(note: &Note, break_edge: bool) -> NoteParts {
     );
     let trace = region.trace();
     let span_op = region.opened_cells()[1].0;
-    NoteParts { region, trace, span_op, cm }
+    NoteParts {
+        region,
+        trace,
+        span_op,
+        cm,
+    }
 }
