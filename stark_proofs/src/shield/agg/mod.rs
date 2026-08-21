@@ -1,0 +1,14 @@
+// NONOS Operating System (AGPL-3.0-or-later)
+//! The aggregation tree's carried state, per docs/16.
+//!
+//! Transfer proofs fan out; the state transition composes in order. A node
+//! verifies its children and attests the move they make together, so the root is
+//! one proof over one pair of states, which is what the pool swaps.
+
+mod chain;
+mod state;
+#[cfg(test)]
+mod test;
+
+pub(crate) use chain::{chain, leaf};
+pub(crate) use state::{Carried, Node};
