@@ -48,10 +48,22 @@ pub struct WiredMultiExt {
 
 impl WiredMultiExt {
     pub fn new(regions: Vec<Box<dyn AirExt>>, groups: Vec<GpGroup>) -> WiredMultiExt {
-        let stack = Stack::of(&regions);
-        let region_slots = stack.slot_offsets.last().copied().unwrap_or(0)
-            + regions.last().map(|r| r.periodic_columns().len()).unwrap_or(0);
-        let base = regions.len() + region_slots;
+        let kinds: Vec<usize> = (0..regions.len()).collect();
+        WiredMultiExt::new_kinds(regions, &kinds, groups)
+    }
+
+    /// `kinds[i]` names region `i`'s kind. Instances of one kind must run equal
+    /// constraints over an equal periodic pattern; they then share one selector
+    /// and one set of columns instead of carrying an identical copy each.
+    pub fn new_kinds(
+        regions: Vec<Box<dyn AirExt>>,
+        kinds: &[usize],
+        groups: Vec<GpGroup>,
+    ) -> WiredMultiExt {
+        let stack = Stack::of_kinds(&regions, kinds);
+        let region_slots = stack.kind_slot.last().copied().unwrap_or(0)
+            + stack.kind_first.last().map(|&i| regions[i].periodic_columns().len()).unwrap_or(0);
+        let base = stack.n_kinds + region_slots;
         let mut group_slots = Vec::with_capacity(groups.len());
         let mut s = base;
         for grp in &groups {

@@ -1,10 +1,11 @@
-// dims probe: the join-split assembly's shape at the deployed round count.
+// dims probe: the RECURSION assembly, the verifier that checks a join-split proof
+// inside a proof. This is not the transfer circuit; see dims_transfer_tests.
 use crate::crypto::stark::air::Air;
 use crate::recursion_assembly::{assemble, Tamper};
 
 #[test]
 #[ignore]
-fn probe_join_split_dims() {
+fn probe_recursion_dims() {
     let asm = assemble(Tamper::None);
     let w = &asm.wired;
     let tw = w.trace_width();
@@ -30,7 +31,7 @@ fn probe_join_split_dims() {
         zeros as f64 / cells as f64
     );
     std::eprintln!(
-        "JOINSPLIT trace_width={tw} degree={deg} log_trace_len={lt} t={t} n_periodic={np} n_groups={} n_q={} eval_domain={n} trace_lde_GB={trace_gb} periodic_lde_GB={periodic_gb} total_GB={}",
+        "RECURSION trace_width={tw} degree={deg} log_trace_len={lt} t={t} n_periodic={np} n_groups={} n_q={} eval_domain={n} trace_lde_GB={trace_gb} periodic_lde_GB={periodic_gb} total_GB={}",
         asm.n_groups,
         asm.lay.n_q,
         trace_gb + periodic_gb

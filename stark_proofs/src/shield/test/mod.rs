@@ -19,7 +19,7 @@ mod intents;
 mod inventory;
 mod roundtrip;
 mod satisfies;
-mod scenario;
+pub(crate) mod scenario;
 
 mod commitment;
 mod commitment_binding;

@@ -6,18 +6,18 @@ use crate::shield::key::Break;
 use crate::shield::note::Note;
 
 /// 1000 + 2000 spent, 1500 + 1200 created, 200 out publicly, 100 in fees.
-pub(super) fn balanced_flip(brk: Break, flip: Option<usize>) -> JoinSplit {
+pub(crate) fn balanced_flip(brk: Break, flip: Option<usize>) -> JoinSplit {
     let sks = [secret(1), secret(2)];
     let ins = [owned(sks[0], 0, 1000), owned(sks[1], 10, 2000)];
     let outs = [plain(20, 1500), plain(30, 1200)];
     build(&ins, &outs, sks, 200, 100, brk, flip)
 }
 
-pub(super) fn balanced(brk: Break) -> JoinSplit {
+pub(crate) fn balanced(brk: Break) -> JoinSplit {
     balanced_flip(brk, None)
 }
 
-pub(super) fn build(
+pub(crate) fn build(
     ins: &[Note; 2],
     outs: &[Note; 2],
     sks: [[crate::crypto::stark::field::Fp; crate::crypto::stark::air::RATE]; 2],
