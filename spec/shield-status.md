@@ -29,8 +29,8 @@ outputs:
 |---|---|
 | a real transfer proves and verifies | yes |
 | a spend of an unowned note | proof does not verify |
-| wall clock, both cases | 1980 s |
-| peak resident | 565 MB |
+| wall clock, both cases | 1147 s |
+| peak resident | 438 MB |
 
 Prover runs, FRI commits, verifier accepts. Not a witness satisfaction check.
 
@@ -67,11 +67,27 @@ batched settlement cheap. It is not on the path of a single transfer.
 A product over k wired columns carries degree k+1, so fusing everything into one
 product raised the degree from 10 to 80 and the evaluation domain with it.
 
+## What the LDE figures do and do not count
+
+The dims probes report `trace_lde + periodic_lde`. They do not count the Merkle trees
+over those extensions, and a tree keeps its whole leaf layer at `[Fp; RATE]` per leaf,
+which is four times the column it commits to. Nor do they count `comp_d` or `deep_d`.
+
+So the recursion figures are a like-for-like measure of the extension arrays across
+changes, which is what they were written for. They are a lower bound on what a prover
+needs, not the requirement. The only measured peak in this document is the transfer's,
+which is a real resident set.
+
 ## What is next, in size order
 
-**Sigma.** Most of what remains is the per-group sigma columns. Sigma is a permutation
-and can be carried as `span * k` integers rather than a materialised LDE. The identity
-column is closed form and already shared; sigma is the one that still costs.
+**The commitment layer.** With the periodic columns streamed, the trace extension and
+the trees over it are what remain. The trees cannot be dropped the same way, because the
+leaf layer is what an opening walks, so this is a change to how commitment works rather
+than a loop that can be chunked.
+
+**Sigma.** The per-group sigma columns are most of what is left among the periodic
+columns. Sigma is a permutation and can be carried as `span * k` integers rather than a
+materialised extension. The identity column is closed form and already shared.
 
 **Wallet derivation.** Unowned. The key hierarchy and its vector are frozen in
 `spec/shield-key-hierarchy.json`, so it is implementable now. Until it exists a beta
