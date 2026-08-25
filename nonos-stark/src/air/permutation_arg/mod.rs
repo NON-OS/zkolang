@@ -17,7 +17,9 @@
 mod arg;
 mod cycles;
 mod disjoint;
+mod layable;
 
 pub use cycles::{Cell, WirePermutation};
 pub use arg::WiredPermutationArg;
 pub use disjoint::classes_are_disjoint;
+pub use layable::classes_are_layable;

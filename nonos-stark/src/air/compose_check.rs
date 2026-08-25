@@ -56,6 +56,13 @@ pub struct ComposeCheck {
     witness: bool,
 }
 
+/// Squarings needed to reach z^t. The tower was a fixed six, which is right only
+/// for a trace of 64 rows: the real join-split runs 2^15 and would have divided
+/// by the wrong vanishing value while every shape still lined up.
+fn tower(t: u64) -> usize {
+    t.trailing_zeros() as usize
+}
+
 impl ComposeCheck {
     /// Build the check from the out-of-domain frame, the periodic values at `z`, the
     /// batching coefficients, the point, the claimed composition, the boundary data,
@@ -157,7 +164,7 @@ impl ComposeCheck {
         }
 
         let mut zp = z;
-        for k in 0..6 {
+        for k in 0..tower(self.t) {
             zp = zp.square();
             put(33 + k, zp);
         }
@@ -178,14 +185,15 @@ impl ComposeCheck {
         // The vanishing power tower: zpow[k] = z^(2^(k+1)).
         let z = rd(11);
         let mut prev = z;
-        for k in 0..6 {
+        let n = tower(self.t);
+        for k in 0..n {
             let zp = rd(33 + k);
             res.push(sub(zp, mul(prev, prev)));
             prev = zp;
         }
         // z_h_inv * (z^t - 1) = 1.
         let z_h_inv = rd(20);
-        let zt = rd(38);
+        let zt = rd(33 + n - 1);
         res.push(sub(mul(z_h_inv, sub(zt, base(1))), base(1)));
         // E = (z - g^(t-1)) * z_h_inv.
         let e = rd(21);
@@ -256,8 +264,8 @@ impl Air for ComposeCheck {
 
     fn trace_width(&self) -> usize {
         // 6 frame + 5 periodic + z + 8 coeffs + z_h_inv + E + out0..2 + num + den +
-        // comp_z + 5 quotients + 6 power tower = 39 extension values.
-        78
+        // comp_z + 5 quotients, then one tower slot per squaring.
+        2 * (33 + tower(self.t))
     }
 
     fn window_size(&self) -> usize {
@@ -269,9 +277,9 @@ impl Air for ComposeCheck {
     }
 
     fn num_transition(&self) -> usize {
-        // (6 tower + 1 inverse + 1 exempt + 2 out + 2 gp factors + 1 out2 + 5
+        // (tower + 1 inverse + 1 exempt + 2 out + 2 gp factors + 1 out2 + 5
         // boundary + 1 comp_z) extension constraints, two base residuals each.
-        2 * (6 + 1 + 1 + 2 + 2 + 1 + 5 + 1)
+        2 * (tower(self.t) + 1 + 1 + 2 + 2 + 1 + 5 + 1)
     }
 
     fn transition(&self, window: &[Fp], periodic: &[Fp]) -> Vec<Fp> {

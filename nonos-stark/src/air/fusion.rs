@@ -33,6 +33,10 @@ pub(super) struct Stack {
     pub width: usize,
     pub window: usize,
     pub log_span: u32,
+    /// Rows the regions actually occupy, before any rounding. The wired engines
+    /// size their trace from this plus the row the running product closes on,
+    /// rather than rounding the span and then doubling the result.
+    pub rows: usize,
     /// Instance to kind. Instances of one kind run the same constraints over the
     /// same periodic pattern, so they share one selector and one set of columns
     /// instead of carrying an identical copy each.
@@ -86,6 +90,7 @@ impl Stack {
             width,
             window,
             log_span,
+            rows: row,
             kind_of: kinds.to_vec(),
             n_kinds,
             kind_slot,
@@ -97,8 +102,30 @@ impl Stack {
         1usize << self.log_span
     }
 
+    /// Where a running product closes: the last row the regions occupy. Nothing
+    /// above it to absorb. Both wired engines size from here so they cannot drift.
+    pub fn closes_at(&self) -> usize {
+        self.rows
+    }
+
+    /// One row past the close, rounded up. This used to round `log_span` and then
+    /// double it, which cost the recursion 2^19 rows to hold 139522.
+    pub fn log_trace_len(&self) -> u32 {
+        (self.closes_at() + 1).next_power_of_two().trailing_zeros()
+    }
+
     pub fn height(regions: &[Box<dyn AirExt>], i: usize) -> usize {
         1usize << regions[i].log_trace_len()
+    }
+
+    /// Cells above the closing row are never read, so a class up there is dropped
+    /// in silence. Regions sit below it, so this holds; check it anyway, since a
+    /// lost binding is the failure the engine exists to catch.
+    pub fn assert_bound_below_close(&self, sigma: &[usize], k: usize, what: &str) {
+        let close = self.closes_at();
+        for (pos, &img) in sigma.iter().enumerate().skip(close * k) {
+            assert!(pos == img, "{what} binds cell {pos} above the closing row {close}");
+        }
     }
 }
 
