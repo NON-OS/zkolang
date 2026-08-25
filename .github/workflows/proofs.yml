@@ -1,0 +1,70 @@
+name: proofs
+
+on:
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+    inputs:
+      emit:
+        description: 'Also emit a recursion proof (slow, needs the big runner)'
+        type: boolean
+        default: false
+
+env:
+  CARGO_TERM_COLOR: always
+
+# A recursion assembly needs more memory than ubuntu-latest has, which is why
+# the nightly job failed on every run. runs-on has to name a larger runner
+# configured for the org; 32 vCPU / 128 GB is the smallest that fits one.
+jobs:
+  # Fails in a minute if the runner is missing or smaller than the gates need,
+  # rather than after five hours of queue or an out of memory kill.
+  runner:
+    name: the runner is what we asked for
+    runs-on: ubuntu-32core
+    timeout-minutes: 10
+    steps:
+      - name: cores and memory
+        run: |
+          nproc
+          free -g | head -2
+          gb=$(free -g | awk '/^Mem:/{print $2}')
+          test "$gb" -ge 100 || { echo "need 100 GB, runner has ${gb}"; exit 1; }
+
+  gates:
+    name: every gate, serialized
+    needs: runner
+    runs-on: ubuntu-32core
+    timeout-minutes: 330
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      # One at a time. The assemblies do not share a runner.
+      - name: every gate
+        run: cargo test --workspace --release -- --include-ignored --test-threads=1
+
+  emit:
+    name: emit a recursion proof
+    needs: runner
+    if: github.event_name == 'workflow_dispatch' && inputs.emit
+    runs-on: ubuntu-32core
+    timeout-minutes: 330
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      # Peak is not known at full query count, so record it.
+      - name: peak memory while emitting
+        run: |
+          /usr/bin/time -v cargo test --release -p stark_proofs --features parallel \
+            recursion_assembly_tests -- --ignored --test-threads=1 2>&1 | tee emit.log
+          grep -E "Maximum resident|Elapsed" emit.log || true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: emit-log
+          path: emit.log
