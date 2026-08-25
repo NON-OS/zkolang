@@ -7,6 +7,7 @@ pub(crate) mod member;
 pub(crate) mod note;
 pub(crate) mod wire;
 pub(crate) mod wire_class;
+pub(crate) mod wire_pack;
 mod perm;
 mod wide;
 
