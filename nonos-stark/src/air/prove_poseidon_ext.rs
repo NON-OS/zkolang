@@ -81,14 +81,21 @@ pub fn stark_prove_poseidon_ext_pub<A: AirExt>(
     let mut trace_coeffs: Vec<Vec<Fp>> = Vec::with_capacity(width);
     let mut trace_trees: Vec<PoseidonMerkleTree> = Vec::with_capacity(width);
     let mut trace_roots: Vec<[Fp; RATE]> = Vec::with_capacity(width);
-    for c in 0..width {
+    // A column's extension, its commitment and its interpolation depend on that
+    // column alone, so the columns run together. The transcript still absorbs the
+    // roots in column order below, which is what the verifier replays.
+    let built: Vec<(Vec<Fp>, PoseidonMerkleTree, Vec<Fp>)> = crate::par::map_index(width, |c| {
         let column: Vec<Fp> = (0..t).map(|i| trace[i * width + c]).collect();
         let column_d = lde(&column, g, shift, omega, n);
         let leaves: Vec<[Fp; RATE]> = column_d.iter().map(|v| pack_base(*v)).collect();
         let tree = PoseidonMerkleTree::commit(hasher, &leaves);
+        let coeffs = intt(&column, g);
+        (column_d, tree, coeffs)
+    });
+    for (column_d, tree, coeffs) in built {
         transcript.absorb_digest(&tree.root());
         trace_roots.push(tree.root());
-        trace_coeffs.push(intt(&column, g));
+        trace_coeffs.push(coeffs);
         trace_trees.push(tree);
         trace_d.push(column_d);
     }
@@ -110,7 +117,7 @@ pub fn stark_prove_poseidon_ext_pub<A: AirExt>(
     for c in 0..blowup {
         let shift_c = shift * omega.pow(c as u64);
         let periodic_c: Vec<Vec<Fp>> =
-            periodic_coeffs.iter().map(|cf| lde_from_coeffs(cf, shift_c, sub, t)).collect();
+            crate::par::map_slice(&periodic_coeffs, |cf| lde_from_coeffs(cf, shift_c, sub, t));
         let mut x = shift_c;
         for i in 0..t {
             let j = c + blowup * i;

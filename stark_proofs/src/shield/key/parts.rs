@@ -22,6 +22,11 @@ pub(crate) enum Break {
     NoteEdge,
     /// Prove association membership of a note other than the one spent.
     Unlisted,
+    /// Retire the note under a leaf index other than the one the pool authenticated.
+    /// The note is genuinely owned and genuinely a member; only the position the
+    /// nullifier hashes moves. Two of these over one note are two nullifiers, and
+    /// two nullifiers over one note is that note spent twice.
+    ForeignIndex,
 }
 
 pub(crate) struct NullifierParts {
@@ -50,8 +55,9 @@ pub(crate) fn nullifier_parts(
 
     let spend_pk = derive(&h, sk).spend_pk;
     let nk = derive(&h, nk_sk).nk;
+    let idx = if brk == Break::ForeignIndex { leaf_index + 1 } else { leaf_index };
     let t = h.compress(&nk, &target);
-    let nf = h.compress(&t, &tag(leaf_index));
+    let nf = h.compress(&t, &tag(idx));
 
     let one = |leaf: [Fp; RATE], sib: [Fp; RATE], root: [Fp; RATE]| Opening {
         leaf,
@@ -66,7 +72,7 @@ pub(crate) fn nullifier_parts(
             one(sk, tag(super::domain::SPEND_DOMAIN), spend_pk),
             one(nk_sk, tag(super::domain::NULL_DOMAIN), nk),
             one(nk, target, t),
-            one(t, tag(leaf_index), nf),
+            one(t, tag(idx), nf),
         ],
     );
     let trace = region.trace();
