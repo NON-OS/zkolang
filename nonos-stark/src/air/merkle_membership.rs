@@ -58,7 +58,7 @@ impl MerkleMembership {
     pub fn trace(&self, leaf: [Fp; RATE]) -> Vec<Fp> {
         let l = self.rounds();
         let depth = self.depth();
-        let n = (1usize << self.log_slots()) * l;
+        let n = 1usize << self.log_trace_len();
         let mut trace = alloc::vec![Fp::ZERO; n * WIDTH];
         let mut state = inject(leaf, self.siblings[0], self.directions[0]);
         for r in 0..n {
@@ -89,10 +89,15 @@ impl MerkleMembership {
         self.siblings.len()
     }
 
-    /// Log2 of the slot count: enough slots for every compression plus the final
-    /// root checkpoint, rounded up to a power of two.
-    fn log_slots(&self) -> u32 {
-        (self.depth() + 1).next_power_of_two().trailing_zeros()
+    /// Slots: one per compression plus the root checkpoint, unpadded, matching
+    /// MultiMembership so the two forms lay out the same way.
+    fn slots(&self) -> usize {
+        self.depth() + 1
+    }
+
+    /// Rows of real work; the trace itself is padded up to a power of two.
+    fn work_rows(&self) -> usize {
+        self.slots() * self.rounds()
     }
 
     /// The Merkle-path transition over any field: one Poseidon round, then inject
@@ -132,7 +137,11 @@ impl AirExt for MerkleMembership {
 
 impl Air for MerkleMembership {
     fn log_trace_len(&self) -> u32 {
-        self.log_rounds + self.log_slots()
+        self.work_rows().next_power_of_two().trailing_zeros()
+    }
+
+    fn rows(&self) -> usize {
+        self.work_rows()
     }
 
     fn trace_width(&self) -> usize {

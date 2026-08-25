@@ -65,7 +65,7 @@ impl Stack {
         for region in regions {
             offsets.push(row);
             slot_offsets.push(slot);
-            row += 1usize << region.log_trace_len();
+            row += region.rows();
             slot += region.periodic_columns().len();
             width = width.max(region.trace_width());
             window = window.max(region.window_size());
@@ -115,7 +115,7 @@ impl Stack {
     }
 
     pub fn height(regions: &[Box<dyn AirExt>], i: usize) -> usize {
-        1usize << regions[i].log_trace_len()
+        regions[i].rows()
     }
 
     /// Cells above the closing row are never read, so a class up there is dropped

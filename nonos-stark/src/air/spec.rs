@@ -29,6 +29,14 @@ pub trait Air {
     /// Log2 of the trace length, a power of two.
     fn log_trace_len(&self) -> u32;
 
+    /// Rows of real work, for a region stacked into a larger trace. Defaults to
+    /// the padded length. A region whose padding sits at the end reports less and
+    /// lets the stack reclaim it; proving one alone still uses `log_trace_len`,
+    /// since a standalone trace has to be a power of two.
+    fn rows(&self) -> usize {
+        1usize << self.log_trace_len()
+    }
+
     /// Number of trace columns, the width of the state.
     fn trace_width(&self) -> usize;
 
