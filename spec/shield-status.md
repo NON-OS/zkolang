@@ -49,6 +49,14 @@ while everything else stays honest. `shield::test::inventory` holds the list and
 if a binding is added without one. Nullifiers are among them, so ownership and double
 spend are covered.
 
+A note is retired under the position the pool authenticated. `IndexScalar` recovers
+the position as a field element from the bits that carry it, the assembly pins those
+bits to the membership directions, and the recovered scalar to the cell the fourth
+compression absorbs. Without it a prover keeps the note and the ownership honest and
+moves only the scalar, which is a second nullifier for one note, which is a note spent
+twice. `shield::test::double_spend` is that forgery. **Bit zero is not yet pinned**;
+see the open membership item above.
+
 Six binding families in the recursive verifier, each with a forgery, in `family_tests`.
 Fold, index and periodic had no gate until recently, and index is the seam the assembly
 itself calls forgery critical.

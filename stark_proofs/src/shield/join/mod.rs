@@ -2,6 +2,7 @@
 
 mod assoc;
 mod bind;
+mod bind_asset;
 mod bind_index;
 mod bind_key;
 mod bind_note;
