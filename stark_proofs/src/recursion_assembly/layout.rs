@@ -63,7 +63,7 @@ pub(crate) fn offsets(regions: &[Box<dyn AirExt>]) -> (Vec<usize>, usize) {
     let mut r = 0usize;
     for reg in regions {
         off.push(r);
-        r += 1usize << reg.log_trace_len();
+        r += reg.rows();
     }
     (off, r.next_power_of_two())
 }

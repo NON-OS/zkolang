@@ -72,10 +72,11 @@ impl MultiMembership {
         1usize << self.log_rounds
     }
 
-    /// Slots per opening: a compression per level plus the root checkpoint,
-    /// rounded to a power of two.
-    fn log_slots(&self) -> u32 {
-        (self.depth + 1).next_power_of_two().trailing_zeros()
+    /// Slots per opening: a compression per level plus the root checkpoint.
+    /// Unpadded. This region is most of the assembly's rows, and rounding here
+    /// charged 32 slots for 19 at the depth the pool runs.
+    fn slots(&self) -> usize {
+        self.depth + 1
     }
 
     /// Openings padded to a power of two.
@@ -85,7 +86,13 @@ impl MultiMembership {
 
     /// Rows per opening.
     fn span(&self) -> usize {
-        (1usize << self.log_slots()) * self.rounds()
+        self.slots() * self.rounds()
+    }
+
+    /// Rows of real work. Padding now sits after them rather than inside every
+    /// opening, so a stack can place these and leave the rest.
+    fn work_rows(&self) -> usize {
+        (1usize << self.log_batch()) * self.span()
     }
 
     fn initial_state(&self, opening: &Opening) -> [Fp; WIDTH] {
@@ -239,7 +246,11 @@ impl AirExt for MultiMembership {
 
 impl Air for MultiMembership {
     fn log_trace_len(&self) -> u32 {
-        self.log_batch() + self.log_slots() + self.log_rounds
+        self.work_rows().next_power_of_two().trailing_zeros()
+    }
+
+    fn rows(&self) -> usize {
+        self.work_rows()
     }
 
     fn trace_width(&self) -> usize {
