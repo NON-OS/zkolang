@@ -9,7 +9,7 @@ pub(super) fn hasher() -> Poseidon {
     Poseidon::new(POOL_LOG_ROUNDS, [Fp::ZERO; RATE])
 }
 
-pub(super) fn secret(seed: u64) -> [Fp; RATE] {
+pub(crate) fn secret(seed: u64) -> [Fp; RATE] {
     let mut sk = [Fp::ZERO; RATE];
     for (i, v) in sk.iter_mut().enumerate() {
         *v = Fp::from_u64(seed * 16 + i as u64 + 1);
@@ -19,7 +19,7 @@ pub(super) fn secret(seed: u64) -> [Fp; RATE] {
 
 /// A note the holder of `sk` can spend: its committed spend key is the one that
 /// secret derives. Built any other way the note is unspendable.
-pub(super) fn owned(sk: [Fp; RATE], seed: u64, value: u64) -> Note {
+pub(crate) fn owned(sk: [Fp; RATE], seed: u64, value: u64) -> Note {
     let k = derive(&hasher(), sk);
     Note {
         value,
@@ -34,7 +34,7 @@ pub(super) fn owned(sk: [Fp; RATE], seed: u64, value: u64) -> Note {
     }
 }
 
-pub(super) fn plain(seed: u64, value: u64) -> Note {
+pub(crate) fn plain(seed: u64, value: u64) -> Note {
     Note {
         value,
         asset_id: 0,

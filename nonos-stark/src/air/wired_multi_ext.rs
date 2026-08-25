@@ -42,27 +42,74 @@ pub struct WiredMultiExt {
     regions: Vec<Box<dyn AirExt>>,
     stack: Stack,
     groups: Vec<GpGroup>,
-    group_slots: Vec<usize>,
+    /// The identity column `r * k + j` depends only on a group's width, and the
+    /// product selector is the same column for every group, so both are emitted
+    /// once and shared. Only sigma is per group.
+    id_widths: Vec<usize>,
+    id_base: Vec<usize>,
+    sig_base: Vec<usize>,
+    sel_idx: usize,
     region_transitions: usize,
 }
 
 impl WiredMultiExt {
     pub fn new(regions: Vec<Box<dyn AirExt>>, groups: Vec<GpGroup>) -> WiredMultiExt {
-        let stack = Stack::of(&regions);
-        let region_slots = stack.slot_offsets.last().copied().unwrap_or(0)
-            + regions.last().map(|r| r.periodic_columns().len()).unwrap_or(0);
-        let base = regions.len() + region_slots;
-        let mut group_slots = Vec::with_capacity(groups.len());
-        let mut s = base;
+        let kinds: Vec<usize> = (0..regions.len()).collect();
+        WiredMultiExt::new_kinds(regions, &kinds, groups)
+    }
+
+    /// `kinds[i]` names region `i`'s kind. Instances of one kind must run equal
+    /// constraints over an equal periodic pattern; they then share one selector
+    /// and one set of columns instead of carrying an identical copy each.
+    pub fn new_kinds(
+        regions: Vec<Box<dyn AirExt>>,
+        kinds: &[usize],
+        groups: Vec<GpGroup>,
+    ) -> WiredMultiExt {
+        let stack = Stack::of_kinds(&regions, kinds);
+        let region_slots = stack.kind_slot.last().copied().unwrap_or(0)
+            + stack.kind_first.last().map(|&i| regions[i].periodic_columns().len()).unwrap_or(0);
+        let base = stack.n_kinds + region_slots;
+        let sel_idx = base;
+        let mut id_widths: Vec<usize> = Vec::new();
         for grp in &groups {
-            group_slots.push(s);
-            s += 2 * grp.wired_cols.len() + 1;
+            let k = grp.wired_cols.len();
+            if !id_widths.contains(&k) {
+                id_widths.push(k);
+            }
+        }
+        let mut s = base + 1;
+        let width_base: Vec<usize> = id_widths
+            .iter()
+            .map(|k| {
+                let at = s;
+                s += k;
+                at
+            })
+            .collect();
+        let mut id_base = Vec::with_capacity(groups.len());
+        let mut sig_base = Vec::with_capacity(groups.len());
+        for grp in &groups {
+            let k = grp.wired_cols.len();
+            let w = id_widths.iter().position(|x| *x == k).unwrap();
+            id_base.push(width_base[w]);
+            sig_base.push(s);
+            s += k;
         }
         let mut region_transitions = 0usize;
         for region in &regions {
             region_transitions = region_transitions.max(region.num_transition());
         }
-        WiredMultiExt { regions, stack, groups, group_slots, region_transitions }
+        WiredMultiExt {
+            regions,
+            stack,
+            groups,
+            id_widths,
+            id_base,
+            sig_base,
+            sel_idx,
+            region_transitions,
+        }
     }
 
     fn stride(&self) -> usize {
@@ -111,17 +158,17 @@ impl WiredMultiExt {
         let width = self.stack.width;
         let z = window[width + g];
         let z_next = window[stride + width + g];
-        let slot = self.group_slots[g];
+        let (idb, sgb) = (self.id_base[g], self.sig_base[g]);
         let mut num = F::ONE;
         let mut den = F::ONE;
         for (j, &col) in group.wired_cols.iter().enumerate() {
             let v = window[col];
-            let id = periodic[slot + 2 * j];
-            let sig = periodic[slot + 2 * j + 1];
+            let id = periodic[idb + j];
+            let sig = periodic[sgb + j];
             num = num * (v + b * id + gm);
             den = den * (v + b * sig + gm);
         }
-        let gp_sel = periodic[slot + 2 * group.wired_cols.len()];
+        let gp_sel = periodic[self.sel_idx];
         let product = z_next * den - z * num;
         let carry = z_next - z;
         gp_sel * product + (F::ONE - gp_sel) * carry
@@ -180,23 +227,29 @@ impl Air for WiredMultiExt {
         let total = 1usize << self.log_trace_len();
         let span = self.stack.span();
         let mut cols = fusion::base_periodic(&self.stack, &self.regions, total);
+        let mut gp_sel = alloc::vec![Fp::ZERO; total];
+        for item in gp_sel.iter_mut().take(span) {
+            *item = Fp::ONE;
+        }
+        cols.push(gp_sel);
+        for &k in &self.id_widths {
+            for j in 0..k {
+                let mut id = alloc::vec![Fp::ZERO; total];
+                for (r, slot) in id.iter_mut().enumerate().take(span) {
+                    *slot = Fp::from_u64((r * k + j) as u64);
+                }
+                cols.push(id);
+            }
+        }
         for group in &self.groups {
             let k = group.wired_cols.len();
             for j in 0..k {
-                let mut id = alloc::vec![Fp::ZERO; total];
                 let mut sig = alloc::vec![Fp::ZERO; total];
-                for r in 0..span {
-                    id[r] = Fp::from_u64((r * k + j) as u64);
-                    sig[r] = Fp::from_u64(group.sigma[r * k + j] as u64);
+                for (r, slot) in sig.iter_mut().enumerate().take(span) {
+                    *slot = Fp::from_u64(group.sigma[r * k + j] as u64);
                 }
-                cols.push(id);
                 cols.push(sig);
             }
-            let mut gp_sel = alloc::vec![Fp::ZERO; total];
-            for item in gp_sel.iter_mut().take(span) {
-                *item = Fp::ONE;
-            }
-            cols.push(gp_sel);
         }
         cols
     }

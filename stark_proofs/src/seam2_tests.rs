@@ -5,36 +5,10 @@
 //! query k's own block. A query-5 tamper rejecting is the proof coverage is
 //! closed: under query-0-only it would have passed unseen.
 
-use crate::crypto::stark::air::{stark_prove_ext, stark_verify_ext, Air, WiredMultiExt};
+use crate::crypto::stark::air::{stark_prove_ext, stark_verify_ext, Air};
 use crate::crypto::stark::field::Fp;
 use crate::recursion_assembly::{assemble, assemble_capped, assemble_q, Tamper};
-
-/// Fast witness satisfaction (no FRI): every transition vanishes and every
-/// boundary — including each grand product's z=1 closure — holds. A broken
-/// per-query binding fails to close and its boundary is violated, so this is a
-/// true test of the wiring. The join-split assembly is small, so this is quick.
-fn satisfies(air: &WiredMultiExt, witness: &[Fp]) -> bool {
-    let w = air.trace_width();
-    let ws = air.window_size();
-    let total = 1usize << air.log_trace_len();
-    let periodic = air.periodic_columns();
-    for r in 0..total - (ws - 1) {
-        let mut window = alloc::vec::Vec::with_capacity(ws * w);
-        for k in 0..ws {
-            window.extend_from_slice(&witness[(r + k) * w..(r + k + 1) * w]);
-        }
-        let per: alloc::vec::Vec<Fp> = periodic.iter().map(|c| c[r]).collect();
-        if air.transition(&window, &per).iter().any(|v| *v != Fp::ZERO) {
-            return false;
-        }
-    }
-    for (col, row, val) in air.boundary() {
-        if witness[row * w + col] != val {
-            return false;
-        }
-    }
-    true
-}
+use crate::witness_satisfies::satisfies;
 
 #[test]
 #[ignore]

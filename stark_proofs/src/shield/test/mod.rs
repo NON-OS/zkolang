@@ -14,12 +14,12 @@
 
 mod depth;
 mod deployed_depth;
-mod fixture;
+pub(crate) mod fixture;
 mod intents;
 mod inventory;
 mod roundtrip;
 mod satisfies;
-mod scenario;
+pub(crate) mod scenario;
 
 mod commitment;
 mod commitment_binding;

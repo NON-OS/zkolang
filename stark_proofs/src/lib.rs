@@ -12,7 +12,11 @@ mod air_tests;
 mod compose_step_tests;
 // field_ext_tests + field_tests disabled: files lost to a /tmp wipe (LOCAL only).
 #[cfg(test)]
+mod family_tests;
+#[cfg(test)]
 mod fold_witness_tests;
+#[cfg(test)]
+mod witness_satisfies;
 #[cfg(test)]
 mod golden_vk_tests;
 #[cfg(test)]
@@ -50,7 +54,13 @@ mod step_assembly_tests;
 #[cfg(test)]
 mod dims_tests;
 #[cfg(test)]
-mod dims_join_tests;
+mod dims_recursion_tests;
+#[cfg(test)]
+mod dims_kind_tests;
+#[cfg(test)]
+mod dims_transfer_tests;
+#[cfg(test)]
+mod vk_stability_tests;
 
 // Machine-checked proof harnesses, compiled only under `cargo kani`.
 #[cfg(kani)]

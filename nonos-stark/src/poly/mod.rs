@@ -10,5 +10,5 @@ mod ntt;
 
 pub use eval::{eval, eval_ext};
 pub use lagrange::{eval_lagrange, eval_lagrange_ext};
-pub use lde::lde;
+pub use lde::{lde, lde_from_coeffs};
 pub use ntt::{intt, ntt};

@@ -53,7 +53,7 @@ pub(crate) fn assemble_capped(tamper: Tamper, tamper_q: usize, cap: usize) -> As
     // transcript (drawing every FRI index), and the periodic recompute.
     let (cregion, ctrace) = compose::compose_region(&inner);
     let ft = fri::fri_transcript(&h, &inner);
-    let (pzregion, pztrace) = periodic::periodic_region(&inner);
+    let (pzregion, pztrace) = periodic::periodic_region(&inner, tamper);
 
     // One dependent-region block per query, in [deep, fold, auth, ip, fp] order.
     // The per-query metadata is uniform, taken from query 0.
@@ -66,9 +66,9 @@ pub(crate) fn assemble_capped(tamper: Tamper, tamper_q: usize, cap: usize) -> As
     for k in 0..n_q {
         let tk = if k == tamper_q { tamper } else { Tamper::None };
         let (dreg, dtr, nt) = deep::deep_region_k(&h, &inner, k, tk);
-        let fold = fri::fri_fold_k(&inner, &ft, k);
+        let fold = fri::fri_fold_k(&inner, &ft, k, tk);
         let au = auth::auth_side_k(&h, &inner, fold.ik, k, tk);
-        let pts = points::point_regions_k(&au.cons_dirs, fold.ik, ft.log_n);
+        let pts = points::point_regions_k(&au.cons_dirs, fold.ik, ft.log_n, tk);
         if k == 0 {
             n_terms = nt;
             depth = au.depth;
@@ -156,9 +156,15 @@ pub(crate) fn assemble_capped(tamper: Tamper, tamper_q: usize, cap: usize) -> As
         c_comp_z_col: 54,
     };
 
-    let gps = build_groups(&lay);
+    let gps = fuse(build_groups(&lay), &lay, &regions);
     let n_groups = gps.len();
-    let wired = WiredMultiExt::new(regions, gps);
+    // Four shared regions, then a block of five per query in [deep, fold, auth,
+    // ip, fp] order. Every region in a block carries the same periodic pattern for
+    // every query, so the blocks are instances of five kinds rather than 5 * n_q
+    // distinct regions. Auth only joined them once its reset columns stopped
+    // carrying the opening's own leaf.
+    let kinds: Vec<usize> = (0..4).chain((0..n_q).flat_map(|_| 4..9)).collect();
+    let wired = WiredMultiExt::new_kinds(regions, &kinds, gps);
     let witness = wired.trace(&traces);
     Assembly { wired, witness, lay, publics: inner.publics, n_groups, region_offsets: off }
 }
@@ -174,6 +180,14 @@ fn build_groups(lay: &Layout) -> Vec<GpGroup> {
     gps
 }
 
+/// Regions stack vertically over shared columns, so the addressable width is the
+/// widest region rather than the sum.
+fn fuse(gps: Vec<GpGroup>, lay: &Layout, regions: &[Box<dyn AirExt>]) -> Vec<GpGroup> {
+    let width = regions.iter().map(|r| r.trace_width()).max().unwrap_or(1);
+    groups::collapse(&gps, lay.span, width)
+}
+
+
 /// The parked step-AIR path: a single-query (query-0-only) recursion over a
 /// zkolang inner, kept building against the per-query Layout with n_q = 1.
 pub(crate) fn assemble_step(tamper: Tamper) -> Assembly {
@@ -182,10 +196,10 @@ pub(crate) fn assemble_step(tamper: Tamper) -> Assembly {
 
     let (dregion, dtrace, n_terms) = deep::deep_region(&h, &inner, tamper);
     let ts = transcript::stark_transcript(&h, &inner, n_terms);
-    let fs = fri::fri_side(&h, &inner);
+    let fs = fri::fri_side(&h, &inner, tamper);
     let au = auth::auth_side(&h, &inner, fs.i0, tamper);
-    let pts = points::point_regions(&fs, &au);
-    let (pzregion, pztrace) = periodic::periodic_region(&inner);
+    let pts = points::point_regions(&fs, &au, tamper);
+    let (pzregion, pztrace) = periodic::periodic_region(&inner, tamper);
 
     let width_inner = au.ocells.len() - 3;
     let t_inner = inner.t as usize;
@@ -255,7 +269,7 @@ pub(crate) fn assemble_step(tamper: Tamper) -> Assembly {
         c_comp_z_col,
     };
 
-    let gps = build_groups(&lay);
+    let gps = fuse(build_groups(&lay), &lay, &regions);
     let n_groups = gps.len();
     let wired = WiredMultiExt::new(regions, gps);
     let witness = wired.trace(&[

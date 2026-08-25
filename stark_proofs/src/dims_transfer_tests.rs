@@ -1,0 +1,41 @@
+// What a transfer costs, at the tree depth the pool deploys.
+//
+// The roundtrip gate builds a minimal instance, which is right for checking that
+// a forgery rejects through the permutation and wrong for any statement about
+// what a spend costs. This runs the deployed depth and proves it.
+use crate::crypto::stark::air::{stark_prove_ext, stark_verify_ext, Air};
+use crate::shield::key::Break;
+use crate::shield::test::scenario::{balanced, balanced_deployed};
+
+fn shape(tag: &str, js: &crate::shield::join::JoinSplit) {
+    let w = &js.wired;
+    let (tw, deg, lt) = (w.trace_width(), w.constraint_degree(), w.log_trace_len());
+    let t = 1usize << lt;
+    let n = (2usize * (deg.max(1) * t).next_power_of_two()) << 3;
+    let np = w.periodic_columns().len();
+    let gb = |c: usize| (c as u128 * n as u128 * 8) / (1024 * 1024 * 1024);
+    std::eprintln!(
+        "{tag} trace_width={tw} degree={deg} log_trace_len={lt} t={t} n_periodic={np} \
+         eval_domain={n} trace_lde_GB={} periodic_lde_GB={} publics={}",
+        gb(tw),
+        gb(np),
+        js.intent.len()
+    );
+}
+
+#[test]
+#[ignore]
+fn probe_transfer_dims() {
+    shape("MINIMAL", &balanced(Break::None));
+    shape("DEPLOYED", &balanced_deployed(Break::None));
+}
+
+/// The number that belongs in any claim about transfer cost.
+#[test]
+#[ignore]
+fn probe_deployed_transfer_proves() {
+    let js = balanced_deployed(Break::None);
+    shape("DEPLOYED", &js);
+    let proof = stark_prove_ext(&js.wired, &js.witness, 32, 8);
+    assert!(stark_verify_ext(&js.wired, &proof, 32, 8), "the deployed transfer did not verify");
+}

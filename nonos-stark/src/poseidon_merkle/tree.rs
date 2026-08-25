@@ -43,12 +43,14 @@ impl PoseidonMerkleTree {
         let mut layers = Vec::new();
         layers.push(level.clone());
         while level.len() > 1 {
-            let mut next = Vec::with_capacity(level.len() / 2);
-            let mut i = 0;
-            while i + 1 < level.len() {
-                next.push(hasher.compress(&level[i], &level[i + 1]));
-                i += 2;
-            }
+            // Sibling pairs are independent, so a level is a pure indexed map and
+            // parallelises without moving a byte of the result. This is where the
+            // prover spends: a column's tree over the evaluation domain is one
+            // compression per node, and there is a tree for every column.
+            let half = level.len() / 2;
+            let next = crate::par::map_index(half, |i| {
+                hasher.compress(&level[2 * i], &level[2 * i + 1])
+            });
             level = next;
             layers.push(level.clone());
         }

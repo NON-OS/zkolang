@@ -24,7 +24,7 @@ use super::super::air::{Poseidon, RATE};
 use super::super::field::{Fp, Fp2};
 use super::super::fri::root_of_unity;
 use super::super::fri_poseidon_ext::fri_prove_poseidon_ext;
-use super::super::poly::{eval_ext, eval_lagrange_ext, intt, lde};
+use super::super::poly::{eval_ext, eval_lagrange_ext, intt, lde, lde_from_coeffs};
 use super::super::poseidon_merkle::{pack_base, pack_ext, PoseidonMerkleTree};
 use super::super::poseidon_transcript::PoseidonTranscript;
 use super::composition::{compose_ext, domain_params_blown, num_coeffs};
@@ -96,22 +96,36 @@ pub fn stark_prove_poseidon_ext_pub<A: AirExt>(
     let coeffs: Vec<Fp2> = (0..num_coeffs(air)).map(|_| transcript.challenge_fp2()).collect();
 
     let periodic_cols = air.periodic_columns();
-    let periodic_d: Vec<Vec<Fp>> =
-        periodic_cols.iter().map(|col| lde(col, g, shift, omega, n)).collect();
 
-    let mut comp_d: Vec<Fp2> = Vec::with_capacity(n);
-    let mut x = shift;
-    for j in 0..n {
-        let mut window: Vec<Fp2> = Vec::with_capacity(window_size * width);
-        for k in 0..window_size {
-            let idx = (j + k * blowup) % n;
-            for column in &trace_d {
-                window.push(Fp2::from_base(column[idx]));
+    // The evaluation domain is `blowup` cosets of the order-t subgroup, and the
+    // composition window steps by `blowup`, so a window never leaves the coset it
+    // starts in. Extending the periodic columns one coset at a time holds
+    // n_periodic * t values rather than n_periodic * n. For the recursion that is
+    // the difference between a hundred and thirty gigabytes and half of one.
+    let sub = omega.pow(blowup as u64);
+    // Interpolate once. Each coset then costs one transform rather than a fresh
+    // interpolation of the same column.
+    let periodic_coeffs: Vec<Vec<Fp>> = periodic_cols.iter().map(|col| intt(col, g)).collect();
+    let mut comp_d: Vec<Fp2> = alloc::vec![Fp2::ZERO; n];
+    for c in 0..blowup {
+        let shift_c = shift * omega.pow(c as u64);
+        let periodic_c: Vec<Vec<Fp>> =
+            periodic_coeffs.iter().map(|cf| lde_from_coeffs(cf, shift_c, sub, t)).collect();
+        let mut x = shift_c;
+        for i in 0..t {
+            let j = c + blowup * i;
+            let mut window: Vec<Fp2> = Vec::with_capacity(window_size * width);
+            for k in 0..window_size {
+                let idx = (j + k * blowup) % n;
+                for column in &trace_d {
+                    window.push(Fp2::from_base(column[idx]));
+                }
             }
+            let periodic: Vec<Fp2> =
+                periodic_c.iter().map(|pd| Fp2::from_base(pd[i])).collect();
+            comp_d[j] = compose_ext(air, g, Fp2::from_base(x), &window, &periodic, &coeffs);
+            x = x * sub;
         }
-        let periodic: Vec<Fp2> = periodic_d.iter().map(|pd| Fp2::from_base(pd[j])).collect();
-        comp_d.push(compose_ext(air, g, Fp2::from_base(x), &window, &periodic, &coeffs));
-        x = x * omega;
     }
     let comp_leaves: Vec<[Fp; RATE]> = comp_d.iter().map(|v| pack_ext(*v)).collect();
     let comp_tree = PoseidonMerkleTree::commit(hasher, &comp_leaves);

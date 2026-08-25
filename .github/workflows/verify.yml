@@ -1,0 +1,57 @@
+name: verify
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+
+# The model check runs in nightly.yml, not here. The harnesses cover the
+# deserialiser, which reads an untrusted trailer, and settling totality over
+# every byte sequence in the bound is worth having. It is not worth having on
+# every push: the solver runs well past an hour on a single symbolic byte, so a
+# per-PR job at any timeout anyone would wait for reports a cancellation rather
+# than a result. That reads as a failing gate and teaches everyone to ignore the
+# gate. Nightly runs it with four hours and nobody waiting on it.
+jobs:
+  axioms:
+    name: no axioms beyond the core
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: install elan
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -o elan-init.sh
+          chmod +x elan-init.sh
+          ./elan-init.sh -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: lake build
+        working-directory: lean
+        run: lake build
+
+      # `no sorry` is not the whole claim. A theorem can typecheck and still rest
+      # on an axiom, so every public theorem states which it uses and the ones
+      # that claim to be constructive are held to it.
+      - name: print axioms
+        working-directory: lean
+        run: |
+          {
+            echo "import Zkolang"
+            grep -rhoE '^theorem [A-Za-z0-9_.]+' Zkolang \
+              | sed 's/^theorem //' \
+              | while read -r t; do
+                  ns=$(grep -rl "theorem $t" Zkolang | head -1 \
+                       | sed 's|^Zkolang/|Zkolang.|; s|\.lean$||')
+                  echo "#print axioms $ns.$t"
+                done
+          } > /tmp/axioms.lean
+          lake env lean /tmp/axioms.lean | tee /tmp/axioms.out
+          if grep -q 'sorryAx' /tmp/axioms.out; then
+            echo "a theorem rests on sorryAx"
+            exit 1
+          fi

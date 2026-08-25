@@ -33,12 +33,25 @@ pub(super) struct Stack {
     pub width: usize,
     pub window: usize,
     pub log_span: u32,
+    /// Instance to kind. Instances of one kind run the same constraints over the
+    /// same periodic pattern, so they share one selector and one set of columns
+    /// instead of carrying an identical copy each.
+    pub kind_of: Vec<usize>,
+    pub n_kinds: usize,
+    pub kind_slot: Vec<usize>,
+    pub kind_first: Vec<usize>,
 }
 
 impl Stack {
+    /// Every region its own kind: the layout as it was before kinds existed.
+    pub fn of(regions: &[Box<dyn AirExt>]) -> Stack {
+        Stack::of_kinds(regions, &(0..regions.len()).collect::<Vec<usize>>())
+    }
+
     /// Lay regions out end to end, tracking each one's row offset and periodic-slot
     /// offset, the widest width, the largest window, and the rounded total height.
-    pub fn of(regions: &[Box<dyn AirExt>]) -> Stack {
+    /// `kinds[i]` names region `i`'s kind; equal kinds must run equal constraints.
+    pub fn of_kinds(regions: &[Box<dyn AirExt>], kinds: &[usize]) -> Stack {
         let mut offsets = Vec::with_capacity(regions.len());
         let mut slot_offsets = Vec::with_capacity(regions.len());
         let mut row = 0usize;
@@ -53,8 +66,31 @@ impl Stack {
             width = width.max(region.trace_width());
             window = window.max(region.window_size());
         }
+        let n_kinds = kinds.iter().max().map(|m| m + 1).unwrap_or(0);
+        let mut kind_first = alloc::vec![usize::MAX; n_kinds];
+        for (i, &k) in kinds.iter().enumerate() {
+            if kind_first[k] == usize::MAX {
+                kind_first[k] = i;
+            }
+        }
+        let mut kind_slot = Vec::with_capacity(n_kinds);
+        let mut s = 0usize;
+        for &first in &kind_first {
+            kind_slot.push(s);
+            s += regions[first].periodic_columns().len();
+        }
         let log_span = row.next_power_of_two().trailing_zeros();
-        Stack { offsets, slot_offsets, width, window, log_span }
+        Stack {
+            offsets,
+            slot_offsets,
+            width,
+            window,
+            log_span,
+            kind_of: kinds.to_vec(),
+            n_kinds,
+            kind_slot,
+            kind_first,
+        }
     }
 
     pub fn span(&self) -> usize {
@@ -79,17 +115,19 @@ pub(super) fn combine<F: Felt>(
     periodic: &[F],
     region_transition: impl Fn(usize, &[F], &[F]) -> Vec<F>,
 ) -> Vec<F> {
-    let sel = regions.len();
+    let sel = stack.n_kinds;
     let mut out = alloc::vec![F::ZERO; num_transition];
-    for (i, region) in regions.iter().enumerate() {
-        let s = periodic[i];
+    for k in 0..stack.n_kinds {
+        let i = stack.kind_first[k];
+        let region = &regions[i];
+        let s = periodic[k];
         let w = region.trace_width();
         let ws = region.window_size();
         let mut local = Vec::with_capacity(w * ws);
         for step in 0..ws {
             local.extend_from_slice(&window[step * stride..step * stride + w]);
         }
-        let base = sel + stack.slot_offsets[i];
+        let base = sel + stack.kind_slot[k];
         let slots = region.periodic_columns().len();
         let values = region_transition(i, &local, &periodic[base..base + slots]);
         for (c, v) in values.into_iter().enumerate() {
@@ -142,25 +180,33 @@ pub(super) fn base_periodic(
     total: usize,
 ) -> Vec<Vec<Fp>> {
     let mut cols: Vec<Vec<Fp>> = Vec::new();
-    for i in 0..regions.len() {
-        let off = stack.offsets[i];
-        let h = Stack::height(regions, i);
+    for k in 0..stack.n_kinds {
         let mut col = alloc::vec![Fp::ZERO; total];
-        for item in col.iter_mut().take(off + h - 1).skip(off) {
-            *item = Fp::ONE;
+        for i in instances(stack, k) {
+            let off = stack.offsets[i];
+            let h = Stack::height(regions, i);
+            for item in col.iter_mut().take(off + h - 1).skip(off) {
+                *item = Fp::ONE;
+            }
         }
         cols.push(col);
     }
-    for (i, region) in regions.iter().enumerate() {
-        let off = stack.offsets[i];
-        let h = Stack::height(regions, i);
-        for region_col in region.periodic_columns() {
+    for k in 0..stack.n_kinds {
+        for region_col in regions[stack.kind_first[k]].periodic_columns() {
             let mut col = alloc::vec![Fp::ZERO; total];
-            col[off..off + h].copy_from_slice(&region_col[..h]);
+            for i in instances(stack, k) {
+                let off = stack.offsets[i];
+                let h = Stack::height(regions, i);
+                col[off..off + h].copy_from_slice(&region_col[..h]);
+            }
             cols.push(col);
         }
     }
     cols
+}
+
+fn instances(stack: &Stack, kind: usize) -> impl Iterator<Item = usize> + '_ {
+    stack.kind_of.iter().enumerate().filter(move |(_, &k)| k == kind).map(|(i, _)| i)
 }
 
 /// Each region's boundaries lifted to their fused rows.

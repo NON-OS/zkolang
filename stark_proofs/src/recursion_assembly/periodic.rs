@@ -4,16 +4,24 @@
 //! periodic inputs are derived from the bound z rather than trusted.
 
 use super::inner::Inner;
+use super::tamper::Tamper;
 use crate::crypto::stark::air::{AirExt, PeriodicZ};
-use crate::crypto::stark::field::Fp;
+use crate::crypto::stark::field::{Fp, Fp2};
 use alloc::vec::Vec;
 
-pub(crate) fn periodic_region<A: AirExt>(inner: &Inner<A>) -> (PeriodicZ, Vec<Fp>) {
+pub(crate) fn periodic_region<A: AirExt>(
+    inner: &Inner<A>,
+    tamper: Tamper,
+) -> (PeriodicZ, Vec<Fp>) {
+    let z = match tamper {
+        Tamper::PeriodicOffPoint => inner.ci.z + Fp2::ONE,
+        _ => inner.ci.z,
+    };
     let region = PeriodicZ::new(
         inner.air.log_trace_len(),
         inner.g,
         inner.air.periodic_columns(),
-        inner.ci.z,
+        z,
     );
     let trace = region.trace();
     (region, trace)
