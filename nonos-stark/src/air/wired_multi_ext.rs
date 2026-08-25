@@ -45,14 +45,25 @@ pub struct WiredMultiExt {
     /// The identity column `r * k + j` depends only on a group's width, and the
     /// product selector is the same column for every group, so both are emitted
     /// once and shared. Only sigma is per group.
-    id_widths: Vec<usize>,
-    id_base: Vec<usize>,
+    row_idx: usize,
     sig_base: Vec<usize>,
     sel_idx: usize,
     region_transitions: usize,
 }
 
 impl WiredMultiExt {
+    /// Width of each running product. The widest sets the degree, which sets the
+    /// evaluation domain.
+    pub fn group_widths(&self) -> Vec<usize> {
+        self.groups.iter().map(|g| g.wired_cols.len()).collect()
+    }
+
+    /// Per region degree. The AIR takes the larger of this and the widest product,
+    /// so moving one alone moves nothing.
+    pub fn region_degrees(&self) -> Vec<usize> {
+        self.regions.iter().map(|r| r.constraint_degree()).collect()
+    }
+
     pub fn new(regions: Vec<Box<dyn AirExt>>, groups: Vec<GpGroup>) -> WiredMultiExt {
         let kinds: Vec<usize> = (0..regions.len()).collect();
         WiredMultiExt::new_kinds(regions, &kinds, groups)
@@ -67,34 +78,39 @@ impl WiredMultiExt {
         groups: Vec<GpGroup>,
     ) -> WiredMultiExt {
         let stack = Stack::of_kinds(&regions, kinds);
+        // A kind runs one instance's constraints over every instance's rows, so
+        // instances that are not the same AIR swap one region's rules for
+        // another's. The caller declares kinds, so check the caller.
+        for (i, &k) in kinds.iter().enumerate() {
+            let rep = stack.kind_first[k];
+            assert!(
+                regions[i].trace_width() == regions[rep].trace_width()
+                    && regions[i].window_size() == regions[rep].window_size()
+                    && regions[i].log_trace_len() == regions[rep].log_trace_len()
+                    && regions[i].num_transition() == regions[rep].num_transition()
+                    && regions[i].constraint_degree() == regions[rep].constraint_degree()
+                    && regions[i].periodic_columns() == regions[rep].periodic_columns(),
+                "region {i} is declared kind {k} but does not match instance {rep}"
+            );
+        }
         let region_slots = stack.kind_slot.last().copied().unwrap_or(0)
             + stack.kind_first.last().map(|&i| regions[i].periodic_columns().len()).unwrap_or(0);
         let base = stack.n_kinds + region_slots;
         let sel_idx = base;
-        let mut id_widths: Vec<usize> = Vec::new();
-        for grp in &groups {
-            let k = grp.wired_cols.len();
-            if !id_widths.contains(&k) {
-                id_widths.push(k);
-            }
-        }
-        let mut s = base + 1;
-        let width_base: Vec<usize> = id_widths
-            .iter()
-            .map(|k| {
-                let at = s;
-                s += k;
-                at
-            })
-            .collect();
-        let mut id_base = Vec::with_capacity(groups.len());
+        // The identity a cell is compared against is r * k + j, which is linear in
+        // the row, so one column of r serves every group and lane. It used to be a
+        // column per lane per distinct width: 21 columns on the recursion, each the
+        // full trace length, to carry what multiply and add already give.
+        let row_idx = base + 1;
+        let mut s = base + 2;
         let mut sig_base = Vec::with_capacity(groups.len());
         for grp in &groups {
-            let k = grp.wired_cols.len();
-            let w = id_widths.iter().position(|x| *x == k).unwrap();
-            id_base.push(width_base[w]);
             sig_base.push(s);
-            s += k;
+            s += grp.wired_cols.len();
+        }
+        for (g, grp) in groups.iter().enumerate() {
+            let k = grp.wired_cols.len();
+            stack.assert_bound_below_close(&grp.sigma, k, &alloc::format!("group {g}"));
         }
         let mut region_transitions = 0usize;
         for region in &regions {
@@ -104,8 +120,7 @@ impl WiredMultiExt {
             regions,
             stack,
             groups,
-            id_widths,
-            id_base,
+            row_idx,
             sig_base,
             sel_idx,
             region_transitions,
@@ -114,6 +129,10 @@ impl WiredMultiExt {
 
     fn stride(&self) -> usize {
         self.stack.width + self.groups.len()
+    }
+
+    fn closes_at(&self) -> usize {
+        self.stack.closes_at()
     }
 
     fn ratio(&self, group: &GpGroup, row: &[Fp], r: usize) -> Fp {
@@ -136,7 +155,7 @@ impl WiredMultiExt {
         let stride = self.stride();
         let total = 1usize << self.log_trace_len();
         let mut trace = fusion::place_traces(&self.stack, &self.regions, stride, total, traces);
-        let span = self.stack.span();
+        let span = self.closes_at();
         for (g, group) in self.groups.iter().enumerate() {
             let z_col = self.stack.width + g;
             let mut z = Fp::ONE;
@@ -158,12 +177,14 @@ impl WiredMultiExt {
         let width = self.stack.width;
         let z = window[width + g];
         let z_next = window[stride + width + g];
-        let (idb, sgb) = (self.id_base[g], self.sig_base[g]);
+        let sgb = self.sig_base[g];
+        let kf = F::from_base(Fp::from_u64(group.wired_cols.len() as u64));
+        let row = periodic[self.row_idx];
         let mut num = F::ONE;
         let mut den = F::ONE;
         for (j, &col) in group.wired_cols.iter().enumerate() {
             let v = window[col];
-            let id = periodic[idb + j];
+            let id = row * kf + F::from_base(Fp::from_u64(j as u64));
             let sig = periodic[sgb + j];
             num = num * (v + b * id + gm);
             den = den * (v + b * sig + gm);
@@ -199,7 +220,7 @@ impl AirExt for WiredMultiExt {
 
 impl Air for WiredMultiExt {
     fn log_trace_len(&self) -> u32 {
-        self.stack.log_span + 1
+        self.stack.log_trace_len()
     }
 
     fn trace_width(&self) -> usize {
@@ -225,22 +246,18 @@ impl Air for WiredMultiExt {
 
     fn periodic_columns(&self) -> Vec<Vec<Fp>> {
         let total = 1usize << self.log_trace_len();
-        let span = self.stack.span();
+        let span = self.closes_at();
         let mut cols = fusion::base_periodic(&self.stack, &self.regions, total);
         let mut gp_sel = alloc::vec![Fp::ZERO; total];
         for item in gp_sel.iter_mut().take(span) {
             *item = Fp::ONE;
         }
         cols.push(gp_sel);
-        for &k in &self.id_widths {
-            for j in 0..k {
-                let mut id = alloc::vec![Fp::ZERO; total];
-                for (r, slot) in id.iter_mut().enumerate().take(span) {
-                    *slot = Fp::from_u64((r * k + j) as u64);
-                }
-                cols.push(id);
-            }
+        let mut row = alloc::vec![Fp::ZERO; total];
+        for (r, slot) in row.iter_mut().enumerate().take(span) {
+            *slot = Fp::from_u64(r as u64);
         }
+        cols.push(row);
         for group in &self.groups {
             let k = group.wired_cols.len();
             for j in 0..k {
@@ -270,7 +287,7 @@ impl Air for WiredMultiExt {
 
     fn boundary(&self) -> Vec<(usize, usize, Fp)> {
         let mut b = fusion::base_boundary(&self.stack, &self.regions);
-        let span = self.stack.span();
+        let span = self.closes_at();
         for g in 0..self.groups.len() {
             b.push((self.stack.width + g, 0, Fp::ONE));
             b.push((self.stack.width + g, span, Fp::ONE));

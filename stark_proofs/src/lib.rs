@@ -56,6 +56,8 @@ mod dims_tests;
 #[cfg(test)]
 mod dims_recursion_tests;
 #[cfg(test)]
+mod dims_groups_tests;
+#[cfg(test)]
 mod dims_kind_tests;
 #[cfg(test)]
 mod dims_transfer_tests;

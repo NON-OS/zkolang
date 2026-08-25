@@ -87,7 +87,7 @@ mod wired_multi_ext;
 
 pub use accumulator::Accumulator;
 pub use permutation_arg::{
-    classes_are_disjoint, Cell, WirePermutation, WiredPermutationArg,
+    classes_are_disjoint, classes_are_layable, Cell, WirePermutation, WiredPermutationArg,
 };
 pub use publics::Publics;
 pub use value_balance::{Leg, ValueBalance, LIMB_SHIFT};
