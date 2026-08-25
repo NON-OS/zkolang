@@ -1,0 +1,70 @@
+name: measure
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  shape:
+    name: circuit shape and transfer cost
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      # The shapes are cheap and describe what a proof will cost: trace width,
+      # constraint degree, how many periodic columns, and the evaluation domain
+      # the degree forces. Reading them off a run beats carrying them by hand.
+      - name: shape
+        run: |
+          cargo test --release -p stark_proofs --features parallel \
+            probe_transfer_dims -- --ignored --nocapture 2>&1 | tee /tmp/shape.txt
+          cargo test --release -p stark_proofs --features parallel \
+            probe_recursion_dims -- --ignored --nocapture 2>&1 | tee -a /tmp/shape.txt
+
+      # A spend proved and verified against the tree the pool deploys. The
+      # roundtrip gate runs a minimal instance on purpose, so this is the only
+      # run whose wall clock is the cost of a transfer.
+      - name: a transfer at the deployed depth
+        run: |
+          /usr/bin/time -v cargo test --release -p stark_proofs --features parallel \
+            probe_deployed_transfer_proves -- --ignored --nocapture 2>&1 | tee /tmp/deployed.txt
+
+      - name: report
+        if: always()
+        run: |
+          {
+            echo "## Measured on this commit"
+            echo
+            echo '### Shape'
+            echo '```'
+            grep -hE 'MINIMAL|DEPLOYED|RECURSION|REGIONS' /tmp/shape.txt /tmp/deployed.txt \
+              | sort -u || true
+            echo '```'
+            echo
+            echo '### A private transfer, deployed tree depth'
+            echo '```'
+            grep -hE 'Elapsed \(wall clock\)|Maximum resident set size|test result' \
+              /tmp/deployed.txt || true
+            echo '```'
+            echo
+            echo "Runner: $(nproc) cores, $(free -g | awk '/^Mem:/{print $2}') GB."
+            echo "These are the numbers to quote. Nothing here was measured by hand."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: measurements
+          path: |
+            /tmp/shape.txt
+            /tmp/deployed.txt
