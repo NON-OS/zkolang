@@ -2,30 +2,6 @@
 
 Every number here comes from a run in this repository. Nothing is projected.
 
-## Open: membership opens against a tree the prover builds
-
-`pool_membership` builds a fresh `PoolTree` per proof holding only the notes being
-spent, and publishes its root as `noteRoot`. That proves a note is in a tree the
-prover just built, which is not membership of the pool.
-
-The contract owns the real tree: depth 32, append-only, leaf index is insertion
-order, and `settleBatch` gates each intent on `isKnownRoot`, a window of the last
-128 roots. So the circuit has to take `noteRoot` as the public input it already
-carries and prove the note sits under it.
-
-Three things resolve together in that refactor, because they are one structure:
-
-- **Membership becomes real** rather than a self-built fixture.
-- **Bit zero of the position becomes bindable.** The membership trace carries
-  `directions[1..depth-1]`; `directions[0]` is consumed building the opening's
-  initial state and survives only as which half of that state the leaf occupies.
-  So the position binding below pins every bit but the lowest.
-- **The verifier key stops following the leaf's parity.** `leaf_col` is
-  `directions[0]`, it selects the column the commitment binds to, and the
-  permutation sigma is emitted as periodic columns, which the key commits to. The
-  key is stable today only because a per-proof tree puts spent notes at fixed
-  positions.
-
 ## One verifier key covers every transfer
 
 A verifier key binds the preprocessed periodic columns. Anything witness dependent
