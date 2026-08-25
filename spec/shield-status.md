@@ -1,13 +1,29 @@
 # Shield: what is measured
 
-Every number here comes from a run in this repository, named so it can be
-reproduced. Nothing is projected. Where a figure was wrong earlier it is marked,
-because the wrong ones circulated.
+Every number here comes from a run in this repository. Nothing is projected.
+
+## One verifier key covers every transfer
+
+A verifier key binds the preprocessed periodic columns. Anything witness dependent
+among them makes the key instance specific, and a contract holding one key cannot
+then check a second transfer.
+
+Two transfers built from different secrets, amounts, assets and notes:
+
+| | |
+|---|---|
+| periodic columns | 140, identical across both |
+| columns following the witness | 0 |
+| preprocessed root | same for both |
+
+`vk_stability_tests::two_transfers_share_one_verifier_key` builds the pair and fails
+if a single column deviates. It runs in 0.05 s on every change. It was run against the
+tree before the fix to watch it fail, which is the only way to know a gate works.
 
 ## A private transfer works
 
 `shield::test::roundtrip`, at the deployed tree depth of 32, two inputs and two
-outputs, 1000 + 2000 spent, 1500 + 1200 created, 200 out publicly, 100 in fees:
+outputs:
 
 | | |
 |---|---|
@@ -16,36 +32,28 @@ outputs, 1000 + 2000 spent, 1500 + 1200 created, 200 out publicly, 100 in fees:
 | wall clock, both cases | 1980 s |
 | peak resident | 565 MB |
 
-This is a prove and verify, not a witness satisfaction check: the prover runs,
-FRI commits, the verifier accepts. Both gates carried `#[ignore]` and the history
-shows no sign they had been run before.
-
-A wallet can produce a transfer proof on an ordinary machine today.
+Prover runs, FRI commits, verifier accepts. Not a witness satisfaction check.
 
 ## What binds
 
-Fourteen bindings in the shield circuit, each with a forgery that violates
-exactly it while everything else stays honest. `shield::test::inventory` holds
-the list and fails if a binding is added without one. Nullifiers are among them,
-so ownership and double spend are covered.
+Fourteen bindings in the shield circuit, each with a forgery that violates exactly it
+while everything else stays honest. `shield::test::inventory` holds the list and fails
+if a binding is added without one. Nullifiers are among them, so ownership and double
+spend are covered.
 
-Six binding families in the recursive verifier, each with a forgery, in
-`family_tests`. Three of those families had no gate at all until recently:
-fold, index and periodic, where index is the seam the assembly itself calls
-forgery critical.
+Six binding families in the recursive verifier, each with a forgery, in `family_tests`.
+Fold, index and periodic had no gate until recently, and index is the seam the assembly
+itself calls forgery critical.
 
-Every set includes a positive case. A tamper rejecting shows a cell is
-constrained to something, not to the right thing, and a binding that stops
-closing rejects honest witnesses too. That is not theoretical: a region
-deduplication that merged 32 regions it should not have left all six forgeries
-passing and only the honest case failing.
+Every set carries a positive case. A tamper rejecting shows a cell is constrained to
+something, not to the right thing, and a binding that stops closing rejects honest
+witnesses too. A region deduplication that merged regions it should not have left all
+six forgeries passing and only the honest case failing.
 
-## Recursion is a separate, much larger shape
+## Recursion
 
-The recursion assembly verifies a join-split proof inside a proof. It is what
-makes batched settlement cheap. It is not on the path of a single transfer, and
-its cost has been quoted as a transfer cost more than once, including in this
-repository's own probe names.
+The recursion assembly verifies a join-split proof inside a proof. It is what makes
+batched settlement cheap. It is not on the path of a single transfer.
 
 | | periodic columns | LDE |
 |---|---|---|
@@ -53,43 +61,33 @@ repository's own probe names.
 | one product over all columns | 1146 | 9.8 TB |
 | products capped at width 8 | 1130 | 1.22 TB |
 | periodic shared between regions of a kind | 789 | 876 GB |
+| opening state moved to the witness | 192 | 279 GB |
+| identity and selector columns shared | 136 | 223 GB |
 
 A product over k wired columns carries degree k+1, so fusing everything into one
-product raised the degree from 10 to 80 and inflated the evaluation domain
-eightfold, which gave back nearly all of what the narrower trace saved.
+product raised the degree from 10 to 80 and the evaluation domain with it.
 
 ## What is next, in size order
 
-**Auth's reset columns.** 576 of the 789 remaining periodic columns are the auth
-region, one kind per query because all 32 differ. They are
-`rc[8] + slot_bnd + op_bnd + reset[8]`, and only `reset` varies: it is
-`initial_state(openings[k+1])`, which is `inject(leaf, sibling[0], direction[0])`
-— Merkle leaf values, witness data, sitting in public structure. `inject` is a
-conditional swap, degree 2 against an AIR already at degree 10, and `sibling` and
-`direction` are already trace values under `witness_path`. Moving `reset` to the
-trace makes auth query independent, deduplicates it to one kind, and takes the
-assembly to roughly 279 GB.
-
-This is a soundness change, not a layout one. A constraint has to force the moved
-value to equal the next opening's initial state, and adding trace columns shifts
-`ocells`, which the grand-product bindings are written against. That is the exact
-mechanism behind the original inner-coverage bug.
-
-**Grand-product id and sigma columns.** About 153 of the 789. `id[r] = r*k+j` is
-closed form and `sigma` is a permutation that can be carried as `span * k`
-integers rather than a materialised LDE.
+**Sigma.** Most of what remains is the per-group sigma columns. Sigma is a permutation
+and can be carried as `span * k` integers rather than a materialised LDE. The identity
+column is closed form and already shared; sigma is the one that still costs.
 
 **Wallet derivation.** Unowned. The key hierarchy and its vector are frozen in
-`spec/shield-key-hierarchy.json`, so it is implementable now. Until it exists a
-beta participant cannot spend a deposited note, which makes it the longest pole
-to a usable system and the only remaining item that is not an optimisation.
+`spec/shield-key-hierarchy.json`, so it is implementable now. Until it exists a beta
+participant cannot spend a deposited note, which makes it the longest pole and the only
+remaining item that is not an optimisation.
+
+**A proof for the opening boundary.** Moving the opening state to the witness is
+justified here by the bindings that hold it and by every forgery still rejecting. That
+is evidence, not proof, and this is the trust root.
 
 ## Corrections
 
-- 11.6 TB and 9.8 TB were quoted as the cost of a transfer. They are the
-  recursion assembly. A transfer is 565 MB.
-- 287 GB was measured on an assembly that merged 32 distinct auth regions. It
-  binds nothing. The correct figure for that change is 876 GB.
+- 11.6 TB and 9.8 TB were quoted as the cost of a transfer. They are the recursion
+  assembly. A transfer is 565 MB.
+- 287 GB was measured on an assembly that merged 32 distinct auth regions. It binds
+  nothing. The figure for that change alone is 876 GB.
 - The recursion binding gates were called too heavy for a pull request. They are,
-  through a full 32-query prove. On a two-query cap reading witness satisfaction
-  they cost three minutes and 300 MB and run on every push.
+  through a full 32-query prove. On a two-query cap reading witness satisfaction they
+  cost three minutes and 300 MB and run on every push.
