@@ -34,7 +34,7 @@ pub(crate) fn assemble(parts: Vec<IntentParts>) -> BatchProof {
         })
         .collect();
 
-    let rows: Vec<usize> = regions.iter().map(|r| 1usize << r.log_trace_len()).collect();
+    let rows: Vec<usize> = regions.iter().map(|r| r.rows()).collect();
     let (off, span) = offsets(&rows);
 
     let mut g: Vec<crate::shield::wire_class::Class> = Vec::new();

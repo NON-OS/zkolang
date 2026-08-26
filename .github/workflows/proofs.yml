@@ -13,28 +13,13 @@ on:
 env:
   CARGO_TERM_COLOR: always
 
-# A recursion assembly needs more memory than ubuntu-latest has, which is why
-# the nightly job failed on every run. runs-on has to name a larger runner
-# configured for the org; 32 vCPU / 128 GB is the smallest that fits one.
+# The gates outgrew ubuntu-latest once, which is why the old nightly failed on
+# every run. After the region sizing work an assembly holds in a few GB, so they
+# fit a standard runner again. Only the emit still needs a large one.
 jobs:
-  # Fails in a minute if the runner is missing or smaller than the gates need,
-  # rather than after five hours of queue or an out of memory kill.
-  runner:
-    name: the runner is what we asked for
-    runs-on: ubuntu-32core
-    timeout-minutes: 10
-    steps:
-      - name: cores and memory
-        run: |
-          nproc
-          free -g | head -2
-          gb=$(free -g | awk '/^Mem:/{print $2}')
-          test "$gb" -ge 100 || { echo "need 100 GB, runner has ${gb}"; exit 1; }
-
   gates:
     name: every gate, serialized
-    needs: runner
-    runs-on: ubuntu-32core
+    runs-on: ubuntu-latest
     timeout-minutes: 330
     steps:
       - uses: actions/checkout@v4
@@ -45,9 +30,10 @@ jobs:
       - name: every gate
         run: cargo test --workspace --release -- --include-ignored --test-threads=1
 
+  # The only job that still needs the large runner. Everything above fits a
+  # standard one now.
   emit:
     name: emit a recursion proof
-    needs: runner
     if: github.event_name == 'workflow_dispatch' && inputs.emit
     runs-on: ubuntu-32core
     timeout-minutes: 330
