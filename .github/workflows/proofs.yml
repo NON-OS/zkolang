@@ -6,7 +6,11 @@ on:
   workflow_dispatch:
     inputs:
       emit:
-        description: 'Also emit a recursion proof (slow, needs the big runner)'
+        description: 'Emit a recursion proof (hours, large runner)'
+        type: boolean
+        default: false
+      paid:
+        description: 'Run the jobs that need the large runner'
         type: boolean
         default: false
 
@@ -40,6 +44,7 @@ jobs:
 
   proving:
     name: the gates that prove a recursion
+    if: github.event_name != 'workflow_dispatch' || inputs.paid
     runs-on: ubuntu-32core
     timeout-minutes: 330
     steps:
@@ -118,6 +123,7 @@ jobs:
   # proving still means the large runner.
   structure:
     name: emit the AIR structure and the real inner
+    if: github.event_name != 'workflow_dispatch' || inputs.paid
     runs-on: ubuntu-32core
     timeout-minutes: 180
     steps:
