@@ -8,7 +8,7 @@ use crate::crypto::stark::air::{Air, ComposeBoundary, ComposeCheck};
 use crate::crypto::stark::field::{Fp, Fp2};
 use alloc::vec::Vec;
 
-pub(crate) fn compose_region(inner: &Inner) -> (ComposeCheck, Vec<Fp>) {
+pub fn compose_region(inner: &Inner) -> (ComposeCheck, Vec<Fp>) {
     let mut window = [Fp2::ZERO; 6];
     window.copy_from_slice(&inner.proof.ood_frame[..6]);
     let mut cp = [Fp2::ZERO; 5];

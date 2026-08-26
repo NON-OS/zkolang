@@ -12,7 +12,7 @@ use crate::crypto::stark::field::Fp;
 use alloc::vec::Vec;
 use nonos_zkolang::StepAir;
 
-pub(crate) fn compose_step_region(inner: Inner<StepAir>) -> (ComposeCheckGen<StepAir>, Vec<Fp>) {
+pub fn compose_step_region(inner: Inner<StepAir>) -> (ComposeCheckGen<StepAir>, Vec<Fp>) {
     let region = ComposeCheckGen::new_witness(
         inner.air,
         inner.proof.ood_frame,

@@ -17,7 +17,7 @@ use crate::crypto::stark::poseidon_transcript::PoseidonTranscript;
 use alloc::vec::Vec;
 
 /// The shared FRI transcript region and the per-query indices it draws.
-pub(crate) struct FriTranscript {
+pub struct FriTranscript {
     pub transcript: TranscriptCheck,
     pub ttrace: Vec<Fp>,
     pub betas: Vec<Fp2>,
@@ -27,7 +27,7 @@ pub(crate) struct FriTranscript {
     pub qs: Vec<usize>,
 }
 
-pub(crate) fn fri_transcript<A: AirExt>(h: &Poseidon, inner: &Inner<A>) -> FriTranscript {
+pub fn fri_transcript<A: AirExt>(h: &Poseidon, inner: &Inner<A>) -> FriTranscript {
     let fri = &inner.proof.fri;
     let n_folds = fri.roots.len();
     let blowup = fri.final_layer.len();
@@ -61,14 +61,14 @@ pub(crate) fn fri_transcript<A: AirExt>(h: &Poseidon, inner: &Inner<A>) -> FriTr
 }
 
 /// One query's fold chain (region 4), derived from its index `q_k`.
-pub(crate) struct FoldSide {
+pub struct FoldSide {
     pub fold: TraceFoldExt,
     pub ftrace: Vec<Fp>,
     /// The layer-zero position of this query: `q_k mod (n / 2)`.
     pub ik: usize,
 }
 
-pub(crate) fn fri_fold_k<A: AirExt>(
+pub fn fri_fold_k<A: AirExt>(
     inner: &Inner<A>,
     ft: &FriTranscript,
     query: usize,
@@ -106,7 +106,7 @@ pub(crate) fn fri_fold_k<A: AirExt>(
 
 /// The query-0 combined form the current single-query `assemble()` consumes. Built
 /// from the shared transcript plus query 0's fold, so its behavior is unchanged.
-pub(crate) struct FriSide {
+pub struct FriSide {
     pub transcript: TranscriptCheck,
     pub ttrace: Vec<Fp>,
     pub fold: TraceFoldExt,
@@ -117,7 +117,7 @@ pub(crate) struct FriSide {
     pub i0: usize,
 }
 
-pub(crate) fn fri_side<A: AirExt>(h: &Poseidon, inner: &Inner<A>, tamper: Tamper) -> FriSide {
+pub fn fri_side<A: AirExt>(h: &Poseidon, inner: &Inner<A>, tamper: Tamper) -> FriSide {
     let ft = fri_transcript(h, inner);
     let f0 = fri_fold_k(inner, &ft, 0, tamper);
     FriSide {

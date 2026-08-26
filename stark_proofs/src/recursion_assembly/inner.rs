@@ -12,22 +12,22 @@ use crate::crypto::stark::fri::root_of_unity;
 use alloc::boxed::Box;
 use alloc::vec::Vec;
 
-pub(crate) const NQ: usize = 32;
-pub(crate) const GRIND: u32 = 16;
-pub(crate) const EXTRA: u32 = 3;
+pub const NQ: usize = 32;
+pub const GRIND: u32 = 16;
+pub const EXTRA: u32 = 3;
 
 /// The recursion hash. Must equal the round count every in circuit compression
 /// runs, or the membership regions prove a permutation the hash never computed.
-pub(crate) const LOG_ROUNDS: u32 = 5;
+pub const LOG_ROUNDS: u32 = 5;
 
-pub(crate) fn hasher() -> Poseidon {
+pub fn hasher() -> Poseidon {
     Poseidon::new(LOG_ROUNDS, [Fp::ZERO; RATE])
 }
 
 /// The inner proof the assembly verifies, generic over its AIR. The join-split
 /// fixture keeps the default `WiredExt`, so the existing assembly is unchanged; a
 /// zkolang inner instantiates it at `StepAir`.
-pub(crate) struct Inner<A: AirExt = WiredExt> {
+pub struct Inner<A: AirExt = WiredExt> {
     pub air: A,
     pub publics: Vec<Fp>,
     pub proof: StarkProofExtP,
@@ -36,7 +36,7 @@ pub(crate) struct Inner<A: AirExt = WiredExt> {
     pub g: Fp,
 }
 
-pub(crate) fn join_split(h: &Poseidon) -> Inner {
+pub fn join_split(h: &Poseidon) -> Inner {
     let (words, k_intents) = (11usize, 2usize);
     let mut publics = Vec::with_capacity(k_intents * words);
     for i in 0..k_intents * words {
@@ -84,7 +84,7 @@ pub(crate) fn join_split(h: &Poseidon) -> Inner {
 /// it Poseidon-committed, and replay its composition inputs. The public io binds
 /// as AIR boundaries (not transcript publics), so the non-pub prove and
 /// `compose_inputs` are the matching pair, as in the step tests.
-pub(crate) fn step_air(h: &Poseidon) -> Inner<nonos_zkolang::StepAir> {
+pub fn step_air(h: &Poseidon) -> Inner<nonos_zkolang::StepAir> {
     use nonos_zkolang::{compile_source, program_log_t, StepAir, Vm};
     let program = compile_source("input x; let y = x * x; output y;").expect("compile");
     let mut vm = Vm::new();

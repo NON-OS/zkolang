@@ -12,7 +12,7 @@ use crate::crypto::stark::field::{Fp, Fp2};
 use alloc::vec::Vec;
 
 /// Query-0 form, preserved for the single-query assembly.
-pub(crate) fn deep_region<A: AirExt>(
+pub fn deep_region<A: AirExt>(
     h: &Poseidon,
     inner: &Inner<A>,
     tamper: Tamper,
@@ -20,7 +20,7 @@ pub(crate) fn deep_region<A: AirExt>(
     deep_region_k(h, inner, 0, tamper)
 }
 
-pub(crate) fn deep_region_k<A: AirExt>(
+pub fn deep_region_k<A: AirExt>(
     h: &Poseidon,
     inner: &Inner<A>,
     query: usize,

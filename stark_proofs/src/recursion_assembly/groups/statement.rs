@@ -10,7 +10,7 @@ use super::helpers::{chain, group};
 use crate::crypto::stark::air::{GpGroup, RATE};
 use alloc::vec::Vec;
 
-pub(crate) fn statement(lay: &Layout, out: &mut Vec<GpGroup>) {
+pub fn statement(lay: &Layout, out: &mut Vec<GpGroup>) {
     let l = lay.l;
     let (zc0, zc1) = (lay.c_z_col, lay.c_z_col + 1);
     // z: squeezed in the transcript == compose's z == the periodic recompute's z.

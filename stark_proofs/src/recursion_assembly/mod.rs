@@ -4,20 +4,20 @@
 //! wired AIR and witness from the real inner join-split proof; `tamper` names
 //! the targeted forgeries the reject gate must catch.
 
-pub(crate) mod auth;
-pub(crate) mod build;
-pub(crate) mod compose;
-pub(crate) mod compose_step;
-pub(crate) mod deep;
-pub(crate) mod fri;
-pub(crate) mod groups;
-pub(crate) mod inner;
-pub(crate) mod layout;
-pub(crate) mod periodic;
-pub(crate) mod points;
-pub(crate) mod sponge;
-pub(crate) mod tamper;
-pub(crate) mod transcript;
+pub mod auth;
+pub mod build;
+pub mod compose;
+pub mod compose_step;
+pub mod deep;
+pub mod fri;
+pub mod groups;
+pub mod inner;
+pub mod layout;
+pub mod periodic;
+pub mod points;
+pub mod sponge;
+pub mod tamper;
+pub mod transcript;
 
-pub(crate) use build::{assemble, assemble_capped, assemble_q, assemble_step};
-pub(crate) use tamper::Tamper;
+pub use build::{assemble, assemble_capped, assemble_q, assemble_step};
+pub use tamper::Tamper;

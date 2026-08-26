@@ -10,7 +10,7 @@ use super::helpers::group;
 use crate::crypto::stark::air::{GpGroup, RATE};
 use alloc::vec::Vec;
 
-pub(crate) fn roots(lay: &Layout, out: &mut Vec<GpGroup>) {
+pub fn roots(lay: &Layout, out: &mut Vec<GpGroup>) {
     let l = lay.l;
     for q in 0..lay.n_q {
         let m_off = lay.m_off[q];

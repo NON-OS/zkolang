@@ -42,15 +42,22 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
 
-      # Peak is not known at full query count, so record it.
-      - name: peak memory while emitting
+      # A real emission. The binary proves, writes the bytes a verifier is
+      # given, reads them back and verifies from the file rather than from the
+      # value it just held. A proof that only checks in the process that made it
+      # has not been shown to travel.
+      - name: emit a proof and verify it from disk
         run: |
-          /usr/bin/time -v cargo test --release -p stark_proofs --features parallel \
-            recursion_assembly_tests -- --ignored --test-threads=1 2>&1 | tee emit.log
-          grep -E "Maximum resident|Elapsed" emit.log || true
+          /usr/bin/time -v cargo run --release -p stark_proofs --features parallel \
+            --bin emit_recursion -- recursion.proof 2>&1 | tee emit.log
+          echo "----"
+          ls -l recursion.proof
+          grep -E "Maximum resident|Elapsed \(wall|proved in|verified from disk|assembly " emit.log || true
 
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: emit-log
-          path: emit.log
+          name: recursion-proof
+          path: |
+            recursion.proof
+            emit.log

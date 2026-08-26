@@ -12,10 +12,10 @@ mod roots;
 mod statement;
 mod uf;
 
-pub(crate) use collapse::collapse;
-pub(crate) use deep::deep;
-pub(crate) use fold::fold;
-pub(crate) use index::index;
-pub(crate) use periodic::periodic;
-pub(crate) use roots::roots;
-pub(crate) use statement::statement;
+pub use collapse::collapse;
+pub use deep::deep;
+pub use fold::fold;
+pub use index::index;
+pub use periodic::periodic;
+pub use roots::roots;
+pub use statement::statement;

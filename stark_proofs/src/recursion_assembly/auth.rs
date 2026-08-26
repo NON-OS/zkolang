@@ -13,7 +13,7 @@ use crate::crypto::stark::field::Fp;
 use crate::crypto::stark::poseidon_merkle::pack_ext;
 use alloc::vec::Vec;
 
-pub(crate) struct AuthSide {
+pub struct AuthSide {
     pub region: MultiMembership,
     pub trace: Vec<Fp>,
     /// Opening 0 is the FRI leaf, 1 deep, 2 comp, 3+c trace column c.
@@ -42,7 +42,7 @@ fn openings<A: AirExt>(h: &Poseidon, inner: &Inner<A>, ik: usize, query: usize) 
 }
 
 /// Query-0 form, preserved for the current single-query assembly.
-pub(crate) fn auth_side<A: AirExt>(
+pub fn auth_side<A: AirExt>(
     h: &Poseidon,
     inner: &Inner<A>,
     i0: usize,
@@ -51,7 +51,7 @@ pub(crate) fn auth_side<A: AirExt>(
     auth_side_k(h, inner, i0, 0, tamper)
 }
 
-pub(crate) fn auth_side_k<A: AirExt>(
+pub fn auth_side_k<A: AirExt>(
     h: &Poseidon,
     inner: &Inner<A>,
     ik: usize,

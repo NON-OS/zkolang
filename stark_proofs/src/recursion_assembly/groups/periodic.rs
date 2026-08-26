@@ -8,7 +8,7 @@ use super::helpers::group;
 use crate::crypto::stark::air::GpGroup;
 use alloc::vec::Vec;
 
-pub(crate) fn periodic(lay: &Layout, out: &mut Vec<GpGroup>) {
+pub fn periodic(lay: &Layout, out: &mut Vec<GpGroup>) {
     for j in 0..lay.n_pz {
         let r = lay.pz_off + (j + 1) * lay.t_inner - 1;
         let (pc0, pc1) = (lay.c_periodic_col + 2 * j, lay.c_periodic_col + 2 * j + 1);

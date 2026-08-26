@@ -18,7 +18,7 @@ fn cell(g: &GpGroup, pos: usize, width: usize) -> usize {
 /// Each group holds its own cells equal, so the conjunction of all of them is the
 /// transitive closure of those equalities. The closure is what gets re-cut, into
 /// groups narrow enough to keep the degree down.
-pub(crate) fn collapse(gps: &[GpGroup], span: usize, width: usize) -> Vec<GpGroup> {
+pub fn collapse(gps: &[GpGroup], span: usize, width: usize) -> Vec<GpGroup> {
     pack(closure(gps, span, width), span, width, CAP)
 }
 
