@@ -11,7 +11,7 @@ use super::helpers::{cycle, group};
 use crate::crypto::stark::air::GpGroup;
 use alloc::vec::Vec;
 
-pub(crate) fn deep(lay: &Layout, out: &mut Vec<GpGroup>) {
+pub fn deep(lay: &Layout, out: &mut Vec<GpGroup>) {
     let l = lay.l;
     for q in 0..lay.n_q {
         let d_off = lay.d_off[q];

@@ -9,7 +9,7 @@ use crate::crypto::stark::air::{AirExt, PeriodicZ};
 use crate::crypto::stark::field::{Fp, Fp2};
 use alloc::vec::Vec;
 
-pub(crate) fn periodic_region<A: AirExt>(
+pub fn periodic_region<A: AirExt>(
     inner: &Inner<A>,
     tamper: Tamper,
 ) -> (PeriodicZ, Vec<Fp>) {

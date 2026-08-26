@@ -7,7 +7,7 @@ use crate::crypto::stark::air::GpGroup;
 use crate::crypto::stark::field::Fp;
 use alloc::vec::Vec;
 
-pub(crate) fn group(
+pub fn group(
     span: usize,
     wcols: Vec<usize>,
     swaps: &[(usize, usize, usize, usize)],
@@ -24,14 +24,14 @@ pub(crate) fn group(
 
 /// Chain consecutive cells into transpositions: composed, a cycle forcing all
 /// of them equal.
-pub(crate) fn chain(cells: &[(usize, usize)], out: &mut Vec<(usize, usize, usize, usize)>) {
+pub fn chain(cells: &[(usize, usize)], out: &mut Vec<(usize, usize, usize, usize)>) {
     for w in cells.windows(2) {
         out.push((w[0].0, w[0].1, w[1].0, w[1].1));
     }
 }
 
 /// One group holding one cycle of equal cells.
-pub(crate) fn cycle(span: usize, cells: &[(usize, usize)]) -> GpGroup {
+pub fn cycle(span: usize, cells: &[(usize, usize)]) -> GpGroup {
     let mut wcols: Vec<usize> = cells.iter().map(|c| c.1).collect();
     wcols.sort_unstable();
     wcols.dedup();

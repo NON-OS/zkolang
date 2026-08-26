@@ -22,7 +22,7 @@ fn merged(a: &[usize], b: &[usize]) -> Vec<usize> {
 /// Classes are placed into groups no wider than `cap`, first fit. A class wider
 /// than the cap takes a group of its own rather than being split, because a class
 /// cut across two products is no longer one equality.
-pub(crate) fn pack(
+pub fn pack(
     classes: Vec<Vec<usize>>,
     span: usize,
     width: usize,

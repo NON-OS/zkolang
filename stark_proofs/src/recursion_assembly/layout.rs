@@ -9,7 +9,7 @@ use crate::crypto::stark::air::AirExt;
 use alloc::boxed::Box;
 use alloc::vec::Vec;
 
-pub(crate) struct Layout {
+pub struct Layout {
     pub span: usize,
     /// Rounds per transcript operation.
     pub l: usize,
@@ -58,7 +58,7 @@ pub(crate) struct Layout {
 }
 
 /// Each region's first row in the stacked trace, and the padded span.
-pub(crate) fn offsets(regions: &[Box<dyn AirExt>]) -> (Vec<usize>, usize) {
+pub fn offsets(regions: &[Box<dyn AirExt>]) -> (Vec<usize>, usize) {
     let mut off = Vec::with_capacity(regions.len());
     let mut r = 0usize;
     for reg in regions {

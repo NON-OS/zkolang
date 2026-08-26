@@ -10,7 +10,7 @@ use crate::crypto::stark::air::{AirExt, Poseidon, TranscriptCheck, TranscriptOp,
 use crate::crypto::stark::field::Fp;
 use alloc::vec::Vec;
 
-pub(crate) struct StarkTranscript {
+pub struct StarkTranscript {
     pub region: TranscriptCheck,
     pub trace: Vec<Fp>,
     /// The operation squeezing z.c0; z.c1 follows it.
@@ -19,7 +19,7 @@ pub(crate) struct StarkTranscript {
     pub deep_coeff_op: usize,
 }
 
-pub(crate) fn stark_transcript<A: AirExt>(
+pub fn stark_transcript<A: AirExt>(
     h: &Poseidon,
     inner: &Inner<A>,
     n_terms: usize,

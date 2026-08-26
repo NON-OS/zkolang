@@ -15,7 +15,7 @@ use crate::crypto::stark::field::Fp;
 use alloc::boxed::Box;
 use alloc::vec::Vec;
 
-pub(crate) struct Assembly {
+pub struct Assembly {
     pub wired: WiredMultiExt,
     pub witness: Vec<Fp>,
     pub lay: Layout,
@@ -27,7 +27,7 @@ pub(crate) struct Assembly {
 
 /// The join-split recursion attesting every inner query, with `tamper` applied to
 /// query 0 (the historic single-query reject cases).
-pub(crate) fn assemble(tamper: Tamper) -> Assembly {
+pub fn assemble(tamper: Tamper) -> Assembly {
     assemble_q(tamper, 0)
 }
 
@@ -35,7 +35,7 @@ pub(crate) fn assemble(tamper: Tamper) -> Assembly {
 /// inner query `tamper_q`. A honest assembly (`Tamper::None`) accepts; a tamper on
 /// any query must reject through that query's own block, which is the proof inner
 /// coverage is closed rather than query-0-only.
-pub(crate) fn assemble_q(tamper: Tamper, tamper_q: usize) -> Assembly {
+pub fn assemble_q(tamper: Tamper, tamper_q: usize) -> Assembly {
     assemble_capped(tamper, tamper_q, usize::MAX)
 }
 
@@ -44,7 +44,7 @@ pub(crate) fn assemble_q(tamper: Tamper, tamper_q: usize) -> Assembly {
 /// far smaller trace, so a real FRI prove+verify (which the full 32-query trace is
 /// too memory-heavy to run off a big-RAM box) can exercise the degree bounds and the
 /// multi-query wiring end to end.
-pub(crate) fn assemble_capped(tamper: Tamper, tamper_q: usize, cap: usize) -> Assembly {
+pub fn assemble_capped(tamper: Tamper, tamper_q: usize, cap: usize) -> Assembly {
     let h = inner::hasher();
     let inner = inner::join_split(&h);
     let n_q = inner.proof.queries.len().min(cap);
@@ -190,7 +190,7 @@ fn fuse(gps: Vec<GpGroup>, lay: &Layout, regions: &[Box<dyn AirExt>]) -> Vec<GpG
 
 /// The parked step-AIR path: a single-query (query-0-only) recursion over a
 /// zkolang inner, kept building against the per-query Layout with n_q = 1.
-pub(crate) fn assemble_step(tamper: Tamper) -> Assembly {
+pub fn assemble_step(tamper: Tamper) -> Assembly {
     let h = inner::hasher();
     let inner = inner::step_air(&h);
 

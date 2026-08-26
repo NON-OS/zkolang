@@ -2,14 +2,14 @@
 
 use alloc::vec::Vec;
 
-pub(crate) struct Uf(Vec<usize>);
+pub struct Uf(Vec<usize>);
 
 impl Uf {
-    pub(crate) fn new(n: usize) -> Self {
+    pub fn new(n: usize) -> Self {
         Uf((0..n).collect())
     }
 
-    pub(crate) fn find(&mut self, x: usize) -> usize {
+    pub fn find(&mut self, x: usize) -> usize {
         let mut r = x;
         while self.0[r] != r {
             r = self.0[r];
@@ -23,7 +23,7 @@ impl Uf {
         r
     }
 
-    pub(crate) fn union(&mut self, a: usize, b: usize) {
+    pub fn union(&mut self, a: usize, b: usize) {
         let (ra, rb) = (self.find(a), self.find(b));
         if ra != rb {
             self.0[ra] = rb;

@@ -4,7 +4,7 @@
 //! comes from the binding under attack rather than a local constraint.
 
 #[derive(Clone, Copy, PartialEq, Eq)]
-pub(crate) enum Tamper {
+pub enum Tamper {
     None,
     /// A DEEP trace value cut loose from its authenticated opening.
     ReboundTraceValue,

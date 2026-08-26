@@ -39,8 +39,7 @@ mod poseidon_constants_gen;
 mod preprocessed_tests;
 #[cfg(test)]
 mod production_vector_gen;
-#[cfg(test)]
-mod recursion_assembly;
+pub mod recursion_assembly;
 #[cfg(test)]
 mod recursion_assembly_tests;
 #[cfg(test)]

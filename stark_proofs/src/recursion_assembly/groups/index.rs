@@ -11,7 +11,7 @@ use super::helpers::{chain, group};
 use crate::crypto::stark::air::GpGroup;
 use alloc::vec::Vec;
 
-pub(crate) fn index(lay: &Layout, out: &mut Vec<GpGroup>) {
+pub fn index(lay: &Layout, out: &mut Vec<GpGroup>) {
     let l = lay.l;
     for q in 0..lay.n_q {
         let i_off = lay.i_off[q];
