@@ -109,9 +109,7 @@ fn gen_poseidon_constants() {
         rounds, rounds - 1, NOTE_LIMBS, NOTE_DOMAIN
     );
 
-    let path = "/Users/ek/Desktop/NOX-SmartContract/spec/poseidon-constants.json";
-    std::fs::write(path, &json).expect("write constants");
-    std::println!("wrote {} bytes to {}", json.len(), path);
+    crate::spec_out::write_spec("poseidon-constants.json", &json);
 
     // Sanity: the recomputed MDS matches the live compression by construction, and
     // every constant is a canonical field element.
