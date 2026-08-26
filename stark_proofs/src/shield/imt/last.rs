@@ -10,7 +10,7 @@ use core::cmp::Ordering;
 /// the range check stops at the low bound and never applies an upper one. That is
 /// a non-membership proof for a member, which is a double spend. The magic
 /// maximum carried this implicitly; the flag has to carry it out loud.
-pub(crate) fn last_is_the_maximum(leaves: &[Leaf]) -> bool {
+pub fn last_is_the_maximum(leaves: &[Leaf]) -> bool {
     let mut last = None;
     for (i, l) in leaves.iter().enumerate() {
         if l.is_last {

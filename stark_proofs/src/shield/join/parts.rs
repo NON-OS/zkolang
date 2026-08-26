@@ -12,9 +12,9 @@ use alloc::boxed::Box;
 use alloc::vec::Vec;
 
 /// balance, four notes, two memberships, two key hierarchies, the tuple.
-pub(crate) const REGIONS_PER_INTENT: usize = 14;
+pub const REGIONS_PER_INTENT: usize = 14;
 
-pub(crate) struct IntentParts {
+pub struct IntentParts {
     pub regions: Vec<Box<dyn AirExt>>,
     pub traces: Vec<Vec<Fp>>,
     pub span_op: usize,
@@ -25,12 +25,12 @@ pub(crate) struct IntentParts {
     pub intent: Vec<Fp>,
 }
 
-pub(crate) struct Spend<'a> {
+pub struct Spend<'a> {
     pub note: &'a Note,
     pub sk: [Fp; RATE],
 }
 
-pub(crate) fn intent_parts(
+pub fn intent_parts(
     inputs: [Spend; 2],
     outputs: [&Note; 2],
     public_amount: u64,

@@ -11,7 +11,7 @@ use crate::shield::note::Note;
 use alloc::boxed::Box;
 use alloc::vec::Vec;
 
-pub(crate) struct Stack {
+pub struct Stack {
     pub regions: Vec<Box<dyn AirExt>>,
     pub traces: Vec<Vec<Fp>>,
     pub span_op: usize,
@@ -27,7 +27,7 @@ pub(crate) struct Stack {
 
 /// Region order: balance, four notes, two memberships, two key hierarchies. The
 /// bindings address regions by that order.
-pub(crate) fn stack(
+pub fn stack(
     h: &Poseidon,
     notes: [&Note; 4],
     sks: [[Fp; RATE]; 2],

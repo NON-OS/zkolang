@@ -4,10 +4,10 @@ use crate::crypto::stark::air::{NOTE_DOMAIN, NOTE_LIMBS, RATE};
 use crate::crypto::stark::field::Fp;
 
 /// The pool hash: 1 << 5 rounds, matching FULL_ROUNDS in PoseidonGoldilocks.sol.
-pub(crate) const POOL_LOG_ROUNDS: u32 = 5;
+pub const POOL_LOG_ROUNDS: u32 = 5;
 
 #[derive(Clone, Copy)]
-pub(crate) struct Note {
+pub struct Note {
     pub value: u64,
     pub asset_id: u64,
     pub spend_pk: [u64; 4],
@@ -30,7 +30,7 @@ impl Note {
     }
 }
 
-pub(crate) fn quads(limbs: &[Fp; NOTE_LIMBS]) -> [[Fp; RATE]; 4] {
+pub fn quads(limbs: &[Fp; NOTE_LIMBS]) -> [[Fp; RATE]; 4] {
     let mut p = [Fp::ZERO; 16];
     p[..NOTE_LIMBS].copy_from_slice(limbs);
     p[NOTE_LIMBS] = Fp::from_u64(NOTE_DOMAIN);

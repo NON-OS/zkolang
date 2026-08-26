@@ -13,7 +13,7 @@ use alloc::vec::Vec;
 /// moves only the scalar, which mints a second nullifier for one note. So the
 /// recovery chain's bits are pinned to the directions, and its result to the cell
 /// the fourth compression absorbs.
-pub(crate) fn index_classes(l: &Layout) -> Vec<Class> {
+pub fn index_classes(l: &Layout) -> Vec<Class> {
     let mut c = Vec::new();
     let rounds = 1usize << POOL_LOG_ROUNDS;
     for (i, &base) in l.index.iter().enumerate() {

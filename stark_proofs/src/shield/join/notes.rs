@@ -7,14 +7,14 @@ use crate::shield::note::{note_parts_broken, Note};
 use alloc::boxed::Box;
 use alloc::vec::Vec;
 
-pub(crate) struct Notes {
+pub struct Notes {
     pub regions: Vec<Box<dyn AirExt>>,
     pub traces: Vec<Vec<Fp>>,
     pub span_op: usize,
     pub cms: Vec<[Fp; RATE]>,
 }
 
-pub(crate) fn note_regions(notes: [&Note; 4], brk: Break) -> Notes {
+pub fn note_regions(notes: [&Note; 4], brk: Break) -> Notes {
     let parts: Vec<_> =
         notes.iter().map(|n| note_parts_broken(n, brk == Break::NoteEdge)).collect();
     let span_op = parts[0].span_op;

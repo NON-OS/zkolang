@@ -6,14 +6,14 @@ use crate::shield::key::{nullifier_parts, Break};
 use alloc::boxed::Box;
 use alloc::vec::Vec;
 
-pub(crate) struct Keys {
+pub struct Keys {
     pub regions: Vec<Box<dyn AirExt>>,
     pub traces: Vec<Vec<Fp>>,
     pub key_span: Vec<usize>,
     pub nf: [[Fp; RATE]; 2],
 }
 
-pub(crate) fn key_hierarchies(
+pub fn key_hierarchies(
     sks: [[Fp; RATE]; 2],
     cms: &[[Fp; RATE]; 2],
     leaves: &[usize],

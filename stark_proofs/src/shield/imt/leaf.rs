@@ -11,13 +11,13 @@ use crate::crypto::stark::field::Fp;
 /// non-canonical to sit above every key, and a non-canonical value does not
 /// survive the reduction the hash applies, so the leaf would commit to something
 /// the comparison never sees. A flag is injective by construction.
-pub(crate) const IMT_LEAF_DOMAIN: u64 = 0x494D_544C;
+pub const IMT_LEAF_DOMAIN: u64 = 0x494D_544C;
 
 /// Limbs the payload occupies, before the tag.
-pub(crate) const IMT_LEAF_LIMBS: usize = 10;
+pub const IMT_LEAF_LIMBS: usize = 10;
 
 #[derive(Clone, Copy)]
-pub(crate) struct Leaf {
+pub struct Leaf {
     /// The nullifier, four limbs, little endian, canonical.
     pub value: [Fp; RATE],
     pub next_index: u64,

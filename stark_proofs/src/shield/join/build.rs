@@ -10,13 +10,13 @@ use crate::shield::member::TREE_DEPTH;
 use crate::shield::note::Note;
 use alloc::vec::Vec;
 
-pub(crate) struct JoinSplit {
+pub struct JoinSplit {
     pub wired: WiredMultiExt,
     pub witness: Vec<Fp>,
     pub intent: Vec<Fp>,
 }
 
-pub(crate) fn join_split(
+pub fn join_split(
     inputs: [Spend; 2],
     outputs: [&Note; 2],
     public_amount: u64,
@@ -30,7 +30,7 @@ pub(crate) fn join_split(
 
 /// One intent is a batch of one, so the layout lives in a single place. Depth is
 /// open so a forgery can run on a minimal instance.
-pub(crate) fn join_split_at(
+pub fn join_split_at(
     depth: usize,
     inputs: [Spend; 2],
     outputs: [&Note; 2],

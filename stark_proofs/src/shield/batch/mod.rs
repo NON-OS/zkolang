@@ -4,6 +4,6 @@ mod assemble;
 mod build;
 mod uniform;
 
-pub(crate) use assemble::{assemble, BatchProof};
-pub(crate) use build::{batch, Batch};
-pub(crate) use uniform::{price_uniform, MAX_INTENTS};
+pub use assemble::{assemble, BatchProof};
+pub use build::{batch, Batch};
+pub use uniform::{price_uniform, MAX_INTENTS};

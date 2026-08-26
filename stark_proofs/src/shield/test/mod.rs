@@ -12,34 +12,60 @@
 //!
 //!   cargo test --release -p stark_proofs shield::test -- --ignored
 
-mod depth;
+pub mod depth;
+#[cfg(test)]
 mod cross_asset;
+#[cfg(test)]
 mod double_spend;
+#[cfg(test)]
 mod deployed_depth;
-pub(crate) mod fixture;
+pub mod fixture;
+#[cfg(test)]
 mod intents;
+#[cfg(test)]
 mod inventory;
+#[cfg(test)]
 mod roundtrip;
+#[cfg(test)]
 mod satisfies;
-pub(crate) mod scenario;
+pub mod scenario;
 
+#[cfg(test)]
 mod commitment;
+#[cfg(test)]
 mod commitment_binding;
+#[cfg(test)]
 mod key_vector;
+#[cfg(test)]
 mod membership;
+#[cfg(test)]
 mod membership_scope;
+#[cfg(test)]
 mod pool_hash;
+#[cfg(test)]
 mod tree_zeros;
 
+#[cfg(test)]
 mod batch_assembly;
+#[cfg(test)]
 mod batch_price;
+#[cfg(test)]
 mod burns;
+#[cfg(test)]
 mod conserves;
+#[cfg(test)]
 mod foreign_key;
+#[cfg(test)]
 mod mints;
+#[cfg(test)]
 mod not_owner;
+#[cfg(test)]
 mod note_edge;
+#[cfg(test)]
 mod owns;
+#[cfg(test)]
 mod publics;
+#[cfg(test)]
 mod publics_scope;
+#[cfg(test)]
 mod unlisted;

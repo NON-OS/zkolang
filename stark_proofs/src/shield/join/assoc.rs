@@ -6,7 +6,7 @@ use crate::shield::member::{note_member, PoolTree};
 use alloc::boxed::Box;
 use alloc::vec::Vec;
 
-pub(crate) struct Assoc {
+pub struct Assoc {
     pub regions: Vec<Box<dyn AirExt>>,
     pub traces: Vec<Vec<Fp>>,
     pub leaf_col: Vec<usize>,
@@ -16,7 +16,7 @@ pub(crate) struct Assoc {
 /// The registry is permissionless and only checks that a root is registered, so
 /// membership in the set is the circuit's job. Same construction as the pool
 /// tree: a spend that cannot open against a published set has no proof.
-pub(crate) fn assoc_membership(
+pub fn assoc_membership(
     h: &Poseidon,
     cms: &[[Fp; RATE]; 2],
     others: &[u64],

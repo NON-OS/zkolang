@@ -15,10 +15,10 @@ mod state;
 mod test;
 mod wire;
 
-pub(crate) use bind::{cells, effect_classes, LANES};
-pub(crate) use chain::{chain, leaf};
-pub(crate) use effect::{induced, lift, Effect};
-pub(crate) use node::{combine, Verified};
-pub(crate) use read::{absorbed_at, read_effect};
-pub(crate) use state::{Carried, Node};
-pub(crate) use wire::realised;
+pub use bind::{cells, effect_classes, LANES};
+pub use chain::{chain, leaf};
+pub use effect::{induced, lift, Effect};
+pub use node::{combine, Verified};
+pub use read::{absorbed_at, read_effect};
+pub use state::{Carried, Node};
+pub use wire::realised;

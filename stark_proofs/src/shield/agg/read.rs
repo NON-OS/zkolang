@@ -15,7 +15,7 @@ use crate::shield::join::publics::{NF0, NF1, OUT_CM0, OUT_CM1};
 /// state lane at the same row holds the sponge mid flight, which moves with the
 /// publics without being them, and reading one would decouple the effect from
 /// the proof while still looking like it tracked.
-pub(crate) fn absorbed_at(l: usize, i: usize) -> (usize, usize) {
+pub fn absorbed_at(l: usize, i: usize) -> (usize, usize) {
     (i * l, WIDTH)
 }
 
@@ -40,7 +40,7 @@ fn digest(trace: &[Fp], width: usize, l: usize, at: usize) -> [Fp; RATE] {
 /// effect as a witness instead and a node verifies one proof and composes
 /// another's move, with every proof in the tree still verifying. `base` is where
 /// the intent's words begin, since a node's inner proof carries more than one.
-pub(crate) fn read_effect(trace: &[Fp], width: usize, l: usize, base: usize) -> Effect {
+pub fn read_effect(trace: &[Fp], width: usize, l: usize, base: usize) -> Effect {
     Effect {
         nullifiers: [
             digest(trace, width, l, base + NF0),

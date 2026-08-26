@@ -8,7 +8,7 @@ use crate::shield::wire_class::group_of;
 use alloc::boxed::Box;
 use alloc::vec::Vec;
 
-pub(crate) struct Batch {
+pub struct Batch {
     pub wired: WiredMultiExt,
     pub witness: Vec<Fp>,
 }
@@ -16,7 +16,7 @@ pub(crate) struct Batch {
 /// The batch public surface: one intent tuple per region, with the clearing
 /// price tied across all of them. The per intent circuits stack beneath these
 /// and bind their own derived words.
-pub(crate) fn batch(tuples: &[Vec<Fp>]) -> Batch {
+pub fn batch(tuples: &[Vec<Fp>]) -> Batch {
     let mut regions: Vec<Box<dyn AirExt>> = Vec::with_capacity(tuples.len());
     let mut traces: Vec<Vec<Fp>> = Vec::with_capacity(tuples.len());
     for t in tuples {

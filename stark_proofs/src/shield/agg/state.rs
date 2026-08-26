@@ -7,7 +7,7 @@ use crate::crypto::stark::field::Fp;
 /// nullifier set. The root proof exposes the pair it moved between, and the
 /// contract requires the old half equals what it currently holds.
 #[derive(Clone, Copy, PartialEq, Eq)]
-pub(crate) struct Carried {
+pub struct Carried {
     pub note_root: [Fp; RATE],
     pub next_index: u64,
     pub nullifier_root: [Fp; RATE],
@@ -15,7 +15,7 @@ pub(crate) struct Carried {
 
 /// One node's claim: it took the chain from `old` to `new`.
 #[derive(Clone, Copy)]
-pub(crate) struct Node {
+pub struct Node {
     pub old: Carried,
     pub new: Carried,
 }

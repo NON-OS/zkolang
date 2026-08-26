@@ -6,9 +6,9 @@ use alloc::vec::Vec;
 use core::cmp::Ordering;
 
 /// The chain as a subtree sees it: every leaf, in order.
-pub(crate) type State = Vec<Leaf>;
+pub type State = Vec<Leaf>;
 
-pub(crate) fn same(a: &State, b: &State) -> bool {
+pub fn same(a: &State, b: &State) -> bool {
     a.len() == b.len()
         && a.iter().zip(b).all(|(x, y)| {
             cmp(&x.value, &y.value) == Ordering::Equal
@@ -19,7 +19,7 @@ pub(crate) fn same(a: &State, b: &State) -> bool {
 }
 
 /// What one subtree attests: the chain it started from and the chain it left.
-pub(crate) struct Range {
+pub struct Range {
     pub old: State,
     pub new: State,
 }
@@ -35,7 +35,7 @@ pub(crate) struct Range {
 /// stitched seam and the case where A's last key points at the leaf B starts from
 /// all satisfy it without being named; two subtrees that both started from the
 /// pre-batch chain do not, which is the double update.
-pub(crate) fn stitch(a: &Range, b: &Range) -> Option<Range> {
+pub fn stitch(a: &Range, b: &Range) -> Option<Range> {
     if !same(&a.new, &b.old) {
         return None;
     }

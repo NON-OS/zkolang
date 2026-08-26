@@ -44,8 +44,7 @@ mod production_vector_gen;
 pub mod recursion_assembly;
 #[cfg(test)]
 mod recursion_assembly_tests;
-#[cfg(test)]
-mod shield;
+pub mod shield;
 #[cfg(test)]
 mod spec_out;
 #[cfg(test)]

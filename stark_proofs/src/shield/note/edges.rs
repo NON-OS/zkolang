@@ -6,7 +6,7 @@ use alloc::vec::Vec;
 
 /// The first two compressions feed the third. Lane by lane: a digest is four
 /// elements and binding one lane leaves the other three free.
-pub(crate) fn note_edges(base: usize, span_op: usize) -> Vec<(usize, usize, usize, usize)> {
+pub fn note_edges(base: usize, span_op: usize) -> Vec<(usize, usize, usize, usize)> {
     let l = 1usize << POOL_LOG_ROUNDS;
     let root = |o: usize| base + o * span_op + l;
     let c_first = base + 2 * span_op;

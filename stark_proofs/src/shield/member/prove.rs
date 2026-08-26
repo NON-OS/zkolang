@@ -5,7 +5,7 @@ use crate::crypto::stark::field::Fp;
 use crate::shield::note::POOL_LOG_ROUNDS;
 use alloc::vec::Vec;
 
-pub(crate) struct NoteMember {
+pub struct NoteMember {
     pub region: MultiMembership,
     pub witness: Vec<Fp>,
     pub proven_root: [Fp; RATE],
@@ -14,7 +14,7 @@ pub(crate) struct NoteMember {
 /// The constraints do not enforce membership: a tampered path is honest
 /// arithmetic that walks elsewhere. Membership is the walked root equalling the
 /// published one, so the root is read back out of the trace rather than trusted.
-pub(crate) fn note_member(
+pub fn note_member(
     h: &Poseidon,
     leaf: [Fp; RATE],
     sibs: Vec<[Fp; RATE]>,
