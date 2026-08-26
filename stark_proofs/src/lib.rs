@@ -30,6 +30,8 @@ mod fri_tests;
 mod merkle_tests;
 // ntt_tests disabled: file lost to a /tmp wipe (LOCAL only).
 #[cfg(test)]
+mod parallel_bytes_tests;
+#[cfg(test)]
 mod periodic_z_tests;
 // poly_tests disabled: file lost to a /tmp wipe (LOCAL only).
 #[cfg(test)]

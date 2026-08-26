@@ -118,20 +118,42 @@ pub fn stark_prove_poseidon_ext_pub<A: AirExt>(
         let shift_c = shift * omega.pow(c as u64);
         let periodic_c: Vec<Vec<Fp>> =
             crate::par::map_slice(&periodic_coeffs, |cf| lde_from_coeffs(cf, shift_c, sub, t));
-        let mut x = shift_c;
-        for i in 0..t {
-            let j = c + blowup * i;
+        // Every constraint at every point of the domain, which for the
+        // recursion is 33.5 million evaluations. Written as a recurrence over i
+        // it runs on one core while the maps above it split a handful of cheap
+        // extensions. The point at step i is shift_c * sub^i, so the steps are
+        // independent; what is not free is the pair of buffers each needs, so
+        // the work goes out in blocks. A block allocates once, walks its own
+        // points, and carries its own x.
+        const BLOCK: usize = 1024;
+        let blocks = t.div_ceil(BLOCK);
+        let parts = crate::par::map_index(blocks, |b| {
+            let lo = b * BLOCK;
+            let hi = (lo + BLOCK).min(t);
             let mut window: Vec<Fp2> = Vec::with_capacity(window_size * width);
-            for k in 0..window_size {
-                let idx = (j + k * blowup) % n;
-                for column in &trace_d {
-                    window.push(Fp2::from_base(column[idx]));
+            let mut periodic: Vec<Fp2> = Vec::with_capacity(periodic_c.len());
+            let mut out: Vec<Fp2> = Vec::with_capacity(hi - lo);
+            let mut x = shift_c * sub.pow(lo as u64);
+            for i in lo..hi {
+                let j = c + blowup * i;
+                window.clear();
+                for k in 0..window_size {
+                    let idx = (j + k * blowup) % n;
+                    for column in &trace_d {
+                        window.push(Fp2::from_base(column[idx]));
+                    }
                 }
+                periodic.clear();
+                periodic.extend(periodic_c.iter().map(|pd| Fp2::from_base(pd[i])));
+                out.push(compose_ext(air, g, Fp2::from_base(x), &window, &periodic, &coeffs));
+                x = x * sub;
             }
-            let periodic: Vec<Fp2> =
-                periodic_c.iter().map(|pd| Fp2::from_base(pd[i])).collect();
-            comp_d[j] = compose_ext(air, g, Fp2::from_base(x), &window, &periodic, &coeffs);
-            x = x * sub;
+            out
+        });
+        for (b, part) in parts.into_iter().enumerate() {
+            for (k, v) in part.into_iter().enumerate() {
+                comp_d[c + blowup * (b * BLOCK + k)] = v;
+            }
         }
     }
     let comp_leaves: Vec<[Fp; RATE]> = comp_d.iter().map(|v| pack_ext(*v)).collect();
