@@ -24,7 +24,7 @@ pub(crate) fn batch(tuples: &[Vec<Fp>]) -> Batch {
         traces.push(air.trace());
         regions.push(Box::new(air));
     }
-    let rows: Vec<usize> = regions.iter().map(|r| 1usize << r.log_trace_len()).collect();
+    let rows: Vec<usize> = regions.iter().map(|r| r.rows()).collect();
     let (off, span) = offsets(&rows);
     let classes = price_uniform(&off);
     let groups: Vec<_> = classes.iter().map(|c| group_of(span, c)).collect();
