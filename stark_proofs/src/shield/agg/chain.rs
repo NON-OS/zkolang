@@ -13,7 +13,7 @@ use super::state::{Carried, Node};
 /// One equality over the whole carried state, not a check per field: a field
 /// added later is covered by having been added, rather than by someone
 /// remembering to compare it.
-pub(crate) fn chain(a: &Node, b: &Node) -> Option<Node> {
+pub fn chain(a: &Node, b: &Node) -> Option<Node> {
     if a.new != b.old {
         return None;
     }
@@ -25,6 +25,6 @@ pub(crate) fn chain(a: &Node, b: &Node) -> Option<Node> {
 
 /// A leaf's claim, for the lift. One transfer moves the chain by its own two
 /// nullifiers and two outputs.
-pub(crate) fn leaf(old: Carried, new: Carried) -> Node {
+pub fn leaf(old: Carried, new: Carried) -> Node {
     Node { old, new }
 }

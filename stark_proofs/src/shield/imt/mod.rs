@@ -6,7 +6,7 @@
 //! and this answers with one short path to the leaf below the key.
 
 mod fold;
-pub(crate) mod hash;
+pub mod hash;
 mod insert;
 mod last;
 mod leaf;
@@ -17,11 +17,11 @@ mod set;
 mod test;
 mod witnessed;
 
-pub(crate) use fold::{refold, Tree};
-pub(crate) use insert::{chain, writes_are_distinct, Low, Step};
-pub(crate) use last::last_is_the_maximum;
-pub(crate) use leaf::{Leaf, IMT_LEAF_DOMAIN, IMT_LEAF_LIMBS};
-pub(crate) use merge::{same, stitch, Range, State};
-pub(crate) use order::{cmp, excludes};
-pub(crate) use set::Set;
-pub(crate) use witnessed::{root_of, Path};
+pub use fold::{refold, Tree};
+pub use insert::{chain, writes_are_distinct, Low, Step};
+pub use last::last_is_the_maximum;
+pub use leaf::{Leaf, IMT_LEAF_DOMAIN, IMT_LEAF_LIMBS};
+pub use merge::{same, stitch, Range, State};
+pub use order::{cmp, excludes};
+pub use set::Set;
+pub use witnessed::{root_of, Path};

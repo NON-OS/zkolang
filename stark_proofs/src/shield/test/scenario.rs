@@ -6,20 +6,20 @@ use crate::shield::key::Break;
 use crate::shield::note::Note;
 
 /// 1000 + 2000 spent, 1500 + 1200 created, 200 out publicly, 100 in fees.
-pub(crate) fn balanced_flip(brk: Break, flip: Option<usize>) -> JoinSplit {
+pub fn balanced_flip(brk: Break, flip: Option<usize>) -> JoinSplit {
     let sks = [secret(1), secret(2)];
     let ins = [owned(sks[0], 0, 1000), owned(sks[1], 10, 2000)];
     let outs = [plain(20, 1500), plain(30, 1200)];
     build(&ins, &outs, sks, 200, 100, brk, flip)
 }
 
-pub(crate) fn balanced(brk: Break) -> JoinSplit {
+pub fn balanced(brk: Break) -> JoinSplit {
     balanced_flip(brk, None)
 }
 
 /// The same spend against the tree the pool deploys. `balanced` builds a minimal
 /// instance, which is what a binding gate wants and is not what a transfer costs.
-pub(crate) fn balanced_deployed(brk: Break) -> JoinSplit {
+pub fn balanced_deployed(brk: Break) -> JoinSplit {
     let sks = [secret(1), secret(2)];
     let ins = [owned(sks[0], 0, 1000), owned(sks[1], 10, 2000)];
     let outs = [plain(20, 1500), plain(30, 1200)];
@@ -36,7 +36,7 @@ pub(crate) fn balanced_deployed(brk: Break) -> JoinSplit {
     )
 }
 
-pub(crate) fn build(
+pub fn build(
     ins: &[Note; 2],
     outs: &[Note; 2],
     sks: [[crate::crypto::stark::field::Fp; crate::crypto::stark::air::RATE]; 2],

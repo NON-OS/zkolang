@@ -8,7 +8,7 @@ use alloc::vec::Vec;
 
 /// The lanes a node's effect is made of, in the order it holds them: two
 /// retired notes, then two created ones.
-pub(crate) const LANES: usize = 4 * RATE;
+pub const LANES: usize = 4 * RATE;
 
 /// Tie the effect the node composes to the words its child's transcript
 /// absorbed.
@@ -19,7 +19,7 @@ pub(crate) const LANES: usize = 4 * RATE;
 /// absorbed that word. Without the join the effect is a free witness and a node
 /// verifies one child while composing another's move, every proof still
 /// verifying. `base` is where the child intent's words start.
-pub(crate) fn effect_classes(l: usize, eff_off: usize, base: usize) -> Vec<Class> {
+pub fn effect_classes(l: usize, eff_off: usize, base: usize) -> Vec<Class> {
     let mut g = Vec::with_capacity(LANES);
     for (k, word) in words(base).enumerate() {
         let (row, col) = absorbed_at(l, word);
@@ -29,13 +29,13 @@ pub(crate) fn effect_classes(l: usize, eff_off: usize, base: usize) -> Vec<Class
 }
 
 /// The public word index of each effect lane, nullifiers before outputs.
-pub(crate) fn words(base: usize) -> impl Iterator<Item = usize> {
+pub fn words(base: usize) -> impl Iterator<Item = usize> {
     [NF0, NF1, OUT_CM0, OUT_CM1]
         .into_iter()
         .flat_map(move |d| (0..RATE).map(move |c| base + d + c))
 }
 
 /// The cells a set of classes names, for arguing about what got tied.
-pub(crate) fn cells(classes: &[Class]) -> Vec<Cell> {
+pub fn cells(classes: &[Class]) -> Vec<Cell> {
     classes.iter().flatten().copied().collect()
 }

@@ -10,7 +10,7 @@ use alloc::vec::Vec;
 /// The key that retires a note is the key that note committed to, and the
 /// commitment it absorbs is the one membership authenticated. Without both, a
 /// nullifier is a number the prover chose.
-pub(crate) fn key_classes(l: &Layout) -> Vec<Class> {
+pub fn key_classes(l: &Layout) -> Vec<Class> {
     let mut c = Vec::new();
     let rounds = 1usize << POOL_LOG_ROUNDS;
     for (i, &base) in l.key.iter().enumerate() {

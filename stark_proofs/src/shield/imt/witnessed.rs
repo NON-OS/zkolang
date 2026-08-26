@@ -5,7 +5,7 @@ use crate::crypto::stark::field::Fp;
 use alloc::collections::BTreeMap;
 
 /// One changed leaf and the siblings the prover supplies for its path.
-pub(crate) struct Path {
+pub struct Path {
     pub index: usize,
     pub leaf: [Fp; RATE],
     /// Sibling at each level, low to high.
@@ -24,7 +24,7 @@ pub(crate) struct Path {
 /// in-circuit face of recomputing a node once, and nothing else replaces it: the
 /// leaves can be distinct, every path can be internally consistent, and the root
 /// is still a fiction.
-pub(crate) fn root_of(h: &Poseidon, paths: &[Path]) -> Option<[Fp; RATE]> {
+pub fn root_of(h: &Poseidon, paths: &[Path]) -> Option<[Fp; RATE]> {
     // (level, index) -> the value some path computed there.
     let mut seen: BTreeMap<(usize, usize), [Fp; RATE]> = BTreeMap::new();
     let mut root: Option<[Fp; RATE]> = None;

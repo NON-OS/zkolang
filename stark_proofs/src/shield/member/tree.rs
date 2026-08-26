@@ -5,7 +5,7 @@ use crate::crypto::stark::field::Fp;
 use alloc::vec::Vec;
 
 /// GoldilocksIncrementalTree.TREE_DEPTH.
-pub(crate) const TREE_DEPTH: usize = 32;
+pub const TREE_DEPTH: usize = 32;
 
 /// zeros[0] = 0, zeros[i+1] = hash2(zeros[i], zeros[i]), frontier insert taking
 /// the node left when the index bit is zero. Leaves are kept so a path can be
@@ -13,7 +13,7 @@ pub(crate) const TREE_DEPTH: usize = 32;
 ///
 /// Depth is a field so a forgery can run on a minimal instance: violating a
 /// binding rejects through the permutation structure, not the tree size.
-pub(crate) struct PoolTree {
+pub struct PoolTree {
     h: Poseidon,
     depth: usize,
     zeros: Vec<[Fp; RATE]>,

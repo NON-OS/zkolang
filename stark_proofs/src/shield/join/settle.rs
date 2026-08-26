@@ -9,7 +9,7 @@ use crate::crypto::stark::field::Fp;
 /// substituting one. Price uniformity across a batch is a separate constraint
 /// and lands with the batch assembly.
 #[derive(Clone, Copy)]
-pub(crate) struct Settle {
+pub struct Settle {
     pub clearing_price: u64,
     pub recipient: u64,
 }

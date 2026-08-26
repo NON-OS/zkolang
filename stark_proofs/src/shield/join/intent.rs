@@ -9,7 +9,7 @@ use alloc::vec::Vec;
 
 /// The claimed tuple, and the region that pins it. `flip` perturbs one claimed
 /// word so a test can show that word is tied to the cell computing it.
-pub(crate) fn publics_region(
+pub fn publics_region(
     s: &Stack,
     public_amount: u64,
     fee: u64,

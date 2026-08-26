@@ -8,7 +8,7 @@ use alloc::vec::Vec;
 
 /// Each note stays a chained compress tree, its committed value limbs are the
 /// balance row's limbs, and each spent note is the leaf both trees walk from.
-pub(crate) fn note_classes(l: &Layout) -> Vec<Class> {
+pub fn note_classes(l: &Layout) -> Vec<Class> {
     let mut c = Vec::new();
     let rounds = 1usize << POOL_LOG_ROUNDS;
     for (i, &base) in l.note.iter().enumerate() {

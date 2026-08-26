@@ -11,12 +11,12 @@ use super::state::Node;
 /// the state anything proved. Carrying the exposed value is what keeps the chain
 /// about the proofs beneath it.
 #[derive(Clone, Copy)]
-pub(crate) struct Verified {
+pub struct Verified {
     pub exposed: Node,
 }
 
 /// Combine two verified children. The transitions compared are the ones the
 /// children exposed, not values the node was handed.
-pub(crate) fn combine(a: &Verified, b: &Verified) -> Option<Node> {
+pub fn combine(a: &Verified, b: &Verified) -> Option<Node> {
     chain(&a.exposed, &b.exposed)
 }

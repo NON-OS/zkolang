@@ -5,7 +5,7 @@ use crate::crypto::stark::field::Fp;
 use alloc::boxed::Box;
 use alloc::vec::Vec;
 
-pub(crate) struct Positions {
+pub struct Positions {
     pub regions: Vec<Box<dyn AirExt>>,
     pub traces: Vec<Vec<Fp>>,
     /// Row carrying the recovered index, one per spent note.
@@ -17,7 +17,7 @@ pub(crate) struct Positions {
 /// hashes that position as a scalar. One of these per spent note recovers the
 /// scalar from bits the assembly then binds to those directions, so the two are
 /// the same position rather than two numbers that happen to agree.
-pub(crate) fn positions(leaves: &[usize], depth: usize) -> Positions {
+pub fn positions(leaves: &[usize], depth: usize) -> Positions {
     let mut regions: Vec<Box<dyn AirExt>> = Vec::with_capacity(leaves.len());
     let mut traces = Vec::with_capacity(leaves.len());
     let mut value_row = Vec::with_capacity(leaves.len());

@@ -11,7 +11,7 @@ use alloc::vec::Vec;
 
 /// Every word is tied to the cell that computes it. A tamper test alone would
 /// only show a word is constrained to something, not to the right something.
-pub(crate) fn public_classes(l: &Layout, pub_off: usize) -> Vec<Class> {
+pub fn public_classes(l: &Layout, pub_off: usize) -> Vec<Class> {
     let mut g = Vec::new();
     let rounds = 1usize << POOL_LOG_ROUNDS;
     let word = |i: usize| pub_off + i;

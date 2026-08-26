@@ -9,12 +9,12 @@ use core::cmp::Ordering;
 
 /// Where a key enters the chain: either between two leaves already there, or
 /// after the value the batch inserted just before it.
-pub(crate) enum Low {
+pub enum Low {
     InTree(usize),
     InBatch(usize),
 }
 
-pub(crate) struct Step {
+pub struct Step {
     pub key: [Fp; RATE],
     pub low: Low,
 }
@@ -29,7 +29,7 @@ pub(crate) struct Step {
 /// throughout, which is what makes it a refactor away.
 ///
 /// So the circuit checks it rather than inheriting it.
-pub(crate) fn writes_are_distinct(steps: &[Step]) -> bool {
+pub fn writes_are_distinct(steps: &[Step]) -> bool {
     let mut seen: Vec<&Low> = Vec::with_capacity(steps.len());
     for s in steps {
         let clash = seen.iter().any(|o| match (o, &s.low) {
@@ -55,7 +55,7 @@ pub(crate) fn writes_are_distinct(steps: &[Step]) -> bool {
 /// Strictly increasing, so a duplicate cannot survive the chain. Uniqueness stops
 /// being a rule to enforce and becomes a consequence of the shape, which is one
 /// fewer place to be subtly wrong.
-pub(crate) fn chain(sorted: &[[Fp; RATE]], tree: &[Leaf]) -> Option<Vec<Step>> {
+pub fn chain(sorted: &[[Fp; RATE]], tree: &[Leaf]) -> Option<Vec<Step>> {
     for w in sorted.windows(2) {
         if cmp(&w[0], &w[1]) != Ordering::Less {
             return None;

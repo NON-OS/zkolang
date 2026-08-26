@@ -5,7 +5,7 @@ use crate::crypto::stark::air::{MultiMembership, Opening, Poseidon, RATE};
 use crate::crypto::stark::field::Fp;
 use alloc::vec::Vec;
 
-pub(crate) struct NoteParts {
+pub struct NoteParts {
     pub region: MultiMembership,
     pub trace: Vec<Fp>,
     pub span_op: usize,
@@ -15,11 +15,11 @@ pub(crate) struct NoteParts {
 /// commit_note is a depth two compress tree, and a compression is one membership
 /// level, so the note hash is three depth one openings. The edges that chain them
 /// are not implied by the region; see note::edges.
-pub(crate) fn note_parts(note: &Note) -> NoteParts {
+pub fn note_parts(note: &Note) -> NoteParts {
     note_parts_broken(note, false)
 }
 
-pub(crate) fn note_parts_broken(note: &Note, break_edge: bool) -> NoteParts {
+pub fn note_parts_broken(note: &Note, break_edge: bool) -> NoteParts {
     let h = Poseidon::new(POOL_LOG_ROUNDS, [Fp::ZERO; RATE]);
     let q = quads(&note.limbs());
     let d0 = h.compress(&q[0], &q[1]);

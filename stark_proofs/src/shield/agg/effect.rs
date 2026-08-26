@@ -8,7 +8,7 @@ use crate::crypto::stark::field::Fp;
 /// creates. These are public words of the proof, already bound to the cells that
 /// computed them.
 #[derive(Clone, Copy)]
-pub(crate) struct Effect {
+pub struct Effect {
     pub nullifiers: [[Fp; RATE]; 2],
     pub outputs: [[Fp; RATE]; 2],
 }
@@ -23,7 +23,7 @@ pub(crate) struct Effect {
 /// The roots move by absorbing; the real move is the IMT insert and the tree
 /// append, and those are argued in shield::imt. What this pins is that the
 /// exposed transition is a function of the proof's own effects.
-pub(crate) fn induced(h: &Poseidon, old: Carried, e: &Effect) -> Carried {
+pub fn induced(h: &Poseidon, old: Carried, e: &Effect) -> Carried {
     let mut nulls = old.nullifier_root;
     for n in &e.nullifiers {
         nulls = h.compress(&nulls, n);
@@ -42,6 +42,6 @@ pub(crate) fn induced(h: &Poseidon, old: Carried, e: &Effect) -> Carried {
 /// A leaf of the tree: verify a transfer, then expose the transition its own
 /// effects make. `claimed` is what the node would publish; it has to be the one
 /// the proof induces.
-pub(crate) fn lift(h: &Poseidon, old: Carried, e: &Effect, claimed: Carried) -> Option<Node> {
+pub fn lift(h: &Poseidon, old: Carried, e: &Effect, claimed: Carried) -> Option<Node> {
     (induced(h, old, e) == claimed).then_some(Node { old, new: claimed })
 }

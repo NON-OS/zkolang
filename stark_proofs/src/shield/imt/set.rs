@@ -13,7 +13,7 @@ use core::cmp::Ordering;
 
 /// The nullifier set, small enough to hold whole, for arguing about what a batch
 /// does to its root.
-pub(crate) struct Set {
+pub struct Set {
     pub leaves: Vec<Leaf>,
     pub slots: usize,
 }

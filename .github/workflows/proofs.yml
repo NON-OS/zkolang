@@ -30,8 +30,36 @@ jobs:
       - name: every gate
         run: cargo test --workspace --release -- --include-ignored --test-threads=1
 
-  # The only job that still needs the large runner. Everything above fits a
-  # standard one now.
+  # What a sender actually pays for. Two notes in, two out, membership against a
+  # pool of the deployed depth, at the deployed query count. Small enough for a
+  # standard runner, so this one costs nothing to publish on every dispatch.
+  transfer:
+    name: emit a transfer proof
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: emit and verify it from disk
+        run: |
+          /usr/bin/time -v cargo run --release -p stark_proofs --features parallel \
+            --bin emit_transfer -- transfer.proof 2>&1 | tee transfer.log
+          echo "----"
+          ls -l transfer.proof
+          sha256sum transfer.proof | tee transfer.sha256
+          grep -E "Maximum resident|Elapsed \(wall|proved in|verified from disk|instance " transfer.log || true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: transfer-proof
+          path: |
+            transfer.proof
+            transfer.sha256
+            transfer.log
+
   emit:
     name: emit a recursion proof
     if: github.event_name == 'workflow_dispatch' && inputs.emit

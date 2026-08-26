@@ -6,7 +6,7 @@ use alloc::vec::Vec;
 
 /// Identity over `cols` with the named cells transposed, so a satisfying grand
 /// product forces them equal.
-pub(crate) fn equate(
+pub fn equate(
     span: usize,
     cols: Vec<usize>,
     swaps: &[(usize, usize, usize, usize)],
@@ -21,7 +21,7 @@ pub(crate) fn equate(
     GpGroup { wired_cols: cols, sigma, beta: Fp::from_u64(5), gamma: Fp::from_u64(7) }
 }
 
-pub(crate) fn offsets(rows: &[usize]) -> (Vec<usize>, usize) {
+pub fn offsets(rows: &[usize]) -> (Vec<usize>, usize) {
     let mut off = Vec::with_capacity(rows.len());
     let mut r = 0usize;
     for n in rows {

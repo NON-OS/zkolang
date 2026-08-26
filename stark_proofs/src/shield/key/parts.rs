@@ -9,7 +9,7 @@ use alloc::vec::Vec;
 
 /// Which tie to cut, so a reject fires through one binding and nothing else.
 #[derive(Clone, Copy, PartialEq, Eq)]
-pub(crate) enum Break {
+pub enum Break {
     None,
     /// A different secret behind the nullifier key: the two derivations no
     /// longer share one sk.
@@ -29,7 +29,7 @@ pub(crate) enum Break {
     ForeignIndex,
 }
 
-pub(crate) struct NullifierParts {
+pub struct NullifierParts {
     pub region: MultiMembership,
     pub trace: Vec<Fp>,
     pub span_op: usize,
@@ -37,7 +37,7 @@ pub(crate) struct NullifierParts {
     pub spend_pk: [Fp; RATE],
 }
 
-pub(crate) fn nullifier_parts(
+pub fn nullifier_parts(
     sk: [Fp; RATE],
     cm: [Fp; RATE],
     leaf_index: u64,

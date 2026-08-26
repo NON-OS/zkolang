@@ -7,7 +7,7 @@ use super::bind_note::note_classes;
 use crate::shield::wire_class::Class;
 use alloc::vec::Vec;
 
-pub(crate) struct Layout {
+pub struct Layout {
     pub span: usize,
     pub span_op: usize,
     pub note: Vec<usize>,
@@ -23,7 +23,7 @@ pub(crate) struct Layout {
     pub balance: usize,
 }
 
-pub(crate) fn classes(l: &Layout) -> Vec<Class> {
+pub fn classes(l: &Layout) -> Vec<Class> {
     let mut c = note_classes(l);
     c.extend(key_classes(l));
     c.extend(index_classes(l));

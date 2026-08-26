@@ -15,7 +15,7 @@ use core::cmp::Ordering;
 /// {old, new} chain and cannot be realised by the tree at all: there is no gap to
 /// insert into. So the roots a batch exposes have to be the roots the update
 /// actually produces.
-pub(crate) fn realised(
+pub fn realised(
     h: &Poseidon,
     set: &Set,
     notes: [Fp; RATE],

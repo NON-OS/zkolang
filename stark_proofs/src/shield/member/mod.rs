@@ -3,5 +3,5 @@
 mod prove;
 mod tree;
 
-pub(crate) use prove::{note_member, NoteMember};
-pub(crate) use tree::{PoolTree, TREE_DEPTH};
+pub use prove::{note_member, NoteMember};
+pub use tree::{PoolTree, TREE_DEPTH};

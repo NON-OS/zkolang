@@ -6,7 +6,7 @@ use alloc::collections::BTreeMap;
 use alloc::vec::Vec;
 
 /// A tree small enough to hold whole, for arguing about what a batch update does.
-pub(crate) struct Tree {
+pub struct Tree {
     pub depth: usize,
     /// Level 0 is the leaves, level `depth` is the root.
     pub level: Vec<Vec<[Fp; RATE]>>,
@@ -42,7 +42,7 @@ impl Tree {
 /// Keyed by index, so the order the changes arrive in cannot reach the root. If it
 /// could, the shape of the aggregation tree would leak into the state and two
 /// valid orders would disagree.
-pub(crate) fn refold(h: &Poseidon, tree: &Tree, changed: &[(usize, [Fp; RATE])]) -> [Fp; RATE] {
+pub fn refold(h: &Poseidon, tree: &Tree, changed: &[(usize, [Fp; RATE])]) -> [Fp; RATE] {
     let mut moved: BTreeMap<usize, [Fp; RATE]> = changed.iter().copied().collect();
     for d in 0..tree.depth {
         let mut up: BTreeMap<usize, [Fp; RATE]> = BTreeMap::new();

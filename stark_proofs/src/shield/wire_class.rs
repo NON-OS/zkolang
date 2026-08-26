@@ -7,16 +7,16 @@ use alloc::vec::Vec;
 /// A set of cells a binding forces equal. The bindings emit these rather than
 /// grand product groups, so the mechanism that enforces them can change without
 /// touching what they mean.
-pub(crate) type Class = Vec<Cell>;
+pub type Class = Vec<Cell>;
 
-pub(crate) fn pair(ra: usize, ca: usize, rb: usize, cb: usize) -> Class {
+pub fn pair(ra: usize, ca: usize, rb: usize, cb: usize) -> Class {
     alloc::vec![Cell { row: ra, col: ca }, Cell { row: rb, col: cb }]
 }
 
 /// One class as its own grand product, which is what the assembly does today.
 /// Swapping this for a single permutation over every class is the shrink; the
 /// classes and their forgeries do not move.
-pub(crate) fn group_of(span: usize, class: &Class) -> GpGroup {
+pub fn group_of(span: usize, class: &Class) -> GpGroup {
     let mut cols: Vec<usize> = class.iter().map(|c| c.col).collect();
     cols.sort_unstable();
     cols.dedup();
@@ -37,7 +37,7 @@ pub(crate) fn group_of(span: usize, class: &Class) -> GpGroup {
 /// Disjointness is a precondition. A class over a cell that already carries an
 /// image rewrites its cycle and drops the earlier binding, silently, while every
 /// other binding still holds. Proven in lean/Zkolang/Wiring.lean.
-pub(crate) fn global_group(span: usize, width: usize, classes: &[Class]) -> GpGroup {
+pub fn global_group(span: usize, width: usize, classes: &[Class]) -> GpGroup {
     let cols: Vec<usize> = (0..width).collect();
     let mut sigma: Vec<usize> = (0..span * width).collect();
     for class in classes {

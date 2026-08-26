@@ -12,7 +12,7 @@ use crate::shield::wire_pack::{packed_groups, CAP};
 use alloc::boxed::Box;
 use alloc::vec::Vec;
 
-pub(crate) struct BatchProof {
+pub struct BatchProof {
     pub wired: WiredMultiExt,
     pub witness: Vec<Fp>,
     pub intents: Vec<Vec<Fp>>,
@@ -20,7 +20,7 @@ pub(crate) struct BatchProof {
 
 /// Every intent's regions in one stack, each intent's own bindings emitted at its
 /// base, and the clearing price tied across all of them.
-pub(crate) fn assemble(parts: Vec<IntentParts>) -> BatchProof {
+pub fn assemble(parts: Vec<IntentParts>) -> BatchProof {
     let mut regions: Vec<Box<dyn AirExt>> = Vec::new();
     let mut traces: Vec<Vec<Fp>> = Vec::new();
     let mut intents = Vec::with_capacity(parts.len());

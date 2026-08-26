@@ -13,7 +13,7 @@ use alloc::vec::Vec;
 /// A transfer is one asset in and the same asset out. A swap is not, and when that
 /// path opens conservation has to run per asset rather than over a single sum; this
 /// class is the transfer's answer and does not generalise to it.
-pub(crate) fn asset_classes(l: &Layout) -> Vec<Class> {
+pub fn asset_classes(l: &Layout) -> Vec<Class> {
     const ASSET_LIMB: usize = 2;
     if l.note.len() < 2 {
         return Vec::new();
