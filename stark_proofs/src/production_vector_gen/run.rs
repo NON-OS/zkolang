@@ -18,6 +18,59 @@ fn spec_dir() -> Option<String> {
     std::env::var("NOX_SPEC_DIR").ok().filter(|d| !d.is_empty())
 }
 
+/// The structure alone, without the deployment proof behind it.
+///
+/// A verifier reads its shape from this file and its inner domain from
+/// inner_log_trace_len, so a contract can be wired to the field before anyone
+/// waits on a proof. The proof takes an hour; the shape takes seconds, and the
+/// shape is what a derivation reads.
+#[test]
+#[ignore]
+fn gen_production_structure() {
+    let Some(spec) = spec_dir() else {
+        std::println!("NOX_SPEC_DIR unset, nothing to generate");
+        return;
+    };
+    let asm = assemble(Tamper::None);
+    let wired = &asm.wired;
+
+    let ltl = wired.log_trace_len();
+    let tt = 1usize << ltl;
+    let deg = wired.constraint_degree().max(1);
+    let bound = (deg * tt).next_power_of_two();
+    let nn = (2 * bound) << 3;
+    let log_dn = nn.trailing_zeros();
+    let fri_log_blowup = log_dn - bound.trailing_zeros();
+    let n_periodic = wired.periodic_columns().len();
+    let periodic_root = periodic_root(wired, 3);
+
+    let off_heights: Vec<(usize, usize)> = asm
+        .region_offsets
+        .iter()
+        .enumerate()
+        .map(|(ri, &o)| {
+            let end = asm.region_offsets.get(ri + 1).copied().unwrap_or(asm.lay.span);
+            (o, end - o)
+        })
+        .collect();
+    let region_transitions = wired.num_transition() - asm.n_groups;
+    structure::emit(
+        &asm,
+        &off_heights,
+        fri_log_blowup,
+        log_dn,
+        n_periodic,
+        region_transitions,
+        &periodic_root,
+        &alloc::format!("{spec}/production-air-structure.json"),
+    );
+    std::println!(
+        "structure: log_trace_len {} inner_log_trace_len {}",
+        ltl,
+        asm.lay.t_inner.trailing_zeros()
+    );
+}
+
 #[test]
 #[ignore]
 fn gen_production_recursive_vector() {

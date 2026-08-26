@@ -5,7 +5,8 @@
 
 use crate::crypto::stark::air::{
     compose_inputs, compose_inputs_pub, stark_prove_poseidon_ext, stark_prove_poseidon_ext_pub,
-    Accumulator, Air, AirExt, ComposeInputs, Poseidon, RangeCheck, StarkProofExtP, WiredExt, RATE,
+    Accumulator, Air, AirExt, ComposeInputs, Poseidon, RangeCheck, StarkProofExtP, WiredExt,
+    WiredMultiExt, RATE,
 };
 use crate::crypto::stark::field::Fp;
 use crate::crypto::stark::fri::root_of_unity;
@@ -99,4 +100,21 @@ pub fn step_air(h: &Poseidon) -> Inner<nonos_zkolang::StepAir> {
     let t = 1u64 << air.log_trace_len();
     let g = root_of_unity(air.log_trace_len());
     Inner { air, publics: Vec::new(), proof, ci, t, g }
+}
+
+/// The recursion over a real transfer rather than a stand-in.
+///
+/// The fixture above is two toy regions with synthetic publics, sized so the
+/// assembly could be built at all. This is the deployed join-split: depth 32
+/// against the pool tree, its intent absorbed as the transcript publics the
+/// verifier replays. Anything the recursion says about this one, it says about
+/// a transfer somebody could actually send.
+pub fn shield_join_split(h: &Poseidon) -> Inner<WiredMultiExt> {
+    let js = crate::shield::test::scenario::balanced_deployed(crate::shield::key::Break::None);
+    let publics = js.intent.clone();
+    let proof = stark_prove_poseidon_ext_pub(&js.wired, &js.witness, NQ, GRIND, EXTRA, h, &publics);
+    let ci = compose_inputs_pub(&js.wired, &proof, EXTRA, h, &publics);
+    let t = 1u64 << js.wired.log_trace_len();
+    let g = root_of_unity(js.wired.log_trace_len());
+    Inner { air: js.wired, publics, proof, ci, t, g }
 }
