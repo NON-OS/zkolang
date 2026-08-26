@@ -42,12 +42,18 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
 
-      # Peak is not known at full query count, so record it.
-      - name: peak memory while emitting
+      # One proof, the honest one. The file also holds three tamper rejects and
+      # each of those proves too, so running the whole file is four proofs for a
+      # question that one answers. The rejects run in the gates job.
+      #
+      # Peak is not known at full query count, so record it rather than size the
+      # runner off an estimate.
+      - name: emit and record the peak
         run: |
           /usr/bin/time -v cargo test --release -p stark_proofs --features parallel \
-            recursion_assembly_tests -- --ignored --test-threads=1 2>&1 | tee emit.log
-          grep -E "Maximum resident|Elapsed" emit.log || true
+            the_assembly_accepts_the_real_inner_proof -- --ignored --nocapture 2>&1 | tee emit.log
+          echo "----"
+          grep -E "Maximum resident|Elapsed \(wall|assembly:" emit.log || true
 
       - uses: actions/upload-artifact@v4
         if: always()
