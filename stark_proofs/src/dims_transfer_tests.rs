@@ -30,12 +30,30 @@ fn probe_transfer_dims() {
     shape("DEPLOYED", &balanced_deployed(Break::None));
 }
 
-/// The number that belongs in any claim about transfer cost.
+/// The numbers that belong in any claim about transfer cost: what it takes to
+/// make one, what it takes to check one, and how big the thing is on the wire.
 #[test]
 #[ignore]
 fn probe_deployed_transfer_proves() {
+    use crate::crypto::stark::air::serialize_proof_ext;
     let js = balanced_deployed(Break::None);
     shape("DEPLOYED", &js);
+
+    let t0 = std::time::Instant::now();
     let proof = stark_prove_ext(&js.wired, &js.witness, 32, 8);
-    assert!(stark_verify_ext(&js.wired, &proof, 32, 8), "the deployed transfer did not verify");
+    let prove = t0.elapsed();
+
+    let bytes = serialize_proof_ext(&proof);
+
+    let t1 = std::time::Instant::now();
+    let ok = stark_verify_ext(&js.wired, &proof, 32, 8);
+    let verify = t1.elapsed();
+
+    std::println!(
+        "TRANSFER prove_ms={} verify_ms={} proof_bytes={} queries=32 blowup=8",
+        prove.as_millis(),
+        verify.as_millis(),
+        bytes.len()
+    );
+    assert!(ok, "the deployed transfer did not verify");
 }
