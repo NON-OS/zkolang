@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
   schedule:
     # Weekly, so a newly published advisory is caught even with no code change.
     - cron: '17 6 * * 1'
