@@ -12,16 +12,37 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # The pinned toolchain is a few hundred MB from releases.lean-lang.org.
+      # That host has gone down and taken this gate red with it while every
+      # proof in the repo was fine, so keep a copy.
+      - name: cache the toolchain
+        uses: actions/cache@v4
+        with:
+          path: ~/.elan
+          key: elan-${{ runner.os }}-${{ hashFiles('lean/lean-toolchain') }}
+
       # Install elan. It reads lean/lean-toolchain and pulls the pinned Lean on
       # the first lake invocation in that directory.
-      - name: install elan
+      # elan pulls from releases.lean-lang.org, which 404s for the pinned
+      # version: the project ages old releases off that host. GitHub still
+      # serves them, so fetch it there and drop it where elan looks. The
+      # directory name is elan's encoding of leanprover/lean4:v4.15.0.
+      - name: install the pinned toolchain
         run: |
-          curl -sSfL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -o elan-init.sh
-          chmod +x elan-init.sh
-          ./elan-init.sh -y --default-toolchain none
-          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          set -euo pipefail
+          pin=$(tr -d '[:space:]' < lean/lean-toolchain)          # leanprover/lean4:v4.15.0
+          ver=${pin##*:}                                          # v4.15.0
+          dir="$HOME/.elan/toolchains/$(echo "$pin" | sed 's|/|--|; s|:|---|')"
+          if [ ! -x "$dir/bin/lake" ]; then
+            curl -sSfL --retry 5 --retry-all-errors --connect-timeout 20 \
+              "https://github.com/leanprover/lean4/releases/download/$ver/lean-${ver#v}-linux.tar.zst" \
+              -o lean.tar.zst
+            mkdir -p "$dir"
+            tar --use-compress-program=unzstd -xf lean.tar.zst -C "$dir" --strip-components=1
+          fi
+          echo "$dir/bin" >> "$GITHUB_PATH"
+          "$dir/bin/lake" --version
 
-      # The build is the check: a theorem that did not type check fails here.
       - name: lake build
         working-directory: lean
         run: lake build
