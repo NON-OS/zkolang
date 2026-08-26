@@ -45,6 +45,8 @@ mod recursion_assembly_tests;
 #[cfg(test)]
 mod shield;
 #[cfg(test)]
+mod spec_out;
+#[cfg(test)]
 mod seam2_tests;
 #[cfg(test)]
 mod stark_selftest_gen;

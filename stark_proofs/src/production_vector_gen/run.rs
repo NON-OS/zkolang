@@ -11,11 +11,20 @@ use crate::recursion_assembly::{assemble, assemble_step, Tamper};
 use alloc::string::String;
 use alloc::vec::Vec;
 
-const SPEC: &str = "/Users/ek/Desktop/NOX-SmartContract/spec";
+/// Where the contract reference vectors go. Another repo owns them, so the
+/// caller names the directory; unset means there is nowhere to write and the
+/// generator has nothing to do.
+fn spec_dir() -> Option<String> {
+    std::env::var("NOX_SPEC_DIR").ok().filter(|d| !d.is_empty())
+}
 
 #[test]
 #[ignore]
 fn gen_production_recursive_vector() {
+    let Some(spec) = spec_dir() else {
+        std::println!("NOX_SPEC_DIR unset, nothing to generate");
+        return;
+    };
     let asm = assemble(Tamper::None);
     let wired = &asm.wired;
 
@@ -51,7 +60,7 @@ fn gen_production_recursive_vector() {
         n_periodic,
         region_transitions,
         &periodic_root,
-        &alloc::format!("{}/production-air-structure.json", SPEC),
+        &alloc::format!("{spec}/production-air-structure.json"),
     );
 
     // The deployment proof with the periodic sidecar: rate 1/16, 16 grind
@@ -66,9 +75,9 @@ fn gen_production_recursive_vector() {
         &asm,
         &wproof,
         fri_log_blowup,
-        &alloc::format!("{}/production-recursive-vector.json", SPEC),
+        &alloc::format!("{spec}/production-recursive-vector.json"),
     );
-    intermediates::emit(&asm, &wproof, &alloc::format!("{}/reference/intermediates.json", SPEC));
+    intermediates::emit(&asm, &wproof, &alloc::format!("{spec}/reference/intermediates.json"));
 }
 
 /// The same gen for a zkolang step AIR inner: the recursion generalized over the
