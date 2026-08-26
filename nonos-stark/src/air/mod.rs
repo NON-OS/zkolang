@@ -48,6 +48,7 @@ mod fri_fold;
 mod fused;
 mod fused_ext;
 mod fusion;
+pub use fusion::region_offsets;
 mod index_point;
 mod index_scalar;
 mod measure;

@@ -26,6 +26,23 @@ use super::spec::AirExt;
 use alloc::boxed::Box;
 use alloc::vec::Vec;
 
+/// Lay regions out end to end and report each one's row offset and the total.
+///
+/// The one place this arithmetic lives. It was written out five times before,
+/// in the two wired engines, the fused one, the shield batch and a test helper,
+/// and they drifted the moment a region stopped rounding its own length: some
+/// counted the rows a region occupies and some its padded trace, so bindings
+/// addressed cells past the row the product closes on.
+pub fn region_offsets(regions: &[Box<dyn AirExt>]) -> (Vec<usize>, usize) {
+    let mut offsets = Vec::with_capacity(regions.len());
+    let mut row = 0usize;
+    for region in regions {
+        offsets.push(row);
+        row += region.rows();
+    }
+    (offsets, row)
+}
+
 /// The computed placement of a stack of regions in one trace.
 pub(super) struct Stack {
     pub offsets: Vec<usize>,
