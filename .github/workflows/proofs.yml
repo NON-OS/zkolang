@@ -6,7 +6,11 @@ on:
   workflow_dispatch:
     inputs:
       emit:
-        description: 'Also emit a recursion proof (slow, needs the big runner)'
+        description: 'Emit a recursion proof (hours, large runner)'
+        type: boolean
+        default: false
+      paid:
+        description: 'Run the jobs that need the large runner'
         type: boolean
         default: false
 
@@ -40,6 +44,7 @@ jobs:
 
   proving:
     name: the gates that prove a recursion
+    if: github.event_name != 'workflow_dispatch' || inputs.paid
     runs-on: ubuntu-32core
     timeout-minutes: 330
     steps:
@@ -75,10 +80,32 @@ jobs:
         run: |
           /usr/bin/time -v cargo run --release -p stark_proofs --features parallel \
             --bin emit_transfer -- transfer.proof 2>&1 | tee transfer.log
-          echo "----"
-          ls -l transfer.proof
           sha256sum transfer.proof | tee transfer.sha256
-          grep -E "Maximum resident|Elapsed \(wall|proved in|verified from disk|instance " transfer.log || true
+
+      # On the run page rather than inside an artifact nobody downloads. These
+      # are the numbers anyone asks for first, so they belong where they are read.
+      - name: put the numbers on the run page
+        if: always()
+        run: |
+          prove=$(grep -oE 'proved in [0-9.]+s' transfer.log | head -1 | tr -dc '0-9.')
+          verify=$(grep -oE 'verified from disk in [0-9.]+s' transfer.log | head -1 | tr -dc '0-9.')
+          peak=$(grep 'Maximum resident' transfer.log | grep -oE '[0-9]+')
+          bytes=$(wc -c < transfer.proof | tr -d ' ')
+          {
+            echo "## Private transfer proof"
+            echo
+            echo "| | |"
+            echo "|---|---|"
+            echo "| prove | ${prove:-?} s |"
+            echo "| verify, from the written bytes | ${verify:-?} s |"
+            echo "| proof size | ${bytes} bytes |"
+            echo "| peak memory | $(( ${peak:-0} / 1024 )) MB |"
+            echo "| sha256 | \`$(cut -d' ' -f1 transfer.sha256)\` |"
+            echo
+            grep -E '^instance ' transfer.log | sed 's/^/    /'
+            echo
+            echo "Verified after deserialising from disk, not from the value the prover held."
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/upload-artifact@v4
         if: always()
@@ -90,11 +117,14 @@ jobs:
             transfer.log
 
   # The shape a verifier derives from, and the inner proof behind it. Cheaper
-  # than the deployment proof and it is what a contract wires against, so it
-  # runs on its own rather than behind an hour of proving.
+  # than the deployment proof, which is not the same as small: committing the
+  # periodic columns over the evaluation domain is tens of gigabytes and takes a
+  # standard runner down three minutes in, exit 143. Cheaper than an hour of
+  # proving still means the large runner.
   structure:
     name: emit the AIR structure and the real inner
-    runs-on: ubuntu-latest
+    if: github.event_name != 'workflow_dispatch' || inputs.paid
+    runs-on: ubuntu-32core
     timeout-minutes: 180
     steps:
       - uses: actions/checkout@v4
