@@ -54,6 +54,7 @@ pub(super) fn emit(
     let json = alloc::format!(
         "{{\n  \"artifact\": \"production-air-structure\",\n  \"note\": \"{}\",\n  \
          \"log_trace_len\": {}, \"trace_width\": {}, \"constraint_degree\": {}, \
+         \"inner_log_trace_len\": {}, \
          \"num_transition\": {}, \"region_transitions\": {}, \"num_groups\": {},\n  \
          \"n_queries\": 32, \"grind_bits\": 16, \"extra_blowup_bits\": 3, \
          \"fri_log_blowup\": {}, \"log_eval_domain\": {},\n  \
@@ -63,6 +64,10 @@ pub(super) fn emit(
         wired.log_trace_len(),
         wired.trace_width(),
         wired.constraint_degree(),
+        // The inner AIR's own trace length, so a verifier derives the inner
+        // domain from the structure instead of anyone writing the number down.
+        // It is whatever the inner is on the day it was emitted.
+        asm.lay.t_inner.trailing_zeros(),
         wired.num_transition(),
         region_transitions,
         asm.n_groups,

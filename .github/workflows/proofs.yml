@@ -30,6 +30,46 @@ jobs:
       - name: every gate
         run: cargo test --workspace --release -- --include-ignored --test-threads=1
 
+  # The shape a verifier derives from, and the inner proof behind it. Cheaper
+  # than the deployment proof and it is what a contract wires against, so it
+  # runs on its own rather than behind an hour of proving.
+  structure:
+    name: emit the AIR structure and the real inner
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: structure, with the inner trace length in it
+        run: |
+          mkdir -p spec
+          NOX_SPEC_DIR=$PWD/spec /usr/bin/time -v cargo test --release \
+            -p stark_proofs --features parallel gen_production_structure \
+            -- --ignored --nocapture 2>&1 | tee structure.log
+          echo "----"
+          grep -o '"inner_log_trace_len": [0-9]*' spec/production-air-structure.json || true
+          grep -E "Maximum resident|Elapsed \(wall" structure.log || true
+
+      # The deployed join-split proven the way the recursion needs it: Poseidon
+      # transcript, intent absorbed as publics. The stand-in the recursion has
+      # always verified is two toy regions; this is a transfer somebody could send.
+      - name: the real inner proof
+        run: |
+          /usr/bin/time -v cargo run --release -p stark_proofs --features parallel \
+            --bin emit_real_inner 2>&1 | tee inner.log
+          grep -E "Maximum resident|Elapsed \(wall|inner |verified" inner.log || true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: structure-and-inner
+          path: |
+            spec/**
+            structure.log
+            inner.log
+
   # What a sender actually pays for. Two notes in, two out, membership against a
   # pool of the deployed depth, at the deployed query count. Small enough for a
   # standard runner, so this one costs nothing to publish on every dispatch.
