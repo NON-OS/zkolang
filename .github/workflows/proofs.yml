@@ -17,8 +17,12 @@ env:
 # every run. After the region sizing work an assembly holds in a few GB, so they
 # fit a standard runner again. Only the emit still needs a large one.
 jobs:
+  # The ignored set splits by what it costs. Most of it is cheap and belongs on
+  # a standard runner. The ones that prove a recursion assembly are not: that
+  # LDE is around 50 GB and takes the whole VM down with it, which reads as
+  # "the runner received a shutdown signal" rather than as an out of memory.
   gates:
-    name: every gate, serialized
+    name: the gates that fit a standard runner
     runs-on: ubuntu-latest
     timeout-minutes: 330
     steps:
@@ -26,9 +30,64 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
 
-      # One at a time. The assemblies do not share a runner.
-      - name: every gate
-        run: cargo test --workspace --release -- --include-ignored --test-threads=1
+      - name: every gate but the proving ones
+        run: |
+          cargo test --workspace --release -- --include-ignored --test-threads=1 \
+            --skip recursion_assembly_tests \
+            --skip step_assembly \
+            --skip production_vector_gen \
+            --skip probe_recursion
+
+  proving:
+    name: the gates that prove a recursion
+    runs-on: ubuntu-32core
+    timeout-minutes: 330
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: recursion bindings, accept and reject
+        run: |
+          /usr/bin/time -v cargo test --release -p stark_proofs --features parallel \
+            recursion_assembly_tests -- --ignored --test-threads=1 2>&1 | tee proving.log
+          grep -E "Maximum resident|test result" proving.log || true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: proving-log
+          path: proving.log
+
+  # What a sender actually pays for. Two notes in, two out, membership against a
+  # pool of the deployed depth, at the deployed query count. Small enough for a
+  # standard runner, so this one costs nothing to publish on every dispatch.
+  transfer:
+    name: emit a transfer proof
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: emit and verify it from disk
+        run: |
+          /usr/bin/time -v cargo run --release -p stark_proofs --features parallel \
+            --bin emit_transfer -- transfer.proof 2>&1 | tee transfer.log
+          echo "----"
+          ls -l transfer.proof
+          sha256sum transfer.proof | tee transfer.sha256
+          grep -E "Maximum resident|Elapsed \(wall|proved in|verified from disk|instance " transfer.log || true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: transfer-proof
+          path: |
+            transfer.proof
+            transfer.sha256
+            transfer.log
 
   # The shape a verifier derives from, and the inner proof behind it. Cheaper
   # than the deployment proof and it is what a contract wires against, so it
@@ -69,37 +128,6 @@ jobs:
             spec/**
             structure.log
             inner.log
-
-  # What a sender actually pays for. Two notes in, two out, membership against a
-  # pool of the deployed depth, at the deployed query count. Small enough for a
-  # standard runner, so this one costs nothing to publish on every dispatch.
-  transfer:
-    name: emit a transfer proof
-    runs-on: ubuntu-latest
-    timeout-minutes: 90
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-
-      - name: emit and verify it from disk
-        run: |
-          /usr/bin/time -v cargo run --release -p stark_proofs --features parallel \
-            --bin emit_transfer -- transfer.proof 2>&1 | tee transfer.log
-          echo "----"
-          ls -l transfer.proof
-          sha256sum transfer.proof | tee transfer.sha256
-          grep -E "Maximum resident|Elapsed \(wall|proved in|verified from disk|instance " transfer.log || true
-
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: transfer-proof
-          path: |
-            transfer.proof
-            transfer.sha256
-            transfer.log
-
   emit:
     name: emit a recursion proof
     if: github.event_name == 'workflow_dispatch' && inputs.emit
