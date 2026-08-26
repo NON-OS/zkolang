@@ -54,10 +54,26 @@ jobs:
           ls -l recursion.proof
           grep -E "Maximum resident|Elapsed \(wall|proved in|verified from disk|assembly " emit.log || true
 
+      # The contract-facing artifact. Commits the periodic columns to a root,
+      # proves preprocessed at 32 queries and 16 grinding bits, and verifies
+      # against that root rather than recomputing the schedule, which is the
+      # path the deployed verifier actually runs.
+      - name: attested production vectors
+        run: |
+          mkdir -p vectors/reference
+          NOX_SPEC_DIR=$PWD/vectors /usr/bin/time -v cargo test --release \
+            -p stark_proofs --features parallel gen_production_recursive_vector \
+            -- --ignored --nocapture 2>&1 | tee vectors.log
+          echo "----"
+          ls -l vectors vectors/reference || true
+          grep -E "Maximum resident|Elapsed \(wall|committed .* periodic" vectors.log || true
+
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: recursion-proof
+          name: recursion-proof-and-vectors
           path: |
             recursion.proof
             emit.log
+            vectors.log
+            vectors/**
