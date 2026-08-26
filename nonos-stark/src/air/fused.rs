@@ -54,7 +54,7 @@ impl Fused {
         for region in &regions {
             offsets.push(row);
             slot_offsets.push(slot);
-            row += 1usize << region.log_trace_len();
+            row += region.rows();
             slot += region.periodic_columns().len();
             width = width.max(region.trace_width());
             window = window.max(region.window_size());
@@ -64,7 +64,7 @@ impl Fused {
     }
 
     fn height(&self, i: usize) -> usize {
-        1usize << self.regions[i].log_trace_len()
+        self.regions[i].rows()
     }
 
     /// The fused witness: each region's trace laid at its offset, its columns in
