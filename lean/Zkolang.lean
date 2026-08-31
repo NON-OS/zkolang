@@ -18,6 +18,8 @@ import Zkolang.Vm
 import Zkolang.Transfer
 import Zkolang.Wiring
 import Zkolang.Opening
+import Zkolang.Stream
+import Zkolang.BatchInv
 
 /-!
 The soundness of the zKølang standard library gadgets, in Lean 4 over the core library
