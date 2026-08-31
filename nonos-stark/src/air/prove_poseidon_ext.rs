@@ -24,12 +24,16 @@ use super::super::air::{Poseidon, RATE};
 use super::super::field::{Fp, Fp2};
 use super::super::fri::root_of_unity;
 use super::super::fri_poseidon_ext::fri_prove_poseidon_ext;
-use super::super::poly::{eval_cols_on_subgroup_ext, eval_ext, intt, lde, lde_from_coeffs};
-use super::super::poseidon_merkle::{pack_base, pack_ext, PoseidonMerkleTree};
+use super::super::poly::{eval_cols_on_subgroup_ext, eval_ext, intt, lde};
+use super::super::poseidon_merkle::{pack_base, pack_ext, PoseidonMerkleTree, PrunedPoseidonTree};
 use super::super::poseidon_transcript::PoseidonTranscript;
 use super::composition::{compose_ext, domain_params_blown, num_coeffs};
 use super::draw_ood_poseidon::draw_ood_point_poseidon;
 use super::spec::AirExt;
+
+/// Levels dropped from the bottom of each per-column tree: memory divided by
+/// 2^cut, a query rebuilds its own chunk. Six keeps a wide trace in megabytes.
+const TREE_CUT: u32 = 6;
 use super::types_poseidon_ext::{StarkProofExtP, StarkQueryExtP};
 use alloc::vec::Vec;
 
@@ -85,27 +89,28 @@ pub fn stark_prove_poseidon_ext_pub<A: AirExt>(
     for &p in publics {
         transcript.absorb(p);
     }
-    let mut trace_d: Vec<Vec<Fp>> = Vec::with_capacity(width);
     let mut trace_coeffs: Vec<Vec<Fp>> = Vec::with_capacity(width);
-    let mut trace_trees: Vec<PoseidonMerkleTree> = Vec::with_capacity(width);
+    let mut trace_trees: Vec<PrunedPoseidonTree> = Vec::with_capacity(width);
     let mut trace_roots: Vec<[Fp; RATE]> = Vec::with_capacity(width);
     // A column's extension, its commitment and its interpolation depend on that
-    // column alone, so the columns run together. The transcript still absorbs the
+    // column alone, so the columns run together. The extension itself is
+    // transient: hashed into a pruned tree and dropped, because a full tree
+    // per column is two nodes a leaf and, across a wide trace, tens of
+    // gigabytes serving thirty-two openings. The transcript still absorbs the
     // roots in column order below, which is what the verifier replays.
-    let built: Vec<(Vec<Fp>, PoseidonMerkleTree, Vec<Fp>)> = crate::par::map_index(width, |c| {
+    let built: Vec<(PrunedPoseidonTree, Vec<Fp>)> = crate::par::map_index(width, |c| {
         let column: Vec<Fp> = (0..t).map(|i| trace[i * width + c]).collect();
         let column_d = lde(&column, g, shift, omega, n);
         let leaves: Vec<[Fp; RATE]> = column_d.iter().map(|v| pack_base(*v)).collect();
-        let tree = PoseidonMerkleTree::commit(hasher, &leaves);
+        let tree = PrunedPoseidonTree::commit(hasher, &leaves, TREE_CUT);
         let coeffs = intt(&column, g);
-        (column_d, tree, coeffs)
+        (tree, coeffs)
     });
-    for (column_d, tree, coeffs) in built {
+    for (tree, coeffs) in built {
         transcript.absorb_digest(&tree.root());
         trace_roots.push(tree.root());
         trace_coeffs.push(coeffs);
         trace_trees.push(tree);
-        trace_d.push(column_d);
     }
 
     let coeffs: Vec<Fp2> = (0..num_coeffs(air))
@@ -113,78 +118,19 @@ pub fn stark_prove_poseidon_ext_pub<A: AirExt>(
         .collect();
 
     let periodic_cols = air.periodic_columns();
-
-    // The evaluation domain is `blowup` cosets of the order-t subgroup, and the
-    // composition window steps by `blowup`, so a window never leaves the coset it
-    // starts in. Extending the periodic columns one coset at a time holds
-    // n_periodic * t values rather than n_periodic * n. For the recursion that is
-    // the difference between a hundred and thirty gigabytes and half of one.
-    let sub = omega.pow(blowup as u64);
-    // Interpolate once. Each coset then costs one transform rather than a fresh
-    // interpolation of the same column.
-    let periodic_coeffs: Vec<Vec<Fp>> = periodic_cols.iter().map(|col| intt(col, g)).collect();
-    let mut comp_d: Vec<Fp2> = alloc::vec![Fp2::ZERO; n];
-    for c in 0..blowup {
-        let shift_c = shift * omega.pow(c as u64);
-        let periodic_c: Vec<Vec<Fp>> =
-            crate::par::map_slice(&periodic_coeffs, |cf| lde_from_coeffs(cf, shift_c, sub, t));
-        // Every constraint at every point of the domain, which for the
-        // recursion is 33.5 million evaluations. Written as a recurrence over i
-        // it runs on one core while the maps above it split a handful of cheap
-        // extensions. The point at step i is shift_c * sub^i, so the steps are
-        // independent; what is not free is the pair of buffers each needs, so
-        // the work goes out in blocks. A block allocates once, walks its own
-        // points, and carries its own x.
-        const BLOCK: usize = 1024;
-        let blocks = t.div_ceil(BLOCK);
-        let parts = crate::par::map_index(blocks, |b| {
-            let lo = b * BLOCK;
-            let hi = (lo + BLOCK).min(t);
-            let mut window: Vec<Fp2> = Vec::with_capacity(window_size * width);
-            let mut periodic: Vec<Fp2> = Vec::with_capacity(periodic_c.len());
-            let mut out: Vec<Fp2> = Vec::with_capacity(hi - lo);
-            let mut x = shift_c * sub.pow(lo as u64);
-            for i in lo..hi {
-                let j = c + blowup * i;
-                window.clear();
-                for k in 0..window_size {
-                    let idx = (j + k * blowup) % n;
-                    for column in &trace_d {
-                        window.push(Fp2::from_base(column[idx]));
-                    }
-                }
-                periodic.clear();
-                periodic.extend(periodic_c.iter().map(|pd| Fp2::from_base(pd[i])));
-                out.push(compose_ext(
-                    air,
-                    g,
-                    Fp2::from_base(x),
-                    &window,
-                    &periodic,
-                    &coeffs,
-                ));
-                x = x * sub;
-            }
-            out
-        });
-        for (b, part) in parts.into_iter().enumerate() {
-            for (k, v) in part.into_iter().enumerate() {
-                comp_d[c + blowup * (b * BLOCK + k)] = v;
-            }
-        }
-    }
+    // Composition and DEEP run the shared streamed passes: the trace exists as
+    // coefficients, each pass extends one coset at a time, and the arithmetic
+    // is the keccak path's to the element. Only the transcript and the trees
+    // differ between the two provers now.
+    let d = super::prove_ext::Domain::of(air, extra_blowup_bits);
+    let pc = super::prove_ext::periodic_coeffs(&periodic_cols, &d);
+    let comp_d = super::prove_ext::over_domain(air, &d, &trace_coeffs, &pc, &coeffs);
     let comp_leaves: Vec<[Fp; RATE]> = comp_d.iter().map(|v| pack_ext(*v)).collect();
     let comp_tree = PoseidonMerkleTree::commit(hasher, &comp_leaves);
     transcript.absorb_digest(&comp_tree.root());
 
     let z = draw_ood_point_poseidon(&mut transcript, shift, n, t);
-    let mut ood_frame: Vec<Fp2> = Vec::with_capacity(window_size * width);
-    for k in 0..window_size {
-        let zk = z * Fp2::from_base(g.pow(k as u64));
-        for coeffs_c in &trace_coeffs {
-            ood_frame.push(eval_ext(coeffs_c, zk));
-        }
-    }
+    let ood_frame = super::prove_ext::ood_frame(&trace_coeffs, &d, z);
     for value in &ood_frame {
         transcript.absorb(value.c0);
         transcript.absorb(value.c1);
@@ -197,25 +143,8 @@ pub fn stark_prove_poseidon_ext_pub<A: AirExt>(
         .map(|_| transcript.challenge_fp2())
         .collect();
 
-    let mut deep_d: Vec<Fp2> = Vec::with_capacity(n);
-    let mut x = shift;
-    for j in 0..n {
-        let mut acc = Fp2::ZERO;
-        for k in 0..window_size {
-            let zk = z * Fp2::from_base(g.pow(k as u64));
-            let inv_x_zk = (Fp2::from_base(x) - zk).inv();
-            for (c, column) in trace_d.iter().enumerate() {
-                let claimed = ood_frame[k * width + c];
-                acc = acc
-                    + deep_coeffs[k * width + c]
-                        * ((Fp2::from_base(column[j]) - claimed) * inv_x_zk);
-            }
-        }
-        let e = deep_coeffs[width * window_size];
-        acc = acc + e * ((comp_d[j] - comp_z) * (Fp2::from_base(x) - z).inv());
-        deep_d.push(acc);
-        x = x * omega;
-    }
+    let deep_d =
+        super::prove_ext::deep_over_domain(&d, &trace_coeffs, &comp_d, &ood_frame, comp_z, z, &deep_coeffs);
 
     let fri = fri_prove_poseidon_ext(
         &deep_d,
@@ -232,9 +161,23 @@ pub fn stark_prove_poseidon_ext_pub<A: AirExt>(
     let mut queries: Vec<StarkQueryExtP> = Vec::with_capacity(n_queries);
     for _ in 0..n_queries {
         let p = transcript.challenge_index(n);
-        let trace_vals: Vec<Fp> = trace_d.iter().map(|col| col[p]).collect();
-        let trace_paths: Vec<Vec<[Fp; RATE]>> =
-            trace_trees.iter().map(|tree| tree.open(p)).collect();
+        // Values by Horner from the coefficients, paths by rebuilding the
+        // pruned chunk's leaves the same way: the values the dropped
+        // extension held, at exactly the positions a path needs.
+        let trace_vals: Vec<Fp> =
+            trace_coeffs.iter().map(|cf| super::prove_ext::eval_base(cf, d.point(p))).collect();
+        let chunk = 1usize << TREE_CUT;
+        let base_j = p & !(chunk - 1);
+        let trace_paths: Vec<Vec<[Fp; RATE]>> = trace_trees
+            .iter()
+            .zip(&trace_coeffs)
+            .map(|(tree, cf)| {
+                let leaves: Vec<[Fp; RATE]> = (0..chunk)
+                    .map(|o| pack_base(super::prove_ext::eval_base(cf, d.point(base_j + o))))
+                    .collect();
+                tree.open_with(hasher, p, &leaves)
+            })
+            .collect();
         queries.push(StarkQueryExtP {
             deep: deep_d[p],
             deep_path: deep_tree.open(p),

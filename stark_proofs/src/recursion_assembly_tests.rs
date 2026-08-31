@@ -55,8 +55,8 @@ fn the_assembly_rejects_an_off_transcript_coefficient() {
 #[test]
 #[ignore]
 fn the_real_inner_assembly_satisfies() {
-    use crate::recursion_assembly::assemble_real;
-    let asm = assemble_real(Tamper::None);
+    use crate::recursion_assembly::assemble_real_capped;
+    let asm = assemble_real_capped(Tamper::None, 2);
     std::println!(
         "real assembly: trace_width {}, log_trace_len {}, degree {}, transitions {}, publics {}",
         asm.wired.trace_width(),
@@ -76,8 +76,8 @@ fn the_real_inner_assembly_satisfies() {
 #[test]
 #[ignore]
 fn the_real_inner_assembly_rejects_a_tamper() {
-    use crate::recursion_assembly::assemble_real;
-    let asm = assemble_real(Tamper::PeriodicOffPoint);
+    use crate::recursion_assembly::assemble_real_capped;
+    let asm = assemble_real_capped(Tamper::PeriodicOffPoint, 2);
     assert!(
         !crate::witness_satisfies::satisfies(&asm.wired, &asm.witness),
         "an off-point periodic recompute satisfied the real-inner assembly"

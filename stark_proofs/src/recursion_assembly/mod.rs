@@ -19,5 +19,5 @@ pub mod sponge;
 pub mod tamper;
 pub mod transcript;
 
-pub use build::{assemble, assemble_capped, assemble_q, assemble_real, assemble_step};
+pub use build::{assemble, assemble_capped, assemble_q, assemble_real, assemble_real_capped, assemble_step};
 pub use tamper::Tamper;

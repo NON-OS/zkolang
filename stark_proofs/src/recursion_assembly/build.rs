@@ -175,9 +175,16 @@ pub fn assemble_capped(tamper: Tamper, tamper_q: usize, cap: usize) -> Assembly 
 /// the inner and the compose region, which reads its layout from the gadget
 /// instead of carrying the fixture's numbers.
 pub fn assemble_real(tamper: Tamper) -> Assembly {
+    assemble_real_capped(tamper, usize::MAX)
+}
+
+/// The real-inner assembly attesting only the first `cap` queries: the same
+/// per-query machinery and every binding, over a trace a fraction of the
+/// size. The wiring gate runs here; full coverage is cap >= n_queries.
+pub fn assemble_real_capped(tamper: Tamper, cap: usize) -> Assembly {
     let h = inner::hasher();
     let inner = inner::shield_join_split(&h);
-    let n_q = inner.proof.queries.len();
+    let n_q = inner.proof.queries.len().min(cap);
 
     let ft = fri::fri_transcript(&h, &inner);
     let (pzregion, pztrace) = periodic::periodic_region(&inner, tamper);

@@ -27,7 +27,7 @@ use alloc::vec::Vec;
 /// extended a second time here rather than kept, because the extension is
 /// cheaper than holding width times the domain in memory ever was.
 #[allow(clippy::too_many_arguments)]
-pub(super) fn over_domain(
+pub(in crate::air) fn over_domain(
     d: &Domain,
     trace: &[Vec<Fp>],
     comp_d: &[Fp2],

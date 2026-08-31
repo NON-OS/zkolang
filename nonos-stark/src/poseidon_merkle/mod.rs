@@ -22,11 +22,13 @@
 //! cheaply. Digests are `RATE` field elements; leaves are already digests.
 
 mod pack_base;
+mod pruned;
 mod pack_ext;
 mod tree;
 mod verify;
 
 pub use pack_base::pack_base;
+pub use pruned::PrunedPoseidonTree;
 pub use pack_ext::pack_ext;
 pub use tree::PoseidonMerkleTree;
 pub use verify::verify_path;
