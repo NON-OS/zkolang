@@ -118,9 +118,9 @@ fn gen_production_recursive_vector() {
 
     // The deployment proof with the periodic sidecar: rate 1/16, 16 grind
     // bits = 128-bit conjectured, verified against the baked root.
-    let wproof = stark_prove_ext_preprocessed(wired, &asm.witness, 32, 16, 3);
+    let wproof = stark_prove_ext_preprocessed(wired, &asm.witness, crate::shield_params::deployment::N_QUERIES, crate::shield_params::deployment::GRIND_BITS, crate::shield_params::deployment::EXTRA_BLOWUP_BITS);
     assert!(
-        stark_verify_ext_preprocessed(wired, &wproof, 32, 16, 3, &periodic_root),
+        stark_verify_ext_preprocessed(wired, &wproof, crate::shield_params::deployment::N_QUERIES, crate::shield_params::deployment::GRIND_BITS, crate::shield_params::deployment::EXTRA_BLOWUP_BITS, &periodic_root),
         "the production recursive vector does not verify"
     );
 
@@ -206,9 +206,9 @@ fn gen_step_recursive_vector() {
         &alloc::format!("{}/step-air-structure.json", spec),
     );
 
-    let wproof = stark_prove_ext_preprocessed(wired, &asm.witness, 32, 16, 3);
+    let wproof = stark_prove_ext_preprocessed(wired, &asm.witness, crate::shield_params::deployment::N_QUERIES, crate::shield_params::deployment::GRIND_BITS, crate::shield_params::deployment::EXTRA_BLOWUP_BITS);
     assert!(
-        stark_verify_ext_preprocessed(wired, &wproof, 32, 16, 3, &periodic_root),
+        stark_verify_ext_preprocessed(wired, &wproof, crate::shield_params::deployment::N_QUERIES, crate::shield_params::deployment::GRIND_BITS, crate::shield_params::deployment::EXTRA_BLOWUP_BITS, &periodic_root),
         "the step recursive vector does not verify"
     );
 

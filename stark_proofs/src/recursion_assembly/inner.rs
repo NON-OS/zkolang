@@ -13,9 +13,9 @@ use crate::crypto::stark::fri::root_of_unity;
 use alloc::boxed::Box;
 use alloc::vec::Vec;
 
-pub const NQ: usize = 32;
-pub const GRIND: u32 = 16;
-pub const EXTRA: u32 = 3;
+pub const NQ: usize = crate::shield_params::deployment::N_QUERIES;
+pub const GRIND: u32 = crate::shield_params::deployment::GRIND_BITS;
+pub const EXTRA: u32 = crate::shield_params::deployment::EXTRA_BLOWUP_BITS;
 
 /// The recursion hash. Must equal the round count every in circuit compression
 /// runs, or the membership regions prove a permutation the hash never computed.
