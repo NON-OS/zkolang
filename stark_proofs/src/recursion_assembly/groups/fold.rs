@@ -7,10 +7,10 @@
 
 use super::super::layout::Layout;
 use super::helpers::{chain, group};
-use crate::crypto::stark::air::GpGroup;
+use super::helpers::Bind;
 use alloc::vec::Vec;
 
-pub fn fold(lay: &Layout, out: &mut Vec<GpGroup>) {
+pub fn fold(lay: &Layout, out: &mut Vec<Bind>) {
     let l = lay.l;
     for q in 0..lay.n_q {
         let f_off = lay.f_off[q];

@@ -8,10 +8,10 @@
 
 use super::super::layout::Layout;
 use super::helpers::{cycle, group};
-use crate::crypto::stark::air::GpGroup;
+use super::helpers::Bind;
 use alloc::vec::Vec;
 
-pub fn deep(lay: &Layout, out: &mut Vec<GpGroup>) {
+pub fn deep(lay: &Layout, out: &mut Vec<Bind>) {
     let l = lay.l;
     for q in 0..lay.n_q {
         let d_off = lay.d_off[q];

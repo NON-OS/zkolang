@@ -2,6 +2,7 @@
 
 use super::pack::pack;
 use super::uf::Uf;
+use super::helpers::Bind;
 use crate::crypto::stark::air::GpGroup;
 use alloc::vec::Vec;
 
@@ -10,26 +11,20 @@ use alloc::vec::Vec;
 /// Eight keeps the fused degree at the level the rest of the AIR already sets.
 const CAP: usize = 8;
 
-fn cell(g: &GpGroup, pos: usize, width: usize) -> usize {
-    let k = g.wired_cols.len();
-    (pos / k) * width + g.wired_cols[pos % k]
-}
 
 /// Each group holds its own cells equal, so the conjunction of all of them is the
 /// transitive closure of those equalities. The closure is what gets re-cut, into
 /// groups narrow enough to keep the degree down.
-pub fn collapse(gps: &[GpGroup], span: usize, width: usize) -> Vec<GpGroup> {
+pub fn collapse(gps: &[Bind], span: usize, width: usize) -> Vec<GpGroup> {
     pack(closure(gps, span, width), span, width, CAP)
 }
 
-fn closure(gps: &[GpGroup], span: usize, width: usize) -> Vec<Vec<usize>> {
+fn closure(gps: &[Bind], span: usize, width: usize) -> Vec<Vec<usize>> {
     let n = span * width;
     let mut uf = Uf::new(n);
     for g in gps {
-        for (pos, &img) in g.sigma.iter().enumerate() {
-            if pos != img {
-                uf.union(cell(g, pos, width), cell(g, img, width));
-            }
+        for &(ra, ia, rb, ib) in &g.swaps {
+            uf.union(ra * width + g.wired_cols[ia], rb * width + g.wired_cols[ib]);
         }
     }
     let mut seen = alloc::vec![usize::MAX; n];

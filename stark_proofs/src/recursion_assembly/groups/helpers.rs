@@ -1,25 +1,28 @@
 // NONOS Operating System (AGPL-3.0-or-later)
-//! Group construction: a group's sigma is the identity over its cells with the
-//! bound cells swapped, so identity cells cancel and only the explicit swaps
-//! (or chained cycles) must hold equal.
+//! Group construction. A binding is its cells and its swaps, nothing more:
+//! the identity part of a permutation carries no information, and building it
+//! densely before the collapse allocated span * k slots per raw group, which
+//! at the real inner's seven-hundred-column deep groups was a hundred and
+//! thirty gigabytes of identity. The collapse only ever looked at the swaps.
 
-use crate::crypto::stark::air::GpGroup;
-use crate::crypto::stark::field::Fp;
 use alloc::vec::Vec;
 
+/// A raw binding before the collapse: the columns it touches and the swapped
+/// cell pairs in (row, lane, row, lane) form. Dense sigma exists only for the
+/// packed groups the collapse emits.
+pub struct Bind {
+    pub wired_cols: Vec<usize>,
+    pub swaps: Vec<(usize, usize, usize, usize)>,
+}
+
 pub fn group(
-    span: usize,
+    _span: usize,
     wcols: Vec<usize>,
     swaps: &[(usize, usize, usize, usize)],
-) -> GpGroup {
-    let k = wcols.len();
-    let mut sigma: Vec<usize> = (0..span * k).collect();
-    for &(ra, ca, rb, cb) in swaps {
-        let ia = wcols.iter().position(|&c| c == ca).unwrap();
-        let ib = wcols.iter().position(|&c| c == cb).unwrap();
-        sigma.swap(ra * k + ia, rb * k + ib);
-    }
-    GpGroup { wired_cols: wcols, sigma, beta: Fp::from_u64(5), gamma: Fp::from_u64(7) }
+) -> Bind {
+    let lane = |c: usize| wcols.iter().position(|&x| x == c).unwrap();
+    let swaps = swaps.iter().map(|&(ra, ca, rb, cb)| (ra, lane(ca), rb, lane(cb))).collect();
+    Bind { wired_cols: wcols, swaps }
 }
 
 /// Chain consecutive cells into transpositions: composed, a cycle forcing all
@@ -30,8 +33,8 @@ pub fn chain(cells: &[(usize, usize)], out: &mut Vec<(usize, usize, usize, usize
     }
 }
 
-/// One group holding one cycle of equal cells.
-pub fn cycle(span: usize, cells: &[(usize, usize)]) -> GpGroup {
+/// One binding holding one cycle of equal cells.
+pub fn cycle(span: usize, cells: &[(usize, usize)]) -> Bind {
     let mut wcols: Vec<usize> = cells.iter().map(|c| c.1).collect();
     wcols.sort_unstable();
     wcols.dedup();

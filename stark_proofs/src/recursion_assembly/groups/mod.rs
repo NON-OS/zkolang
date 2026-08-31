@@ -12,6 +12,7 @@ mod roots;
 mod statement;
 mod uf;
 
+pub use helpers::Bind;
 pub use collapse::collapse;
 pub use deep::deep;
 pub use fold::fold;
