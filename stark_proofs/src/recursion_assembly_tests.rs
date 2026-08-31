@@ -48,3 +48,38 @@ fn the_assembly_rejects_a_swapped_root() {
 fn the_assembly_rejects_an_off_transcript_coefficient() {
     assert!(!gate(Tamper::OffTranscriptCoeff), "an off-transcript DEEP coefficient verified");
 }
+
+/// The recursion over the deployed join-split: witness satisfaction first,
+/// because it is the cheap gate — every transition vanishes and every
+/// boundary holds, or the assembly is wrong before FRI enters the picture.
+#[test]
+#[ignore]
+fn the_real_inner_assembly_satisfies() {
+    use crate::recursion_assembly::assemble_real;
+    let asm = assemble_real(Tamper::None);
+    std::println!(
+        "real assembly: trace_width {}, log_trace_len {}, degree {}, transitions {}, publics {}",
+        asm.wired.trace_width(),
+        asm.wired.log_trace_len(),
+        asm.wired.constraint_degree(),
+        asm.wired.num_transition(),
+        asm.publics.len()
+    );
+    assert!(
+        crate::witness_satisfies::satisfies(&asm.wired, &asm.witness),
+        "the real-inner assembly does not satisfy its own constraints"
+    );
+}
+
+/// A periodic recompute off the composed point must fail through the real
+/// inner too: the same binding that rejected it at the fixture rejects it here.
+#[test]
+#[ignore]
+fn the_real_inner_assembly_rejects_a_tamper() {
+    use crate::recursion_assembly::assemble_real;
+    let asm = assemble_real(Tamper::PeriodicOffPoint);
+    assert!(
+        !crate::witness_satisfies::satisfies(&asm.wired, &asm.witness),
+        "an off-point periodic recompute satisfied the real-inner assembly"
+    );
+}

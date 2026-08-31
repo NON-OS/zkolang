@@ -163,7 +163,11 @@ fn diagnose_accept() {
         asm.lay.depth,
         asm.lay.n_open,
     ));
-    if !msg.is_empty() {
+    // The dims and label lines are context, appended either way; only an
+    // actual violation is a failure. Without this the diagnostic failed every
+    // complete run by construction, which nobody saw while the job it lives in
+    // was dying of memory instead.
+    if msg.contains("fail") {
         panic!("{}", msg);
     }
 }

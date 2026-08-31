@@ -7,12 +7,21 @@
 //! region owns it to recompute the transitions during proving.
 
 use super::inner::Inner;
-use crate::crypto::stark::air::ComposeCheckGen;
+use crate::crypto::stark::air::{AirExt, ComposeCheckGen, GenericTransition};
 use crate::crypto::stark::field::Fp;
 use alloc::vec::Vec;
 use nonos_zkolang::StepAir;
 
 pub fn compose_step_region(inner: Inner<StepAir>) -> (ComposeCheckGen<StepAir>, Vec<Fp>) {
+    compose_gen_region(inner)
+}
+
+/// The same region for any inner whose transition the recursion can recompute
+/// over the tower. The step AIR and the deployed join-split both come through
+/// here, so the generic compose cannot fork per inner.
+pub fn compose_gen_region<A: AirExt + GenericTransition>(
+    inner: Inner<A>,
+) -> (ComposeCheckGen<A>, Vec<Fp>) {
     let region = ComposeCheckGen::new_witness(
         inner.air,
         inner.proof.ood_frame,

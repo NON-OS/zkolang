@@ -9,7 +9,7 @@
 use stark_proofs::crypto::stark::air::{
     deserialize_proof_ext, serialize_proof_ext, stark_prove_ext, stark_verify_ext, Air,
 };
-use stark_proofs::recursion_assembly::{assemble, Tamper};
+use stark_proofs::recursion_assembly::{assemble, assemble_real, Tamper};
 use std::time::Instant;
 
 const N_QUERIES: usize = 32;
@@ -17,9 +17,12 @@ const BLOWUP: u32 = 8;
 
 fn main() {
     let out = std::env::args().nth(1).unwrap_or_else(|| "recursion.proof".into());
+    // "real" asks for the recursion over the deployed join-split; anything
+    // else keeps the fixture inner, which stays as the regression shape.
+    let real = std::env::args().nth(2).as_deref() == Some("real");
 
     let t0 = Instant::now();
-    let asm = assemble(Tamper::None);
+    let asm = if real { assemble_real(Tamper::None) } else { assemble(Tamper::None) };
     let built = t0.elapsed();
     println!(
         "assembly  width={} log_trace_len={} degree={} transitions={} groups={}",
