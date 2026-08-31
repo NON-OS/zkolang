@@ -15,7 +15,7 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 use super::super::super::field::{Fp, Fp2};
-use super::super::prove_ext::{extend, Domain, BLOCK};
+use super::super::prove_ext::{batch_inv, extend, Domain, BLOCK};
 use alloc::vec::Vec;
 
 /// The preprocessed DEEP polynomial: the trace and composition quotients of the
@@ -46,14 +46,28 @@ pub(super) fn over_domain(
         let blocks = d.t.div_ceil(BLOCK);
         let parts = crate::par::map_index(blocks, |b| {
             let (lo, hi) = (b * BLOCK, ((b + 1) * BLOCK).min(d.t));
-            let mut out: Vec<Fp2> = Vec::with_capacity(hi - lo);
+            // Every denominator in the block at once; the (x - z) inverse is
+            // shared by the composition and every periodic quotient.
+            let stride = zks.len() + 1;
+            let mut dens: Vec<Fp2> = Vec::with_capacity((hi - lo) * stride);
             let mut x = shift_c * d.sub.pow(lo as u64);
+            for _ in lo..hi {
+                let xe = Fp2::from_base(x);
+                for zk in &zks {
+                    dens.push(xe - *zk);
+                }
+                dens.push(xe - z);
+                x = x * d.sub;
+            }
+            let invs = batch_inv(&dens);
+
+            let mut out: Vec<Fp2> = Vec::with_capacity(hi - lo);
             for i in lo..hi {
                 let j = c + d.blowup * i;
-                let xe = Fp2::from_base(x);
+                let base = (i - lo) * stride;
                 let mut acc = Fp2::ZERO;
-                for (k, zk) in zks.iter().enumerate() {
-                    let inv_x_zk = (xe - *zk).inv();
+                for k in 0..zks.len() {
+                    let inv_x_zk = invs[base + k];
                     for (col, column) in cols.iter().enumerate() {
                         let claimed = ood_frame[k * d.width + col];
                         acc = acc
@@ -61,14 +75,13 @@ pub(super) fn over_domain(
                                 * ((Fp2::from_base(column[i]) - claimed) * inv_x_zk);
                     }
                 }
-                let inv_x_z = (xe - z).inv();
+                let inv_x_z = invs[base + zks.len()];
                 acc = acc + e * ((comp_d[j] - comp_z) * inv_x_z);
                 for (pi, pd) in per.iter().enumerate() {
                     let pc = deep_coeffs[d.width * d.window + 1 + pi];
                     acc = acc + pc * ((Fp2::from_base(pd[i]) - periodic_z[pi]) * inv_x_z);
                 }
                 out.push(acc);
-                x = x * d.sub;
             }
             out
         });
