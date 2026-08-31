@@ -24,7 +24,7 @@ use super::super::air::{Poseidon, RATE};
 use super::super::field::{Fp, Fp2};
 use super::super::fri::root_of_unity;
 use super::super::fri_poseidon_ext::fri_prove_poseidon_ext;
-use super::super::poly::{eval_ext, eval_lagrange_ext, intt, lde, lde_from_coeffs};
+use super::super::poly::{eval_cols_on_subgroup_ext, eval_ext, intt, lde, lde_from_coeffs};
 use super::super::poseidon_merkle::{pack_base, pack_ext, PoseidonMerkleTree};
 use super::super::poseidon_transcript::PoseidonTranscript;
 use super::composition::{compose_ext, domain_params_blown, num_coeffs};
@@ -173,18 +173,7 @@ pub fn stark_prove_poseidon_ext_pub<A: AirExt>(
         transcript.absorb(value.c1);
     }
 
-    let periodic_z: Vec<Fp2> = {
-        let h_pts: Vec<Fp> = {
-            let mut v = Vec::with_capacity(t);
-            let mut p = Fp::ONE;
-            for _ in 0..t {
-                v.push(p);
-                p = p * g;
-            }
-            v
-        };
-        periodic_cols.iter().map(|col| eval_lagrange_ext(&h_pts, col, z)).collect()
-    };
+    let periodic_z: Vec<Fp2> = eval_cols_on_subgroup_ext(g, t, &periodic_cols, z);
     let comp_z = compose_ext(air, g, z, &ood_frame, &periodic_z, &coeffs);
 
     let deep_coeffs: Vec<Fp2> =

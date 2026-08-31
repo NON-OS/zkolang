@@ -17,7 +17,7 @@
 use super::super::super::field::{Fp, Fp2};
 use super::compose::BLOCK;
 use super::coset::extend;
-use super::inv::batch_inv;
+use super::super::super::poly::batch_inv;
 use super::setup::Domain;
 use alloc::vec::Vec;
 

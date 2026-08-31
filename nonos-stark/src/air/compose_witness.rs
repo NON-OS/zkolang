@@ -24,7 +24,7 @@
 use super::super::air::Poseidon;
 use super::super::field::{Fp, Fp2};
 use super::super::fri::root_of_unity;
-use super::super::poly::eval_lagrange_ext;
+use super::super::poly::eval_cols_on_subgroup_ext;
 use super::super::poseidon_transcript::PoseidonTranscript;
 use super::composition::{compose_ext, domain_params_blown, num_coeffs};
 use super::draw_ood_poseidon::draw_ood_point_poseidon;
@@ -83,17 +83,7 @@ pub fn compose_inputs_pub<A: AirExt>(
     ts.absorb_digest(&proof.comp_root);
     let z = draw_ood_point_poseidon(&mut ts, shift, n, t);
 
-    let h_pts: Vec<Fp> = {
-        let mut v = Vec::with_capacity(t);
-        let mut p = Fp::ONE;
-        for _ in 0..t {
-            v.push(p);
-            p = p * g;
-        }
-        v
-    };
-    let periodic_z: Vec<Fp2> =
-        air.periodic_columns().iter().map(|col| eval_lagrange_ext(&h_pts, col, z)).collect();
+    let periodic_z: Vec<Fp2> = eval_cols_on_subgroup_ext(g, t, &air.periodic_columns(), z);
     let comp_z = compose_ext(air, g, z, &proof.ood_frame, &periodic_z, &coeffs);
 
     ComposeInputs { coeffs, periodic_z, z, comp_z }

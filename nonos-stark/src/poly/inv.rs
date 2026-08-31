@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-use super::super::super::field::Fp2;
+use super::super::field::Fp2;
 use alloc::vec::Vec;
 
 /// Invert every element with one field inversion: prefix products forward, one
@@ -22,11 +22,12 @@ use alloc::vec::Vec;
 /// The inverse of a field element is unique, so each output is the same value
 /// `.inv()` would have produced; only the operation count changes. DEEP spends
 /// window + 1 inversions per domain point without this, and an inversion costs
-/// around sixty multiplications.
+/// around sixty multiplications, and the Lagrange weights on a subgroup need
+/// one per domain point.
 ///
 /// Every input must be nonzero. DEEP's denominators are, by construction: z is
 /// drawn off both the evaluation coset and the trace domain.
-pub(in crate::air) fn batch_inv(vals: &[Fp2]) -> Vec<Fp2> {
+pub fn batch_inv(vals: &[Fp2]) -> Vec<Fp2> {
     let mut prefix = Vec::with_capacity(vals.len());
     let mut acc = Fp2::ONE;
     for v in vals {
