@@ -43,6 +43,12 @@ pub(super) fn periodic_tree<A: AirExt>(
     let d = Domain::of(air, extra_blowup_bits);
     let cols = air.periodic_columns();
     let coeffs = periodic_coeffs(&cols, &d);
+    // A columnless AIR commits the empty tree, as the materialized committer
+    // always did: it took its leaf count from the columns, this path takes it
+    // from the domain, and only the empty case can tell them apart.
+    if cols.is_empty() {
+        return (coeffs, MerkleTree::commit_wide_periodic(&[]));
+    }
     let mut digests = alloc::vec![[0u8; 32]; d.n];
     for c in 0..d.blowup {
         let per = extend(&coeffs, &d, c);
@@ -72,4 +78,57 @@ pub fn periodic_root<A: AirExt>(air: &A, extra_blowup_bits: u32) -> [u8; 32] {
 /// domain identically to the serial path and cannot drift from it.
 pub fn periodic_domain_log<A: AirExt>(air: &A, extra_blowup_bits: u32) -> u32 {
     domain_params_blown(air, extra_blowup_bits).0
+}
+
+#[cfg(test)]
+mod tests {
+    use super::super::spec::{Air, AirExt};
+    use super::*;
+    use crate::field::Fp2;
+
+    /// The zero-column AIR: the one shape that can tell the streamed committer
+    /// from the materialized one, because only there do "leaf count from the
+    /// domain" and "leaf count from the columns" disagree.
+    struct NoPeriodic;
+
+    impl Air for NoPeriodic {
+        fn log_trace_len(&self) -> u32 {
+            4
+        }
+        fn trace_width(&self) -> usize {
+            1
+        }
+        fn window_size(&self) -> usize {
+            2
+        }
+        fn constraint_degree(&self) -> usize {
+            3
+        }
+        fn num_transition(&self) -> usize {
+            1
+        }
+        fn periodic_columns(&self) -> Vec<Vec<Fp>> {
+            Vec::new()
+        }
+        fn transition(&self, w: &[Fp], _p: &[Fp]) -> Vec<Fp> {
+            alloc::vec![w[1] - w[0]]
+        }
+        fn boundary(&self) -> Vec<(usize, usize, Fp)> {
+            Vec::new()
+        }
+    }
+
+    impl AirExt for NoPeriodic {
+        fn transition_ext(&self, w: &[Fp2], _p: &[Fp2]) -> Vec<Fp2> {
+            alloc::vec![w[1] - w[0]]
+        }
+    }
+
+    #[test]
+    fn a_columnless_air_commits_the_empty_tree() {
+        let (coeffs, tree) = periodic_tree(&NoPeriodic, 1);
+        assert!(coeffs.is_empty());
+        let empty = MerkleTree::commit_wide_periodic(&[]);
+        assert_eq!(tree.root(), empty.root(), "streamed and materialized roots diverge at zero columns");
+    }
 }
