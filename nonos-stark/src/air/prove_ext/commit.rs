@@ -29,7 +29,7 @@ use alloc::vec::Vec;
 /// layer, and after the last coset every leaf has been written once. The tree
 /// above the digests is the same `build` either path uses, so the root cannot
 /// tell which committer ran.
-pub(super) fn wide_streamed(coeffs: &[Vec<Fp>], d: &Domain) -> MerkleTree {
+pub(in crate::air) fn wide_streamed(coeffs: &[Vec<Fp>], d: &Domain) -> MerkleTree {
     let mut digests = alloc::vec![[0u8; 32]; d.n];
     for c in 0..d.blowup {
         let cols = extend(coeffs, d, c);

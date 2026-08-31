@@ -22,20 +22,20 @@ use alloc::vec::Vec;
 /// Row-major trace to per-column coefficient form. The coefficients are the
 /// polynomial; every pass extends them onto whichever coset it is walking, so
 /// nothing ever holds a column over the full evaluation domain.
-pub(super) fn trace_coeffs(trace: &[Fp], d: &Domain) -> Vec<Vec<Fp>> {
+pub(in crate::air) fn trace_coeffs(trace: &[Fp], d: &Domain) -> Vec<Vec<Fp>> {
     crate::par::map_index(d.width, |c| {
         let column: Vec<Fp> = (0..d.t).map(|i| trace[i * d.width + c]).collect();
         intt(&column, d.g)
     })
 }
 
-pub(super) fn periodic_coeffs(cols: &[Vec<Fp>], d: &Domain) -> Vec<Vec<Fp>> {
+pub(in crate::air) fn periodic_coeffs(cols: &[Vec<Fp>], d: &Domain) -> Vec<Vec<Fp>> {
     crate::par::map_slice(cols, |col| intt(col, d.g))
 }
 
 /// Every column evaluated over coset `c`: row `i` of the result is position
 /// `c + blowup * i` of the full domain.
-pub(super) fn extend(coeffs: &[Vec<Fp>], d: &Domain, c: usize) -> Vec<Vec<Fp>> {
+pub(in crate::air) fn extend(coeffs: &[Vec<Fp>], d: &Domain, c: usize) -> Vec<Vec<Fp>> {
     let shift_c = d.coset_shift(c);
     crate::par::map_slice(coeffs, |cf| lde_from_coeffs(cf, shift_c, d.sub, d.t))
 }

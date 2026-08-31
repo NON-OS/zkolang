@@ -20,13 +20,13 @@ use super::super::composition::domain_params_blown;
 use super::super::spec::AirExt;
 
 /// The coset shift every NONOS STARK domain uses.
-pub(super) const SHIFT: u64 = 7;
+pub(in crate::air) const SHIFT: u64 = 7;
 
 /// The evaluation geometry every pass reads. The domain is `blowup` cosets of
 /// the order-`t` subgroup: position `j = c + blowup * i` is the point
 /// `shift * omega^c * sub^i`, so a pass that walks one coset at a time touches
 /// every point exactly once without ever holding the whole domain.
-pub(super) struct Domain {
+pub(in crate::air) struct Domain {
     pub t: usize,
     pub n: usize,
     pub width: usize,

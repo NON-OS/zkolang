@@ -23,7 +23,7 @@ use alloc::vec::Vec;
 
 /// Rows go to threads in blocks: a block allocates its window once, clears and
 /// reuses it, and carries its own point forward multiplicatively.
-pub(super) const BLOCK: usize = 1024;
+pub(in crate::air) const BLOCK: usize = 1024;
 
 /// The composition over the whole domain, walked coset by coset.
 ///
@@ -31,7 +31,7 @@ pub(super) const BLOCK: usize = 1024;
 /// residue mod blowup: a window never leaves its coset, it wraps to row
 /// `(i + k) % t` of the same one. That wrap is what makes streaming exact, and
 /// it is the only fact this function rests on.
-pub(super) fn over_domain<A: AirExt>(
+pub(in crate::air) fn over_domain<A: AirExt>(
     air: &A,
     d: &Domain,
     trace: &[Vec<Fp>],

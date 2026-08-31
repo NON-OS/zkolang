@@ -19,76 +19,87 @@ use super::super::super::fri_ext::fri_prove_ext;
 use super::super::super::merkle::MerkleTree;
 use super::super::super::transcript::Transcript;
 use super::super::composition::num_coeffs;
+use super::super::periodic_root::periodic_tree;
+use super::super::prove_ext::{
+    comp_at_z, draw_ood_point_ext, ood_frame, over_domain, periodic_at_z, trace_coeffs,
+    wide_streamed, Domain,
+};
 use super::super::spec::AirExt;
 use super::super::types_ext::StarkProofExt;
-use super::ood::draw_ood_point_ext;
-use super::setup::Domain;
-use super::{commit, compose, coset, deep, frame, queries};
+use super::super::types_ext_pre::StarkProofExtPre;
+use super::{deep, queries};
 use crate::field::Fp;
 use alloc::vec::Vec;
 
-/// The prover body. The transcript order is the protocol and every absorb and
-/// draw below matches the materialized prover this replaced, so the two emit
-/// identical bytes; what changed is that no column is ever held over the full
-/// evaluation domain. The trace lives as coefficients and each pass extends
-/// one coset at a time, which is what lets the largest instances prove in the
-/// memory of a laptop instead of a server.
-pub(super) fn prove<A: AirExt>(
+/// Prove `trace` against `air` with the periodic sidecar, at the given FRI
+/// rate. The verifier must hold the matching baked periodic root.
+///
+/// The transcript order below is the protocol and matches the materialized
+/// prover this replaced; the periodic tree comes through the same helper a
+/// registered root does, so the two are one object by construction. Nothing is
+/// held over the full domain but the two Fp2 codewords and the leaf digests.
+pub fn stark_prove_ext_preprocessed<A: AirExt>(
     air: &A,
     trace: &[Fp],
     n_queries: usize,
     grind_bits: u32,
     extra_blowup_bits: u32,
-    context: &[u8],
-) -> StarkProofExt {
+) -> StarkProofExtPre {
     let d = Domain::of(air, extra_blowup_bits);
 
     let mut transcript = Transcript::new(b"NONOS-STARK-EXT");
-    if !context.is_empty() {
-        transcript.absorb_digest(&crate::hash::keccak256(context));
-    }
-
-    let trace_coeffs = coset::trace_coeffs(trace, &d);
-    let trace_tree = commit::wide_streamed(&trace_coeffs, &d);
+    let tc = trace_coeffs(trace, &d);
+    let trace_tree = wide_streamed(&tc, &d);
     let trace_root = trace_tree.root();
     transcript.absorb_digest(&trace_root);
 
     let coeffs: Vec<Fp2> = (0..num_coeffs(air)).map(|_| transcript.challenge_fp2()).collect();
 
     let periodic_cols = air.periodic_columns();
-    let periodic_coeffs = coset::periodic_coeffs(&periodic_cols, &d);
-    let comp_d = compose::over_domain(air, &d, &trace_coeffs, &periodic_coeffs, &coeffs);
+    let (pc, p_tree) = periodic_tree(air, extra_blowup_bits);
+    let comp_d = over_domain(air, &d, &tc, &pc, &coeffs);
     let comp_tree = MerkleTree::commit_ext(&comp_d);
     transcript.absorb_digest(&comp_tree.root());
 
     let z = draw_ood_point_ext(&mut transcript, d.shift, d.n, d.t);
-    let ood_frame = frame::ood_frame(&trace_coeffs, &d, z);
-    for value in &ood_frame {
+    let frame = ood_frame(&tc, &d, z);
+    for value in &frame {
         transcript.absorb_fp(value.c0);
         transcript.absorb_fp(value.c1);
     }
-    let periodic_z = frame::periodic_at_z(&d, &periodic_cols, z);
-    let comp_z = frame::comp_at_z(air, &d, &ood_frame, &periodic_z, z, &coeffs);
+    let periodic_z = periodic_at_z(&d, &periodic_cols, z);
+    for value in &periodic_z {
+        transcript.absorb_fp(value.c0);
+        transcript.absorb_fp(value.c1);
+    }
+    let comp_z = comp_at_z(air, &d, &frame, &periodic_z, z, &coeffs);
 
-    let deep_coeffs: Vec<Fp2> =
-        (0..d.width * d.window + 1).map(|_| transcript.challenge_fp2()).collect();
+    let deep_coeffs: Vec<Fp2> = (0..d.width * d.window + 1 + periodic_cols.len())
+        .map(|_| transcript.challenge_fp2())
+        .collect();
     let deep_d =
-        deep::over_domain(&d, &trace_coeffs, &comp_d, &ood_frame, comp_z, z, &deep_coeffs);
+        deep::over_domain(&d, &tc, &pc, &comp_d, &frame, &periodic_z, comp_z, z, &deep_coeffs);
 
     let fri = fri_prove_ext(&deep_d, d.shift, d.fri_log_blowup, n_queries, grind_bits);
     let deep_tree = MerkleTree::commit_ext(&deep_d);
     transcript.absorb_digest(&fri.roots[0]);
 
-    let queries = queries::open(
+    let (qs, openings) = queries::open(
         &mut transcript,
         n_queries,
         &d,
-        &trace_coeffs,
+        &tc,
         &trace_tree,
+        &pc,
+        &p_tree,
         &comp_d,
         &comp_tree,
         &deep_d,
         &deep_tree,
     );
-    StarkProofExt { trace_root, comp_root: comp_tree.root(), ood_frame, fri, queries }
+    StarkProofExtPre {
+        proof: StarkProofExt { trace_root, comp_root: comp_tree.root(), ood_frame: frame, fri, queries: qs },
+        periodic_z,
+        openings,
+    }
 }

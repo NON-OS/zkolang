@@ -23,7 +23,7 @@ use super::super::super::poly::{eval_ext, eval_lagrange_ext};
 
 /// The out-of-domain trace frame: every column at z * g^k for each window row,
 /// straight from the coefficients.
-pub(super) fn ood_frame(trace: &[Vec<Fp>], d: &Domain, z: Fp2) -> Vec<Fp2> {
+pub(in crate::air) fn ood_frame(trace: &[Vec<Fp>], d: &Domain, z: Fp2) -> Vec<Fp2> {
     let mut frame = Vec::with_capacity(d.window * d.width);
     for k in 0..d.window {
         let zk = z * Fp2::from_base(d.g.pow(k as u64));
@@ -34,24 +34,28 @@ pub(super) fn ood_frame(trace: &[Vec<Fp>], d: &Domain, z: Fp2) -> Vec<Fp2> {
     frame
 }
 
-/// The composition at z, recomputed from the claimed frame: the periodic
-/// columns interpolated at z over the trace domain, then the same batching the
-/// domain pass ran.
-pub(super) fn comp_at_z<A: AirExt>(
-    air: &A,
-    d: &Domain,
-    periodic_cols: &[Vec<Fp>],
-    frame: &[Fp2],
-    z: Fp2,
-    coeffs: &[Fp2],
-) -> Fp2 {
+/// The periodic columns interpolated at z over the trace domain: the values
+/// the composition at z consumes, and in the preprocessed form the claims the
+/// sidecar carries.
+pub(in crate::air) fn periodic_at_z(d: &Domain, cols: &[Vec<Fp>], z: Fp2) -> Vec<Fp2> {
     let mut h_pts = Vec::with_capacity(d.t);
     let mut p = Fp::ONE;
     for _ in 0..d.t {
         h_pts.push(p);
         p = p * d.g;
     }
-    let periodic_z: Vec<Fp2> =
-        periodic_cols.iter().map(|col| eval_lagrange_ext(&h_pts, col, z)).collect();
-    compose_ext(air, d.g, z, frame, &periodic_z, coeffs)
+    cols.iter().map(|col| eval_lagrange_ext(&h_pts, col, z)).collect()
+}
+
+/// The composition at z from the claimed frame and periodic values: the same
+/// batching the domain pass ran, at the out-of-domain point.
+pub(in crate::air) fn comp_at_z<A: AirExt>(
+    air: &A,
+    d: &Domain,
+    frame: &[Fp2],
+    periodic_z: &[Fp2],
+    z: Fp2,
+    coeffs: &[Fp2],
+) -> Fp2 {
+    compose_ext(air, d.g, z, frame, periodic_z, coeffs)
 }
