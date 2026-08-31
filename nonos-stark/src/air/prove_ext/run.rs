@@ -53,7 +53,9 @@ pub(super) fn prove<A: AirExt>(
     let trace_root = trace_tree.root();
     transcript.absorb_digest(&trace_root);
 
-    let coeffs: Vec<Fp2> = (0..num_coeffs(air)).map(|_| transcript.challenge_fp2()).collect();
+    let coeffs: Vec<Fp2> = (0..num_coeffs(air))
+        .map(|_| transcript.challenge_fp2())
+        .collect();
 
     let periodic_cols = air.periodic_columns();
     let periodic_coeffs = coset::periodic_coeffs(&periodic_cols, &d);
@@ -70,10 +72,18 @@ pub(super) fn prove<A: AirExt>(
     let periodic_z = frame::periodic_at_z(&d, &periodic_cols, z);
     let comp_z = frame::comp_at_z(air, &d, &ood_frame, &periodic_z, z, &coeffs);
 
-    let deep_coeffs: Vec<Fp2> =
-        (0..d.width * d.window + 1).map(|_| transcript.challenge_fp2()).collect();
-    let deep_d =
-        deep::over_domain(&d, &trace_coeffs, &comp_d, &ood_frame, comp_z, z, &deep_coeffs);
+    let deep_coeffs: Vec<Fp2> = (0..d.width * d.window + 1)
+        .map(|_| transcript.challenge_fp2())
+        .collect();
+    let deep_d = deep::over_domain(
+        &d,
+        &trace_coeffs,
+        &comp_d,
+        &ood_frame,
+        comp_z,
+        z,
+        &deep_coeffs,
+    );
 
     let fri = fri_prove_ext(&deep_d, d.shift, d.fri_log_blowup, n_queries, grind_bits);
     let deep_tree = MerkleTree::commit_ext(&deep_d);
@@ -90,5 +100,11 @@ pub(super) fn prove<A: AirExt>(
         &deep_d,
         &deep_tree,
     );
-    StarkProofExt { trace_root, comp_root: comp_tree.root(), ood_frame, fri, queries }
+    StarkProofExt {
+        trace_root,
+        comp_root: comp_tree.root(),
+        ood_frame,
+        fri,
+        queries,
+    }
 }

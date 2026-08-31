@@ -60,7 +60,14 @@ pub(in crate::air) fn over_domain<A: AirExt>(
                 }
                 periodic_i.clear();
                 periodic_i.extend(per.iter().map(|p| Fp2::from_base(p[i])));
-                out.push(compose_ext(air, d.g, Fp2::from_base(x), &window, &periodic_i, coeffs));
+                out.push(compose_ext(
+                    air,
+                    d.g,
+                    Fp2::from_base(x),
+                    &window,
+                    &periodic_i,
+                    coeffs,
+                ));
                 x = x * d.sub;
             }
             out

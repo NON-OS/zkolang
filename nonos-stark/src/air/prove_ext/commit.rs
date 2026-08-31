@@ -15,10 +15,10 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 use super::super::super::field::Fp;
+use super::super::super::merkle::hash_leaf_wide;
 use super::super::super::merkle::MerkleTree;
 use super::coset::extend;
 use super::setup::Domain;
-use super::super::super::merkle::hash_leaf_wide;
 use alloc::vec::Vec;
 
 /// The row-wise trace commitment, one coset in memory at a time.

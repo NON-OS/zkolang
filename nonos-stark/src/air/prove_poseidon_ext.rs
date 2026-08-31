@@ -24,7 +24,7 @@ use super::super::air::{Poseidon, RATE};
 use super::super::field::{Fp, Fp2};
 use super::super::fri::root_of_unity;
 use super::super::fri_poseidon_ext::fri_prove_poseidon_ext;
-use super::super::poly::{eval_ext, eval_lagrange_ext, intt, lde, lde_from_coeffs};
+use super::super::poly::{eval_cols_on_subgroup_ext, eval_ext, intt, lde, lde_from_coeffs};
 use super::super::poseidon_merkle::{pack_base, pack_ext, PoseidonMerkleTree};
 use super::super::poseidon_transcript::PoseidonTranscript;
 use super::composition::{compose_ext, domain_params_blown, num_coeffs};
@@ -45,7 +45,15 @@ pub fn stark_prove_poseidon_ext<A: AirExt>(
     extra_blowup_bits: u32,
     hasher: &Poseidon,
 ) -> StarkProofExtP {
-    stark_prove_poseidon_ext_pub(air, trace, n_queries, grind_bits, extra_blowup_bits, hasher, &[])
+    stark_prove_poseidon_ext_pub(
+        air,
+        trace,
+        n_queries,
+        grind_bits,
+        extra_blowup_bits,
+        hasher,
+        &[],
+    )
 }
 
 /// The same prover, seeding the transcript with `publics` before the trace roots so
@@ -100,7 +108,9 @@ pub fn stark_prove_poseidon_ext_pub<A: AirExt>(
         trace_d.push(column_d);
     }
 
-    let coeffs: Vec<Fp2> = (0..num_coeffs(air)).map(|_| transcript.challenge_fp2()).collect();
+    let coeffs: Vec<Fp2> = (0..num_coeffs(air))
+        .map(|_| transcript.challenge_fp2())
+        .collect();
 
     let periodic_cols = air.periodic_columns();
 
@@ -145,7 +155,14 @@ pub fn stark_prove_poseidon_ext_pub<A: AirExt>(
                 }
                 periodic.clear();
                 periodic.extend(periodic_c.iter().map(|pd| Fp2::from_base(pd[i])));
-                out.push(compose_ext(air, g, Fp2::from_base(x), &window, &periodic, &coeffs));
+                out.push(compose_ext(
+                    air,
+                    g,
+                    Fp2::from_base(x),
+                    &window,
+                    &periodic,
+                    &coeffs,
+                ));
                 x = x * sub;
             }
             out
@@ -173,22 +190,12 @@ pub fn stark_prove_poseidon_ext_pub<A: AirExt>(
         transcript.absorb(value.c1);
     }
 
-    let periodic_z: Vec<Fp2> = {
-        let h_pts: Vec<Fp> = {
-            let mut v = Vec::with_capacity(t);
-            let mut p = Fp::ONE;
-            for _ in 0..t {
-                v.push(p);
-                p = p * g;
-            }
-            v
-        };
-        periodic_cols.iter().map(|col| eval_lagrange_ext(&h_pts, col, z)).collect()
-    };
+    let periodic_z: Vec<Fp2> = eval_cols_on_subgroup_ext(g, t, &periodic_cols, z);
     let comp_z = compose_ext(air, g, z, &ood_frame, &periodic_z, &coeffs);
 
-    let deep_coeffs: Vec<Fp2> =
-        (0..width * window_size + 1).map(|_| transcript.challenge_fp2()).collect();
+    let deep_coeffs: Vec<Fp2> = (0..width * window_size + 1)
+        .map(|_| transcript.challenge_fp2())
+        .collect();
 
     let mut deep_d: Vec<Fp2> = Vec::with_capacity(n);
     let mut x = shift;
@@ -210,7 +217,14 @@ pub fn stark_prove_poseidon_ext_pub<A: AirExt>(
         x = x * omega;
     }
 
-    let fri = fri_prove_poseidon_ext(&deep_d, shift, fri_log_blowup, n_queries, grind_bits, hasher);
+    let fri = fri_prove_poseidon_ext(
+        &deep_d,
+        shift,
+        fri_log_blowup,
+        n_queries,
+        grind_bits,
+        hasher,
+    );
     let deep_leaves: Vec<[Fp; RATE]> = deep_d.iter().map(|v| pack_ext(*v)).collect();
     let deep_tree = PoseidonMerkleTree::commit(hasher, &deep_leaves);
     transcript.absorb_digest(&fri.roots[0]);
@@ -231,5 +245,11 @@ pub fn stark_prove_poseidon_ext_pub<A: AirExt>(
         });
     }
 
-    StarkProofExtP { trace_roots, comp_root: comp_tree.root(), ood_frame, fri, queries }
+    StarkProofExtP {
+        trace_roots,
+        comp_root: comp_tree.root(),
+        ood_frame,
+        fri,
+        queries,
+    }
 }

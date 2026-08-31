@@ -4,11 +4,13 @@
 //! with the coset low-degree extension built on it.
 
 mod eval;
+mod inv;
 mod lagrange;
 mod lde;
 mod ntt;
 
 pub use eval::{eval, eval_ext};
-pub use lagrange::{eval_lagrange, eval_lagrange_ext};
+pub use inv::batch_inv;
+pub use lagrange::{eval_cols_on_subgroup_ext, eval_lagrange, eval_lagrange_ext};
 pub use lde::{lde, lde_from_coeffs};
 pub use ntt::{intt, ntt};

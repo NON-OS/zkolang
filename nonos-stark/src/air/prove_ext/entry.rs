@@ -56,5 +56,12 @@ pub fn stark_prove_ext_blown_bound<A: AirExt>(
     extra_blowup_bits: u32,
     context: &[u8],
 ) -> StarkProofExt {
-    prove(air, trace, n_queries, grind_bits, extra_blowup_bits, context)
+    prove(
+        air,
+        trace,
+        n_queries,
+        grind_bits,
+        extra_blowup_bits,
+        context,
+    )
 }

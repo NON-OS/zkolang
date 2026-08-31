@@ -15,11 +15,11 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 use super::super::super::field::{Fp, Fp2};
+use super::super::super::poly::{eval_cols_on_subgroup_ext, eval_ext};
 use super::super::composition::compose_ext;
 use super::super::spec::AirExt;
 use super::setup::Domain;
 use alloc::vec::Vec;
-use super::super::super::poly::{eval_ext, eval_lagrange_ext};
 
 /// The out-of-domain trace frame: every column at z * g^k for each window row,
 /// straight from the coefficients.
@@ -38,13 +38,7 @@ pub(in crate::air) fn ood_frame(trace: &[Vec<Fp>], d: &Domain, z: Fp2) -> Vec<Fp
 /// the composition at z consumes, and in the preprocessed form the claims the
 /// sidecar carries.
 pub(in crate::air) fn periodic_at_z(d: &Domain, cols: &[Vec<Fp>], z: Fp2) -> Vec<Fp2> {
-    let mut h_pts = Vec::with_capacity(d.t);
-    let mut p = Fp::ONE;
-    for _ in 0..d.t {
-        h_pts.push(p);
-        p = p * d.g;
-    }
-    cols.iter().map(|col| eval_lagrange_ext(&h_pts, col, z)).collect()
+    eval_cols_on_subgroup_ext(d.g, d.t, cols, z)
 }
 
 /// The composition at z from the claimed frame and periodic values: the same

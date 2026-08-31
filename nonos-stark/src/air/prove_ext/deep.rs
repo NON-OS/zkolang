@@ -15,6 +15,7 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 use super::super::super::field::{Fp, Fp2};
+use super::super::super::poly::batch_inv;
 use super::compose::BLOCK;
 use super::coset::extend;
 use super::setup::Domain;
@@ -36,8 +37,9 @@ pub(super) fn over_domain(
     deep_coeffs: &[Fp2],
 ) -> Vec<Fp2> {
     // z * g^k once per window row, not once per point.
-    let zks: Vec<Fp2> =
-        (0..d.window).map(|k| z * Fp2::from_base(d.g.pow(k as u64))).collect();
+    let zks: Vec<Fp2> = (0..d.window)
+        .map(|k| z * Fp2::from_base(d.g.pow(k as u64)))
+        .collect();
     let e = deep_coeffs[d.width * d.window];
 
     let mut deep_d = alloc::vec![Fp2::ZERO; d.n];
@@ -47,14 +49,28 @@ pub(super) fn over_domain(
         let blocks = d.t.div_ceil(BLOCK);
         let parts = crate::par::map_index(blocks, |b| {
             let (lo, hi) = (b * BLOCK, ((b + 1) * BLOCK).min(d.t));
-            let mut out: Vec<Fp2> = Vec::with_capacity(hi - lo);
+            // Every denominator in the block at once: window + 1 of them per
+            // point, one field inversion for all of them together.
+            let stride = zks.len() + 1;
+            let mut dens: Vec<Fp2> = Vec::with_capacity((hi - lo) * stride);
             let mut x = shift_c * d.sub.pow(lo as u64);
+            for _ in lo..hi {
+                let xe = Fp2::from_base(x);
+                for zk in &zks {
+                    dens.push(xe - *zk);
+                }
+                dens.push(xe - z);
+                x = x * d.sub;
+            }
+            let invs = batch_inv(&dens);
+
+            let mut out: Vec<Fp2> = Vec::with_capacity(hi - lo);
             for i in lo..hi {
                 let j = c + d.blowup * i;
-                let xe = Fp2::from_base(x);
+                let base = (i - lo) * stride;
                 let mut acc = Fp2::ZERO;
-                for (k, zk) in zks.iter().enumerate() {
-                    let inv_x_zk = (xe - *zk).inv();
+                for k in 0..zks.len() {
+                    let inv_x_zk = invs[base + k];
                     for (col, column) in cols.iter().enumerate() {
                         let claimed = ood_frame[k * d.width + col];
                         acc = acc
@@ -62,9 +78,8 @@ pub(super) fn over_domain(
                                 * ((Fp2::from_base(column[i]) - claimed) * inv_x_zk);
                     }
                 }
-                acc = acc + e * ((comp_d[j] - comp_z) * (xe - z).inv());
+                acc = acc + e * ((comp_d[j] - comp_z) * invs[base + zks.len()]);
                 out.push(acc);
-                x = x * d.sub;
             }
             out
         });

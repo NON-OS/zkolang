@@ -25,7 +25,7 @@ use super::super::field::{Fp, Fp2};
 use super::super::fri::root_of_unity;
 use super::super::fri_ext::fri_verify_ext;
 use super::super::merkle::{verify_path_ext, verify_path_wide};
-use super::super::poly::eval_lagrange_ext;
+use super::super::poly::eval_cols_on_subgroup_ext;
 use super::super::transcript::Transcript;
 use super::composition::{compose_ext, domain_params_blown, num_coeffs};
 use super::prove_ext::draw_ood_point_ext;
@@ -88,33 +88,33 @@ pub fn stark_verify_ext_blown_bound<A: AirExt>(
         transcript.absorb_digest(&crate::hash::keccak256(context));
     }
     transcript.absorb_digest(&proof.trace_root);
-    let coeffs: Vec<Fp2> = (0..num_coeffs(air)).map(|_| transcript.challenge_fp2()).collect();
+    let coeffs: Vec<Fp2> = (0..num_coeffs(air))
+        .map(|_| transcript.challenge_fp2())
+        .collect();
     transcript.absorb_digest(&proof.comp_root);
     let z = draw_ood_point_ext(&mut transcript, shift, n, t);
     for value in &proof.ood_frame {
         transcript.absorb_fp(value.c0);
         transcript.absorb_fp(value.c1);
     }
-    let deep_coeffs: Vec<Fp2> =
-        (0..width * window_size + 1).map(|_| transcript.challenge_fp2()).collect();
+    let deep_coeffs: Vec<Fp2> = (0..width * window_size + 1)
+        .map(|_| transcript.challenge_fp2())
+        .collect();
 
     // The constraints checked once at the out-of-domain point from the claimed
     // frame, with this verifier's own composition algebra.
-    let h_pts: Vec<Fp> = {
-        let mut v = Vec::with_capacity(t);
-        let mut p = Fp::ONE;
-        for _ in 0..t {
-            v.push(p);
-            p = p * g;
-        }
-        v
-    };
-    let periodic_z: Vec<Fp2> =
-        air.periodic_columns().iter().map(|col| eval_lagrange_ext(&h_pts, col, z)).collect();
+    let periodic_z: Vec<Fp2> = eval_cols_on_subgroup_ext(g, t, &air.periodic_columns(), z);
     let comp_z = compose_ext(air, g, z, &proof.ood_frame, &periodic_z, &coeffs);
 
     // The DEEP quotient polynomial must be low degree.
-    if !fri_verify_ext(&proof.fri, shift, log_n, fri_log_blowup, n_queries, grind_bits) {
+    if !fri_verify_ext(
+        &proof.fri,
+        shift,
+        log_n,
+        fri_log_blowup,
+        n_queries,
+        grind_bits,
+    ) {
         return false;
     }
     let deep_root = proof.fri.roots[0];

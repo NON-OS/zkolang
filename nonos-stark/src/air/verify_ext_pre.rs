@@ -28,7 +28,7 @@ use super::super::field::{Fp, Fp2};
 use super::super::fri::root_of_unity;
 use super::super::fri_ext::fri_verify_ext;
 use super::super::merkle::{verify_path_ext, verify_path_wide, verify_path_wide_periodic};
-use super::super::poly::eval_lagrange_ext;
+use super::super::poly::eval_cols_on_subgroup_ext;
 use super::super::transcript::Transcript;
 use super::composition::{compose_ext, domain_params_blown, num_coeffs};
 use super::prove_ext::draw_ood_point_ext;
@@ -72,7 +72,9 @@ pub fn stark_verify_ext_preprocessed<A: AirExt>(
 
     let mut transcript = Transcript::new(b"NONOS-STARK-EXT");
     transcript.absorb_digest(&proof.trace_root);
-    let coeffs: Vec<Fp2> = (0..num_coeffs(air)).map(|_| transcript.challenge_fp2()).collect();
+    let coeffs: Vec<Fp2> = (0..num_coeffs(air))
+        .map(|_| transcript.challenge_fp2())
+        .collect();
     transcript.absorb_digest(&proof.comp_root);
     let z = draw_ood_point_ext(&mut transcript, shift, n, t);
     for value in &proof.ood_frame {
@@ -83,29 +85,27 @@ pub fn stark_verify_ext_preprocessed<A: AirExt>(
         transcript.absorb_fp(value.c0);
         transcript.absorb_fp(value.c1);
     }
-    let deep_coeffs: Vec<Fp2> =
-        (0..width * window_size + 1 + n_periodic).map(|_| transcript.challenge_fp2()).collect();
+    let deep_coeffs: Vec<Fp2> = (0..width * window_size + 1 + n_periodic)
+        .map(|_| transcript.challenge_fp2())
+        .collect();
 
     // Native ground truth: the claims must equal this verifier's own
     // recomputation. An on-chain verifier omits this and relies on the
     // commitment plus the DEEP argument below.
-    let h_pts: Vec<Fp> = {
-        let mut v = Vec::with_capacity(t);
-        let mut p = Fp::ONE;
-        for _ in 0..t {
-            v.push(p);
-            p = p * g;
-        }
-        v
-    };
-    for (col, claim) in periodic_cols.iter().zip(pre.periodic_z.iter()) {
-        if eval_lagrange_ext(&h_pts, col, z) != *claim {
-            return false;
-        }
+    let ours = eval_cols_on_subgroup_ext(g, t, &periodic_cols, z);
+    if ours != pre.periodic_z {
+        return false;
     }
     let comp_z = compose_ext(air, g, z, &proof.ood_frame, &pre.periodic_z, &coeffs);
 
-    if !fri_verify_ext(&proof.fri, shift, log_n, fri_log_blowup, n_queries, grind_bits) {
+    if !fri_verify_ext(
+        &proof.fri,
+        shift,
+        log_n,
+        fri_log_blowup,
+        n_queries,
+        grind_bits,
+    ) {
         return false;
     }
     let deep_root = proof.fri.roots[0];
