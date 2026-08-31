@@ -6,35 +6,33 @@ on:
   workflow_dispatch:
     inputs:
       emit:
-        description: 'Emit a recursion proof (hours, large runner)'
-        type: boolean
-        default: false
-      paid:
-        description: 'Run the jobs that need the large runner'
+        description: 'Also emit the recursion proof (the long one)'
         type: boolean
         default: false
 
 env:
   CARGO_TERM_COLOR: always
 
-# The gates outgrew ubuntu-latest once, which is why the old nightly failed on
-# every run. After the region sizing work an assembly holds in a few GB, so they
-# fit a standard runner again. Only the emit still needs a large one.
+# A superseded run keeps burning minutes unless something cancels it; that is
+# how a dead run once ate most of a budget. New push, old run dies.
+concurrency:
+  group: proofs-${{ github.ref }}
+  cancel-in-progress: true
+
+# Every job fits a standard runner since the prover stopped materializing the
+# evaluation domain: what was 55 GB of resident columns is coefficients and a
+# coset buffer. Nothing here needs a paid machine or a spending limit.
 jobs:
-  # The ignored set splits by what it costs. Most of it is cheap and belongs on
-  # a standard runner. The ones that prove a recursion assembly are not: that
-  # LDE is around 50 GB and takes the whole VM down with it, which reads as
-  # "the runner received a shutdown signal" rather than as an out of memory.
   gates:
-    name: the gates that fit a standard runner
+    name: every cheap gate
     runs-on: ubuntu-latest
-    timeout-minutes: 330
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
 
-      - name: every gate but the proving ones
+      - name: the ignored set, minus the proving ones
         run: |
           cargo test --workspace --release -- --include-ignored --test-threads=1 \
             --skip recursion_assembly_tests \
@@ -43,30 +41,29 @@ jobs:
             --skip probe_recursion
 
   proving:
-    name: the gates that prove a recursion
-    if: github.event_name != 'workflow_dispatch' || inputs.paid
-    runs-on: ubuntu-32core
+    name: recursion bindings, accept and reject
+    runs-on: ubuntu-latest
     timeout-minutes: 330
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
 
-      - name: recursion bindings, accept and reject
+      - name: the release gate
         run: |
           /usr/bin/time -v cargo test --release -p stark_proofs --features parallel \
             recursion_assembly_tests -- --ignored --test-threads=1 2>&1 | tee proving.log
-          grep -E "Maximum resident|test result" proving.log || true
 
-      - uses: actions/upload-artifact@v4
+      - name: numbers on the run page
         if: always()
-        with:
-          name: proving-log
-          path: proving.log
+        run: |
+          {
+            echo "## Recursion release gate"
+            echo '```'
+            grep -E "test result|Maximum resident|Elapsed \(wall" proving.log || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
-  # What a sender actually pays for. Two notes in, two out, membership against a
-  # pool of the deployed depth, at the deployed query count. Small enough for a
-  # standard runner, so this one costs nothing to publish on every dispatch.
   transfer:
     name: emit a transfer proof
     runs-on: ubuntu-latest
@@ -82,15 +79,12 @@ jobs:
             --bin emit_transfer -- transfer.proof 2>&1 | tee transfer.log
           sha256sum transfer.proof | tee transfer.sha256
 
-      # On the run page rather than inside an artifact nobody downloads. These
-      # are the numbers anyone asks for first, so they belong where they are read.
-      - name: put the numbers on the run page
+      - name: numbers on the run page
         if: always()
         run: |
           prove=$(grep -oE 'proved in [0-9.]+s' transfer.log | head -1 | tr -dc '0-9.')
           verify=$(grep -oE 'verified from disk in [0-9.]+s' transfer.log | head -1 | tr -dc '0-9.')
           peak=$(grep 'Maximum resident' transfer.log | grep -oE '[0-9]+')
-          bytes=$(wc -c < transfer.proof | tr -d ' ')
           {
             echo "## Private transfer proof"
             echo
@@ -98,13 +92,9 @@ jobs:
             echo "|---|---|"
             echo "| prove | ${prove:-?} s |"
             echo "| verify, from the written bytes | ${verify:-?} s |"
-            echo "| proof size | ${bytes} bytes |"
+            echo "| proof size | $(wc -c < transfer.proof | tr -d ' ') bytes |"
             echo "| peak memory | $(( ${peak:-0} / 1024 )) MB |"
             echo "| sha256 | \`$(cut -d' ' -f1 transfer.sha256)\` |"
-            echo
-            grep -E '^instance ' transfer.log | sed 's/^/    /'
-            echo
-            echo "Verified after deserialising from disk, not from the value the prover held."
           } >> "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/upload-artifact@v4
@@ -116,16 +106,10 @@ jobs:
             transfer.sha256
             transfer.log
 
-  # The shape a verifier derives from, and the inner proof behind it. Cheaper
-  # than the deployment proof, which is not the same as small: committing the
-  # periodic columns over the evaluation domain is tens of gigabytes and takes a
-  # standard runner down three minutes in, exit 143. Cheaper than an hour of
-  # proving still means the large runner.
   structure:
-    name: emit the AIR structure and the real inner
-    if: github.event_name != 'workflow_dispatch' || inputs.paid
-    runs-on: ubuntu-32core
-    timeout-minutes: 180
+    name: the AIR structure and the real inner
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -137,18 +121,22 @@ jobs:
           NOX_SPEC_DIR=$PWD/spec /usr/bin/time -v cargo test --release \
             -p stark_proofs --features parallel gen_production_structure \
             -- --ignored --nocapture 2>&1 | tee structure.log
-          echo "----"
-          grep -o '"inner_log_trace_len": [0-9]*' spec/production-air-structure.json || true
-          grep -E "Maximum resident|Elapsed \(wall" structure.log || true
 
-      # The deployed join-split proven the way the recursion needs it: Poseidon
-      # transcript, intent absorbed as publics. The stand-in the recursion has
-      # always verified is two toy regions; this is a transfer somebody could send.
       - name: the real inner proof
         run: |
           /usr/bin/time -v cargo run --release -p stark_proofs --features parallel \
             --bin emit_real_inner 2>&1 | tee inner.log
-          grep -E "Maximum resident|Elapsed \(wall|inner |verified" inner.log || true
+
+      - name: numbers on the run page
+        if: always()
+        run: |
+          {
+            echo "## Structure and inner"
+            echo '```'
+            grep -o '"inner_log_trace_len": [0-9]*' spec/production-air-structure.json || true
+            grep -hE "inner |proved in|verified in|Maximum resident" structure.log inner.log || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/upload-artifact@v4
         if: always()
@@ -158,48 +146,56 @@ jobs:
             spec/**
             structure.log
             inner.log
+
   emit:
-    name: emit a recursion proof
+    name: emit the recursion proof
     if: github.event_name == 'workflow_dispatch' && inputs.emit
-    runs-on: ubuntu-32core
+    runs-on: ubuntu-latest
     timeout-minutes: 330
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
 
-      # A real emission. The binary proves, writes the bytes a verifier is
-      # given, reads them back and verifies from the file rather than from the
-      # value it just held. A proof that only checks in the process that made it
-      # has not been shown to travel.
-      - name: emit a proof and verify it from disk
+      - name: emit and verify it from disk
         run: |
           /usr/bin/time -v cargo run --release -p stark_proofs --features parallel \
             --bin emit_recursion -- recursion.proof 2>&1 | tee emit.log
-          echo "----"
-          ls -l recursion.proof
-          grep -E "Maximum resident|Elapsed \(wall|proved in|verified from disk|assembly " emit.log || true
+          sha256sum recursion.proof | tee recursion.sha256
 
-      # The contract-facing artifact. Commits the periodic columns to a root,
-      # proves preprocessed at 32 queries and 16 grinding bits, and verifies
-      # against that root rather than recomputing the schedule, which is the
-      # path the deployed verifier actually runs.
-      - name: attested production vectors
+      - name: numbers on the run page
+        if: always()
         run: |
-          mkdir -p vectors/reference
-          NOX_SPEC_DIR=$PWD/vectors /usr/bin/time -v cargo test --release \
-            -p stark_proofs --features parallel gen_production_recursive_vector \
-            -- --ignored --nocapture 2>&1 | tee vectors.log
-          echo "----"
-          ls -l vectors vectors/reference || true
-          grep -E "Maximum resident|Elapsed \(wall|committed .* periodic" vectors.log || true
+          {
+            echo "## Recursion proof"
+            echo '```'
+            grep -E "assembly |proved in|wrote|verified from disk|Maximum resident|Elapsed \(wall" emit.log || true
+            cat recursion.sha256 2>/dev/null || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: recursion-proof-and-vectors
+          name: recursion-proof
           path: |
             recursion.proof
+            recursion.sha256
             emit.log
-            vectors.log
-            vectors/**
+
+  # The deserialiser reads an untrusted trailer, and a model checker settles
+  # totality over every byte sequence in the bound rather than the ones a
+  # fuzzer reached. The solver runs past an hour on one symbolic byte, so this
+  # lives on the schedule with hours of budget and nobody waiting, never on a
+  # push. It last existed in a workflow this repo deleted; a gate that runs
+  # nowhere but is still pointed at in comments is worse than no gate.
+  kani:
+    name: model checked
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+      - uses: model-checking/kani-github-action@v1.1
+        with:
+          args: -p stark_proofs --output-format terse
