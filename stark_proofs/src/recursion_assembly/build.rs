@@ -8,9 +8,9 @@
 
 use super::layout::{offsets, Layout};
 use super::tamper::Tamper;
-use super::inner::LOG_ROUNDS;
+use super::inner::{Inner, LOG_ROUNDS};
 use super::{auth, compose, compose_step, deep, fri, groups, inner, periodic, points, transcript};
-use crate::crypto::stark::air::{Air, AirExt, GpGroup, WiredMultiExt};
+use crate::crypto::stark::air::{Air, AirExt, GenericTransition, GpGroup, Poseidon, WiredMultiExt};
 use crate::crypto::stark::field::Fp;
 use alloc::boxed::Box;
 use alloc::vec::Vec;
@@ -184,9 +184,23 @@ pub fn assemble_real(tamper: Tamper) -> Assembly {
 pub fn assemble_real_capped(tamper: Tamper, cap: usize) -> Assembly {
     let h = inner::hasher();
     let inner = inner::shield_join_split(&h);
+    assemble_over(&h, inner, tamper, cap)
+}
+
+/// The generic assembler: any inner whose transition the compose gadget can
+/// recompute over the tower rides the full per-query recursion. The deployed
+/// join-split comes through here, and so does any compiled zkolang program,
+/// which is what makes writing a new circuit in the language enough to make
+/// it aggregatable.
+pub fn assemble_over<A: AirExt + GenericTransition + 'static>(
+    h: &Poseidon,
+    inner: Inner<A>,
+    tamper: Tamper,
+    cap: usize,
+) -> Assembly {
     let n_q = inner.proof.queries.len().min(cap);
 
-    let ft = fri::fri_transcript(&h, &inner);
+    let ft = fri::fri_transcript(h, &inner);
     let (pzregion, pztrace) = periodic::periodic_region(&inner, tamper);
 
     let mut q_boxes: Vec<Box<dyn AirExt>> = Vec::new();
@@ -197,9 +211,9 @@ pub fn assemble_real_capped(tamper: Tamper, cap: usize) -> Assembly {
     let mut i0 = 0usize;
     for k in 0..n_q {
         let tk = if k == 0 { tamper } else { Tamper::None };
-        let (dreg, dtr, nt) = deep::deep_region_k(&h, &inner, k, tk);
+        let (dreg, dtr, nt) = deep::deep_region_k(h, &inner, k, tk);
         let fold = fri::fri_fold_k(&inner, &ft, k, tk);
-        let au = auth::auth_side_k(&h, &inner, fold.ik, k, tk);
+        let au = auth::auth_side_k(h, &inner, fold.ik, k, tk);
         let pts = points::point_regions_k(&au.cons_dirs, fold.ik, ft.log_n, tk);
         if k == 0 {
             n_terms = nt;
@@ -222,7 +236,7 @@ pub fn assemble_real_capped(tamper: Tamper, cap: usize) -> Assembly {
         q_traces.push(pts.fptrace);
     }
 
-    let ts = transcript::stark_transcript(&h, &inner, n_terms);
+    let ts = transcript::stark_transcript(h, &inner, n_terms);
     let width_inner = ocells[0].len() - 3;
     let t_inner = inner.t as usize;
     let (z_op, deep_coeff_op) = (ts.z_op, ts.deep_coeff_op);
