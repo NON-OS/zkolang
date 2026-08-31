@@ -15,9 +15,9 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 use super::super::super::field::{Fp, Fp2};
+use super::super::super::poly::batch_inv;
 use super::compose::BLOCK;
 use super::coset::extend;
-use super::super::super::poly::batch_inv;
 use super::setup::Domain;
 use alloc::vec::Vec;
 
@@ -37,8 +37,9 @@ pub(super) fn over_domain(
     deep_coeffs: &[Fp2],
 ) -> Vec<Fp2> {
     // z * g^k once per window row, not once per point.
-    let zks: Vec<Fp2> =
-        (0..d.window).map(|k| z * Fp2::from_base(d.g.pow(k as u64))).collect();
+    let zks: Vec<Fp2> = (0..d.window)
+        .map(|k| z * Fp2::from_base(d.g.pow(k as u64)))
+        .collect();
     let e = deep_coeffs[d.width * d.window];
 
     let mut deep_d = alloc::vec![Fp2::ZERO; d.n];

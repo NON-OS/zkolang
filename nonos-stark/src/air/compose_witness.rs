@@ -86,5 +86,10 @@ pub fn compose_inputs_pub<A: AirExt>(
     let periodic_z: Vec<Fp2> = eval_cols_on_subgroup_ext(g, t, &air.periodic_columns(), z);
     let comp_z = compose_ext(air, g, z, &proof.ood_frame, &periodic_z, &coeffs);
 
-    ComposeInputs { coeffs, periodic_z, z, comp_z }
+    ComposeInputs {
+        coeffs,
+        periodic_z,
+        z,
+        comp_z,
+    }
 }

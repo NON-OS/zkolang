@@ -88,15 +88,18 @@ pub fn stark_verify_ext_blown_bound<A: AirExt>(
         transcript.absorb_digest(&crate::hash::keccak256(context));
     }
     transcript.absorb_digest(&proof.trace_root);
-    let coeffs: Vec<Fp2> = (0..num_coeffs(air)).map(|_| transcript.challenge_fp2()).collect();
+    let coeffs: Vec<Fp2> = (0..num_coeffs(air))
+        .map(|_| transcript.challenge_fp2())
+        .collect();
     transcript.absorb_digest(&proof.comp_root);
     let z = draw_ood_point_ext(&mut transcript, shift, n, t);
     for value in &proof.ood_frame {
         transcript.absorb_fp(value.c0);
         transcript.absorb_fp(value.c1);
     }
-    let deep_coeffs: Vec<Fp2> =
-        (0..width * window_size + 1).map(|_| transcript.challenge_fp2()).collect();
+    let deep_coeffs: Vec<Fp2> = (0..width * window_size + 1)
+        .map(|_| transcript.challenge_fp2())
+        .collect();
 
     // The constraints checked once at the out-of-domain point from the claimed
     // frame, with this verifier's own composition algebra.
@@ -104,7 +107,14 @@ pub fn stark_verify_ext_blown_bound<A: AirExt>(
     let comp_z = compose_ext(air, g, z, &proof.ood_frame, &periodic_z, &coeffs);
 
     // The DEEP quotient polynomial must be low degree.
-    if !fri_verify_ext(&proof.fri, shift, log_n, fri_log_blowup, n_queries, grind_bits) {
+    if !fri_verify_ext(
+        &proof.fri,
+        shift,
+        log_n,
+        fri_log_blowup,
+        n_queries,
+        grind_bits,
+    ) {
         return false;
     }
     let deep_root = proof.fri.roots[0];

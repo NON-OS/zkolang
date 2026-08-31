@@ -35,7 +35,9 @@ pub(super) fn over_domain(
     z: Fp2,
     deep_coeffs: &[Fp2],
 ) -> Vec<Fp2> {
-    let zks: Vec<Fp2> = (0..d.window).map(|k| z * Fp2::from_base(d.g.pow(k as u64))).collect();
+    let zks: Vec<Fp2> = (0..d.window)
+        .map(|k| z * Fp2::from_base(d.g.pow(k as u64)))
+        .collect();
     let e = deep_coeffs[d.width * d.window];
 
     let mut deep_d = alloc::vec![Fp2::ZERO; d.n];

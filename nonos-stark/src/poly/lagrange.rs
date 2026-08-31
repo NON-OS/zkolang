@@ -20,6 +20,7 @@
 //! operation a STARK uses to move between a trace and its extension.
 
 use super::super::field::{Fp, Fp2};
+use alloc::vec::Vec;
 
 /// Evaluate the polynomial that interpolates `(xs[i], ys[i])` at `z`. The `xs`
 /// must be distinct; a repeated node makes the interpolant undefined and the

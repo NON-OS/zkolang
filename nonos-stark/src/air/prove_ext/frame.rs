@@ -15,11 +15,11 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 use super::super::super::field::{Fp, Fp2};
+use super::super::super::poly::{eval_cols_on_subgroup_ext, eval_ext};
 use super::super::composition::compose_ext;
 use super::super::spec::AirExt;
 use super::setup::Domain;
 use alloc::vec::Vec;
-use super::super::super::poly::{eval_cols_on_subgroup_ext, eval_ext};
 
 /// The out-of-domain trace frame: every column at z * g^k for each window row,
 /// straight from the coefficients.
