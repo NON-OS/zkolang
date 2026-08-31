@@ -66,6 +66,13 @@ impl AirExt for Publics {
 }
 
 impl Publics {
+    /// No transition constraints: publics bind by boundary and wiring. The
+    /// generic form says so over any field, for the recursive verifier.
+    pub fn transition_gen<F: crate::field::Felt>(&self, _w: &[F], _p: &[F]) -> Vec<F> {
+        Vec::new()
+    }
+
+
     pub fn trace(&self) -> Vec<Fp> {
         let n = 1usize << self.log_t;
         let mut t = vec![Fp::ZERO; n];

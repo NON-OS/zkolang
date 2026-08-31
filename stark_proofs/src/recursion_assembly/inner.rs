@@ -6,7 +6,7 @@
 use crate::crypto::stark::air::{
     compose_inputs, compose_inputs_pub, stark_prove_poseidon_ext, stark_prove_poseidon_ext_pub,
     Accumulator, Air, AirExt, ComposeInputs, Poseidon, RangeCheck, StarkProofExtP, WiredExt,
-    WiredMultiExt, RATE,
+    WiredMultiGen, RATE,
 };
 use crate::crypto::stark::field::Fp;
 use crate::crypto::stark::fri::root_of_unity;
@@ -109,7 +109,7 @@ pub fn step_air(h: &Poseidon) -> Inner<nonos_zkolang::StepAir> {
 /// against the pool tree, its intent absorbed as the transcript publics the
 /// verifier replays. Anything the recursion says about this one, it says about
 /// a transfer somebody could actually send.
-pub fn shield_join_split(h: &Poseidon) -> Inner<WiredMultiExt> {
+pub fn shield_join_split(h: &Poseidon) -> Inner<WiredMultiGen> {
     let js = crate::shield::test::scenario::balanced_deployed(crate::shield::key::Break::None);
     let publics = js.intent.clone();
     let proof = stark_prove_poseidon_ext_pub(&js.wired, &js.witness, NQ, GRIND, EXTRA, h, &publics);

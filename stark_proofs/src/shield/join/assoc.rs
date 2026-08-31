@@ -1,13 +1,12 @@
 // NONOS Operating System (AGPL-3.0-or-later)
 
-use crate::crypto::stark::air::{AirExt, Poseidon, RATE};
+use crate::crypto::stark::air::{Poseidon, ShieldRegion, RATE};
 use crate::crypto::stark::field::Fp;
 use crate::shield::member::{note_member, PoolTree};
-use alloc::boxed::Box;
 use alloc::vec::Vec;
 
 pub struct Assoc {
-    pub regions: Vec<Box<dyn AirExt>>,
+    pub regions: Vec<ShieldRegion>,
     pub traces: Vec<Vec<Fp>>,
     pub leaf_col: Vec<usize>,
     pub root: [Fp; RATE],
@@ -31,7 +30,7 @@ pub fn assoc_membership(
     }
     let idx: Vec<usize> = cms.iter().map(|cm| tree.insert(*cm)).collect();
 
-    let mut regions: Vec<Box<dyn AirExt>> = Vec::with_capacity(2);
+    let mut regions: Vec<ShieldRegion> = Vec::with_capacity(2);
     let mut traces = Vec::with_capacity(2);
     let mut leaf_col = Vec::with_capacity(2);
     for (i, cm) in cms.iter().enumerate() {
@@ -40,7 +39,7 @@ pub fn assoc_membership(
         let (sibs, dirs) = tree.path(if unlisted { idx[1 - i] } else { idx[i] });
         leaf_col.push(if dirs[0] { RATE } else { 0 });
         let m = note_member(h, claimed, sibs, dirs, tree.root());
-        regions.push(Box::new(m.region));
+        regions.push(ShieldRegion::Membership(m.region));
         traces.push(m.witness);
     }
     Assoc { regions, traces, leaf_col, root: tree.root() }

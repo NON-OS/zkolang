@@ -84,7 +84,9 @@ mod verify_ext_pre;
 mod verify_poseidon_ext;
 mod wired;
 mod wired_ext;
+mod shield_region;
 mod wired_multi_ext;
+mod wired_multi_gen;
 
 pub use accumulator::Accumulator;
 pub use permutation_arg::{
@@ -148,3 +150,5 @@ pub use verify_poseidon_ext::{stark_verify_poseidon_ext, stark_verify_poseidon_e
 pub use wired::Wired;
 pub use wired_ext::WiredExt;
 pub use wired_multi_ext::{GpGroup, WiredMultiExt};
+pub use shield_region::ShieldRegion;
+pub use wired_multi_gen::WiredMultiGen;

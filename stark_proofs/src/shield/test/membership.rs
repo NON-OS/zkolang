@@ -16,5 +16,5 @@ fn a_deposited_note_reaches_the_pool_root() {
     let (sibs, dirs) = t.path(3);
     let m = note_member(&h, cm, sibs, dirs, t.root());
     assert_eq!(m.proven_root, t.root());
-    let _ = satisfies;
+    fn _typechecks(a: &crate::crypto::stark::air::WiredMultiGen, w: &[crate::crypto::stark::field::Fp]) -> bool { satisfies(a, w) }
 }

@@ -4,18 +4,17 @@ use super::intent::publics_region;
 use super::settle::Settle;
 use super::stack::stack;
 use super::terms::balance;
-use crate::crypto::stark::air::{AirExt, Poseidon, RATE};
+use crate::crypto::stark::air::{ShieldRegion, Poseidon, RATE};
 use crate::crypto::stark::field::Fp;
 use crate::shield::key::Break;
 use crate::shield::note::{Note, POOL_LOG_ROUNDS};
-use alloc::boxed::Box;
 use alloc::vec::Vec;
 
 /// balance, four notes, two memberships, two key hierarchies, the tuple.
 pub const REGIONS_PER_INTENT: usize = 14;
 
 pub struct IntentParts {
-    pub regions: Vec<Box<dyn AirExt>>,
+    pub regions: Vec<ShieldRegion>,
     pub traces: Vec<Vec<Fp>>,
     pub span_op: usize,
     pub leaf_col: Vec<usize>,
@@ -46,12 +45,12 @@ pub fn intent_parts(
 
     let h = Poseidon::new(POOL_LOG_ROUNDS, [Fp::ZERO; RATE]);
     let sks = [inputs[0].sk, inputs[1].sk];
-    let mut s = stack(&h, notes, sks, brk, (Box::new(air), trace), depth);
+    let mut s = stack(&h, notes, sks, brk, (ShieldRegion::Balance(air), trace), depth);
 
     let (intent, pub_air) =
         publics_region(&s, public_amount, fee, notes[0].asset_id, st, flip);
     s.traces.push(pub_air.trace());
-    s.regions.push(Box::new(pub_air));
+    s.regions.push(ShieldRegion::Publics(pub_air));
 
     IntentParts {
         regions: s.regions,

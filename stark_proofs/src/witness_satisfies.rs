@@ -3,11 +3,11 @@
 //! boundary, including each grand product's z=1 closure, holds. A binding that
 //! fails to close violates its boundary, so this reads the wiring directly.
 
-use crate::crypto::stark::air::{Air, WiredMultiExt};
+use crate::crypto::stark::air::Air;
 use crate::crypto::stark::field::Fp;
 use alloc::vec::Vec;
 
-pub(crate) fn satisfies(air: &WiredMultiExt, witness: &[Fp]) -> bool {
+pub(crate) fn satisfies(air: &impl Air, witness: &[Fp]) -> bool {
     let w = air.trace_width();
     let ws = air.window_size();
     let total = 1usize << air.log_trace_len();
