@@ -1,10 +1,10 @@
 // NONOS Operating System (AGPL-3.0-or-later)
 
-use crate::crypto::stark::air::{Air, WiredMultiExt};
+use crate::crypto::stark::air::Air;
 use crate::crypto::stark::field::Fp;
 use alloc::vec::Vec;
 
-pub(super) fn satisfies(air: &WiredMultiExt, witness: &[Fp]) -> bool {
+pub(super) fn satisfies(air: &impl Air, witness: &[Fp]) -> bool {
     let w = air.trace_width();
     let ws = air.window_size();
     let total = 1usize << air.log_trace_len();

@@ -2,7 +2,7 @@
 
 use super::parts::{intent_parts, Spend};
 use super::settle::Settle;
-use crate::crypto::stark::air::WiredMultiExt;
+use crate::crypto::stark::air::WiredMultiGen;
 use crate::crypto::stark::field::Fp;
 use crate::shield::batch::assemble;
 use crate::shield::key::Break;
@@ -11,7 +11,7 @@ use crate::shield::note::Note;
 use alloc::vec::Vec;
 
 pub struct JoinSplit {
-    pub wired: WiredMultiExt,
+    pub wired: WiredMultiGen,
     pub witness: Vec<Fp>,
     pub intent: Vec<Fp>,
 }

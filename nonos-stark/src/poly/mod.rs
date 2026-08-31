@@ -11,6 +11,6 @@ mod ntt;
 
 pub use eval::{eval, eval_ext};
 pub use inv::batch_inv;
-pub use lagrange::{eval_cols_on_subgroup_ext, eval_lagrange, eval_lagrange_ext};
+pub use lagrange::{eval_cols_on_subgroup, eval_cols_on_subgroup_ext, eval_lagrange, eval_lagrange_ext};
 pub use lde::{lde, lde_from_coeffs};
 pub use ntt::{intt, ntt};

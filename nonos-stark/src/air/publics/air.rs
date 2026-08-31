@@ -23,6 +23,7 @@ use alloc::vec::Vec;
 /// row to wherever the circuit computes that word, which is what makes the
 /// binding positive: the word is tied to its computed cell, not merely
 /// constrained to something.
+#[derive(Clone)]
 pub struct Publics {
     pub log_t: u32,
     pub words: Vec<Fp>,
@@ -65,6 +66,13 @@ impl AirExt for Publics {
 }
 
 impl Publics {
+    /// No transition constraints: publics bind by boundary and wiring. The
+    /// generic form says so over any field, for the recursive verifier.
+    pub fn transition_gen<F: crate::field::Felt>(&self, _w: &[F], _p: &[F]) -> Vec<F> {
+        Vec::new()
+    }
+
+
     pub fn trace(&self) -> Vec<Fp> {
         let n = 1usize << self.log_t;
         let mut t = vec![Fp::ZERO; n];

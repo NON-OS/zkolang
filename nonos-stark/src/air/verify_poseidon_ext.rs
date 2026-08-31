@@ -23,7 +23,7 @@ use super::super::air::Poseidon;
 use super::super::field::{Fp, Fp2};
 use super::super::fri::root_of_unity;
 use super::super::fri_poseidon_ext::fri_verify_poseidon_ext;
-use super::super::poly::eval_lagrange_ext;
+use super::super::poly::eval_cols_on_subgroup_ext;
 use super::super::poseidon_merkle::{pack_base, pack_ext, verify_path};
 use super::super::poseidon_transcript::PoseidonTranscript;
 use super::composition::{compose_ext, domain_params_blown, num_coeffs};
@@ -95,17 +95,7 @@ pub fn stark_verify_poseidon_ext_pub<A: AirExt>(
     let deep_coeffs: Vec<Fp2> =
         (0..width * window_size + 1).map(|_| transcript.challenge_fp2()).collect();
 
-    let h_pts: Vec<Fp> = {
-        let mut v = Vec::with_capacity(t);
-        let mut p = Fp::ONE;
-        for _ in 0..t {
-            v.push(p);
-            p = p * g;
-        }
-        v
-    };
-    let periodic_z: Vec<Fp2> =
-        air.periodic_columns().iter().map(|col| eval_lagrange_ext(&h_pts, col, z)).collect();
+    let periodic_z: Vec<Fp2> = eval_cols_on_subgroup_ext(g, t, &air.periodic_columns(), z);
     let comp_z = compose_ext(air, g, z, &proof.ood_frame, &periodic_z, &coeffs);
 
     if !fri_verify_poseidon_ext(

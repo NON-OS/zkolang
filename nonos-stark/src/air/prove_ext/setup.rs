@@ -63,6 +63,11 @@ impl Domain {
     }
 
     /// Where coset `c` starts: the point at position `j = c`.
+    /// The j-th point of the evaluation domain: shift * omega^j.
+    pub fn point(&self, j: usize) -> Fp {
+        self.shift * self.omega.pow(j as u64)
+    }
+
     pub fn coset_shift(&self, c: usize) -> Fp {
         self.shift * self.omega.pow(c as u64)
     }

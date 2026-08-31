@@ -169,6 +169,144 @@ pub fn assemble_capped(tamper: Tamper, tamper_q: usize, cap: usize) -> Assembly 
     Assembly { wired, witness, lay, publics: inner.publics, n_groups, region_offsets: off }
 }
 
+/// The recursion over the deployed join-split: every inner query attested, the
+/// inner's own constraint code recomputed over the tower by the generic
+/// compose. Same per-query machinery as the fixture assembly; what changes is
+/// the inner and the compose region, which reads its layout from the gadget
+/// instead of carrying the fixture's numbers.
+pub fn assemble_real(tamper: Tamper) -> Assembly {
+    assemble_real_capped(tamper, usize::MAX)
+}
+
+/// The real-inner assembly attesting only the first `cap` queries: the same
+/// per-query machinery and every binding, over a trace a fraction of the
+/// size. The wiring gate runs here; full coverage is cap >= n_queries.
+pub fn assemble_real_capped(tamper: Tamper, cap: usize) -> Assembly {
+    let h = inner::hasher();
+    let inner = inner::shield_join_split(&h);
+    let n_q = inner.proof.queries.len().min(cap);
+
+    let ft = fri::fri_transcript(&h, &inner);
+    let (pzregion, pztrace) = periodic::periodic_region(&inner, tamper);
+
+    let mut q_boxes: Vec<Box<dyn AirExt>> = Vec::new();
+    let mut q_traces: Vec<Vec<Fp>> = Vec::new();
+    let mut n_terms = 0usize;
+    let mut ocells: Vec<Vec<(usize, usize)>> = Vec::with_capacity(n_q);
+    let (mut depth, mut n_open, mut pbits, mut fbits) = (0usize, 0usize, 0usize, 0usize);
+    let mut i0 = 0usize;
+    for k in 0..n_q {
+        let tk = if k == 0 { tamper } else { Tamper::None };
+        let (dreg, dtr, nt) = deep::deep_region_k(&h, &inner, k, tk);
+        let fold = fri::fri_fold_k(&inner, &ft, k, tk);
+        let au = auth::auth_side_k(&h, &inner, fold.ik, k, tk);
+        let pts = points::point_regions_k(&au.cons_dirs, fold.ik, ft.log_n, tk);
+        if k == 0 {
+            n_terms = nt;
+            depth = au.depth;
+            n_open = au.n_open;
+            pbits = pts.pbits;
+            fbits = pts.fbits;
+            i0 = au.cons_dirs.iter().enumerate().fold(0, |a, (lv, &b)| a | ((b as usize) << lv));
+        }
+        ocells.push(au.ocells.clone());
+        q_boxes.push(Box::new(dreg));
+        q_traces.push(dtr);
+        q_boxes.push(Box::new(fold.fold));
+        q_traces.push(fold.ftrace);
+        q_boxes.push(Box::new(au.region));
+        q_traces.push(au.trace);
+        q_boxes.push(Box::new(pts.ip));
+        q_traces.push(pts.itrace);
+        q_boxes.push(Box::new(pts.fp));
+        q_traces.push(pts.fptrace);
+    }
+
+    let ts = transcript::stark_transcript(&h, &inner, n_terms);
+    let width_inner = ocells[0].len() - 3;
+    let t_inner = inner.t as usize;
+    let (z_op, deep_coeff_op) = (ts.z_op, ts.deep_coeff_op);
+    let pub_len = inner.publics.len();
+    let ntr = inner.proof.trace_roots.len();
+    let ncoeff2 = inner.ci.coeffs.len() * 2;
+    let n_pz = inner.air.periodic_columns().len();
+    let publics = inner.publics.clone();
+
+    // The compose region takes the inner by value: it owns the AIR to recompute
+    // the transitions during proving, so it is built last.
+    let (cregion, ctrace) = compose_step::compose_gen_region(inner);
+    let frame_len = cregion.frame_len();
+    let n_coeff = cregion.num_coeff();
+    let c_periodic_col = cregion.periodic_col(0);
+    let c_z_col = cregion.z_col();
+    let c_coeff_col = cregion.coeff_col(0);
+    let c_comp_z_col = cregion.comp_z_col();
+
+    let mut regions: Vec<Box<dyn AirExt>> = alloc::vec![
+        Box::new(ts.region) as Box<dyn AirExt>,
+        Box::new(cregion),
+        Box::new(ft.transcript),
+        Box::new(pzregion),
+    ];
+    let mut traces: Vec<Vec<Fp>> = alloc::vec![ts.trace, ctrace, ft.ttrace, pztrace];
+    regions.extend(q_boxes);
+    traces.extend(q_traces);
+
+    let (off, span) = offsets(&regions);
+    let (c_off, ft_off, pz_off) = (off[1], off[2], off[3]);
+    let base = 4;
+    let d_off: Vec<usize> = (0..n_q).map(|k| off[base + k * 5]).collect();
+    let f_off: Vec<usize> = (0..n_q).map(|k| off[base + k * 5 + 1]).collect();
+    let m_off: Vec<usize> = (0..n_q).map(|k| off[base + k * 5 + 2]).collect();
+    let i_off: Vec<usize> = (0..n_q).map(|k| off[base + k * 5 + 3]).collect();
+    let fp_off: Vec<usize> = (0..n_q).map(|k| off[base + k * 5 + 4]).collect();
+
+    let lay = Layout {
+        span,
+        l: 1usize << LOG_ROUNDS,
+        n_q,
+        i0,
+        c_off,
+        ft_off,
+        pz_off,
+        d_off,
+        f_off,
+        m_off,
+        i_off,
+        fp_off,
+        z_op,
+        deep_coeff_op,
+        pub_len,
+        ntr,
+        ncoeff2,
+        n_terms,
+        width_inner,
+        window_inner: (n_terms - 1) / width_inner,
+        ocells,
+        depth,
+        n_open,
+        n_folds: ft.n_folds,
+        log_n: ft.log_n,
+        pbits,
+        fbits,
+        t_inner,
+        n_pz,
+        frame_len,
+        n_coeff,
+        c_periodic_col,
+        c_z_col,
+        c_coeff_col,
+        c_comp_z_col,
+    };
+
+    let gps = fuse(build_groups(&lay), &lay, &regions);
+    let n_groups = gps.len();
+    let kinds: Vec<usize> = (0..4).chain((0..n_q).flat_map(|_| 4..9)).collect();
+    let wired = WiredMultiExt::new_kinds(regions, &kinds, gps);
+    let witness = wired.trace(&traces);
+    Assembly { wired, witness, lay, publics, n_groups, region_offsets: off }
+}
+
 fn build_groups(lay: &Layout) -> Vec<GpGroup> {
     let mut gps: Vec<GpGroup> = Vec::new();
     groups::statement(lay, &mut gps);

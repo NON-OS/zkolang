@@ -139,18 +139,7 @@ pub fn stark_prove_bound<A: Air>(
 
     // The composition at z follows from the frame; a dishonest frame makes the
     // DEEP quotient below fail the low-degree test.
-    let periodic_z: Vec<Fp> = {
-        let h_pts: Vec<Fp> = {
-            let mut v = Vec::with_capacity(t);
-            let mut p = Fp::ONE;
-            for _ in 0..t {
-                v.push(p);
-                p = p * g;
-            }
-            v
-        };
-        periodic_cols.iter().map(|col| super::super::poly::eval_lagrange(&h_pts, col, z)).collect()
-    };
+    let periodic_z: Vec<Fp> = super::super::poly::eval_cols_on_subgroup(g, t, &periodic_cols, z);
     let comp_z = compose(air, g, z, &ood_frame, &periodic_z, &coeffs);
 
     // DEEP coefficients: one per (column, window row) quotient and one for the

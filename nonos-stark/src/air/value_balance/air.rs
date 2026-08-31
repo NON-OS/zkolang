@@ -25,6 +25,7 @@ pub const LIMB_SHIFT: u64 = 1u64 << 32;
 /// A note commits its value as two limbs and a copy constraint moves a cell
 /// rather than scaling one, so recomposition and conservation ride one
 /// constraint. That keeps the limbs as raw cells a caller can bind against.
+#[derive(Clone)]
 pub struct ValueBalance {
     pub log_t: u32,
     pub legs: Vec<Leg>,
@@ -34,6 +35,11 @@ impl ValueBalance {
     /// Column three carries the recomposed value, so a caller can bind the whole
     /// amount to a public word. A copy constraint cannot scale a cell, so the
     /// recomposition has to be a constraint rather than a binding.
+    /// The transition over any field, for in-circuit recomputation.
+    pub fn transition_gen<F: Felt>(&self, window: &[F], periodic: &[F]) -> Vec<F> {
+        self.transition_impl(window, periodic)
+    }
+
     pub(super) fn transition_impl<F: Felt>(&self, window: &[F], periodic: &[F]) -> Vec<F> {
         let (acc, lo, hi, value) = (window[0], window[1], window[2], window[3]);
         let shift = F::from_base(Fp::from_u64(LIMB_SHIFT));

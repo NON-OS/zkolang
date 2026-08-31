@@ -1,7 +1,7 @@
 // NONOS Operating System (AGPL-3.0-or-later)
 
 use super::uniform::price_uniform;
-use crate::crypto::stark::air::{Air, AirExt, WiredMultiExt};
+use crate::crypto::stark::air::{Air, ShieldRegion, WiredMultiGen};
 use crate::crypto::stark::field::Fp;
 use crate::shield::join::{
     bind_classes, public_classes_at, IntentParts, Layout, REGIONS_PER_INTENT,
@@ -13,7 +13,7 @@ use alloc::boxed::Box;
 use alloc::vec::Vec;
 
 pub struct BatchProof {
-    pub wired: WiredMultiExt,
+    pub wired: WiredMultiGen,
     pub witness: Vec<Fp>,
     pub intents: Vec<Vec<Fp>>,
 }
@@ -21,7 +21,7 @@ pub struct BatchProof {
 /// Every intent's regions in one stack, each intent's own bindings emitted at its
 /// base, and the clearing price tied across all of them.
 pub fn assemble(parts: Vec<IntentParts>) -> BatchProof {
-    let mut regions: Vec<Box<dyn AirExt>> = Vec::new();
+    let mut regions: Vec<ShieldRegion> = Vec::new();
     let mut traces: Vec<Vec<Fp>> = Vec::new();
     let mut intents = Vec::with_capacity(parts.len());
     let meta: Vec<(usize, Vec<usize>, Vec<usize>, Vec<usize>, usize)> = parts
@@ -34,7 +34,7 @@ pub fn assemble(parts: Vec<IntentParts>) -> BatchProof {
         })
         .collect();
 
-    let rows: Vec<usize> = regions.iter().map(|r| r.rows()).collect();
+    let rows: Vec<usize> = regions.iter().map(|r| r.as_air().rows()).collect();
     let (off, span) = offsets(&rows);
 
     let mut g: Vec<crate::shield::wire_class::Class> = Vec::new();
@@ -75,7 +75,7 @@ pub fn assemble(parts: Vec<IntentParts>) -> BatchProof {
         .flat_map(|_| alloc::vec![0usize, 1, 1, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6])
         .collect();
     let groups = packed_groups(span, &g, CAP);
-    let wired = WiredMultiExt::new_kinds(regions, &kinds, groups);
+    let wired = WiredMultiGen::new_kinds(regions, &kinds, groups);
     let witness = wired.trace(&traces);
     BatchProof { wired, witness, intents }
 }

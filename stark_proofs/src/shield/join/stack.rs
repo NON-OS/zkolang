@@ -1,6 +1,6 @@
 // NONOS Operating System (AGPL-3.0-or-later)
 
-use crate::crypto::stark::air::{AirExt, Poseidon, RATE};
+use crate::crypto::stark::air::{Poseidon, ShieldRegion, RATE};
 use crate::crypto::stark::field::Fp;
 use super::assoc::assoc_membership;
 use super::keys::key_hierarchies;
@@ -8,11 +8,10 @@ use crate::shield::key::Break;
 use super::pool::pool_membership;
 use super::notes::note_regions;
 use crate::shield::note::Note;
-use alloc::boxed::Box;
 use alloc::vec::Vec;
 
 pub struct Stack {
-    pub regions: Vec<Box<dyn AirExt>>,
+    pub regions: Vec<ShieldRegion>,
     pub traces: Vec<Vec<Fp>>,
     pub span_op: usize,
     pub leaf_col: Vec<usize>,
@@ -32,13 +31,13 @@ pub fn stack(
     notes: [&Note; 4],
     sks: [[Fp; RATE]; 2],
     brk: Break,
-    bal: (Box<dyn AirExt>, Vec<Fp>),
+    bal: (ShieldRegion, Vec<Fp>),
     depth: usize,
 ) -> Stack {
     let n = note_regions(notes, brk);
     let span_op = n.span_op;
     let cms = n.cms.clone();
-    let mut regions: Vec<Box<dyn AirExt>> = alloc::vec![bal.0];
+    let mut regions: Vec<ShieldRegion> = alloc::vec![bal.0];
     let mut traces = alloc::vec![bal.1];
     regions.extend(n.regions);
     traces.extend(n.traces);
