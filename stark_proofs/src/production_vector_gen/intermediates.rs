@@ -8,7 +8,7 @@ use super::json::{bools, fp, fp2, fp2s, fps, usizes};
 use crate::crypto::stark::air::{compose_ext, Air, AirExt, StarkProofExtPre};
 use crate::crypto::stark::field::{Fp, Fp2};
 use crate::crypto::stark::fri::root_of_unity;
-use crate::crypto::stark::poly::eval_lagrange_ext;
+use crate::crypto::stark::poly::eval_cols_on_subgroup_ext;
 use crate::crypto::stark::transcript::Transcript;
 use crate::recursion_assembly::build::Assembly;
 use alloc::string::String;
@@ -56,17 +56,7 @@ pub(super) fn emit(asm: &Assembly, pre: &StarkProofExtPre, path: &str) {
 
     // The composition at z and its per-constraint breakdown. The claims must
     // equal this replay's own recomputation.
-    let h_pts: Vec<Fp> = {
-        let mut v = Vec::with_capacity(tt);
-        let mut p = Fp::ONE;
-        for _ in 0..tt {
-            v.push(p);
-            p = p * gg;
-        }
-        v
-    };
-    let periodic_z: Vec<Fp2> =
-        wired.periodic_columns().iter().map(|col| eval_lagrange_ext(&h_pts, col, z)).collect();
+    let periodic_z: Vec<Fp2> = eval_cols_on_subgroup_ext(gg, tt, &wired.periodic_columns(), z);
     assert_eq!(periodic_z, pre.periodic_z, "the sidecar claims diverge from the recompute");
     let comp_z = compose_ext(wired, gg, z, &wproof.ood_frame, &periodic_z, &coeffs);
     let transition_z = wired.transition_ext(&wproof.ood_frame, &periodic_z);

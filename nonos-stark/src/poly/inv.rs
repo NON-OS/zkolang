@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-use super::super::field::Fp2;
+use super::super::field::Felt;
 use alloc::vec::Vec;
 
 /// Invert every element with one field inversion: prefix products forward, one
@@ -27,15 +27,15 @@ use alloc::vec::Vec;
 ///
 /// Every input must be nonzero. DEEP's denominators are, by construction: z is
 /// drawn off both the evaluation coset and the trace domain.
-pub fn batch_inv(vals: &[Fp2]) -> Vec<Fp2> {
+pub fn batch_inv<F: Felt>(vals: &[F]) -> Vec<F> {
     let mut prefix = Vec::with_capacity(vals.len());
-    let mut acc = Fp2::ONE;
+    let mut acc = F::ONE;
     for v in vals {
         prefix.push(acc);
         acc = acc * *v;
     }
     let mut inv = acc.inv();
-    let mut out = alloc::vec![Fp2::ZERO; vals.len()];
+    let mut out = alloc::vec![F::ZERO; vals.len()];
     for i in (0..vals.len()).rev() {
         out[i] = inv * prefix[i];
         inv = inv * vals[i];

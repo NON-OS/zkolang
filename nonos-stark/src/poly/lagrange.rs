@@ -70,6 +70,32 @@ pub fn eval_lagrange_ext(xs: &[Fp], ys: &[Fp], z: Fp2) -> Fp2 {
 /// generic quadratic form above walks t^2 products per column, which at a
 /// deep trace domain is days; this is the same unique interpolant, so the
 /// value cannot differ.
+pub fn eval_cols_on_subgroup(g: Fp, t: usize, cols: &[Vec<Fp>], z: Fp) -> Vec<Fp> {
+    let mut dens = Vec::with_capacity(t);
+    let mut x = Fp::ONE;
+    for _ in 0..t {
+        dens.push(z - x);
+        x = x * g;
+    }
+    let invs = super::inv::batch_inv(&dens);
+    let scale = (z.pow(t as u64) - Fp::ONE) * Fp::from_u64(t as u64).inv();
+    let mut weights = Vec::with_capacity(t);
+    let mut gi = Fp::ONE;
+    for iv in &invs {
+        weights.push(scale * gi * *iv);
+        gi = gi * g;
+    }
+    cols.iter()
+        .map(|col| {
+            let mut acc = Fp::ZERO;
+            for (y, w) in col.iter().zip(&weights) {
+                acc = acc + *y * *w;
+            }
+            acc
+        })
+        .collect()
+}
+
 pub fn eval_cols_on_subgroup_ext(g: Fp, t: usize, cols: &[Vec<Fp>], z: Fp2) -> Vec<Fp2> {
     use super::inv::batch_inv;
     let mut dens = Vec::with_capacity(t);

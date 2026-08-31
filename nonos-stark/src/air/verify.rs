@@ -25,7 +25,7 @@
 use super::super::field::Fp;
 use super::super::fri::{fri_verify, root_of_unity};
 use super::super::merkle::verify_path;
-use super::super::poly::eval_lagrange;
+use super::super::poly::eval_cols_on_subgroup;
 use super::super::transcript::Transcript;
 use super::composition::{compose, domain_params, num_coeffs};
 use super::prove::draw_ood_point;
@@ -89,17 +89,7 @@ pub fn stark_verify_bound<A: Air>(
     // The constraints, checked once at the out-of-domain point: the composition
     // there is derived from the claimed frame with this verifier's own boundary
     // and transition algebra.
-    let h_pts: Vec<Fp> = {
-        let mut v = Vec::with_capacity(t);
-        let mut p = Fp::ONE;
-        for _ in 0..t {
-            v.push(p);
-            p = p * g;
-        }
-        v
-    };
-    let periodic_z: Vec<Fp> =
-        air.periodic_columns().iter().map(|col| eval_lagrange(&h_pts, col, z)).collect();
+    let periodic_z: Vec<Fp> = eval_cols_on_subgroup(g, t, &air.periodic_columns(), z);
     let comp_z = compose(air, g, z, &proof.ood_frame, &periodic_z, &coeffs);
 
     // The DEEP quotient polynomial must be low degree.
