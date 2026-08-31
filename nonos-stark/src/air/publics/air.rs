@@ -23,6 +23,7 @@ use alloc::vec::Vec;
 /// row to wherever the circuit computes that word, which is what makes the
 /// binding positive: the word is tied to its computed cell, not merely
 /// constrained to something.
+#[derive(Clone)]
 pub struct Publics {
     pub log_t: u32,
     pub words: Vec<Fp>,

@@ -195,6 +195,30 @@ impl WiredMultiExt {
         gp_sel * product + (F::ONE - gp_sel) * carry
     }
 
+    /// The full transition over any field, with the caller supplying each
+    /// region's constraint evaluation. This is how a recursive verifier
+    /// recomputes the whole wired AIR inside its own circuit: the layout,
+    /// selectors and grand products replay here, and the closure dispatches to
+    /// each region's own generic transition, which the boxed form cannot carry.
+    pub fn transition_generic<F: Felt>(
+        &self,
+        window: &[F],
+        periodic: &[F],
+        region: impl Fn(usize, &[F], &[F]) -> Vec<F>,
+    ) -> Vec<F> {
+        let mut out = fusion::combine(
+            &self.stack,
+            &self.regions,
+            self.num_transition(),
+            self.stride(),
+            window,
+            periodic,
+            region,
+        );
+        self.append_groups(&mut out, window, periodic);
+        out
+    }
+
     fn append_groups<F: Felt>(&self, out: &mut [F], window: &[F], periodic: &[F]) {
         for (g, group) in self.groups.iter().enumerate() {
             out[self.region_transitions + g] = self.group_product(g, group, window, periodic);

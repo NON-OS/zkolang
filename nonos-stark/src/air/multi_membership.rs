@@ -28,6 +28,7 @@ use super::spec::{Air, AirExt};
 use alloc::vec::Vec;
 
 /// One opening: a public leaf digest, its committed root, and the sibling path.
+#[derive(Clone)]
 pub struct Opening {
     pub leaf: [Fp; RATE],
     pub root: [Fp; RATE],
@@ -35,6 +36,7 @@ pub struct Opening {
     pub directions: Vec<bool>,
 }
 
+#[derive(Clone)]
 pub struct MultiMembership {
     hasher: Poseidon,
     log_rounds: u32,
@@ -186,6 +188,12 @@ fn inject(node: [Fp; RATE], sibling: [Fp; RATE], right: bool) -> [Fp; WIDTH] {
 }
 
 impl MultiMembership {
+    /// The transition over any field, for a recursive verifier that recomputes
+    /// this region's constraints inside its own circuit.
+    pub fn transition_gen<F: Felt>(&self, window: &[F], periodic: &[F]) -> Vec<F> {
+        self.transition_impl(window, periodic)
+    }
+
     fn transition_impl<F: Felt>(&self, window: &[F], periodic: &[F]) -> Vec<F> {
         let stride = self.trace_width();
         let mut state = [F::ZERO; WIDTH];

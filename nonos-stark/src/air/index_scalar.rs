@@ -28,6 +28,7 @@ use super::super::field::{Felt, Fp, Fp2};
 use super::spec::{Air, AirExt};
 use alloc::vec::Vec;
 
+#[derive(Clone)]
 pub struct IndexScalar {
     log_len: u32,
     bits: usize,
@@ -69,6 +70,11 @@ impl IndexScalar {
             }
         }
         trace
+    }
+
+    /// The transition over any field, for in-circuit recomputation.
+    pub fn transition_gen<F: Felt>(&self, window: &[F], periodic: &[F]) -> Vec<F> {
+        self.transition_impl(window, periodic)
     }
 
     fn transition_impl<F: Felt>(&self, window: &[F], periodic: &[F]) -> Vec<F> {
