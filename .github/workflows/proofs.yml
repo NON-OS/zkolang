@@ -14,10 +14,12 @@ env:
   CARGO_TERM_COLOR: always
 
 # A superseded run keeps burning minutes unless something cancels it; that is
-# how a dead run once ate most of a budget. New push, old run dies.
+# how a dead run once ate most of a budget. But only a run of the same kind
+# supersedes: keyed on ref alone, the drifted nightly landed in the dispatch
+# group and cancelled the release gate mid-run.
 concurrency:
-  group: proofs-${{ github.ref }}
-  cancel-in-progress: true
+  group: proofs-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: ${{ github.event_name != 'schedule' }}
 
 # Every job fits a standard runner since the prover stopped materializing the
 # evaluation domain: what was 55 GB of resident columns is coefficients and a
