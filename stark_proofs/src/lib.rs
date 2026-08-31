@@ -42,6 +42,7 @@ mod preprocessed_tests;
 #[cfg(test)]
 mod production_vector_gen;
 pub mod recursion_assembly;
+pub mod shield_params;
 #[cfg(test)]
 mod recursion_assembly_tests;
 pub mod shield;

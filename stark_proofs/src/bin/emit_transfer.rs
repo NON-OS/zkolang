@@ -17,8 +17,8 @@ use stark_proofs::shield::key::Break;
 use stark_proofs::shield::test::scenario::balanced_deployed;
 use std::time::Instant;
 
-const N_QUERIES: usize = 32;
-const BLOWUP: u32 = 8;
+const N_QUERIES: usize = stark_proofs::shield_params::dev::N_QUERIES;
+const GRIND_BITS: u32 = stark_proofs::shield_params::dev::GRIND_BITS;
 
 fn main() {
     let out = std::env::args().nth(1).unwrap_or_else(|| "transfer.proof".into());
@@ -36,9 +36,9 @@ fn main() {
     println!("built in {:?}", t0.elapsed());
 
     let t1 = Instant::now();
-    let proof = stark_prove_ext(&js.wired, &js.witness, N_QUERIES, BLOWUP);
+    let proof = stark_prove_ext(&js.wired, &js.witness, N_QUERIES, GRIND_BITS);
     let proved = t1.elapsed();
-    println!("proved in {proved:?}  ({N_QUERIES} queries, blowup {BLOWUP})");
+    println!("proved in {proved:?}  ({N_QUERIES} queries, grind {GRIND_BITS})");
 
     let bytes = serialize_proof_ext(&proof);
     std::fs::write(&out, &bytes).expect("write proof");
@@ -46,7 +46,7 @@ fn main() {
 
     let read = deserialize_proof_ext(&bytes).expect("the proof we just wrote did not parse");
     let t2 = Instant::now();
-    let ok = stark_verify_ext(&js.wired, &read, N_QUERIES, BLOWUP);
+    let ok = stark_verify_ext(&js.wired, &read, N_QUERIES, GRIND_BITS);
     println!("verified from disk in {:?}: {ok}", t2.elapsed());
 
     if !ok {

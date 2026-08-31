@@ -12,8 +12,8 @@ use stark_proofs::crypto::stark::air::{
 use stark_proofs::recursion_assembly::{assemble, assemble_real, Tamper};
 use std::time::Instant;
 
-const N_QUERIES: usize = 32;
-const BLOWUP: u32 = 8;
+const N_QUERIES: usize = stark_proofs::shield_params::dev::N_QUERIES;
+const GRIND_BITS: u32 = stark_proofs::shield_params::dev::GRIND_BITS;
 
 fn main() {
     let out = std::env::args().nth(1).unwrap_or_else(|| "recursion.proof".into());
@@ -35,7 +35,7 @@ fn main() {
     println!("assembled in {:?}", built);
 
     let t1 = Instant::now();
-    let proof = stark_prove_ext(&asm.wired, &asm.witness, N_QUERIES, BLOWUP);
+    let proof = stark_prove_ext(&asm.wired, &asm.witness, N_QUERIES, GRIND_BITS);
     let proved = t1.elapsed();
     println!("proved in {:?}", proved);
 
@@ -48,7 +48,7 @@ fn main() {
     // shown to survive being written down and handed over.
     let read = deserialize_proof_ext(&bytes).expect("the proof we just wrote did not parse");
     let t2 = Instant::now();
-    let ok = stark_verify_ext(&asm.wired, &read, N_QUERIES, BLOWUP);
+    let ok = stark_verify_ext(&asm.wired, &read, N_QUERIES, GRIND_BITS);
     println!("verified from disk in {:?}: {}", t2.elapsed(), ok);
 
     if !ok {
