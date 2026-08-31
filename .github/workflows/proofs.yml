@@ -149,6 +149,46 @@ jobs:
             structure.log
             inner.log
 
+  # The contract team's oracle: the preprocessed deployment vector and the
+  # per-draw intermediates, against the committed periodic root. The clean
+  # rewrite of this file dropped the step that emitted these; the structure
+  # alone let the verifier side catch that their evaluator predates the
+  # permutation collapse, and the vector is what lets them act on it.
+  vectors:
+    name: the deployment vector and its intermediates
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: prove the vector against the baked root
+        run: |
+          mkdir -p vectors/reference
+          NOX_SPEC_DIR=$PWD/vectors /usr/bin/time -v cargo test --release \
+            -p stark_proofs --features parallel gen_production_recursive_vector \
+            -- --ignored --nocapture 2>&1 | tee vectors.log
+
+      - name: numbers on the run page
+        if: always()
+        run: |
+          {
+            echo "## Deployment vector"
+            echo '```'
+            ls -l vectors vectors/reference 2>/dev/null || true
+            grep -E "Maximum resident|Elapsed \(wall|committed" vectors.log || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: deployment-vector
+          path: |
+            vectors/**
+            vectors.log
+
   emit:
     name: emit the recursion proof
     if: github.event_name == 'workflow_dispatch' && inputs.emit
