@@ -25,7 +25,7 @@ use alloc::vec::Vec;
 
 /// Map a pure function over `0..n`, collecting in index order.
 #[cfg(feature = "parallel")]
-pub(crate) fn map_index<T, F>(n: usize, f: F) -> Vec<T>
+pub fn map_index<T, F>(n: usize, f: F) -> Vec<T>
 where
     T: Send,
     F: Fn(usize) -> T + Send + Sync,
@@ -35,7 +35,7 @@ where
 }
 
 #[cfg(not(feature = "parallel"))]
-pub(crate) fn map_index<T, F>(n: usize, f: F) -> Vec<T>
+pub fn map_index<T, F>(n: usize, f: F) -> Vec<T>
 where
     F: Fn(usize) -> T,
 {
@@ -44,7 +44,7 @@ where
 
 /// Map a pure function over a slice, collecting in element order.
 #[cfg(feature = "parallel")]
-pub(crate) fn map_slice<A, T, F>(items: &[A], f: F) -> Vec<T>
+pub fn map_slice<A, T, F>(items: &[A], f: F) -> Vec<T>
 where
     A: Sync,
     T: Send,
@@ -55,7 +55,7 @@ where
 }
 
 #[cfg(not(feature = "parallel"))]
-pub(crate) fn map_slice<A, T, F>(items: &[A], f: F) -> Vec<T>
+pub fn map_slice<A, T, F>(items: &[A], f: F) -> Vec<T>
 where
     F: Fn(&A) -> T,
 {

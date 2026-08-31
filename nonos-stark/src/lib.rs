@@ -41,4 +41,4 @@ pub mod poly;
 pub mod poseidon_merkle;
 pub mod poseidon_transcript;
 pub mod transcript;
-pub(crate) mod par;
+pub mod par;
