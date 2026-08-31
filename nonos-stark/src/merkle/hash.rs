@@ -53,7 +53,7 @@ pub(super) fn hash_leaf_ext(leaf: Fp2) -> [u8; 32] {
 /// distinct from the single-value leaf so a wide leaf can never be confused with a
 /// base leaf, an extension leaf, or an internal node. This is the commitment shape
 /// the on-chain verifier recomputes once per query instead of one path per column.
-pub(super) fn hash_leaf_wide(row: &[Fp]) -> [u8; 32] {
+pub fn hash_leaf_wide(row: &[Fp]) -> [u8; 32] {
     let mut buf = Vec::with_capacity(DOM_LEAF_WIDE.len() + row.len() * 8);
     buf.extend_from_slice(DOM_LEAF_WIDE);
     for v in row {
