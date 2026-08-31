@@ -25,43 +25,45 @@
 use alloc::vec::Vec;
 
 use super::super::field::Fp;
-use super::super::fri::root_of_unity;
-use super::super::merkle::MerkleTree;
-use super::super::poly::lde;
+use super::super::merkle::{hash_leaf_wide_periodic, MerkleTree};
 use super::composition::domain_params_blown;
+use super::prove_ext::{extend, periodic_coeffs, Domain};
 use super::spec::AirExt;
 
-// The coset shift the whole prover uses. It must match `prove_ext_pre`'s.
-const SHIFT: u64 = 7;
-
-/// The coset extension of the periodic columns and the wide-periodic tree over it.
-/// Both the preprocessed prover and the root helper go through this, so the periodic
-/// domain size, the coset, and the leaf and node rules cannot drift between them.
-pub(super) fn periodic_lde_tree<A: AirExt>(
+/// The periodic coefficients and the wide-periodic tree over their coset
+/// extension. Both the preprocessed prover and the root helper go through this,
+/// so the periodic domain size, the coset, and the leaf and node rules cannot
+/// drift between them. The extension itself is never held: leaves are hashed
+/// one coset at a time, and the tree above the digests is the same build the
+/// materialized committer used, so the root cannot tell which one ran.
+pub(super) fn periodic_tree<A: AirExt>(
     air: &A,
     extra_blowup_bits: u32,
 ) -> (Vec<Vec<Fp>>, MerkleTree) {
-    let log_t = air.log_trace_len();
-    let (log_n, _) = domain_params_blown(air, extra_blowup_bits);
-    let n = 1usize << log_n;
-    let g = root_of_unity(log_t);
-    let omega = root_of_unity(log_n);
-    let shift = Fp::from_u64(SHIFT);
-    // The per-column coset extension is independent, so the 444-column LDE — the
-    // dominant cost of a deep-domain emit — parallelizes over columns; the tree
-    // then commits with the parallel leaf layer. Serial and parallel produce the
-    // identical root by construction.
+    let d = Domain::of(air, extra_blowup_bits);
     let cols = air.periodic_columns();
-    let periodic_d: Vec<Vec<Fp>> = crate::par::map_slice(&cols, |col| lde(col, g, shift, omega, n));
-    let tree = MerkleTree::commit_wide_periodic(&periodic_d);
-    (periodic_d, tree)
+    let coeffs = periodic_coeffs(&cols, &d);
+    let mut digests = alloc::vec![[0u8; 32]; d.n];
+    for c in 0..d.blowup {
+        let per = extend(&coeffs, &d, c);
+        let hashed: Vec<[u8; 32]> = crate::par::map_index(d.t, |i| {
+            let row: Vec<Fp> = per.iter().map(|col| col[i]).collect();
+            hash_leaf_wide_periodic(&row)
+        });
+        for (i, h) in hashed.into_iter().enumerate() {
+            digests[c + d.blowup * i] = h;
+        }
+    }
+    let pad = alloc::vec![Fp::ZERO; cols.len()];
+    let tree = MerkleTree::from_leaf_digests(digests, hash_leaf_wide_periodic(&pad));
+    (coeffs, tree)
 }
 
 /// The 32-byte preprocessed-periodic root for `air` at the given FRI rate. This is
 /// the value a per-program verifier key binds; the preprocessed prover commits the
 /// identical tree, so the two never diverge.
 pub fn periodic_root<A: AirExt>(air: &A, extra_blowup_bits: u32) -> [u8; 32] {
-    periodic_lde_tree(air, extra_blowup_bits).1.root()
+    periodic_tree(air, extra_blowup_bits).1.root()
 }
 
 /// The log2 of the periodic evaluation domain for `air` at this FRI rate: the
