@@ -6,6 +6,10 @@ on:
   pull_request:
   workflow_dispatch:
 
+# New push, old run dies: a superseded run burning minutes helps nobody.
+concurrency:
+  group: rust-${{ github.ref }}
+  cancel-in-progress: true
 env:
   CARGO_TERM_COLOR: always
 

@@ -6,10 +6,14 @@ on:
   pull_request:
   workflow_dispatch:
 
+# New push, old run dies: a superseded run burning minutes helps nobody.
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
 env:
   CARGO_TERM_COLOR: always
 
-# The model check runs in nightly.yml, not here. The harnesses cover the
+# The model check runs on the proofs schedule, not here. The harnesses cover the
 # deserialiser, which reads an untrusted trailer, and settling totality over
 # every byte sequence in the bound is worth having. It is not worth having on
 # every push: the solver runs well past an hour on a single symbolic byte, so a
