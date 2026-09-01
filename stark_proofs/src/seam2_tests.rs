@@ -46,6 +46,7 @@ fn diagnose_accept() {
         which
     };
     let mut msg = String::new();
+    let mut violated = false;
     'trans: for r in 0..total - (ws - 1) {
         let mut window = alloc::vec::Vec::with_capacity(ws * w);
         for k in 0..ws {
@@ -55,6 +56,7 @@ fn diagnose_accept() {
         let t = air.transition(&window, &per);
         for (i, v) in t.iter().enumerate() {
             if *v != Fp::ZERO {
+                violated = true;
                 msg.push_str(&format!(
                     "TRANSITION fail: row {} (region {}), output idx {} of {}\n",
                     r,
@@ -142,6 +144,9 @@ fn diagnose_accept() {
             }
         }
     }
+    if fails > 0 {
+        violated = true;
+    }
     msg.push_str(&format!("total boundary fails: {} of {}\n", fails, bnds.len()));
     msg.push_str(&format!("failing regions: {:?}\n", fail_regions));
     msg.push_str(&format!("failing group families: {:?}\n", fail_labels));
@@ -163,11 +168,12 @@ fn diagnose_accept() {
         asm.lay.depth,
         asm.lay.n_open,
     ));
-    // The dims and label lines are context, appended either way; only an
-    // actual violation is a failure. Without this the diagnostic failed every
-    // complete run by construction, which nobody saw while the job it lives in
-    // was dying of memory instead.
-    if msg.contains("fail") {
+    // Only a recorded violation is a failure. The first guard here matched the
+    // word "fail" in the message, and the always-printed context says
+    // "total boundary fails: 0", so a fully passing run still panicked. A
+    // verdict is a boolean set where the evidence is recorded, never a word
+    // search over the report.
+    if violated {
         panic!("{}", msg);
     }
 }
