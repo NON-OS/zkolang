@@ -6,11 +6,12 @@
 //! transcript. The roots are shared; only the opening rows are per-query.
 
 use super::super::layout::Layout;
+use super::helpers::Bind;
 use super::helpers::group;
-use crate::crypto::stark::air::{GpGroup, RATE};
+use crate::crypto::stark::air::{RATE};
 use alloc::vec::Vec;
 
-pub fn roots(lay: &Layout, out: &mut Vec<GpGroup>) {
+pub fn roots(lay: &Layout, out: &mut Vec<Bind>) {
     let l = lay.l;
     for q in 0..lay.n_q {
         let m_off = lay.m_off[q];

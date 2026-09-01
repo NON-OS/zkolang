@@ -6,11 +6,12 @@
 //! they bind once (z, coeffs) or once per query (comp_z, to each DEEP claim).
 
 use super::super::layout::Layout;
+use super::helpers::Bind;
 use super::helpers::{chain, group};
-use crate::crypto::stark::air::{GpGroup, RATE};
+use crate::crypto::stark::air::{RATE};
 use alloc::vec::Vec;
 
-pub fn statement(lay: &Layout, out: &mut Vec<GpGroup>) {
+pub fn statement(lay: &Layout, out: &mut Vec<Bind>) {
     let l = lay.l;
     let (zc0, zc1) = (lay.c_z_col, lay.c_z_col + 1);
     // z: squeezed in the transcript == compose's z == the periodic recompute's z.

@@ -65,9 +65,13 @@ pub fn assemble_capped(tamper: Tamper, tamper_q: usize, cap: usize) -> Assembly 
     let mut i0 = 0usize;
     for k in 0..n_q {
         let tk = if k == tamper_q { tamper } else { Tamper::None };
+        std::eprintln!("[asm] q{k} deep");
         let (dreg, dtr, nt) = deep::deep_region_k(&h, &inner, k, tk);
+        std::eprintln!("[asm] q{k} fold");
         let fold = fri::fri_fold_k(&inner, &ft, k, tk);
+        std::eprintln!("[asm] q{k} auth");
         let au = auth::auth_side_k(&h, &inner, fold.ik, k, tk);
+        std::eprintln!("[asm] q{k} points");
         let pts = points::point_regions_k(&au.cons_dirs, fold.ik, ft.log_n, tk);
         if k == 0 {
             n_terms = nt;
@@ -91,7 +95,9 @@ pub fn assemble_capped(tamper: Tamper, tamper_q: usize, cap: usize) -> Assembly 
         q_traces.push(pts.fptrace);
     }
 
+    std::eprintln!("[asm] queries done");
     let ts = transcript::stark_transcript(&h, &inner, n_terms);
+    std::eprintln!("[asm] transcript");
     let width_inner = ocells[0].len() - 3;
     let t_inner = inner.t as usize;
     let (z_op, deep_coeff_op) = (ts.z_op, ts.deep_coeff_op);
@@ -201,7 +207,9 @@ pub fn assemble_over<A: AirExt + GenericTransition + 'static>(
     let n_q = inner.proof.queries.len().min(cap);
 
     let ft = fri::fri_transcript(h, &inner);
+    std::eprintln!("[asm] fri transcript");
     let (pzregion, pztrace) = periodic::periodic_region(&inner, tamper);
+    std::eprintln!("[asm] periodic region");
 
     let mut q_boxes: Vec<Box<dyn AirExt>> = Vec::new();
     let mut q_traces: Vec<Vec<Fp>> = Vec::new();
@@ -212,8 +220,10 @@ pub fn assemble_over<A: AirExt + GenericTransition + 'static>(
     for k in 0..n_q {
         let tk = if k == 0 { tamper } else { Tamper::None };
         let (dreg, dtr, nt) = deep::deep_region_k(h, &inner, k, tk);
+        std::eprintln!("[asm] q{k} fold");
         let fold = fri::fri_fold_k(&inner, &ft, k, tk);
         let au = auth::auth_side_k(h, &inner, fold.ik, k, tk);
+        std::eprintln!("[asm] q{k} points");
         let pts = points::point_regions_k(&au.cons_dirs, fold.ik, ft.log_n, tk);
         if k == 0 {
             n_terms = nt;
@@ -248,7 +258,9 @@ pub fn assemble_over<A: AirExt + GenericTransition + 'static>(
 
     // The compose region takes the inner by value: it owns the AIR to recompute
     // the transitions during proving, so it is built last.
+    std::eprintln!("[asm] compose gen");
     let (cregion, ctrace) = compose_step::compose_gen_region(inner);
+    std::eprintln!("[asm] compose done");
     let frame_len = cregion.frame_len();
     let n_coeff = cregion.num_coeff();
     let c_periodic_col = cregion.periodic_col(0);
@@ -313,16 +325,20 @@ pub fn assemble_over<A: AirExt + GenericTransition + 'static>(
         c_comp_z_col,
     };
 
+    std::eprintln!("[asm] offsets/layout");
     let gps = fuse(build_groups(&lay), &lay, &regions);
+    std::eprintln!("[asm] groups fused");
     let n_groups = gps.len();
     let kinds: Vec<usize> = (0..4).chain((0..n_q).flat_map(|_| 4..9)).collect();
     let wired = WiredMultiExt::new_kinds(regions, &kinds, gps);
+    std::eprintln!("[asm] engine built");
     let witness = wired.trace(&traces);
+    std::eprintln!("[asm] witness placed");
     Assembly { wired, witness, lay, publics, n_groups, region_offsets: off }
 }
 
-fn build_groups(lay: &Layout) -> Vec<GpGroup> {
-    let mut gps: Vec<GpGroup> = Vec::new();
+fn build_groups(lay: &Layout) -> Vec<groups::Bind> {
+    let mut gps: Vec<groups::Bind> = Vec::new();
     groups::statement(lay, &mut gps);
     groups::deep(lay, &mut gps);
     groups::roots(lay, &mut gps);
@@ -334,7 +350,7 @@ fn build_groups(lay: &Layout) -> Vec<GpGroup> {
 
 /// Regions stack vertically over shared columns, so the addressable width is the
 /// widest region rather than the sum.
-fn fuse(gps: Vec<GpGroup>, lay: &Layout, regions: &[Box<dyn AirExt>]) -> Vec<GpGroup> {
+fn fuse(gps: Vec<groups::Bind>, lay: &Layout, regions: &[Box<dyn AirExt>]) -> Vec<GpGroup> {
     let width = regions.iter().map(|r| r.trace_width()).max().unwrap_or(1);
     groups::collapse(&gps, lay.span, width)
 }
