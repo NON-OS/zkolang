@@ -44,3 +44,21 @@ fourteen. A query opens one path whose leaf binds all fourteen values.
 Do this after the current ladder certifies; it touches the same seams the
 ladder just hardened, and the labeled-bind and fast-loop tooling makes its
 debugging hours, not nights.
+
+# Second campaign: pipeline the composition check
+
+Profiled on the first full-coverage emit: the outer prover's dominant cost
+is the generic compose region evaluating the inner's whole transition at
+every evaluation-domain point. The same region's degree, thirteen, sets the
+outer blowup, so it inflates the point count and the per-point cost at once.
+
+The fix is to stop checking the inner transition as one wide constraint on
+one row. Pipeline it: the recomputation spreads across a strip of rows, each
+row carrying one stage of bounded degree, the strip's end pinned equal to
+the claimed composition. Degree falls from thirteen toward five or six; the
+outer domain falls with it by a factor of two to four; and each point's
+evaluation shrinks because no single constraint carries the whole inner.
+
+Together with the wide trace commitment the projection is an outer prove in
+the tens of minutes on the same hardware, and both campaigns are shape-only:
+the byte digest and the certification matrix gate them like everything else.
