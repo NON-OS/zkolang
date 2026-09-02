@@ -14,15 +14,14 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-//! The preprocessed-periodic prover, streamed like `prove_ext` and sharing its
-//! passes. What differs is the sidecar: the periodic tree is committed through
-//! the registration helper, the periodic values at z ride the proof, and DEEP
-//! carries one quotient per periodic column so the verifier can hold the
-//! periodic root as a baked constant.
+//! The poseidon-transcript provers, streamed and pruned like everything else.
+//! `trace` commits the columns, `queries` opens them, `sidecar` opens the
+//! committed periodic rows; `pre` sequences the preprocessed protocol. What a
+//! pass computes lives in one place; a prover is a transcript order.
 
-mod deep;
+mod pre;
 mod queries;
-mod run;
+mod sidecar;
+mod trace;
 
-pub(in crate::air) use deep::over_domain as pre_deep_over_domain;
-pub use run::stark_prove_ext_preprocessed;
+pub use pre::stark_prove_poseidon_pre_pub;

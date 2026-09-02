@@ -24,7 +24,7 @@ use alloc::vec::Vec;
 /// instead of recomputing the schedule. Coset-walked; both column families are
 /// extended here rather than held.
 #[allow(clippy::too_many_arguments)]
-pub(super) fn over_domain(
+pub(in crate::air) fn over_domain(
     d: &Domain,
     trace: &[Vec<Fp>],
     periodic: &[Vec<Fp>],

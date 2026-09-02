@@ -24,7 +24,7 @@ use super::super::air::{Poseidon, RATE};
 use super::super::field::{Fp, Fp2};
 use super::super::fri::root_of_unity;
 use super::super::fri_poseidon_ext::fri_prove_poseidon_ext;
-use super::super::poly::{eval_cols_on_subgroup_ext, eval_ext, intt, lde};
+use super::super::poly::{eval_cols_on_subgroup_ext, intt, lde};
 use super::super::poseidon_merkle::{pack_base, pack_ext, PoseidonMerkleTree, PrunedPoseidonTree};
 use super::super::poseidon_transcript::PoseidonTranscript;
 use super::composition::{compose_ext, domain_params_blown, num_coeffs};
@@ -78,7 +78,6 @@ pub fn stark_prove_poseidon_ext_pub<A: AirExt>(
     let width = air.trace_width();
     let (log_n, fri_log_blowup) = domain_params_blown(air, extra_blowup_bits);
     let n = 1usize << log_n;
-    let blowup = 1usize << (log_n - log_t);
     let window_size = air.window_size();
 
     let g = root_of_unity(log_t);
@@ -143,8 +142,15 @@ pub fn stark_prove_poseidon_ext_pub<A: AirExt>(
         .map(|_| transcript.challenge_fp2())
         .collect();
 
-    let deep_d =
-        super::prove_ext::deep_over_domain(&d, &trace_coeffs, &comp_d, &ood_frame, comp_z, z, &deep_coeffs);
+    let deep_d = super::prove_ext::deep_over_domain(
+        &d,
+        &trace_coeffs,
+        &comp_d,
+        &ood_frame,
+        comp_z,
+        z,
+        &deep_coeffs,
+    );
 
     let fri = fri_prove_poseidon_ext(
         &deep_d,
@@ -164,8 +170,10 @@ pub fn stark_prove_poseidon_ext_pub<A: AirExt>(
         // Values by Horner from the coefficients, paths by rebuilding the
         // pruned chunk's leaves the same way: the values the dropped
         // extension held, at exactly the positions a path needs.
-        let trace_vals: Vec<Fp> =
-            trace_coeffs.iter().map(|cf| super::prove_ext::eval_base(cf, d.point(p))).collect();
+        let trace_vals: Vec<Fp> = trace_coeffs
+            .iter()
+            .map(|cf| super::prove_ext::eval_base(cf, d.point(p)))
+            .collect();
         let chunk = 1usize << TREE_CUT;
         let base_j = p & !(chunk - 1);
         let trace_paths: Vec<Vec<[Fp; RATE]>> = trace_trees

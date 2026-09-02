@@ -16,13 +16,13 @@ mod family_tests;
 #[cfg(test)]
 mod fold_witness_tests;
 #[cfg(test)]
-mod witness_satisfies;
-#[cfg(test)]
-mod golden_vk_tests;
-#[cfg(test)]
 mod fri_ext_tests;
 #[cfg(test)]
 mod fri_poseidon_ext_tests;
+#[cfg(test)]
+mod golden_vk_tests;
+#[cfg(test)]
+mod witness_satisfies;
 // fri_poseidon_tests disabled: file lost to a /tmp wipe (LOCAL only).
 #[cfg(test)]
 mod fri_tests;
@@ -33,37 +33,39 @@ mod merkle_tests;
 mod parallel_bytes_tests;
 #[cfg(test)]
 mod periodic_z_tests;
+#[cfg(test)]
+mod poseidon_pre_tests;
 // poly_tests disabled: file lost to a /tmp wipe (LOCAL only).
 #[cfg(test)]
 mod poseidon_constants_gen;
 // poseidon_merkle_tests disabled: file lost to a /tmp wipe (LOCAL only).
 #[cfg(test)]
-mod preprocessed_tests;
-#[cfg(test)]
-mod production_vector_gen;
-pub mod recursion_assembly;
-pub mod shield_params;
-#[cfg(test)]
-mod recursion_assembly_tests;
-pub mod shield;
-#[cfg(test)]
-mod spec_out;
-#[cfg(test)]
-mod seam2_tests;
-#[cfg(test)]
-mod stark_selftest_gen;
-#[cfg(test)]
-mod step_assembly_tests;
-#[cfg(test)]
-mod dims_tests;
-#[cfg(test)]
-mod dims_recursion_tests;
-#[cfg(test)]
 mod dims_groups_tests;
 #[cfg(test)]
 mod dims_kind_tests;
 #[cfg(test)]
+mod dims_recursion_tests;
+#[cfg(test)]
+mod dims_tests;
+#[cfg(test)]
 mod dims_transfer_tests;
+#[cfg(test)]
+mod preprocessed_tests;
+#[cfg(test)]
+mod production_vector_gen;
+pub mod recursion_assembly;
+#[cfg(test)]
+mod recursion_assembly_tests;
+#[cfg(test)]
+mod seam2_tests;
+pub mod shield;
+pub mod shield_params;
+#[cfg(test)]
+mod spec_out;
+#[cfg(test)]
+mod stark_selftest_gen;
+#[cfg(test)]
+mod step_assembly_tests;
 #[cfg(test)]
 mod vk_stability_tests;
 
