@@ -27,6 +27,14 @@ pub(super) const EPSILON: u64 = 0xFFFF_FFFF;
 pub struct Fp(pub(super) u64);
 
 impl Fp {
+    /// The canonical representative, for serializers and registration
+    /// constants that leave the crate.
+    pub fn to_u64(self) -> u64 {
+        self.0
+    }
+}
+
+impl Fp {
     pub const ZERO: Fp = Fp(0);
     pub const ONE: Fp = Fp(1);
 

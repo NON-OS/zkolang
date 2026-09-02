@@ -284,11 +284,25 @@ jobs:
           grep -E '^assembly ' recursion.log | head -1 \
             | sed 's/assembly *//' > bench/assembly.txt || true
 
+      - name: lean inventory
+        run: |
+          {
+            echo "# Machine-checked theorems"
+            echo
+            echo "Refreshed by CI for $(git rev-parse --short HEAD). Every public"
+            echo "theorem with the axioms it rests on; sorryAx anywhere fails the"
+            echo "verify workflow before this file can ever record it."
+            echo
+            echo '```'
+            grep -rhoE '^theorem [A-Za-z0-9_.]+' lean/Zkolang | sed 's/^theorem //' | sort
+            echo '```'
+          } > lean/THEOREMS.md
+
       - name: commit back
         run: |
           git config user.name "nonos-bench"
           git config user.email "bench@nonos.systems"
-          git add bench proofs
+          git add bench proofs lean/THEOREMS.md
           git diff --cached --quiet && exit 0
           git commit -m "bench: numbers for $(git rev-parse --short HEAD) [skip ci]"
           git push

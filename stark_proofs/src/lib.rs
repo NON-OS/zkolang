@@ -21,8 +21,18 @@ mod fri_ext_tests;
 mod fri_poseidon_ext_tests;
 #[cfg(test)]
 mod golden_vk_tests;
-#[cfg(test)]
 mod witness_satisfies;
+
+/// The satisfaction walk, for binaries that gate a shape before shipping it.
+pub fn witness_satisfies_public(air: &(impl crypto::stark::air::Air + Sync), witness: &[crypto::stark::field::Fp]) -> bool {
+    witness_satisfies::satisfies(air, witness)
+}
+
+/// The deployed join-split engine alone, for binaries that derive its
+/// registration constants.
+pub fn shield_deployed_wired() -> crypto::stark::air::WiredMultiGen {
+    shield::test::scenario::balanced_deployed(shield::key::Break::None).wired
+}
 // fri_poseidon_tests disabled: file lost to a /tmp wipe (LOCAL only).
 #[cfg(test)]
 mod fri_tests;
