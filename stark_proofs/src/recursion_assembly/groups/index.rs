@@ -7,8 +7,8 @@
 //! divides by q's own opened index, never another query's.
 
 use super::super::layout::Layout;
-use super::helpers::{chain, group};
 use super::helpers::Bind;
+use super::helpers::{chain, group, labeled};
 use alloc::vec::Vec;
 
 pub fn index(lay: &Layout, out: &mut Vec<Bind>) {
@@ -21,7 +21,10 @@ pub fn index(lay: &Layout, out: &mut Vec<Bind>) {
         out.push(group(
             lay.span,
             alloc::vec![1, 2, 14, 15],
-            &[(i_off + lay.pbits, 1, d_off, 14), (i_off + lay.pbits, 2, d_off, 15)],
+            &[
+                (i_off + lay.pbits, 1, d_off, 14),
+                (i_off + lay.pbits, 2, d_off, 15),
+            ],
         ));
 
         let span5 = lay.ocells[q][1].0;
@@ -33,6 +36,19 @@ pub fn index(lay: &Layout, out: &mut Vec<Bind>) {
             }
             chain(&cells, &mut sw);
         }
-        out.push(group(lay.span, alloc::vec![0, 8], &sw));
+        // Sidecar: the chain opening's tree levels walk the same index, or a
+        // prover opens some other leaf of the periodic tree. The chunk levels
+        // need no pin: leaf and root are boundary constants, so a bent chunk
+        // direction is a root preimage.
+        if lay.sidecar {
+            let pa = lay.pa_off[q];
+            for lv in 0..lay.depth {
+                let m = lay.n_chunks + lv;
+                let mut cells: Vec<(usize, usize)> = alloc::vec![(i_off + lv, 0)];
+                cells.push((pa + m * l - 1, 8));
+                chain(&cells, &mut sw);
+            }
+        }
+        out.push(labeled("dirs", lay.span, alloc::vec![0, 8], &sw));
     }
 }

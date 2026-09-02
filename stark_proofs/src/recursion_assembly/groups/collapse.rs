@@ -1,8 +1,8 @@
 // NONOS Operating System (AGPL-3.0-or-later)
 
+use super::helpers::Bind;
 use super::pack::pack;
 use super::uf::Uf;
-use super::helpers::Bind;
 use crate::crypto::stark::air::GpGroup;
 use alloc::vec::Vec;
 
@@ -10,7 +10,6 @@ use alloc::vec::Vec;
 /// the whole trace width costs as much evaluation domain as it saves in columns.
 /// Eight keeps the fused degree at the level the rest of the AIR already sets.
 const CAP: usize = 8;
-
 
 /// Each group holds its own cells equal, so the conjunction of all of them is the
 /// transitive closure of those equalities. The closure is what gets re-cut, into

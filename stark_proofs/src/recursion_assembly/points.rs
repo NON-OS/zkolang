@@ -23,16 +23,15 @@ pub struct PointSide {
 
 /// The two index-point regions for one query: `cons_dirs` are query k's
 /// consistency-index bits (region 6), `ik` its FRI fold position (region 7).
-pub fn point_regions_k(
-    cons_dirs: &[bool],
-    ik: usize,
-    log_n: u32,
-    tamper: Tamper,
-) -> PointSide {
+pub fn point_regions_k(cons_dirs: &[bool], ik: usize, log_n: u32, tamper: Tamper) -> PointSide {
     let bo = root_of_unity(log_n);
     let shift = Fp::from_u64(7);
     let pbits = cons_dirs.len();
-    let pidx: usize = cons_dirs.iter().enumerate().map(|(k, &b)| (b as usize) << k).sum();
+    let pidx: usize = cons_dirs
+        .iter()
+        .enumerate()
+        .map(|(k, &b)| (b as usize) << k)
+        .sum();
     let pidx = match tamper {
         Tamper::ForeignConsistencyIndex => pidx ^ 1,
         _ => pidx,
@@ -42,7 +41,14 @@ pub fn point_regions_k(
     let fbits = (log_n - 1) as usize;
     let fp = IndexPoint::new(bo, shift, fbits, ik);
     let fptrace = fp.trace();
-    PointSide { ip, itrace, pbits, fp, fptrace, fbits }
+    PointSide {
+        ip,
+        itrace,
+        pbits,
+        fp,
+        fptrace,
+        fbits,
+    }
 }
 
 /// Query-0 form, preserved for the current single-query assembly.

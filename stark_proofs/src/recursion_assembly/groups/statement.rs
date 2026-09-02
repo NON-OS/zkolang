@@ -8,7 +8,7 @@
 use super::super::layout::Layout;
 use super::helpers::Bind;
 use super::helpers::{chain, group};
-use crate::crypto::stark::air::{RATE};
+use crate::crypto::stark::air::RATE;
 use alloc::vec::Vec;
 
 pub fn statement(lay: &Layout, out: &mut Vec<Bind>) {
@@ -16,8 +16,19 @@ pub fn statement(lay: &Layout, out: &mut Vec<Bind>) {
     let (zc0, zc1) = (lay.c_z_col, lay.c_z_col + 1);
     // z: squeezed in the transcript == compose's z == the periodic recompute's z.
     let mut zsw = Vec::new();
-    chain(&[(lay.z_op * l, 0), (lay.c_off, zc0), (lay.pz_off, 4)], &mut zsw);
-    chain(&[((lay.z_op + 1) * l, 0), (lay.c_off, zc1), (lay.pz_off, 5)], &mut zsw);
+    if lay.sidecar {
+        chain(&[(lay.z_op * l, 0), (lay.c_off, zc0)], &mut zsw);
+        chain(&[((lay.z_op + 1) * l, 0), (lay.c_off, zc1)], &mut zsw);
+    } else {
+        chain(
+            &[(lay.z_op * l, 0), (lay.c_off, zc0), (lay.pz_off, 4)],
+            &mut zsw,
+        );
+        chain(
+            &[((lay.z_op + 1) * l, 0), (lay.c_off, zc1), (lay.pz_off, 5)],
+            &mut zsw,
+        );
+    }
     out.push(group(lay.span, alloc::vec![0, zc0, zc1, 4, 5], &zsw));
 
     // The coefficient lanes, up to two coefficients (four lanes) per group.
@@ -45,7 +56,10 @@ pub fn statement(lay: &Layout, out: &mut Vec<Bind>) {
         out.push(group(
             lay.span,
             alloc::vec![mc0, mc1, 4, 5],
-            &[(lay.c_off, mc0, lay.d_off[q], 4), (lay.c_off, mc1, lay.d_off[q], 5)],
+            &[
+                (lay.c_off, mc0, lay.d_off[q], 4),
+                (lay.c_off, mc1, lay.d_off[q], 5),
+            ],
         ));
     }
 }

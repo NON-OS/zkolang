@@ -6,12 +6,12 @@
 //! only to its own openings and index. The wired AIR is always the honest one; a
 //! tamper only alters the witness of one query, which its block must reject.
 
+use super::inner::{Inner, LOG_ROUNDS};
 use super::layout::{offsets, Layout};
 use super::tamper::Tamper;
-use super::inner::{Inner, LOG_ROUNDS};
 use super::{auth, compose, compose_step, deep, fri, groups, inner, periodic, points, transcript};
 use crate::crypto::stark::air::{Air, AirExt, GenericTransition, GpGroup, Poseidon, WiredMultiExt};
-use crate::crypto::stark::field::Fp;
+use crate::crypto::stark::field::{Fp, Fp2};
 use alloc::boxed::Box;
 use alloc::vec::Vec;
 
@@ -53,7 +53,8 @@ pub fn assemble_capped(tamper: Tamper, tamper_q: usize, cap: usize) -> Assembly 
     // transcript (drawing every FRI index), and the periodic recompute.
     let (cregion, ctrace) = compose::compose_region(&inner);
     let ft = fri::fri_transcript(&h, &inner);
-    let (pzregion, pztrace) = periodic::periodic_region(&inner, tamper);
+    let with_sidecar = false;
+    let pz = Some(periodic::periodic_region(&inner, tamper));
 
     // One dependent-region block per query, in [deep, fold, auth, ip, fp] order.
     // The per-query metadata is uniform, taken from query 0.
@@ -79,7 +80,11 @@ pub fn assemble_capped(tamper: Tamper, tamper_q: usize, cap: usize) -> Assembly 
             n_open = au.n_open;
             pbits = pts.pbits;
             fbits = pts.fbits;
-            i0 = au.cons_dirs.iter().enumerate().fold(0, |a, (lv, &b)| a | ((b as usize) << lv));
+            i0 = au
+                .cons_dirs
+                .iter()
+                .enumerate()
+                .fold(0, |a, (lv, &b)| a | ((b as usize) << lv));
         }
         // Each query's opened-cell columns depend on its own index parity.
         ocells.push(au.ocells.clone());
@@ -109,20 +114,35 @@ pub fn assemble_capped(tamper: Tamper, tamper_q: usize, cap: usize) -> Assembly 
         Box::new(ts.region) as Box<dyn AirExt>,
         Box::new(cregion),
         Box::new(ft.transcript),
-        Box::new(pzregion),
     ];
-    let mut traces: Vec<Vec<Fp>> = alloc::vec![ts.trace, ctrace, ft.ttrace, pztrace];
+    let mut traces: Vec<Vec<Fp>> = alloc::vec![ts.trace, ctrace, ft.ttrace];
+    if let Some((pzregion, pztrace)) = pz {
+        regions.push(Box::new(pzregion));
+        traces.push(pztrace);
+    }
     regions.extend(q_boxes);
     traces.extend(q_traces);
 
     let (off, span) = offsets(&regions);
-    let (c_off, ft_off, pz_off) = (off[1], off[2], off[3]);
-    let base = 4;
-    let d_off: Vec<usize> = (0..n_q).map(|k| off[base + k * 5]).collect();
-    let f_off: Vec<usize> = (0..n_q).map(|k| off[base + k * 5 + 1]).collect();
-    let m_off: Vec<usize> = (0..n_q).map(|k| off[base + k * 5 + 2]).collect();
-    let i_off: Vec<usize> = (0..n_q).map(|k| off[base + k * 5 + 3]).collect();
-    let fp_off: Vec<usize> = (0..n_q).map(|k| off[base + k * 5 + 4]).collect();
+    let (c_off, ft_off) = (off[1], off[2]);
+    // Shared count and per-query stride depend on which optional regions run.
+    let base = if with_sidecar { 3 } else { 4 };
+    let stride = if with_sidecar { 6 } else { 5 };
+    let pz_off = if with_sidecar { 0 } else { off[3] };
+    let d_off: Vec<usize> = (0..n_q).map(|k| off[base + k * stride]).collect();
+    let f_off: Vec<usize> = (0..n_q).map(|k| off[base + k * stride + 1]).collect();
+    let m_off: Vec<usize> = (0..n_q).map(|k| off[base + k * stride + 2]).collect();
+    let pa_off: Vec<usize> = if with_sidecar {
+        (0..n_q).map(|k| off[base + k * stride + 3]).collect()
+    } else {
+        Vec::new()
+    };
+    let i_off: Vec<usize> = (0..n_q)
+        .map(|k| off[base + k * stride + stride - 2])
+        .collect();
+    let fp_off: Vec<usize> = (0..n_q)
+        .map(|k| off[base + k * stride + stride - 1])
+        .collect();
 
     let lay = Layout {
         span,
@@ -154,6 +174,12 @@ pub fn assemble_capped(tamper: Tamper, tamper_q: usize, cap: usize) -> Assembly 
         fbits,
         t_inner,
         n_pz: 5,
+        sidecar: with_sidecar,
+        claim_op: ts.claim_op,
+        pa_off,
+        pchunk_cells: Vec::new(),
+        pa_depth: 0,
+        n_chunks: 0,
         frame_len: 6,
         n_coeff: 8,
         c_periodic_col: 12,
@@ -172,7 +198,14 @@ pub fn assemble_capped(tamper: Tamper, tamper_q: usize, cap: usize) -> Assembly 
     let kinds: Vec<usize> = (0..4).chain((0..n_q).flat_map(|_| 4..9)).collect();
     let wired = WiredMultiExt::new_kinds(regions, &kinds, gps);
     let witness = wired.trace(&traces);
-    Assembly { wired, witness, lay, publics: inner.publics, n_groups, region_offsets: off }
+    Assembly {
+        wired,
+        witness,
+        lay,
+        publics: inner.publics,
+        n_groups,
+        region_offsets: off,
+    }
 }
 
 /// The recursion over the deployed join-split: every inner query attested, the
@@ -205,10 +238,31 @@ pub fn assemble_over<A: AirExt + GenericTransition + 'static>(
     cap: usize,
 ) -> Assembly {
     let n_q = inner.proof.queries.len().min(cap);
+    let with_sidecar = inner.sidecar.is_some();
+
+    // Row tampers stage before any region reads the sidecar; a forgery bent
+    // after the regions are built tests nothing.
+    let mut inner = inner;
+    if with_sidecar && tamper == Tamper::BentOpenedRow {
+        if let Some(sc) = inner.sidecar.as_mut() {
+            sc.openings[0].row[0] = sc.openings[0].row[0] + Fp::ONE;
+        }
+    }
+    if with_sidecar && tamper == Tamper::SwappedRowValues {
+        if let Some(sc) = inner.sidecar.as_mut() {
+            sc.openings[0].row.swap(0, 1);
+        }
+    }
 
     let ft = fri::fri_transcript(h, &inner);
     std::eprintln!("[asm] fri transcript");
-    let (pzregion, pztrace) = periodic::periodic_region(&inner, tamper);
+    // A sidecar inner carries its schedule as a baked root; only the plain
+    // path pays for the recompute region.
+    let pz = if with_sidecar {
+        None
+    } else {
+        Some(periodic::periodic_region(&inner, tamper))
+    };
     std::eprintln!("[asm] periodic region");
 
     let mut q_boxes: Vec<Box<dyn AirExt>> = Vec::new();
@@ -217,6 +271,8 @@ pub fn assemble_over<A: AirExt + GenericTransition + 'static>(
     let mut ocells: Vec<Vec<(usize, usize)>> = Vec::with_capacity(n_q);
     let (mut depth, mut n_open, mut pbits, mut fbits) = (0usize, 0usize, 0usize, 0usize);
     let mut i0 = 0usize;
+    let mut pa_depth = 0usize;
+    let mut pchunk_cells: Vec<Vec<(usize, usize)>> = Vec::new();
     for k in 0..n_q {
         let tk = if k == 0 { tamper } else { Tamper::None };
         let (dreg, dtr, nt) = deep::deep_region_k(h, &inner, k, tk);
@@ -225,13 +281,19 @@ pub fn assemble_over<A: AirExt + GenericTransition + 'static>(
         let au = auth::auth_side_k(h, &inner, fold.ik, k, tk);
         std::eprintln!("[asm] q{k} points");
         let pts = points::point_regions_k(&au.cons_dirs, fold.ik, ft.log_n, tk);
+        let pa = auth::periodic_auth_k(h, &inner, &au.cons_dirs, k);
         if k == 0 {
             n_terms = nt;
             depth = au.depth;
             n_open = au.n_open;
             pbits = pts.pbits;
             fbits = pts.fbits;
-            i0 = au.cons_dirs.iter().enumerate().fold(0, |a, (lv, &b)| a | ((b as usize) << lv));
+            i0 = au
+                .cons_dirs
+                .iter()
+                .enumerate()
+                .fold(0, |a, (lv, &b)| a | ((b as usize) << lv));
+            pa_depth = pa.as_ref().map(|x| x.depth).unwrap_or(0);
         }
         ocells.push(au.ocells.clone());
         q_boxes.push(Box::new(dreg));
@@ -240,6 +302,11 @@ pub fn assemble_over<A: AirExt + GenericTransition + 'static>(
         q_traces.push(fold.ftrace);
         q_boxes.push(Box::new(au.region));
         q_traces.push(au.trace);
+        if let Some(x) = pa {
+            pchunk_cells.push(x.chunk_cells);
+            q_boxes.push(Box::new(x.region));
+            q_traces.push(x.trace);
+        }
         q_boxes.push(Box::new(pts.ip));
         q_traces.push(pts.itrace);
         q_boxes.push(Box::new(pts.fp));
@@ -248,6 +315,7 @@ pub fn assemble_over<A: AirExt + GenericTransition + 'static>(
 
     let ts = transcript::stark_transcript(h, &inner, n_terms);
     let width_inner = ocells[0].len() - 3;
+    let pchunk_len = inner.sidecar.as_ref().map(|sc| sc.periodic_z.len()).unwrap_or(0);
     let t_inner = inner.t as usize;
     let (z_op, deep_coeff_op) = (ts.z_op, ts.deep_coeff_op);
     let pub_len = inner.publics.len();
@@ -258,6 +326,23 @@ pub fn assemble_over<A: AirExt + GenericTransition + 'static>(
 
     // The compose region takes the inner by value: it owns the AIR to recompute
     // the transitions during proving, so it is built last.
+    // The sidecar tamper bends the claims the composition consumes and moves
+    // comp_z with them, so the compose region is internally consistent and
+    // lying. The transcript and deep regions keep the honest claims: exactly
+    // one side of the three-way tie moves, and only the binding can catch it.
+    let sidecar_root = inner.sidecar.as_ref().map(|sc| sc.root);
+    let mut inner = inner;
+    if with_sidecar && tamper == Tamper::PeriodicOffPoint {
+        inner.ci.periodic_z[0] = inner.ci.periodic_z[0] + Fp2::ONE;
+        inner.ci.comp_z = crate::crypto::stark::air::compose_ext(
+            &inner.air,
+            inner.g,
+            inner.ci.z,
+            &inner.proof.ood_frame,
+            &inner.ci.periodic_z,
+            &inner.ci.coeffs,
+        );
+    }
     std::eprintln!("[asm] compose gen");
     let (cregion, ctrace) = compose_step::compose_gen_region(inner);
     std::eprintln!("[asm] compose done");
@@ -272,20 +357,35 @@ pub fn assemble_over<A: AirExt + GenericTransition + 'static>(
         Box::new(ts.region) as Box<dyn AirExt>,
         Box::new(cregion),
         Box::new(ft.transcript),
-        Box::new(pzregion),
     ];
-    let mut traces: Vec<Vec<Fp>> = alloc::vec![ts.trace, ctrace, ft.ttrace, pztrace];
+    let mut traces: Vec<Vec<Fp>> = alloc::vec![ts.trace, ctrace, ft.ttrace];
+    if let Some((pzregion, pztrace)) = pz {
+        regions.push(Box::new(pzregion));
+        traces.push(pztrace);
+    }
     regions.extend(q_boxes);
     traces.extend(q_traces);
 
     let (off, span) = offsets(&regions);
-    let (c_off, ft_off, pz_off) = (off[1], off[2], off[3]);
-    let base = 4;
-    let d_off: Vec<usize> = (0..n_q).map(|k| off[base + k * 5]).collect();
-    let f_off: Vec<usize> = (0..n_q).map(|k| off[base + k * 5 + 1]).collect();
-    let m_off: Vec<usize> = (0..n_q).map(|k| off[base + k * 5 + 2]).collect();
-    let i_off: Vec<usize> = (0..n_q).map(|k| off[base + k * 5 + 3]).collect();
-    let fp_off: Vec<usize> = (0..n_q).map(|k| off[base + k * 5 + 4]).collect();
+    let (c_off, ft_off) = (off[1], off[2]);
+    // Shared count and per-query stride depend on which optional regions run.
+    let base = if with_sidecar { 3 } else { 4 };
+    let stride = if with_sidecar { 6 } else { 5 };
+    let pz_off = if with_sidecar { 0 } else { off[3] };
+    let d_off: Vec<usize> = (0..n_q).map(|k| off[base + k * stride]).collect();
+    let f_off: Vec<usize> = (0..n_q).map(|k| off[base + k * stride + 1]).collect();
+    let m_off: Vec<usize> = (0..n_q).map(|k| off[base + k * stride + 2]).collect();
+    let pa_off: Vec<usize> = if with_sidecar {
+        (0..n_q).map(|k| off[base + k * stride + 3]).collect()
+    } else {
+        Vec::new()
+    };
+    let i_off: Vec<usize> = (0..n_q)
+        .map(|k| off[base + k * stride + stride - 2])
+        .collect();
+    let fp_off: Vec<usize> = (0..n_q)
+        .map(|k| off[base + k * stride + stride - 1])
+        .collect();
 
     let lay = Layout {
         span,
@@ -307,7 +407,17 @@ pub fn assemble_over<A: AirExt + GenericTransition + 'static>(
         ncoeff2,
         n_terms,
         width_inner,
-        window_inner: (n_terms - 1) / width_inner,
+        // The sidecar appends one term per periodic column behind the frame
+        // and composition terms; the window is what remains, and it divides
+        // exactly or the term list is not what this layout thinks it is.
+        window_inner: {
+            let frame_terms = n_terms - 1 - pchunk_len;
+            assert!(
+                frame_terms % width_inner == 0,
+                "deep terms do not tile the frame: {frame_terms} over width {width_inner}"
+            );
+            frame_terms / width_inner
+        },
         ocells,
         depth,
         n_open,
@@ -317,6 +427,12 @@ pub fn assemble_over<A: AirExt + GenericTransition + 'static>(
         fbits,
         t_inner,
         n_pz,
+        sidecar: with_sidecar,
+        claim_op: ts.claim_op,
+        pa_off,
+        pchunk_cells,
+        pa_depth,
+        n_chunks: n_pz.div_ceil(crate::crypto::stark::air::RATE),
         frame_len,
         n_coeff,
         c_periodic_col,
@@ -329,12 +445,45 @@ pub fn assemble_over<A: AirExt + GenericTransition + 'static>(
     let gps = fuse(build_groups(&lay), &lay, &regions);
     std::eprintln!("[asm] groups fused");
     let n_groups = gps.len();
-    let kinds: Vec<usize> = (0..4).chain((0..n_q).flat_map(|_| 4..9)).collect();
-    let wired = WiredMultiExt::new_kinds(regions, &kinds, gps);
+    let shared = if with_sidecar { 3 } else { 4 };
+    let per_q = if with_sidecar { 6 } else { 5 };
+    let kinds: Vec<usize> = (0..shared)
+        .chain((0..n_q).flat_map(|_| shared..shared + per_q))
+        .collect();
+    // The chain openings anchor to constants no region pins in witness form:
+    // the zero leaf that starts every chain and the baked periodic root every
+    // chain must reach. Without these pins the root binds nowhere and the
+    // whole sidecar is decoration.
+    let mut pins: Vec<(usize, usize, Fp)> = Vec::new();
+    if let Some(root) = sidecar_root {
+        for q in 0..n_q {
+            let pa = lay.pa_off[q];
+            // Boundary tuples are (column, row, value).
+            for j in 0..crate::crypto::stark::air::RATE {
+                pins.push((j, pa, Fp::ZERO));
+                pins.push((j, pa + lay.pa_depth * lay.l, root[j]));
+            }
+        }
+    }
+    let wired = WiredMultiExt::new_kinds_bounded(regions, &kinds, gps, pins);
     std::eprintln!("[asm] engine built");
     let witness = wired.trace(&traces);
     std::eprintln!("[asm] witness placed");
-    Assembly { wired, witness, lay, publics, n_groups, region_offsets: off }
+    Assembly {
+        wired,
+        witness,
+        lay,
+        publics,
+        n_groups,
+        region_offsets: off,
+    }
+}
+
+/// The capped real assembly next to its raw binds, for the bind-truth probe.
+pub fn build_groups_for(cap: usize) -> (Assembly, Vec<groups::Bind>) {
+    let asm = assemble_real_capped(Tamper::None, cap);
+    let binds = build_groups(&asm.lay);
+    (asm, binds)
 }
 
 fn build_groups(lay: &Layout) -> Vec<groups::Bind> {
@@ -354,7 +503,6 @@ fn fuse(gps: Vec<groups::Bind>, lay: &Layout, regions: &[Box<dyn AirExt>]) -> Ve
     let width = regions.iter().map(|r| r.trace_width()).max().unwrap_or(1);
     groups::collapse(&gps, lay.span, width)
 }
-
 
 /// The parked step-AIR path: a single-query (query-0-only) recursion over a
 /// zkolang inner, kept building against the per-query Layout with n_q = 1.
@@ -403,7 +551,11 @@ pub fn assemble_step(tamper: Tamper) -> Assembly {
         span,
         l: 1usize << LOG_ROUNDS,
         n_q: 1,
-        i0: au.cons_dirs.iter().enumerate().fold(0, |a, (lv, &b)| a | ((b as usize) << lv)),
+        i0: au
+            .cons_dirs
+            .iter()
+            .enumerate()
+            .fold(0, |a, (lv, &b)| a | ((b as usize) << lv)),
         c_off: off[1],
         ft_off: off[3],
         pz_off: off[8],
@@ -429,6 +581,12 @@ pub fn assemble_step(tamper: Tamper) -> Assembly {
         fbits: pts.fbits,
         t_inner,
         n_pz,
+        sidecar: false,
+        claim_op: 0,
+        pa_off: Vec::new(),
+        pchunk_cells: Vec::new(),
+        pa_depth: 0,
+        n_chunks: 0,
         frame_len,
         n_coeff,
         c_periodic_col,
@@ -441,7 +599,22 @@ pub fn assemble_step(tamper: Tamper) -> Assembly {
     let n_groups = gps.len();
     let wired = WiredMultiExt::new(regions, gps);
     let witness = wired.trace(&[
-        ts.trace, ctrace, dtrace, fs.ttrace, fs.ftrace, au.trace, pts.itrace, pts.fptrace, pztrace,
+        ts.trace,
+        ctrace,
+        dtrace,
+        fs.ttrace,
+        fs.ftrace,
+        au.trace,
+        pts.itrace,
+        pts.fptrace,
+        pztrace,
     ]);
-    Assembly { wired, witness, lay, publics, n_groups, region_offsets: off }
+    Assembly {
+        wired,
+        witness,
+        lay,
+        publics,
+        n_groups,
+        region_offsets: off,
+    }
 }

@@ -6,9 +6,9 @@
 //! transcript. The roots are shared; only the opening rows are per-query.
 
 use super::super::layout::Layout;
-use super::helpers::Bind;
 use super::helpers::group;
-use crate::crypto::stark::air::{RATE};
+use super::helpers::Bind;
+use crate::crypto::stark::air::RATE;
 use alloc::vec::Vec;
 
 pub fn roots(lay: &Layout, out: &mut Vec<Bind>) {
