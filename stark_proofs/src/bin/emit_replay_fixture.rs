@@ -77,18 +77,29 @@ fn main() {
         .map(|(col, row, v)| format!("[{}, {}, \"{:016x}\"]", col, row, v.to_u64()))
         .collect();
     let transitions_z: Vec<String> = r.transitions_z.iter().map(fp2_hex).collect();
+    // The inner's own boundary list, verbatim: the compose region's quotient
+    // constraints recompute the inner's composition, so its boundaries are an
+    // input a ported evaluator reads from here, never re-derives.
+    let inner = stark_proofs::shield_deployed_wired();
+    let inner_boundary: Vec<String> = inner
+        .boundary()
+        .iter()
+        .map(|(col, row, v)| format!("[{}, {}, \"{:016x}\"]", col, row, v.to_u64()))
+        .collect();
     let comp = format!(
         "{{\n  \"comp_z\": {},\n  \"n_periodic\": {},\n  \"n_boundary\": {},\n  \
-         \"n_transitions\": {},\n  \
+         \"n_transitions\": {},\n  \"n_inner_boundary\": {},\n  \
          \"periodic_z\": [\n    {}\n  ],\n  \"boundary\": [\n    {}\n  ],\n  \
-         \"transitions_z\": [\n    {}\n  ]\n}}\n",
+         \"transitions_z\": [\n    {}\n  ],\n  \"inner_boundary\": [\n    {}\n  ]\n}}\n",
         fp2_hex(&r.comp_z),
         periodic_z.len(),
         boundary.len(),
         transitions_z.len(),
+        inner_boundary.len(),
         periodic_z.join(",\n    "),
         boundary.join(",\n    "),
         transitions_z.join(",\n    "),
+        inner_boundary.join(",\n    "),
     );
     let comp_out = out.replace("replay-fixture", "composition-fixture");
     std::fs::write(&comp_out, &comp).expect("write composition fixture");
