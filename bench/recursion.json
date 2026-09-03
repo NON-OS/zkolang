@@ -1,0 +1,9 @@
+{
+  "commit": "see MANIFEST",
+  "prove_s": 8685.7,
+  "verify": "verified from disk in 29.2s: true",
+  "proof_bytes": 899196,
+  "peak_kb": 33944956,
+  "cores": 56,
+  "outer_rate": "dev 1/2; settlement-rate outer follows the shrink campaigns"
+}
