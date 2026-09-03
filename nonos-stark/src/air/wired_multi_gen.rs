@@ -57,6 +57,14 @@ impl WiredMultiGen {
     pub fn region_degrees(&self) -> Vec<usize> {
         self.wired.region_degrees()
     }
+
+    pub fn permutation_columns(&self) -> (usize, usize, Vec<usize>) {
+        self.wired.permutation_columns()
+    }
+
+    pub fn group_params(&self) -> Vec<(Vec<usize>, Fp, Fp)> {
+        self.wired.group_params()
+    }
 }
 
 impl GenericTransition for WiredMultiGen {

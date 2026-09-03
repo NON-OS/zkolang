@@ -1,5 +1,7 @@
 // NONOS Operating System (AGPL-3.0-or-later)
-//! The inner join-split fixture the assembly verifies: the wired Accumulator +
+//! The inners a recursion assembles over. `join_split` is the fixture, the
+//! regression path `assemble` verifies; `assemble_real` verifies
+//! `shield_join_split`, the deployed circuit. The fixture is the wired Accumulator +
 //! RangeCheck stand-in, proven Poseidon-committed while absorbing the intent
 //! publics, plus the replayed composition inputs every region reads from.
 

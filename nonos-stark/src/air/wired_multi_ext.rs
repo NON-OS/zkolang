@@ -59,6 +59,19 @@ pub struct WiredMultiExt {
 impl WiredMultiExt {
     /// Width of each running product. The widest sets the degree, which sets the
     /// evaluation domain.
+    /// The shared selector, row-identity and per-group sigma column indices,
+    /// for a verifier that reads the permutation from the committed periodic
+    /// columns instead of hand-deriving it.
+    pub fn permutation_columns(&self) -> (usize, usize, Vec<usize>) {
+        (self.sel_idx, self.row_idx, self.sig_base.clone())
+    }
+
+    /// Each group's wired columns and challenges, the constraint-side half of
+    /// what `permutation_columns` locates.
+    pub fn group_params(&self) -> Vec<(Vec<usize>, Fp, Fp)> {
+        self.groups.iter().map(|g| (g.wired_cols.clone(), g.beta, g.gamma)).collect()
+    }
+
     pub fn group_widths(&self) -> Vec<usize> {
         self.groups.iter().map(|g| g.wired_cols.len()).collect()
     }
