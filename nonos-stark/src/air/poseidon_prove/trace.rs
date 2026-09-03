@@ -15,57 +15,27 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 use super::super::super::field::Fp;
-use super::super::super::poly::{intt, lde, lde_from_coeffs};
-use super::super::super::poseidon_merkle::{pack_base, PrunedPoseidonTree};
+use super::super::super::poly::{intt, lde_from_coeffs};
+use super::super::super::poseidon_merkle::PrunedPoseidonTree;
 use super::super::periodic_poseidon::hash_periodic_row;
 use super::super::poseidon::{Poseidon, RATE};
-use super::super::prove_ext::Domain;
+use super::super::prove_ext::{eval_base, Domain};
 use alloc::vec::Vec;
 
-/// Levels dropped from each per-column tree; a query rebuilds its own chunk.
-pub(super) const TREE_CUT: u32 = 6;
-
-/// Every trace column committed: coefficients kept, the extension hashed into
-/// a pruned tree and dropped. Columns are independent and run together; the
-/// caller absorbs the roots in column order, which is what a verifier replays.
-pub(super) struct CommittedTrace {
-    pub coeffs: Vec<Vec<Fp>>,
-    pub trees: Vec<PrunedPoseidonTree>,
-    pub roots: Vec<[Fp; RATE]>,
-}
-
-pub(super) fn commit(h: &Poseidon, d: &Domain, trace: &[Fp]) -> CommittedTrace {
-    let built: Vec<(PrunedPoseidonTree, Vec<Fp>)> = crate::par::map_index(d.width, |c| {
-        let column: Vec<Fp> = (0..d.t).map(|i| trace[i * d.width + c]).collect();
-        let column_d = lde(&column, d.g, d.shift, d.omega, d.n);
-        let leaves: Vec<[Fp; RATE]> = column_d.iter().map(|v| pack_base(*v)).collect();
-        let tree = PrunedPoseidonTree::commit(h, &leaves, TREE_CUT);
-        (tree, intt(&column, d.g))
-    });
-    let mut out = CommittedTrace {
-        coeffs: Vec::with_capacity(d.width),
-        trees: Vec::with_capacity(d.width),
-        roots: Vec::with_capacity(d.width),
-    };
-    for (tree, coeffs) in built {
-        out.roots.push(tree.root());
-        out.coeffs.push(coeffs);
-        out.trees.push(tree);
-    }
-    out
-}
+/// Levels dropped from the trace tree; a query rebuilds its own chunk.
+pub(crate) const TREE_CUT: u32 = 6;
 
 /// The whole trace under one root: leaf i is the compress-chain digest of
 /// row i, the same rule the periodic commitment uses, so the recursion binds
 /// an opened row with the chain-plus-path opening it already knows. One tree
 /// instead of one per column: seventeen openings per query become four, and
 /// the transcript absorbs one root instead of fourteen.
-pub(super) struct WideTrace {
+pub(crate) struct WideTrace {
     pub coeffs: Vec<Vec<Fp>>,
     pub tree: PrunedPoseidonTree,
 }
 
-pub(super) fn commit_wide(h: &Poseidon, d: &Domain, trace: &[Fp]) -> WideTrace {
+pub(crate) fn commit_wide(h: &Poseidon, d: &Domain, trace: &[Fp]) -> WideTrace {
     let coeffs: Vec<Vec<Fp>> = crate::par::map_index(d.width, |c| {
         let column: Vec<Fp> = (0..d.t).map(|i| trace[i * d.width + c]).collect();
         intt(&column, d.g)
@@ -78,4 +48,11 @@ pub(super) fn commit_wide(h: &Poseidon, d: &Domain, trace: &[Fp]) -> WideTrace {
     });
     let tree = PrunedPoseidonTree::commit(h, &leaves, TREE_CUT);
     WideTrace { coeffs, tree }
+}
+
+/// Row j of the extension by Horner from the coefficients: the values the
+/// dropped extension held, which is what a pruned chunk's leaves rebuild from.
+pub(crate) fn row_at(d: &Domain, coeffs: &[Vec<Fp>], j: usize) -> Vec<Fp> {
+    let x = d.point(j);
+    coeffs.iter().map(|cf| eval_base(cf, x)).collect()
 }
