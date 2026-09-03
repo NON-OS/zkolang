@@ -76,9 +76,7 @@ pub fn compose_inputs_pub<A: AirExt>(
     for &p in publics {
         ts.absorb(p);
     }
-    for root in &proof.trace_roots {
-        ts.absorb_digest(root);
-    }
+    ts.absorb_digest(&proof.trace_root);
     let coeffs: Vec<Fp2> = (0..num_coeffs(air)).map(|_| ts.challenge_fp2()).collect();
     ts.absorb_digest(&proof.comp_root);
     let z = draw_ood_point_poseidon(&mut ts, shift, n, t);

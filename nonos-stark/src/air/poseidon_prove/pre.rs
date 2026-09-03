@@ -53,10 +53,8 @@ pub fn stark_prove_poseidon_pre_pub<A: AirExt>(
     for &p in publics {
         transcript.absorb(p);
     }
-    let tr = trace::commit(h, &d, witness);
-    for root in &tr.roots {
-        transcript.absorb_digest(root);
-    }
+    let tr = trace::commit_wide(h, &d, witness);
+    transcript.absorb_digest(&tr.tree.root());
 
     let coeffs: Vec<Fp2> = (0..num_coeffs(air))
         .map(|_| transcript.challenge_fp2())
@@ -114,7 +112,7 @@ pub fn stark_prove_poseidon_pre_pub<A: AirExt>(
 
     StarkProofExtPPre {
         proof: StarkProofExtP {
-            trace_roots: tr.roots,
+            trace_root: tr.tree.root(),
             comp_root: comp_tree.root(),
             ood_frame: frame,
             fri,

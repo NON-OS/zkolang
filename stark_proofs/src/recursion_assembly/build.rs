@@ -56,14 +56,16 @@ pub fn assemble_capped(tamper: Tamper, tamper_q: usize, cap: usize) -> Assembly 
     let with_sidecar = false;
     let pz = Some(periodic::periodic_region(&inner, tamper));
 
-    // One dependent-region block per query, in [deep, fold, auth, ip, fp] order.
-    // The per-query metadata is uniform, taken from query 0.
+    // One dependent-region block per query, in [deep, fold, auth, tauth, ip, fp]
+    // order. The per-query metadata is uniform, taken from query 0.
     let mut q_boxes: Vec<Box<dyn AirExt>> = Vec::new();
     let mut q_traces: Vec<Vec<Fp>> = Vec::new();
     let mut n_terms = 0usize;
     let mut ocells: Vec<Vec<(usize, usize)>> = Vec::with_capacity(n_q);
+    let mut tchunk_cells: Vec<Vec<(usize, usize)>> = Vec::with_capacity(n_q);
     let (mut depth, mut n_open, mut pbits, mut fbits) = (0usize, 0usize, 0usize, 0usize);
     let mut i0 = 0usize;
+    let mut ta_depth = 0usize;
     for k in 0..n_q {
         let tk = if k == tamper_q { tamper } else { Tamper::None };
         std::eprintln!("[asm] q{k} deep");
@@ -72,6 +74,7 @@ pub fn assemble_capped(tamper: Tamper, tamper_q: usize, cap: usize) -> Assembly 
         let fold = fri::fri_fold_k(&inner, &ft, k, tk);
         std::eprintln!("[asm] q{k} auth");
         let au = auth::auth_side_k(&h, &inner, fold.ik, k, tk);
+        let ta = auth::trace_auth_k(&h, &inner, &au.cons_dirs, k);
         std::eprintln!("[asm] q{k} points");
         let pts = points::point_regions_k(&au.cons_dirs, fold.ik, ft.log_n, tk);
         if k == 0 {
@@ -85,15 +88,19 @@ pub fn assemble_capped(tamper: Tamper, tamper_q: usize, cap: usize) -> Assembly 
                 .iter()
                 .enumerate()
                 .fold(0, |a, (lv, &b)| a | ((b as usize) << lv));
+            ta_depth = ta.depth;
         }
         // Each query's opened-cell columns depend on its own index parity.
         ocells.push(au.ocells.clone());
+        tchunk_cells.push(ta.chunk_cells);
         q_boxes.push(Box::new(dreg));
         q_traces.push(dtr);
         q_boxes.push(Box::new(fold.fold));
         q_traces.push(fold.ftrace);
         q_boxes.push(Box::new(au.region));
         q_traces.push(au.trace);
+        q_boxes.push(Box::new(ta.region));
+        q_traces.push(ta.trace);
         q_boxes.push(Box::new(pts.ip));
         q_traces.push(pts.itrace);
         q_boxes.push(Box::new(pts.fp));
@@ -103,11 +110,11 @@ pub fn assemble_capped(tamper: Tamper, tamper_q: usize, cap: usize) -> Assembly 
     std::eprintln!("[asm] queries done");
     let ts = transcript::stark_transcript(&h, &inner, n_terms);
     std::eprintln!("[asm] transcript");
-    let width_inner = ocells[0].len() - 3;
+    let width_inner = inner.air.trace_width();
     let t_inner = inner.t as usize;
     let (z_op, deep_coeff_op) = (ts.z_op, ts.deep_coeff_op);
     let pub_len = inner.publics.len();
-    let ntr = inner.proof.trace_roots.len();
+    let ntr = 1usize;
     let ncoeff2 = inner.ci.coeffs.len() * 2;
 
     let mut regions: Vec<Box<dyn AirExt>> = alloc::vec![
@@ -127,13 +134,14 @@ pub fn assemble_capped(tamper: Tamper, tamper_q: usize, cap: usize) -> Assembly 
     let (c_off, ft_off) = (off[1], off[2]);
     // Shared count and per-query stride depend on which optional regions run.
     let base = if with_sidecar { 3 } else { 4 };
-    let stride = if with_sidecar { 6 } else { 5 };
+    let stride = if with_sidecar { 7 } else { 6 };
     let pz_off = if with_sidecar { 0 } else { off[3] };
     let d_off: Vec<usize> = (0..n_q).map(|k| off[base + k * stride]).collect();
     let f_off: Vec<usize> = (0..n_q).map(|k| off[base + k * stride + 1]).collect();
     let m_off: Vec<usize> = (0..n_q).map(|k| off[base + k * stride + 2]).collect();
+    let ta_off: Vec<usize> = (0..n_q).map(|k| off[base + k * stride + 3]).collect();
     let pa_off: Vec<usize> = if with_sidecar {
-        (0..n_q).map(|k| off[base + k * stride + 3]).collect()
+        (0..n_q).map(|k| off[base + k * stride + 4]).collect()
     } else {
         Vec::new()
     };
@@ -157,6 +165,9 @@ pub fn assemble_capped(tamper: Tamper, tamper_q: usize, cap: usize) -> Assembly 
         m_off,
         i_off,
         fp_off,
+        ta_off,
+        tchunk_cells,
+        ta_depth,
         z_op,
         deep_coeff_op,
         pub_len,
@@ -190,13 +201,21 @@ pub fn assemble_capped(tamper: Tamper, tamper_q: usize, cap: usize) -> Assembly 
 
     let gps = fuse(build_groups(&lay), &lay, &regions);
     let n_groups = gps.len();
-    // Four shared regions, then a block of five per query in [deep, fold, auth,
-    // ip, fp] order. Every region in a block carries the same periodic pattern for
-    // every query, so the blocks are instances of five kinds rather than 5 * n_q
-    // distinct regions. Auth only joined them once its reset columns stopped
-    // carrying the opening's own leaf.
-    let kinds: Vec<usize> = (0..4).chain((0..n_q).flat_map(|_| 4..9)).collect();
-    let wired = WiredMultiExt::new_kinds(regions, &kinds, gps);
+    // Four shared regions, then a block of six per query in [deep, fold, auth,
+    // tauth, ip, fp] order. Every region in a block carries the same periodic
+    // pattern for every query, so the blocks are instances of six kinds rather
+    // than 6 * n_q distinct regions.
+    let kinds: Vec<usize> = (0..4).chain((0..n_q).flat_map(|_| 4..10)).collect();
+    // The trace chain anchors to the one constant no region pins in witness
+    // form: the zero leaf every chain starts from. Its root is the proof's,
+    // bound to the transcript's absorb cells by the roots family.
+    let mut pins: Vec<(usize, usize, Fp)> = Vec::new();
+    for q in 0..n_q {
+        for j in 0..crate::crypto::stark::air::RATE {
+            pins.push((j, lay.ta_off[q], Fp::ZERO));
+        }
+    }
+    let wired = WiredMultiExt::new_kinds_bounded(regions, &kinds, gps, pins);
     let witness = wired.trace(&traces);
     Assembly {
         wired,
@@ -269,9 +288,11 @@ pub fn assemble_over<A: AirExt + GenericTransition + 'static>(
     let mut q_traces: Vec<Vec<Fp>> = Vec::new();
     let mut n_terms = 0usize;
     let mut ocells: Vec<Vec<(usize, usize)>> = Vec::with_capacity(n_q);
+    let mut tchunk_cells: Vec<Vec<(usize, usize)>> = Vec::with_capacity(n_q);
     let (mut depth, mut n_open, mut pbits, mut fbits) = (0usize, 0usize, 0usize, 0usize);
     let mut i0 = 0usize;
     let mut pa_depth = 0usize;
+    let mut ta_depth = 0usize;
     let mut pchunk_cells: Vec<Vec<(usize, usize)>> = Vec::new();
     for k in 0..n_q {
         let tk = if k == 0 { tamper } else { Tamper::None };
@@ -279,6 +300,7 @@ pub fn assemble_over<A: AirExt + GenericTransition + 'static>(
         std::eprintln!("[asm] q{k} fold");
         let fold = fri::fri_fold_k(&inner, &ft, k, tk);
         let au = auth::auth_side_k(h, &inner, fold.ik, k, tk);
+        let ta = auth::trace_auth_k(h, &inner, &au.cons_dirs, k);
         std::eprintln!("[asm] q{k} points");
         let pts = points::point_regions_k(&au.cons_dirs, fold.ik, ft.log_n, tk);
         let pa = auth::periodic_auth_k(h, &inner, &au.cons_dirs, k);
@@ -294,14 +316,18 @@ pub fn assemble_over<A: AirExt + GenericTransition + 'static>(
                 .enumerate()
                 .fold(0, |a, (lv, &b)| a | ((b as usize) << lv));
             pa_depth = pa.as_ref().map(|x| x.depth).unwrap_or(0);
+            ta_depth = ta.depth;
         }
         ocells.push(au.ocells.clone());
+        tchunk_cells.push(ta.chunk_cells);
         q_boxes.push(Box::new(dreg));
         q_traces.push(dtr);
         q_boxes.push(Box::new(fold.fold));
         q_traces.push(fold.ftrace);
         q_boxes.push(Box::new(au.region));
         q_traces.push(au.trace);
+        q_boxes.push(Box::new(ta.region));
+        q_traces.push(ta.trace);
         if let Some(x) = pa {
             pchunk_cells.push(x.chunk_cells);
             q_boxes.push(Box::new(x.region));
@@ -314,12 +340,16 @@ pub fn assemble_over<A: AirExt + GenericTransition + 'static>(
     }
 
     let ts = transcript::stark_transcript(h, &inner, n_terms);
-    let width_inner = ocells[0].len() - 3;
-    let pchunk_len = inner.sidecar.as_ref().map(|sc| sc.periodic_z.len()).unwrap_or(0);
+    let width_inner = inner.air.trace_width();
+    let pchunk_len = inner
+        .sidecar
+        .as_ref()
+        .map(|sc| sc.periodic_z.len())
+        .unwrap_or(0);
     let t_inner = inner.t as usize;
     let (z_op, deep_coeff_op) = (ts.z_op, ts.deep_coeff_op);
     let pub_len = inner.publics.len();
-    let ntr = inner.proof.trace_roots.len();
+    let ntr = 1usize;
     let ncoeff2 = inner.ci.coeffs.len() * 2;
     let n_pz = inner.air.periodic_columns().len();
     let publics = inner.publics.clone();
@@ -370,13 +400,14 @@ pub fn assemble_over<A: AirExt + GenericTransition + 'static>(
     let (c_off, ft_off) = (off[1], off[2]);
     // Shared count and per-query stride depend on which optional regions run.
     let base = if with_sidecar { 3 } else { 4 };
-    let stride = if with_sidecar { 6 } else { 5 };
+    let stride = if with_sidecar { 7 } else { 6 };
     let pz_off = if with_sidecar { 0 } else { off[3] };
     let d_off: Vec<usize> = (0..n_q).map(|k| off[base + k * stride]).collect();
     let f_off: Vec<usize> = (0..n_q).map(|k| off[base + k * stride + 1]).collect();
     let m_off: Vec<usize> = (0..n_q).map(|k| off[base + k * stride + 2]).collect();
+    let ta_off: Vec<usize> = (0..n_q).map(|k| off[base + k * stride + 3]).collect();
     let pa_off: Vec<usize> = if with_sidecar {
-        (0..n_q).map(|k| off[base + k * stride + 3]).collect()
+        (0..n_q).map(|k| off[base + k * stride + 4]).collect()
     } else {
         Vec::new()
     };
@@ -400,6 +431,9 @@ pub fn assemble_over<A: AirExt + GenericTransition + 'static>(
         m_off,
         i_off,
         fp_off,
+        ta_off,
+        tchunk_cells,
+        ta_depth,
         z_op,
         deep_coeff_op,
         pub_len,
@@ -446,19 +480,25 @@ pub fn assemble_over<A: AirExt + GenericTransition + 'static>(
     std::eprintln!("[asm] groups fused");
     let n_groups = gps.len();
     let shared = if with_sidecar { 3 } else { 4 };
-    let per_q = if with_sidecar { 6 } else { 5 };
+    let per_q = if with_sidecar { 7 } else { 6 };
     let kinds: Vec<usize> = (0..shared)
         .chain((0..n_q).flat_map(|_| shared..shared + per_q))
         .collect();
     // The chain openings anchor to constants no region pins in witness form:
-    // the zero leaf that starts every chain and the baked periodic root every
-    // chain must reach. Without these pins the root binds nowhere and the
-    // whole sidecar is decoration.
+    // the zero leaf that starts every chain, and for the sidecar the baked
+    // periodic root every chain must reach. The trace chain's root is the
+    // proof's, bound to the transcript's absorb cells by the roots family, so
+    // only its zero leaf pins here.
     let mut pins: Vec<(usize, usize, Fp)> = Vec::new();
+    for q in 0..n_q {
+        // Boundary tuples are (column, row, value).
+        for j in 0..crate::crypto::stark::air::RATE {
+            pins.push((j, lay.ta_off[q], Fp::ZERO));
+        }
+    }
     if let Some(root) = sidecar_root {
         for q in 0..n_q {
             let pa = lay.pa_off[q];
-            // Boundary tuples are (column, row, value).
             for j in 0..crate::crypto::stark::air::RATE {
                 pins.push((j, pa, Fp::ZERO));
                 pins.push((j, pa + lay.pa_depth * lay.l, root[j]));
@@ -514,14 +554,15 @@ pub fn assemble_step(tamper: Tamper) -> Assembly {
     let ts = transcript::stark_transcript(&h, &inner, n_terms);
     let fs = fri::fri_side(&h, &inner, tamper);
     let au = auth::auth_side(&h, &inner, fs.i0, tamper);
+    let ta = auth::trace_auth_k(&h, &inner, &au.cons_dirs, 0);
     let pts = points::point_regions(&fs, &au, tamper);
     let (pzregion, pztrace) = periodic::periodic_region(&inner, tamper);
 
-    let width_inner = au.ocells.len() - 3;
+    let width_inner = inner.air.trace_width();
     let t_inner = inner.t as usize;
     let (z_op, deep_coeff_op) = (ts.z_op, ts.deep_coeff_op);
     let pub_len = inner.publics.len();
-    let ntr = inner.proof.trace_roots.len();
+    let ntr = 1usize;
     let ncoeff2 = inner.ci.coeffs.len() * 2;
     let n_pz = inner.air.periodic_columns().len();
     let publics = inner.publics.clone();
@@ -541,6 +582,7 @@ pub fn assemble_step(tamper: Tamper) -> Assembly {
         Box::new(fs.transcript),
         Box::new(fs.fold),
         Box::new(au.region),
+        Box::new(ta.region),
         Box::new(pts.ip),
         Box::new(pts.fp),
         Box::new(pzregion),
@@ -558,12 +600,15 @@ pub fn assemble_step(tamper: Tamper) -> Assembly {
             .fold(0, |a, (lv, &b)| a | ((b as usize) << lv)),
         c_off: off[1],
         ft_off: off[3],
-        pz_off: off[8],
+        pz_off: off[9],
         d_off: alloc::vec![off[2]],
         f_off: alloc::vec![off[4]],
         m_off: alloc::vec![off[5]],
-        i_off: alloc::vec![off[6]],
-        fp_off: alloc::vec![off[7]],
+        i_off: alloc::vec![off[7]],
+        fp_off: alloc::vec![off[8]],
+        ta_off: alloc::vec![off[6]],
+        tchunk_cells: alloc::vec![ta.chunk_cells],
+        ta_depth: ta.depth,
         z_op,
         deep_coeff_op,
         pub_len,
@@ -597,7 +642,11 @@ pub fn assemble_step(tamper: Tamper) -> Assembly {
 
     let gps = fuse(build_groups(&lay), &lay, &regions);
     let n_groups = gps.len();
-    let wired = WiredMultiExt::new(regions, gps);
+    let kinds: Vec<usize> = (0..regions.len()).collect();
+    let pins: Vec<(usize, usize, Fp)> = (0..crate::crypto::stark::air::RATE)
+        .map(|j| (j, lay.ta_off[0], Fp::ZERO))
+        .collect();
+    let wired = WiredMultiExt::new_kinds_bounded(regions, &kinds, gps, pins);
     let witness = wired.trace(&[
         ts.trace,
         ctrace,
@@ -605,6 +654,7 @@ pub fn assemble_step(tamper: Tamper) -> Assembly {
         fs.ttrace,
         fs.ftrace,
         au.trace,
+        ta.trace,
         pts.itrace,
         pts.fptrace,
         pztrace,

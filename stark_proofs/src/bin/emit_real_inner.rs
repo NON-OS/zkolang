@@ -30,11 +30,7 @@ fn main() {
     );
     println!("proved in {built:?}  ({NQ} queries, grind {GRIND}, extra {EXTRA})");
 
-    println!(
-        "proof     {} trace roots, {} queries committed",
-        inner.proof.trace_roots.len(),
-        NQ
-    );
+    println!("proof     1 wide trace root, {NQ} queries committed");
 
     let t1 = Instant::now();
     let ok = stark_verify_poseidon_ext_pub(

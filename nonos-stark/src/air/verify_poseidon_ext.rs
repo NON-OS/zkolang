@@ -24,10 +24,11 @@ use super::super::field::{Fp, Fp2};
 use super::super::fri::root_of_unity;
 use super::super::fri_poseidon_ext::fri_verify_poseidon_ext;
 use super::super::poly::eval_cols_on_subgroup_ext;
-use super::super::poseidon_merkle::{pack_base, pack_ext, verify_path};
+use super::super::poseidon_merkle::{pack_ext, verify_path};
 use super::super::poseidon_transcript::PoseidonTranscript;
 use super::composition::{compose_ext, domain_params_blown, num_coeffs};
 use super::draw_ood_poseidon::draw_ood_point_poseidon;
+use super::periodic_poseidon::hash_periodic_row;
 use super::spec::AirExt;
 use super::types_poseidon_ext::StarkProofExtP;
 use alloc::vec::Vec;
@@ -42,7 +43,15 @@ pub fn stark_verify_poseidon_ext<A: AirExt>(
     extra_blowup_bits: u32,
     hasher: &Poseidon,
 ) -> bool {
-    stark_verify_poseidon_ext_pub(air, proof, n_queries, grind_bits, extra_blowup_bits, hasher, &[])
+    stark_verify_poseidon_ext_pub(
+        air,
+        proof,
+        n_queries,
+        grind_bits,
+        extra_blowup_bits,
+        hasher,
+        &[],
+    )
 }
 
 /// The same verifier, seeding the transcript with `publics` before the trace roots
@@ -67,10 +76,7 @@ pub fn stark_verify_poseidon_ext_pub<A: AirExt>(
     let n = 1usize << log_n;
     let window_size = air.window_size();
 
-    if proof.trace_roots.len() != width
-        || proof.ood_frame.len() != window_size * width
-        || proof.queries.len() != n_queries
-    {
+    if proof.ood_frame.len() != window_size * width || proof.queries.len() != n_queries {
         return false;
     }
 
@@ -82,18 +88,19 @@ pub fn stark_verify_poseidon_ext_pub<A: AirExt>(
     for &p in publics {
         transcript.absorb(p);
     }
-    for root in &proof.trace_roots {
-        transcript.absorb_digest(root);
-    }
-    let coeffs: Vec<Fp2> = (0..num_coeffs(air)).map(|_| transcript.challenge_fp2()).collect();
+    transcript.absorb_digest(&proof.trace_root);
+    let coeffs: Vec<Fp2> = (0..num_coeffs(air))
+        .map(|_| transcript.challenge_fp2())
+        .collect();
     transcript.absorb_digest(&proof.comp_root);
     let z = draw_ood_point_poseidon(&mut transcript, shift, n, t);
     for value in &proof.ood_frame {
         transcript.absorb(value.c0);
         transcript.absorb(value.c1);
     }
-    let deep_coeffs: Vec<Fp2> =
-        (0..width * window_size + 1).map(|_| transcript.challenge_fp2()).collect();
+    let deep_coeffs: Vec<Fp2> = (0..width * window_size + 1)
+        .map(|_| transcript.challenge_fp2())
+        .collect();
 
     let periodic_z: Vec<Fp2> = eval_cols_on_subgroup_ext(g, t, &air.periodic_columns(), z);
     let comp_z = compose_ext(air, g, z, &proof.ood_frame, &periodic_z, &coeffs);
@@ -114,24 +121,26 @@ pub fn stark_verify_poseidon_ext_pub<A: AirExt>(
 
     for qd in &proof.queries {
         let p = transcript.challenge_index(n);
-        if qd.trace.len() != width || qd.trace_paths.len() != width {
+        if qd.trace.len() != width {
             return false;
         }
         if !verify_path(hasher, &deep_root, p, pack_ext(qd.deep), &qd.deep_path)
-            || !verify_path(hasher, &proof.comp_root, p, pack_ext(qd.comp), &qd.comp_path)
+            || !verify_path(
+                hasher,
+                &proof.comp_root,
+                p,
+                pack_ext(qd.comp),
+                &qd.comp_path,
+            )
+            || !verify_path(
+                hasher,
+                &proof.trace_root,
+                p,
+                hash_periodic_row(hasher, &qd.trace),
+                &qd.trace_path,
+            )
         {
             return false;
-        }
-        for c in 0..width {
-            if !verify_path(
-                hasher,
-                &proof.trace_roots[c],
-                p,
-                pack_base(qd.trace[c]),
-                &qd.trace_paths[c],
-            ) {
-                return false;
-            }
         }
 
         let x = shift * omega.pow(p as u64);
