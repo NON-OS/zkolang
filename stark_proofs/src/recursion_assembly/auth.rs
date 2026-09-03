@@ -1,10 +1,11 @@
 // NONOS Operating System (AGPL-3.0-or-later)
 //! Region 5: the batched authentication set for one query. The FRI leaf the
-//! fold consumes (at the fold position `i_k`), then the whole consistency opening
-//! set (deep, comp, every trace column) at the consistency index `p_k`, each
-//! against its committed root, all equal depth. The swapped-root tamper
-//! authenticates the deep and comp values under each other's commitment; the
-//! honest AIR must reject the resulting trace.
+//! fold consumes (at the fold position `i_k`), then the flat consistency
+//! openings (deep, comp) at the consistency index `p_k`, each against its
+//! committed root, all equal depth. The trace row authenticates beside these
+//! as one chain-plus-path opening under the wide commitment. The swapped-root
+//! tamper authenticates the deep and comp values under each other's
+//! commitment; the honest AIR must reject the resulting trace.
 
 use super::inner::{extra, Inner, LOG_ROUNDS};
 use super::tamper::Tamper;
@@ -19,7 +20,7 @@ use alloc::vec::Vec;
 pub struct AuthSide {
     pub region: MultiMembership,
     pub trace: Vec<Fp>,
-    /// Opening 0 is the FRI leaf, 1 deep, 2 comp, 3+c trace column c.
+    /// Opening 0 is the FRI leaf, 1 deep, 2 comp.
     pub ocells: Vec<(usize, usize)>,
     /// The consistency index p_k as the deep opening's path directions, LSB first.
     pub cons_dirs: Vec<bool>,
@@ -62,12 +63,13 @@ fn openings<A: AirExt>(h: &Poseidon, inner: &Inner<A>, ik: usize, query: usize) 
     ops
 }
 
-/// The opened periodic row as one membership opening: a compress chain from
-/// the zero digest through the row's chunks, then the Merkle path to the
-/// baked root. The chunks sit on the sibling cells of the chain steps, which
-/// is what lets the wiring bind the row's values into the deep quotients with
-/// no new region type.
-pub struct PeriodicAuth {
+/// An opened row as one membership opening: a compress chain from the zero
+/// digest through the row's chunks, then the Merkle path to the root. The
+/// chunks sit on the sibling cells of the chain steps, which is what lets the
+/// wiring bind the row's values into the deep quotients with no new region
+/// type. The periodic sidecar and the wide trace commitment both open this
+/// shape; only the root and the row differ.
+pub struct ChainAuth {
     pub region: MultiMembership,
     pub trace: Vec<Fp>,
     /// One `(row, col)` per row value, in row order: the chunk lane cells.
@@ -75,32 +77,31 @@ pub struct PeriodicAuth {
     pub depth: usize,
 }
 
-pub fn periodic_auth_k<A: AirExt>(
+fn chain_auth(
     h: &Poseidon,
-    inner: &Inner<A>,
+    row: &[Fp],
+    path: &[[Fp; RATE]],
+    root: [Fp; RATE],
     cons_dirs: &[bool],
-    query: usize,
-) -> Option<PeriodicAuth> {
-    let sc = inner.sidecar.as_ref()?;
-    let opening = &sc.openings[query];
-    let n_vals = opening.row.len();
+) -> ChainAuth {
+    let n_vals = row.len();
     let n_chunks = n_vals.div_ceil(RATE);
-    let mut siblings: Vec<[Fp; RATE]> = Vec::with_capacity(n_chunks + opening.path.len());
+    let mut siblings: Vec<[Fp; RATE]> = Vec::with_capacity(n_chunks + path.len());
     for chunk in 0..n_chunks {
         let mut sib = [Fp::ZERO; RATE];
         for lane in 0..RATE {
-            if let Some(v) = opening.row.get(chunk * RATE + lane) {
+            if let Some(v) = row.get(chunk * RATE + lane) {
                 sib[lane] = *v;
             }
         }
         siblings.push(sib);
     }
-    siblings.extend(opening.path.iter().copied());
+    siblings.extend(path.iter().copied());
     let mut directions = alloc::vec![false; n_chunks];
     directions.extend(cons_dirs.iter().copied());
     let chain = Opening {
         leaf: [Fp::ZERO; RATE],
-        root: sc.root,
+        root,
         siblings,
         directions,
     };
@@ -120,12 +121,49 @@ pub fn periodic_auth_k<A: AirExt>(
             chunk_cells.push((m * l - 1, WIDTH + 1 + lane));
         }
     }
-    Some(PeriodicAuth {
+    ChainAuth {
         region,
         trace,
         chunk_cells,
         depth,
-    })
+    }
+}
+
+pub fn periodic_auth_k<A: AirExt>(
+    h: &Poseidon,
+    inner: &Inner<A>,
+    cons_dirs: &[bool],
+    query: usize,
+) -> Option<ChainAuth> {
+    let sc = inner.sidecar.as_ref()?;
+    let opening = &sc.openings[query];
+    Some(chain_auth(
+        h,
+        &opening.row,
+        &opening.path,
+        sc.root,
+        cons_dirs,
+    ))
+}
+
+/// The wide trace commitment's opening for query `k`: the opened row is the
+/// trace row itself, the root the one the transcript absorbed. Its terminal
+/// digest binds to the transcript's absorb cells, not to a pin, because the
+/// root is the proof's, not a baked constant.
+pub fn trace_auth_k<A: AirExt>(
+    h: &Poseidon,
+    inner: &Inner<A>,
+    cons_dirs: &[bool],
+    query: usize,
+) -> ChainAuth {
+    let qd = &inner.proof.queries[query];
+    chain_auth(
+        h,
+        &qd.trace,
+        &qd.trace_path,
+        inner.proof.trace_root,
+        cons_dirs,
+    )
 }
 
 /// Query-0 form, preserved for the current single-query assembly.

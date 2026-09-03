@@ -2,8 +2,9 @@
 //! The root bindings, one block per inner query: each of query q's opening
 //! checkpoints == the transcript-absorbed root it authenticates under. Openings 0
 //! and 1 (FRI leaf, deep) share fri.roots[0] absorbed in the FRI transcript;
-//! opening 2 is comp_root and 3.. are the trace roots, absorbed in the STARK
-//! transcript. The roots are shared; only the opening rows are per-query.
+//! opening 2 is comp_root, absorbed in the STARK transcript, and the trace
+//! chain's terminal digest reaches the one absorbed trace root. The roots are
+//! shared; only the opening rows are per-query.
 
 use super::super::layout::Layout;
 use super::helpers::group;
@@ -21,14 +22,19 @@ pub fn roots(lay: &Layout, out: &mut Vec<Bind>) {
             for j in 0..RATE {
                 let arow = if o <= 1 {
                     lay.ft_off + j * l
-                } else if o == 2 {
-                    (lay.pub_len + lay.ntr * RATE + lay.ncoeff2 + j) * l
                 } else {
-                    (lay.pub_len + (o - 3) * RATE + j) * l
+                    (lay.pub_len + lay.ntr * RATE + lay.ncoeff2 + j) * l
                 };
                 sw.push((cp_row, j, arow, 8));
             }
             out.push(group(lay.span, alloc::vec![0, 1, 2, 3, 8], &sw));
         }
+        // The trace chain's terminal digest == the absorbed trace root.
+        let cp_row = lay.ta_off[q] + lay.ta_depth * l;
+        let mut sw: Vec<(usize, usize, usize, usize)> = Vec::new();
+        for j in 0..RATE {
+            sw.push((cp_row, j, (lay.pub_len + j) * l, 8));
+        }
+        out.push(group(lay.span, alloc::vec![0, 1, 2, 3, 8], &sw));
     }
 }
