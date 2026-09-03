@@ -51,6 +51,7 @@ mod wide_mul;
 pub use fusion::region_offsets;
 mod deep_terms_pre;
 pub mod replay;
+pub mod replay_ext;
 mod index_point;
 mod index_scalar;
 mod measure;
