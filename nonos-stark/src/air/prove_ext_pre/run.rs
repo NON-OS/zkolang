@@ -53,7 +53,9 @@ pub fn stark_prove_ext_preprocessed<A: AirExt>(
     let trace_root = trace_tree.root();
     transcript.absorb_digest(&trace_root);
 
-    let coeffs: Vec<Fp2> = (0..num_coeffs(air)).map(|_| transcript.challenge_fp2()).collect();
+    let coeffs: Vec<Fp2> = (0..num_coeffs(air))
+        .map(|_| transcript.challenge_fp2())
+        .collect();
 
     let periodic_cols = air.periodic_columns();
     let (pc, p_tree) = periodic_tree(air, extra_blowup_bits);
@@ -77,8 +79,17 @@ pub fn stark_prove_ext_preprocessed<A: AirExt>(
     let deep_coeffs: Vec<Fp2> = (0..d.width * d.window + 1 + periodic_cols.len())
         .map(|_| transcript.challenge_fp2())
         .collect();
-    let deep_d =
-        deep::over_domain(&d, &tc, &pc, &comp_d, &frame, &periodic_z, comp_z, z, &deep_coeffs);
+    let deep_d = deep::over_domain(
+        &d,
+        &tc,
+        &pc,
+        &comp_d,
+        &frame,
+        &periodic_z,
+        comp_z,
+        z,
+        &deep_coeffs,
+    );
 
     let fri = fri_prove_ext(&deep_d, d.shift, d.fri_log_blowup, n_queries, grind_bits);
     let deep_tree = MerkleTree::commit_ext(&deep_d);
@@ -98,7 +109,13 @@ pub fn stark_prove_ext_preprocessed<A: AirExt>(
         &deep_tree,
     );
     StarkProofExtPre {
-        proof: StarkProofExt { trace_root, comp_root: comp_tree.root(), ood_frame: frame, fri, queries: qs },
+        proof: StarkProofExt {
+            trace_root,
+            comp_root: comp_tree.root(),
+            ood_frame: frame,
+            fri,
+            queries: qs,
+        },
         periodic_z,
         openings,
     }

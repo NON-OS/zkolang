@@ -83,7 +83,9 @@ pub fn query_openings_queryk<A: AirExt>(
         ts.absorb(value.c0);
         ts.absorb(value.c1);
     }
-    let _deep_coeffs: Vec<Fp2> = (0..width * window_size + 1).map(|_| ts.challenge_fp2()).collect();
+    let _deep_coeffs: Vec<Fp2> = (0..width * window_size + 1)
+        .map(|_| ts.challenge_fp2())
+        .collect();
     ts.absorb_digest(&proof.fri.roots[0]);
     for _ in 0..query {
         ts.challenge_index(n);
@@ -98,6 +100,52 @@ pub fn query_openings_queryk<A: AirExt>(
     // The DEEP value against the FRI root (the same authentication the fold's opened
     // value already relies on), the composition against the composition root, then
     // every trace column against its own trace root.
+    openings.push(Opening {
+        leaf: pack_ext(qd.deep),
+        root: proof.fri.roots[0],
+        siblings: qd.deep_path.clone(),
+        directions: directions.clone(),
+    });
+    openings.push(Opening {
+        leaf: pack_ext(qd.comp),
+        root: proof.comp_root,
+        siblings: qd.comp_path.clone(),
+        directions: directions.clone(),
+    });
+    for c in 0..width {
+        openings.push(Opening {
+            leaf: pack_base(qd.trace[c]),
+            root: proof.trace_roots[c],
+            siblings: qd.trace_paths[c].clone(),
+            directions: directions.clone(),
+        });
+    }
+    openings
+}
+
+/// The preprocessed twin: the walk comes from `replay` with the claims, so
+/// the index this derives is the one the sidecar prover drew. Only the
+/// opening list lives here.
+pub fn query_openings_pre_queryk<A: AirExt>(
+    air: &A,
+    proof: &StarkProofExtP,
+    periodic_z: &[Fp2],
+    extra_blowup_bits: u32,
+    hasher: &Poseidon,
+    publics: &[Fp],
+    query: usize,
+) -> Vec<Opening> {
+    let width = air.trace_width();
+    let n = super::replay::domain_size(air, extra_blowup_bits);
+    let mut r =
+        super::replay::replay(air, proof, Some(periodic_z), extra_blowup_bits, hasher, publics);
+    let p = super::replay::query_index(&mut r, n, query);
+
+    let qd = &proof.queries[query];
+    let depth = qd.deep_path.len();
+    let directions: Vec<bool> = (0..depth).map(|lv| (p >> lv) & 1 == 1).collect();
+
+    let mut openings = Vec::with_capacity(width + 2);
     openings.push(Opening {
         leaf: pack_ext(qd.deep),
         root: proof.fri.roots[0],

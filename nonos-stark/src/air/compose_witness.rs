@@ -93,3 +93,26 @@ pub fn compose_inputs_pub<A: AirExt>(
         comp_z,
     }
 }
+
+/// The compose inputs of a preprocessed proof: identical replay up to z, then
+/// the claims are the periodic values, no recompute anywhere. The draws before
+/// z do not depend on what follows, so the plain replay serves both forms.
+pub fn compose_inputs_pre<A: AirExt>(
+    air: &A,
+    pre: &super::types_poseidon_pre::StarkProofExtPPre,
+    extra_blowup_bits: u32,
+    hasher: &Poseidon,
+    publics: &[Fp],
+) -> ComposeInputs {
+    let mut ci = compose_inputs_pub(air, &pre.proof, extra_blowup_bits, hasher, publics);
+    ci.periodic_z = pre.periodic_z.clone();
+    ci.comp_z = compose_ext(
+        air,
+        root_of_unity(air.log_trace_len()),
+        ci.z,
+        &pre.proof.ood_frame,
+        &ci.periodic_z,
+        &ci.coeffs,
+    );
+    ci
+}

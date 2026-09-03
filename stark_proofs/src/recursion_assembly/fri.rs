@@ -6,8 +6,8 @@
 //! query index `q_k`. Query 0 is `qs[0]`; closing coverage folds every `q_k`.
 
 use super::inner::{Inner, GRIND, LOG_ROUNDS};
-use super::tamper::Tamper;
 use super::sponge::{absorb, squeeze};
+use super::tamper::Tamper;
 use crate::crypto::stark::air::{
     AirExt, Poseidon, TraceFoldExt, TranscriptCheck, TranscriptOp, WIDTH,
 };
@@ -51,13 +51,25 @@ pub fn fri_transcript<A: AirExt>(h: &Poseidon, inner: &Inner<A>) -> FriTranscrip
         fs.absorb(value.c0);
         fs.absorb(value.c1);
     }
-    assert!(fs.verify_pow(fri.pow_nonce, GRIND), "the FRI proof-of-work did not check");
+    assert!(
+        fs.verify_pow(fri.pow_nonce, GRIND),
+        "the FRI proof-of-work did not check"
+    );
     // One index per FRI query, drawn in order; qs[k] is query k's fold position.
-    let qs: Vec<usize> = (0..fri.queries.len()).map(|_| fs.challenge_index(n)).collect();
+    let qs: Vec<usize> = (0..fri.queries.len())
+        .map(|_| fs.challenge_index(n))
+        .collect();
     let transcript = TranscriptCheck::new_witness(h.clone(), LOG_ROUNDS, ops);
     let ttrace = transcript.trace();
 
-    FriTranscript { transcript, ttrace, betas, n_folds, log_n, qs }
+    FriTranscript {
+        transcript,
+        ttrace,
+        betas,
+        n_folds,
+        log_n,
+        qs,
+    }
 }
 
 /// One query's fold chain (region 4), derived from its index `q_k`.
@@ -101,7 +113,11 @@ pub fn fri_fold_k<A: AirExt>(
         _ => ft.betas.clone(),
     };
     let ftrace = fold.trace(&betas, &a, &b);
-    FoldSide { fold, ftrace, ik: qk % (n >> 1) }
+    FoldSide {
+        fold,
+        ftrace,
+        ik: qk % (n >> 1),
+    }
 }
 
 /// The query-0 combined form the current single-query `assemble()` consumes. Built

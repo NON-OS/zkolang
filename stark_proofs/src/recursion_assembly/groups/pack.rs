@@ -22,16 +22,13 @@ fn merged(a: &[usize], b: &[usize]) -> Vec<usize> {
 /// Classes are placed into groups no wider than `cap`, first fit. A class wider
 /// than the cap takes a group of its own rather than being split, because a class
 /// cut across two products is no longer one equality.
-pub fn pack(
-    classes: Vec<Vec<usize>>,
-    span: usize,
-    width: usize,
-    cap: usize,
-) -> Vec<GpGroup> {
+pub fn pack(classes: Vec<Vec<usize>>, span: usize, width: usize, cap: usize) -> Vec<GpGroup> {
     let mut bins: Vec<(Vec<usize>, Vec<Vec<usize>>)> = Vec::new();
     for class in classes {
         let cols = columns_of(&class, width);
-        let fit = bins.iter().position(|(bc, _)| merged(bc, &cols).len() <= cap);
+        let fit = bins
+            .iter()
+            .position(|(bc, _)| merged(bc, &cols).len() <= cap);
         match fit {
             Some(i) => {
                 bins[i].0 = merged(&bins[i].0, &cols);
@@ -40,7 +37,9 @@ pub fn pack(
             None => bins.push((cols, alloc::vec![class])),
         }
     }
-    bins.into_iter().map(|(cols, cls)| build(cols, &cls, span, width)).collect()
+    bins.into_iter()
+        .map(|(cols, cls)| build(cols, &cls, span, width))
+        .collect()
 }
 
 fn build(cols: Vec<usize>, classes: &[Vec<usize>], span: usize, width: usize) -> GpGroup {
@@ -51,12 +50,19 @@ fn build(cols: Vec<usize>, classes: &[Vec<usize>], span: usize, width: usize) ->
     }
     let mut sigma: Vec<usize> = (0..span * k).collect();
     for class in classes {
-        let ids: Vec<usize> =
-            class.iter().map(|&g| (g / width) * k + slot[g % width]).collect();
+        let ids: Vec<usize> = class
+            .iter()
+            .map(|&g| (g / width) * k + slot[g % width])
+            .collect();
         for w in ids.windows(2) {
             sigma[w[0]] = w[1];
         }
         sigma[ids[ids.len() - 1]] = ids[0];
     }
-    GpGroup { wired_cols: cols, sigma, beta: Fp::from_u64(5), gamma: Fp::from_u64(7) }
+    GpGroup {
+        wired_cols: cols,
+        sigma,
+        beta: Fp::from_u64(5),
+        gamma: Fp::from_u64(7),
+    }
 }

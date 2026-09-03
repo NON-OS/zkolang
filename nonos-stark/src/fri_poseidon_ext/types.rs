@@ -25,6 +25,7 @@ use alloc::vec::Vec;
 
 /// One layer's opening at a query: the value at `i` and at `i + half`, each with a
 /// Poseidon Merkle path to that layer's root.
+#[derive(Clone)]
 pub struct LayerOpeningExtP {
     pub a: Fp2,
     pub a_path: Vec<[Fp; RATE]>,
@@ -33,11 +34,13 @@ pub struct LayerOpeningExtP {
 }
 
 /// A single query across every folded layer.
+#[derive(Clone)]
 pub struct QueryProofExtP {
     pub layers: Vec<LayerOpeningExtP>,
 }
 
 /// A complete Poseidon-committed extension FRI proof.
+#[derive(Clone)]
 pub struct FriProofExtP {
     pub roots: Vec<[Fp; RATE]>,
     pub final_layer: Vec<Fp2>,

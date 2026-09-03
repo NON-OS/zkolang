@@ -6,8 +6,8 @@
 //! path directions.
 
 use super::super::layout::Layout;
-use super::helpers::{chain, group};
 use super::helpers::Bind;
+use super::helpers::{chain, group};
 use alloc::vec::Vec;
 
 pub fn fold(lay: &Layout, out: &mut Vec<Bind>) {
@@ -33,7 +33,11 @@ pub fn fold(lay: &Layout, out: &mut Vec<Bind>) {
 
         // The layer-zero point == query q's region-7 derived shift * omega^i_k, so
         // the square-and-sign chain descends from q's FRI query index.
-        out.push(group(lay.span, alloc::vec![1, 6], &[(fp_off + lay.fbits, 1, f_off, 6)]));
+        out.push(group(
+            lay.span,
+            alloc::vec![1, 6],
+            &[(fp_off + lay.fbits, 1, f_off, 6)],
+        ));
 
         // Bit k == q's fold direction at layer log_n - 2 - k == q's leaf opening's
         // path direction at level k. Level zero lives in the opened-cell column.

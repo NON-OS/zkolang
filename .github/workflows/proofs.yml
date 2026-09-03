@@ -241,3 +241,68 @@ jobs:
       - uses: model-checking/kani-github-action@v1.1
         with:
           args: -p stark_proofs --output-format terse
+
+  # Measured numbers and real artifacts, committed back to the tree so the
+  # repo always carries what its own pipeline last produced. Scheduled and
+  # dispatched runs only, never PRs, and the commit skips CI so it cannot
+  # recurse.
+  bench:
+    name: refresh bench and proofs
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: transfer
+        run: |
+          /usr/bin/time -v cargo run --release -p stark_proofs --features parallel \
+            --bin emit_transfer -- proofs/transfer.proof 2>&1 | tee transfer.log
+          sha256sum proofs/transfer.proof > proofs/transfer.proof.sha256
+
+      - name: recursion, real inner
+        run: |
+          /usr/bin/time -v cargo run --release -p stark_proofs --features parallel \
+            --bin emit_recursion -- proofs/recursion.proof real 2>&1 | tee recursion.log
+          sha256sum proofs/recursion.proof > proofs/recursion.proof.sha256
+
+      - name: write the numbers
+        run: |
+          sha=$(git rev-parse --short HEAD)
+          for f in transfer recursion; do
+            prove=$(grep -oE 'proved in [0-9.]+' $f.log | head -1 | grep -oE '[0-9.]+')
+            verify=$(grep -oE 'verified from disk in [0-9.]+[a-z]*s' $f.log | head -1)
+            peak=$(grep 'Maximum resident' $f.log | grep -oE '[0-9]+')
+            size=$(wc -c < proofs/$f.proof | tr -d ' ')
+            printf '{\n  "commit": "%s",\n  "prove_s": %s,\n  "verify": "%s",\n  "proof_bytes": %s,\n  "peak_kb": %s\n}\n' \
+              "$sha" "${prove:-null}" "${verify:-?}" "$size" "${peak:-null}" > bench/$f.json
+          done
+          grep -E '^assembly ' recursion.log | head -1 \
+            | sed 's/assembly *//' > bench/assembly.txt || true
+
+      - name: lean inventory
+        run: |
+          {
+            echo "# Machine-checked theorems"
+            echo
+            echo "Refreshed by CI for $(git rev-parse --short HEAD). Every public"
+            echo "theorem with the axioms it rests on; sorryAx anywhere fails the"
+            echo "verify workflow before this file can ever record it."
+            echo
+            echo '```'
+            grep -rhoE '^theorem [A-Za-z0-9_.]+' lean/Zkolang | sed 's/^theorem //' | sort
+            echo '```'
+          } > lean/THEOREMS.md
+
+      - name: commit back
+        run: |
+          git config user.name "nonos-bench"
+          git config user.email "bench@nonos.systems"
+          git add bench proofs lean/THEOREMS.md
+          git diff --cached --quiet && exit 0
+          git commit -m "bench: numbers for $(git rev-parse --short HEAD) [skip ci]"
+          git push

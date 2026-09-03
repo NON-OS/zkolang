@@ -6,9 +6,12 @@
 //! authenticates the deep and comp values under each other's commitment; the
 //! honest AIR must reject the resulting trace.
 
-use super::inner::{Inner, EXTRA, LOG_ROUNDS};
+use super::inner::{extra, Inner, LOG_ROUNDS};
 use super::tamper::Tamper;
-use crate::crypto::stark::air::{query_openings_queryk, AirExt, MultiMembership, Opening, Poseidon};
+use crate::crypto::stark::air::{
+    query_openings_pre_queryk, query_openings_queryk, AirExt, MultiMembership, Opening, Poseidon,
+    RATE, WIDTH,
+};
 use crate::crypto::stark::field::Fp;
 use crate::crypto::stark::poseidon_merkle::pack_ext;
 use alloc::vec::Vec;
@@ -37,17 +40,96 @@ fn openings<A: AirExt>(h: &Poseidon, inner: &Inner<A>, ik: usize, query: usize) 
         siblings: sibs,
         directions: dirs,
     }];
-    ops.extend(query_openings_queryk(&inner.air, &inner.proof, EXTRA, h, &inner.publics, query));
+    match &inner.sidecar {
+        Some(sc) => ops.extend(query_openings_pre_queryk(
+            &inner.air,
+            &inner.proof,
+            &sc.periodic_z,
+            extra(),
+            h,
+            &inner.publics,
+            query,
+        )),
+        None => ops.extend(query_openings_queryk(
+            &inner.air,
+            &inner.proof,
+            extra(),
+            h,
+            &inner.publics,
+            query,
+        )),
+    }
     ops
 }
 
-/// Query-0 form, preserved for the current single-query assembly.
-pub fn auth_side<A: AirExt>(
+/// The opened periodic row as one membership opening: a compress chain from
+/// the zero digest through the row's chunks, then the Merkle path to the
+/// baked root. The chunks sit on the sibling cells of the chain steps, which
+/// is what lets the wiring bind the row's values into the deep quotients with
+/// no new region type.
+pub struct PeriodicAuth {
+    pub region: MultiMembership,
+    pub trace: Vec<Fp>,
+    /// One `(row, col)` per row value, in row order: the chunk lane cells.
+    pub chunk_cells: Vec<(usize, usize)>,
+    pub depth: usize,
+}
+
+pub fn periodic_auth_k<A: AirExt>(
     h: &Poseidon,
     inner: &Inner<A>,
-    i0: usize,
-    tamper: Tamper,
-) -> AuthSide {
+    cons_dirs: &[bool],
+    query: usize,
+) -> Option<PeriodicAuth> {
+    let sc = inner.sidecar.as_ref()?;
+    let opening = &sc.openings[query];
+    let n_vals = opening.row.len();
+    let n_chunks = n_vals.div_ceil(RATE);
+    let mut siblings: Vec<[Fp; RATE]> = Vec::with_capacity(n_chunks + opening.path.len());
+    for chunk in 0..n_chunks {
+        let mut sib = [Fp::ZERO; RATE];
+        for lane in 0..RATE {
+            if let Some(v) = opening.row.get(chunk * RATE + lane) {
+                sib[lane] = *v;
+            }
+        }
+        siblings.push(sib);
+    }
+    siblings.extend(opening.path.iter().copied());
+    let mut directions = alloc::vec![false; n_chunks];
+    directions.extend(cons_dirs.iter().copied());
+    let chain = Opening {
+        leaf: [Fp::ZERO; RATE],
+        root: sc.root,
+        siblings,
+        directions,
+    };
+    let depth = chain.siblings.len();
+    let region = MultiMembership::new_witness(h.clone(), LOG_ROUNDS, alloc::vec![chain]);
+    let trace = region.trace();
+    // Chunk 0 rides the initial state's high half at row 0; chunk m sits on
+    // the sibling cells of slot boundary m, which the witness form writes at
+    // row m*l - 1, columns WIDTH+1 onward.
+    let l = 1usize << LOG_ROUNDS;
+    let mut chunk_cells = Vec::with_capacity(n_vals);
+    for j in 0..n_vals {
+        let (m, lane) = (j / RATE, j % RATE);
+        if m == 0 {
+            chunk_cells.push((0, RATE + lane));
+        } else {
+            chunk_cells.push((m * l - 1, WIDTH + 1 + lane));
+        }
+    }
+    Some(PeriodicAuth {
+        region,
+        trace,
+        chunk_cells,
+        depth,
+    })
+}
+
+/// Query-0 form, preserved for the current single-query assembly.
+pub fn auth_side<A: AirExt>(h: &Poseidon, inner: &Inner<A>, i0: usize, tamper: Tamper) -> AuthSide {
     auth_side_k(h, inner, i0, 0, tamper)
 }
 
@@ -71,5 +153,12 @@ pub fn auth_side_k<A: AirExt>(
         region.trace()
     };
     let ocells = region.opened_cells();
-    AuthSide { region, trace, ocells, cons_dirs, depth, n_open }
+    AuthSide {
+        region,
+        trace,
+        ocells,
+        cons_dirs,
+        depth,
+        n_open,
+    }
 }

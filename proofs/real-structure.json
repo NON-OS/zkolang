@@ -1,0 +1,11 @@
+{
+  "log_trace_len": 20,
+  "trace_width": 436,
+  "num_transition": 168,
+  "num_groups": 46,
+  "constraint_degree": 13,
+  "inner_log_trace_len": 13,
+  "inner_trace_width": 14,
+  "n_queries": 32,
+  "periodic_root_poseidon": "6fd726736e0560770ede82d3b6fe583a0d56541bcbefcfe906182179c6770ddd"
+}

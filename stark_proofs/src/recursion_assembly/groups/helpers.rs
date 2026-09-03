@@ -13,16 +13,30 @@ use alloc::vec::Vec;
 pub struct Bind {
     pub wired_cols: Vec<usize>,
     pub swaps: Vec<(usize, usize, usize, usize)>,
+    /// Which builder produced this, for diagnosis by name.
+    pub label: &'static str,
 }
 
-pub fn group(
+pub fn group(span: usize, wcols: Vec<usize>, swaps: &[(usize, usize, usize, usize)]) -> Bind {
+    labeled("", span, wcols, swaps)
+}
+
+pub fn labeled(
+    label: &'static str,
     _span: usize,
     wcols: Vec<usize>,
     swaps: &[(usize, usize, usize, usize)],
 ) -> Bind {
     let lane = |c: usize| wcols.iter().position(|&x| x == c).unwrap();
-    let swaps = swaps.iter().map(|&(ra, ca, rb, cb)| (ra, lane(ca), rb, lane(cb))).collect();
-    Bind { wired_cols: wcols, swaps }
+    let swaps = swaps
+        .iter()
+        .map(|&(ra, ca, rb, cb)| (ra, lane(ca), rb, lane(cb)))
+        .collect();
+    Bind {
+        wired_cols: wcols,
+        swaps,
+        label,
+    }
 }
 
 /// Chain consecutive cells into transpositions: composed, a cycle forcing all

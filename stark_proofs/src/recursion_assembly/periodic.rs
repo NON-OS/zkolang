@@ -9,10 +9,7 @@ use crate::crypto::stark::air::{AirExt, PeriodicZ};
 use crate::crypto::stark::field::{Fp, Fp2};
 use alloc::vec::Vec;
 
-pub fn periodic_region<A: AirExt>(
-    inner: &Inner<A>,
-    tamper: Tamper,
-) -> (PeriodicZ, Vec<Fp>) {
+pub fn periodic_region<A: AirExt>(inner: &Inner<A>, tamper: Tamper) -> (PeriodicZ, Vec<Fp>) {
     let z = match tamper {
         Tamper::PeriodicOffPoint => inner.ci.z + Fp2::ONE,
         _ => inner.ci.z,

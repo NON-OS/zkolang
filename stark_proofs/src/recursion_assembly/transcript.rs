@@ -11,6 +11,7 @@ use crate::crypto::stark::field::Fp;
 use alloc::vec::Vec;
 
 pub struct StarkTranscript {
+    pub claim_op: usize,
     pub region: TranscriptCheck,
     pub trace: Vec<Fp>,
     /// The operation squeezing z.c0; z.c1 follows it.
@@ -47,6 +48,15 @@ pub fn stark_transcript<A: AirExt>(
         absorb(h, &mut ops, &mut st, value.c0);
         absorb(h, &mut ops, &mut st, value.c1);
     }
+    // A preprocessed inner absorbs its periodic claims here; the plain path
+    // absorbs nothing and the op indices line up either way.
+    let claim_op = ops.len();
+    if let Some(sc) = &inner.sidecar {
+        for value in &sc.periodic_z {
+            absorb(h, &mut ops, &mut st, value.c0);
+            absorb(h, &mut ops, &mut st, value.c1);
+        }
+    }
     let deep_coeff_op = ops.len();
     for _ in 0..n_terms {
         squeeze(h, &mut ops, &mut st);
@@ -54,5 +64,11 @@ pub fn stark_transcript<A: AirExt>(
     }
     let region = TranscriptCheck::new_witness(h.clone(), LOG_ROUNDS, ops);
     let trace = region.trace();
-    StarkTranscript { region, trace, z_op, deep_coeff_op }
+    StarkTranscript {
+        region,
+        trace,
+        z_op,
+        claim_op,
+        deep_coeff_op,
+    }
 }

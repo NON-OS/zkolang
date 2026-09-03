@@ -6,6 +6,12 @@
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Tamper {
     None,
+    /// Sidecar: one opened periodic value bent. The bent value must break the
+    /// compress chain to the baked root, or an opened row is decoration.
+    BentOpenedRow,
+    /// Sidecar: two values within an opened row swapped. Same total, same
+    /// multiset, different chain digest, or ordering is unbound.
+    SwappedRowValues,
     /// A DEEP trace value cut loose from its authenticated opening.
     ReboundTraceValue,
     /// The deep and comp values authenticated under each other's root.

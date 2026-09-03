@@ -20,6 +20,13 @@ pub struct Layout {
     pub c_off: usize,
     pub ft_off: usize,
     pub pz_off: usize,
+    /// Preprocessed-inner fields. `sidecar` false leaves every one inert.
+    pub sidecar: bool,
+    pub claim_op: usize,
+    pub pa_off: Vec<usize>,
+    pub pchunk_cells: Vec<Vec<(usize, usize)>>,
+    pub pa_depth: usize,
+    pub n_chunks: usize,
     /// Per-query region offsets: DEEP, fold, auth, consistency point, FRI point.
     pub d_off: Vec<usize>,
     pub f_off: Vec<usize>,
@@ -65,5 +72,8 @@ pub fn offsets(regions: &[Box<dyn AirExt>]) -> (Vec<usize>, usize) {
         off.push(r);
         r += reg.rows();
     }
-    (off, r.next_power_of_two())
+    // The tight row count, matching Stack::closes_at: the padded form here was
+    // a third copy of the sizing truth, and it drifted, so the closure and the
+    // packed sigmas walked the padding.
+    (off, r)
 }

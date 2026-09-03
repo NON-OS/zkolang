@@ -53,6 +53,8 @@ pub struct DeepCheckExt {
     // as z * g^k rather than trusted as a free input.
     z_ood: Fp2,
     gk: Vec<Fp>,
+    comp_z: Fp2,
+    comp_index: usize,
 }
 
 impl DeepCheckExt {
@@ -61,6 +63,8 @@ impl DeepCheckExt {
     /// columns and the final sum is pinned to `deep`: instance-specific structure.
     pub fn new(terms: Vec<DeepTerm>, x: Fp2, deep: Fp2) -> DeepCheckExt {
         let log_rows = (terms.len() + 1).next_power_of_two().trailing_zeros();
+        let comp_index = terms.len().saturating_sub(1);
+        let comp_z = terms.last().map(|t| t.claim).unwrap_or(Fp2::ZERO);
         DeepCheckExt {
             log_rows,
             terms,
@@ -69,6 +73,8 @@ impl DeepCheckExt {
             witness_terms: false,
             z_ood: Fp2::ZERO,
             gk: Vec::new(),
+            comp_z,
+            comp_index,
         }
     }
 
@@ -79,6 +85,22 @@ impl DeepCheckExt {
     /// and the terms and the final DEEP value are bound by the assembly's grand
     /// product to their sources.
     pub fn new_witness(terms: Vec<DeepTerm>, x: Fp2, deep: Fp2) -> DeepCheckExt {
+        let comp_index = terms.len().saturating_sub(1);
+        DeepCheckExt::new_witness_with_comp(terms, x, deep, comp_index)
+    }
+
+    /// The witness form with the composition claim stated rather than
+    /// inferred. The old inference took the last term's claim, which held
+    /// only while the composition term happened to be last; the sidecar
+    /// appends periodic terms behind it and the inference silently bound the
+    /// wrong value.
+    pub fn new_witness_with_comp(
+        terms: Vec<DeepTerm>,
+        x: Fp2,
+        deep: Fp2,
+        comp_index: usize,
+    ) -> DeepCheckExt {
+        let comp_z = terms.get(comp_index).map(|t| t.claim).unwrap_or(Fp2::ZERO);
         let log_rows = (terms.len() + 1).next_power_of_two().trailing_zeros();
         // The out-of-domain point is the point of the first term (window row zero),
         // and each term's structural g^k factor is its point divided by z. The
@@ -87,7 +109,17 @@ impl DeepCheckExt {
         let z_ood = terms.first().map(|t| t.point).unwrap_or(Fp2::ONE);
         let zinv = z_ood.inv();
         let gk: Vec<Fp> = terms.iter().map(|t| (t.point * zinv).c0).collect();
-        DeepCheckExt { log_rows, terms, x, deep, witness_terms: true, z_ood, gk }
+        DeepCheckExt {
+            log_rows,
+            terms,
+            x,
+            deep,
+            witness_terms: true,
+            z_ood,
+            gk,
+            comp_z,
+            comp_index,
+        }
     }
 
     /// The witness: per active row the quotient and the running sum through that
@@ -97,7 +129,7 @@ impl DeepCheckExt {
         let w = self.trace_width();
         let mut trace = alloc::vec![Fp::ZERO; rows * w];
         // The composition claim, held on every row so it is a wireable trace cell.
-        let comp_z = self.terms.last().map(|t| t.claim).unwrap_or(Fp2::ZERO);
+        let comp_z = self.comp_z;
         for r in 0..rows {
             trace[r * w + 4] = comp_z.c0;
             trace[r * w + 5] = comp_z.c1;
@@ -274,8 +306,10 @@ impl Air for DeepCheckExt {
                 *item = Fp::ONE;
                 gk[i] = self.gk[i];
             }
+            // The comp term's position is stated, not assumed last: the sidecar
+            // appends periodic terms behind it.
             if !self.terms.is_empty() {
-                comp_sel[self.terms.len() - 1] = Fp::ONE;
+                comp_sel[self.comp_index] = Fp::ONE;
             }
             return alloc::vec![sel, comp_sel, gk];
         }

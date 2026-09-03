@@ -49,11 +49,29 @@ pub struct WiredMultiExt {
     sig_base: Vec<usize>,
     sel_idx: usize,
     region_transitions: usize,
+    /// Assembly-injected constant pins: cells the statement fixes that no
+    /// region owns, like a baked commitment root a sidecar authenticates
+    /// against. The witness-form regions deliberately pin nothing, so
+    /// constants that anchor them enter here.
+    extra_boundary: Vec<(usize, usize, Fp)>,
 }
 
 impl WiredMultiExt {
     /// Width of each running product. The widest sets the degree, which sets the
     /// evaluation domain.
+    /// The shared selector, row-identity and per-group sigma column indices,
+    /// for a verifier that reads the permutation from the committed periodic
+    /// columns instead of hand-deriving it.
+    pub fn permutation_columns(&self) -> (usize, usize, Vec<usize>) {
+        (self.sel_idx, self.row_idx, self.sig_base.clone())
+    }
+
+    /// Each group's wired columns and challenges, the constraint-side half of
+    /// what `permutation_columns` locates.
+    pub fn group_params(&self) -> Vec<(Vec<usize>, Fp, Fp)> {
+        self.groups.iter().map(|g| (g.wired_cols.clone(), g.beta, g.gamma)).collect()
+    }
+
     pub fn group_widths(&self) -> Vec<usize> {
         self.groups.iter().map(|g| g.wired_cols.len()).collect()
     }
@@ -77,6 +95,17 @@ impl WiredMultiExt {
         kinds: &[usize],
         groups: Vec<GpGroup>,
     ) -> WiredMultiExt {
+        WiredMultiExt::new_kinds_bounded(regions, kinds, groups, Vec::new())
+    }
+
+    /// `new_kinds` with constant pins the statement adds on top of the
+    /// regions' own boundaries.
+    pub fn new_kinds_bounded(
+        regions: Vec<Box<dyn AirExt>>,
+        kinds: &[usize],
+        groups: Vec<GpGroup>,
+        extra_boundary: Vec<(usize, usize, Fp)>,
+    ) -> WiredMultiExt {
         let stack = Stack::of_kinds(&regions, kinds);
         // A kind runs one instance's constraints over every instance's rows, so
         // instances that are not the same AIR swap one region's rules for
@@ -94,7 +123,11 @@ impl WiredMultiExt {
             );
         }
         let region_slots = stack.kind_slot.last().copied().unwrap_or(0)
-            + stack.kind_first.last().map(|&i| regions[i].periodic_columns().len()).unwrap_or(0);
+            + stack
+                .kind_first
+                .last()
+                .map(|&i| regions[i].periodic_columns().len())
+                .unwrap_or(0);
         let base = stack.n_kinds + region_slots;
         let sel_idx = base;
         // The identity a cell is compared against is r * k + j, which is linear in
@@ -124,6 +157,7 @@ impl WiredMultiExt {
             sig_base,
             sel_idx,
             region_transitions,
+            extra_boundary,
         }
     }
 
@@ -260,7 +294,12 @@ impl Air for WiredMultiExt {
         for region in &self.regions {
             d = d.max(region.constraint_degree());
         }
-        let max_group = self.groups.iter().map(|g| g.wired_cols.len()).max().unwrap_or(0);
+        let max_group = self
+            .groups
+            .iter()
+            .map(|g| g.wired_cols.len())
+            .max()
+            .unwrap_or(0);
         (d + 2).max(max_group + 2)
     }
 
@@ -311,6 +350,7 @@ impl Air for WiredMultiExt {
 
     fn boundary(&self) -> Vec<(usize, usize, Fp)> {
         let mut b = fusion::base_boundary(&self.stack, &self.regions);
+        b.extend(self.extra_boundary.iter().copied());
         let span = self.closes_at();
         for g in 0..self.groups.len() {
             b.push((self.stack.width + g, 0, Fp::ONE));

@@ -25,6 +25,7 @@ use super::super::fri_poseidon_ext::FriProofExtP;
 use super::poseidon::RATE;
 use alloc::vec::Vec;
 
+#[derive(Clone)]
 pub struct StarkQueryExtP {
     pub deep: Fp2,
     pub deep_path: Vec<[Fp; RATE]>,
@@ -34,6 +35,7 @@ pub struct StarkQueryExtP {
     pub comp_path: Vec<[Fp; RATE]>,
 }
 
+#[derive(Clone)]
 pub struct StarkProofExtP {
     pub trace_roots: Vec<[Fp; RATE]>,
     pub comp_root: [Fp; RATE],
