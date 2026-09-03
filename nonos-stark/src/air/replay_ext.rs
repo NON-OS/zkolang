@@ -41,6 +41,10 @@ pub struct ReplayedExt {
     /// values the verifier computed on the way to `comp_z`, carried out so a
     /// ported composition consumes them instead of recomputing the columns.
     pub periodic_z: Vec<Fp2>,
+    /// Every transition constraint evaluated at z from the claimed frame, in
+    /// constraint order: the summands behind `comp_z`'s transition half, so a
+    /// ported evaluator that misses is told which constraint disagrees.
+    pub transitions_z: Vec<Fp2>,
     pub deep_coeffs: Vec<Fp2>,
     /// The consistency index of every query, in draw order.
     pub indices: Vec<usize>,
@@ -78,6 +82,7 @@ pub fn replay_challenges_ext<A: AirExt>(
 
     let periodic_z: Vec<Fp2> = eval_cols_on_subgroup_ext(g, t, &air.periodic_columns(), z);
     let comp_z = compose_ext(air, g, z, &proof.ood_frame, &periodic_z, &coeffs);
+    let transitions_z = air.transition_ext(&proof.ood_frame, &periodic_z);
     ts.absorb_digest(&proof.fri.roots[0]);
 
     let mut indices = Vec::with_capacity(n_queries);
@@ -102,5 +107,5 @@ pub fn replay_challenges_ext<A: AirExt>(
         deep_consistent &= acc == qd.deep;
     }
 
-    ReplayedExt { coeffs, z, comp_z, periodic_z, deep_coeffs, indices, deep_consistent }
+    ReplayedExt { coeffs, z, comp_z, periodic_z, transitions_z, deep_coeffs, indices, deep_consistent }
 }

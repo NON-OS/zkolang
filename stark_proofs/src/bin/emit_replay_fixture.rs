@@ -76,14 +76,19 @@ fn main() {
         .iter()
         .map(|(col, row, v)| format!("[{}, {}, \"{:016x}\"]", col, row, v.to_u64()))
         .collect();
+    let transitions_z: Vec<String> = r.transitions_z.iter().map(fp2_hex).collect();
     let comp = format!(
         "{{\n  \"comp_z\": {},\n  \"n_periodic\": {},\n  \"n_boundary\": {},\n  \
-         \"periodic_z\": [\n    {}\n  ],\n  \"boundary\": [\n    {}\n  ]\n}}\n",
+         \"n_transitions\": {},\n  \
+         \"periodic_z\": [\n    {}\n  ],\n  \"boundary\": [\n    {}\n  ],\n  \
+         \"transitions_z\": [\n    {}\n  ]\n}}\n",
         fp2_hex(&r.comp_z),
         periodic_z.len(),
         boundary.len(),
+        transitions_z.len(),
         periodic_z.join(",\n    "),
         boundary.join(",\n    "),
+        transitions_z.join(",\n    "),
     );
     let comp_out = out.replace("replay-fixture", "composition-fixture");
     std::fs::write(&comp_out, &comp).expect("write composition fixture");
