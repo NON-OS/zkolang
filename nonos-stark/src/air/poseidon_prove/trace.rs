@@ -15,8 +15,9 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 use super::super::super::field::Fp;
-use super::super::super::poly::{intt, lde};
+use super::super::super::poly::{intt, lde, lde_from_coeffs};
 use super::super::super::poseidon_merkle::{pack_base, PrunedPoseidonTree};
+use super::super::periodic_poseidon::hash_periodic_row;
 use super::super::poseidon::{Poseidon, RATE};
 use super::super::prove_ext::Domain;
 use alloc::vec::Vec;
@@ -52,4 +53,29 @@ pub(super) fn commit(h: &Poseidon, d: &Domain, trace: &[Fp]) -> CommittedTrace {
         out.trees.push(tree);
     }
     out
+}
+
+/// The whole trace under one root: leaf i is the compress-chain digest of
+/// row i, the same rule the periodic commitment uses, so the recursion binds
+/// an opened row with the chain-plus-path opening it already knows. One tree
+/// instead of one per column: seventeen openings per query become four, and
+/// the transcript absorbs one root instead of fourteen.
+pub(super) struct WideTrace {
+    pub coeffs: Vec<Vec<Fp>>,
+    pub tree: PrunedPoseidonTree,
+}
+
+pub(super) fn commit_wide(h: &Poseidon, d: &Domain, trace: &[Fp]) -> WideTrace {
+    let coeffs: Vec<Vec<Fp>> = crate::par::map_index(d.width, |c| {
+        let column: Vec<Fp> = (0..d.t).map(|i| trace[i * d.width + c]).collect();
+        intt(&column, d.g)
+    });
+    let columns_d: Vec<Vec<Fp>> =
+        crate::par::map_slice(&coeffs, |cf| lde_from_coeffs(cf, d.shift, d.omega, d.n));
+    let leaves: Vec<[Fp; RATE]> = crate::par::map_index(d.n, |i| {
+        let row: Vec<Fp> = columns_d.iter().map(|col| col[i]).collect();
+        hash_periodic_row(h, &row)
+    });
+    let tree = PrunedPoseidonTree::commit(h, &leaves, TREE_CUT);
+    WideTrace { coeffs, tree }
 }
