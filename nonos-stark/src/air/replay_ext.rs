@@ -37,6 +37,10 @@ pub struct ReplayedExt {
     pub coeffs: Vec<Fp2>,
     pub z: Fp2,
     pub comp_z: Fp2,
+    /// The periodic columns evaluated at z, in periodic-column order: the
+    /// values the verifier computed on the way to `comp_z`, carried out so a
+    /// ported composition consumes them instead of recomputing the columns.
+    pub periodic_z: Vec<Fp2>,
     pub deep_coeffs: Vec<Fp2>,
     /// The consistency index of every query, in draw order.
     pub indices: Vec<usize>,
@@ -98,5 +102,5 @@ pub fn replay_challenges_ext<A: AirExt>(
         deep_consistent &= acc == qd.deep;
     }
 
-    ReplayedExt { coeffs, z, comp_z, deep_coeffs, indices, deep_consistent }
+    ReplayedExt { coeffs, z, comp_z, periodic_z, deep_coeffs, indices, deep_consistent }
 }
