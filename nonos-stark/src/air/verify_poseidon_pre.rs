@@ -24,13 +24,12 @@
 use super::super::field::{Fp, Fp2};
 use super::super::fri::root_of_unity;
 use super::super::fri_poseidon_ext::fri_verify_poseidon_ext;
-use super::super::poseidon_merkle::{pack_base, pack_ext, verify_path};
+use super::super::poseidon_merkle::{pack_ext, verify_path};
 use super::composition::{compose_ext, domain_params_blown};
 use super::periodic_poseidon::hash_periodic_row;
 use super::poseidon::{Poseidon, RATE};
 use super::spec::AirExt;
 use super::types_poseidon_pre::StarkProofExtPPre;
-use alloc::vec::Vec;
 
 const SHIFT: u64 = 7;
 
@@ -49,15 +48,13 @@ pub fn stark_verify_poseidon_pre_pub<A: AirExt>(
 ) -> bool {
     let proof = &pre.proof;
     let log_t = air.log_trace_len();
-    let t = 1usize << log_t;
     let width = air.trace_width();
     let (log_n, fri_log_blowup) = domain_params_blown(air, extra_blowup_bits);
     let n = 1usize << log_n;
     let window_size = air.window_size();
     let n_periodic = air.periodic_columns().len();
 
-    if proof.trace_roots.len() != width
-        || proof.ood_frame.len() != window_size * width
+    if proof.ood_frame.len() != window_size * width
         || proof.queries.len() != n_queries
         || pre.periodic_z.len() != n_periodic
         || pre.openings.len() != n_queries
@@ -69,8 +66,14 @@ pub fn stark_verify_poseidon_pre_pub<A: AirExt>(
     let omega = root_of_unity(log_n);
     let shift = Fp::from_u64(SHIFT);
 
-    let mut r =
-        super::replay::replay(air, proof, Some(&pre.periodic_z), extra_blowup_bits, hasher, publics);
+    let mut r = super::replay::replay(
+        air,
+        proof,
+        Some(&pre.periodic_z),
+        extra_blowup_bits,
+        hasher,
+        publics,
+    );
     let (coeffs, z, deep_coeffs) = (r.coeffs.clone(), r.z, r.deep_coeffs.clone());
     let comp_z = compose_ext(air, g, z, &proof.ood_frame, &pre.periodic_z, &coeffs);
 
@@ -89,7 +92,7 @@ pub fn stark_verify_poseidon_pre_pub<A: AirExt>(
 
     for (qd, po) in proof.queries.iter().zip(&pre.openings) {
         let p = r.ts.challenge_index(n);
-        if qd.trace.len() != width || qd.trace_paths.len() != width || po.row.len() != n_periodic {
+        if qd.trace.len() != width || po.row.len() != n_periodic {
             return false;
         }
         if !verify_path(hasher, &deep_root, p, pack_ext(qd.deep), &qd.deep_path)
@@ -102,6 +105,13 @@ pub fn stark_verify_poseidon_pre_pub<A: AirExt>(
             )
             || !verify_path(
                 hasher,
+                &proof.trace_root,
+                p,
+                hash_periodic_row(hasher, &qd.trace),
+                &qd.trace_path,
+            )
+            || !verify_path(
+                hasher,
                 periodic_root,
                 p,
                 hash_periodic_row(hasher, &po.row),
@@ -109,17 +119,6 @@ pub fn stark_verify_poseidon_pre_pub<A: AirExt>(
             )
         {
             return false;
-        }
-        for c in 0..width {
-            if !verify_path(
-                hasher,
-                &proof.trace_roots[c],
-                p,
-                pack_base(qd.trace[c]),
-                &qd.trace_paths[c],
-            ) {
-                return false;
-            }
         }
 
         let x = shift * omega.pow(p as u64);

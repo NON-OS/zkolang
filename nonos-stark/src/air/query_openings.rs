@@ -15,17 +15,15 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 //! Extracting a Poseidon-committed proof's query-`k` authentication openings: the
-//! DEEP value against the FRI root, the composition against the composition root,
-//! and every trace column against its trace root, all at the k-th consistency query
-//! position. These are exactly the openings the inner verifier authenticates before
-//! it trusts the DEEP algebra (`verify_poseidon_ext` runs the same three checks). A
-//! recursive verifier authenticates them with one batched membership region, closing
-//! the gap where the opened values feeding the DEEP check were trusted rather than
-//! proven to be the committed ones. The batch is equal depth because the trace, the
-//! composition, and the DEEP polynomial are all committed over the same domain.
+//! DEEP value against the FRI root and the composition against the composition
+//! root, at the k-th consistency query position. These are the flat, equal-depth
+//! openings the inner verifier authenticates before it trusts the DEEP algebra.
+//! The trace row is not here: under the wide commitment it authenticates as one
+//! compress-chain-plus-path opening, the same shape the periodic sidecar uses,
+//! and the recursion builds that opening beside these.
 
 use super::super::field::{Fp, Fp2};
-use super::super::poseidon_merkle::{pack_base, pack_ext};
+use super::super::poseidon_merkle::pack_ext;
 use super::super::poseidon_transcript::PoseidonTranscript;
 use super::composition::{domain_params_blown, num_coeffs};
 use super::draw_ood_poseidon::draw_ood_point_poseidon;
@@ -73,9 +71,7 @@ pub fn query_openings_queryk<A: AirExt>(
     for &p in publics {
         ts.absorb(p);
     }
-    for root in &proof.trace_roots {
-        ts.absorb_digest(root);
-    }
+    ts.absorb_digest(&proof.trace_root);
     let _coeffs: Vec<Fp2> = (0..num_coeffs(air)).map(|_| ts.challenge_fp2()).collect();
     ts.absorb_digest(&proof.comp_root);
     let _z = draw_ood_point_poseidon(&mut ts, shift, n, t);
@@ -96,31 +92,23 @@ pub fn query_openings_queryk<A: AirExt>(
     let depth = qd.deep_path.len();
     let directions: Vec<bool> = (0..depth).map(|lv| (p >> lv) & 1 == 1).collect();
 
-    let mut openings = Vec::with_capacity(width + 2);
-    // The DEEP value against the FRI root (the same authentication the fold's opened
-    // value already relies on), the composition against the composition root, then
-    // every trace column against its own trace root.
-    openings.push(Opening {
-        leaf: pack_ext(qd.deep),
-        root: proof.fri.roots[0],
-        siblings: qd.deep_path.clone(),
-        directions: directions.clone(),
-    });
-    openings.push(Opening {
-        leaf: pack_ext(qd.comp),
-        root: proof.comp_root,
-        siblings: qd.comp_path.clone(),
-        directions: directions.clone(),
-    });
-    for c in 0..width {
-        openings.push(Opening {
-            leaf: pack_base(qd.trace[c]),
-            root: proof.trace_roots[c],
-            siblings: qd.trace_paths[c].clone(),
+    // The DEEP value against the FRI root (the same authentication the fold's
+    // opened value already relies on) and the composition against the
+    // composition root. The trace row's chain opening is built beside these.
+    alloc::vec![
+        Opening {
+            leaf: pack_ext(qd.deep),
+            root: proof.fri.roots[0],
+            siblings: qd.deep_path.clone(),
             directions: directions.clone(),
-        });
-    }
-    openings
+        },
+        Opening {
+            leaf: pack_ext(qd.comp),
+            root: proof.comp_root,
+            siblings: qd.comp_path.clone(),
+            directions,
+        },
+    ]
 }
 
 /// The preprocessed twin: the walk comes from `replay` with the claims, so
@@ -135,36 +123,33 @@ pub fn query_openings_pre_queryk<A: AirExt>(
     publics: &[Fp],
     query: usize,
 ) -> Vec<Opening> {
-    let width = air.trace_width();
     let n = super::replay::domain_size(air, extra_blowup_bits);
-    let mut r =
-        super::replay::replay(air, proof, Some(periodic_z), extra_blowup_bits, hasher, publics);
+    let mut r = super::replay::replay(
+        air,
+        proof,
+        Some(periodic_z),
+        extra_blowup_bits,
+        hasher,
+        publics,
+    );
     let p = super::replay::query_index(&mut r, n, query);
 
     let qd = &proof.queries[query];
     let depth = qd.deep_path.len();
     let directions: Vec<bool> = (0..depth).map(|lv| (p >> lv) & 1 == 1).collect();
 
-    let mut openings = Vec::with_capacity(width + 2);
-    openings.push(Opening {
-        leaf: pack_ext(qd.deep),
-        root: proof.fri.roots[0],
-        siblings: qd.deep_path.clone(),
-        directions: directions.clone(),
-    });
-    openings.push(Opening {
-        leaf: pack_ext(qd.comp),
-        root: proof.comp_root,
-        siblings: qd.comp_path.clone(),
-        directions: directions.clone(),
-    });
-    for c in 0..width {
-        openings.push(Opening {
-            leaf: pack_base(qd.trace[c]),
-            root: proof.trace_roots[c],
-            siblings: qd.trace_paths[c].clone(),
+    alloc::vec![
+        Opening {
+            leaf: pack_ext(qd.deep),
+            root: proof.fri.roots[0],
+            siblings: qd.deep_path.clone(),
             directions: directions.clone(),
-        });
-    }
-    openings
+        },
+        Opening {
+            leaf: pack_ext(qd.comp),
+            root: proof.comp_root,
+            siblings: qd.comp_path.clone(),
+            directions,
+        },
+    ]
 }

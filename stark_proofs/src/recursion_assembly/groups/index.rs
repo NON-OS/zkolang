@@ -9,6 +9,7 @@
 use super::super::layout::Layout;
 use super::helpers::Bind;
 use super::helpers::{chain, group, labeled};
+use crate::crypto::stark::air::RATE;
 use alloc::vec::Vec;
 
 pub fn index(lay: &Layout, out: &mut Vec<Bind>) {
@@ -36,10 +37,19 @@ pub fn index(lay: &Layout, out: &mut Vec<Bind>) {
             }
             chain(&cells, &mut sw);
         }
-        // Sidecar: the chain opening's tree levels walk the same index, or a
-        // prover opens some other leaf of the periodic tree. The chunk levels
-        // need no pin: leaf and root are boundary constants, so a bent chunk
-        // direction is a root preimage.
+        // The trace chain's tree levels walk the same index, or a prover opens
+        // some other row of the wide trace tree. The chunk levels need no
+        // bind: the leaf is the pinned zero and the terminal digest reaches
+        // the absorbed root, so a bent chunk direction is a root preimage.
+        let ta = lay.ta_off[q];
+        let tn_chunks = lay.width_inner.div_ceil(RATE);
+        for lv in 0..lay.depth {
+            let m = tn_chunks + lv;
+            let mut cells: Vec<(usize, usize)> = alloc::vec![(i_off + lv, 0)];
+            cells.push((ta + m * l - 1, 8));
+            chain(&cells, &mut sw);
+        }
+        // Sidecar: the periodic chain opening's tree levels walk it too.
         if lay.sidecar {
             let pa = lay.pa_off[q];
             for lv in 0..lay.depth {

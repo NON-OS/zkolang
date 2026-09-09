@@ -101,11 +101,25 @@ fn a_poseidon_committed_join_split_core_proves_and_verifies() {
     ];
     let mut sigma: Vec<usize> = (0..32).collect();
     sigma.swap(1, 8); // conservation acc[1] (=input 7) wired to range acc[0]
-    let wired = WiredExt::new(regions, alloc::vec![0], sigma, Fp::from_u64(5), Fp::from_u64(7));
+    let wired = WiredExt::new(
+        regions,
+        alloc::vec![0],
+        sigma,
+        Fp::from_u64(5),
+        Fp::from_u64(7),
+    );
 
     let neg = |x: u64| -> Fp { Fp::ZERO - Fp::from_u64(x) };
-    let addends =
-        [Fp::from_u64(7), Fp::from_u64(3), neg(8), neg(1), neg(1), Fp::ZERO, Fp::ZERO, Fp::ZERO];
+    let addends = [
+        Fp::from_u64(7),
+        Fp::from_u64(3),
+        neg(8),
+        neg(1),
+        neg(1),
+        Fp::ZERO,
+        Fp::ZERO,
+        Fp::ZERO,
+    ];
     let mut cons = Vec::with_capacity(addends.len() * 2);
     let mut acc = Fp::ZERO;
     for &a in &addends {
@@ -139,7 +153,10 @@ fn poseidon_join_split_proof(
     nq: usize,
     grind: u32,
     extra: u32,
-) -> (crate::crypto::stark::air::WiredExt, crate::crypto::stark::air::StarkProofExtP) {
+) -> (
+    crate::crypto::stark::air::WiredExt,
+    crate::crypto::stark::air::StarkProofExtP,
+) {
     use crate::crypto::stark::air::{
         stark_prove_poseidon_ext, Accumulator, AirExt, RangeCheck, WiredExt,
     };
@@ -150,10 +167,24 @@ fn poseidon_join_split_proof(
     ];
     let mut sigma: Vec<usize> = (0..32).collect();
     sigma.swap(1, 8);
-    let wired = WiredExt::new(regions, alloc::vec![0], sigma, Fp::from_u64(5), Fp::from_u64(7));
+    let wired = WiredExt::new(
+        regions,
+        alloc::vec![0],
+        sigma,
+        Fp::from_u64(5),
+        Fp::from_u64(7),
+    );
     let neg = |x: u64| -> Fp { Fp::ZERO - Fp::from_u64(x) };
-    let addends =
-        [Fp::from_u64(7), Fp::from_u64(3), neg(8), neg(1), neg(1), Fp::ZERO, Fp::ZERO, Fp::ZERO];
+    let addends = [
+        Fp::from_u64(7),
+        Fp::from_u64(3),
+        neg(8),
+        neg(1),
+        neg(1),
+        Fp::ZERO,
+        Fp::ZERO,
+        Fp::ZERO,
+    ];
     let mut cons = Vec::new();
     let mut acc = Fp::ZERO;
     for &a in &addends {
@@ -206,7 +237,10 @@ fn the_real_poseidon_fri_fold_chain_verifies_in_circuit() {
         ts.absorb(value.c0);
         ts.absorb(value.c1);
     }
-    assert!(ts.verify_pow(fri.pow_nonce, grind), "P's FRI proof-of-work did not check");
+    assert!(
+        ts.verify_pow(fri.pow_nonce, grind),
+        "P's FRI proof-of-work did not check"
+    );
     let q0 = ts.challenge_index(n);
 
     // Extract query 0's real openings and the public domain data per layer.
@@ -277,7 +311,12 @@ fn a_real_poseidon_merkle_opening_verifies_in_circuit() {
     let siblings = op.a_path.clone();
     let depth = siblings.len();
     let directions: Vec<bool> = (0..depth).map(|l| (i >> l) & 1 == 1).collect();
-    let opening = Opening { leaf: pack_ext(op.a), root: fri.roots[0], siblings, directions };
+    let opening = Opening {
+        leaf: pack_ext(op.a),
+        root: fri.roots[0],
+        siblings,
+        directions,
+    };
     let mem = MultiMembership::new(h.clone(), 2, alloc::vec![opening]);
     let mtrace = mem.trace();
     let mproof = stark_prove_ext(&mem, &mtrace, 32, 8);
@@ -327,7 +366,12 @@ fn the_merkle_witness_form_authenticates_the_real_opening() {
     let siblings = op.a_path.clone();
     let depth = siblings.len();
     let directions: Vec<bool> = (0..depth).map(|l| (i >> l) & 1 == 1).collect();
-    let opening = Opening { leaf: pack_ext(op.a), root: fri.roots[0], siblings, directions };
+    let opening = Opening {
+        leaf: pack_ext(op.a),
+        root: fri.roots[0],
+        siblings,
+        directions,
+    };
     let mem = MultiMembership::new_witness(h.clone(), 2, alloc::vec![opening]);
     // Instance-independent AIR: direction plus RATE sibling columns in the trace,
     // no pinned boundary.
@@ -342,29 +386,61 @@ fn the_merkle_witness_form_authenticates_the_real_opening() {
 }
 
 // The authentication the recursion was missing: the DEEP consistency uses the
-// opened DEEP value, the composition, and every trace column, and a sound verifier
-// authenticates all three against their commitments (deep against the FRI root,
-// comp against the composition root, each trace column against its trace root),
-// exactly as the inner verifier does. This proves the whole opening set of the real
-// proof authenticates in-circuit as one batched membership region, so the values
-// feeding the DEEP check are committed, not trusted.
+// opened DEEP value, the composition, and every trace value, and a sound verifier
+// authenticates all of them against their commitments exactly as the inner
+// verifier does. Deep and comp are flat, equal-depth openings; the trace row
+// rides one compress-chain-plus-path opening under the wide root. This proves
+// both shapes of the real proof authenticate in-circuit, so the values feeding
+// the DEEP check are committed, not trusted.
 #[test]
 fn the_full_query_opening_set_authenticates_in_circuit() {
     use crate::crypto::stark::air::{
-        query_openings_query0, stark_prove_ext, stark_verify_ext, Air, MultiMembership,
+        query_openings_query0, stark_prove_ext, stark_verify_ext, MultiMembership, Opening,
     };
     let h = hasher();
     let (nq, grind, extra) = (32usize, 16u32, 3u32);
     let (air, proof) = poseidon_join_split_proof(&h, nq, grind, extra);
     let openings = query_openings_query0(&air, &proof, extra, &h, &[]);
-    // The DEEP value, the composition, and every one of the inner trace columns.
-    assert_eq!(openings.len(), air.trace_width() + 2);
+    // The DEEP value and the composition; the trace row rides its own chain.
+    assert_eq!(openings.len(), 2);
+    let cons_dirs = openings[0].directions.clone();
     let mem = MultiMembership::new_witness(h.clone(), 2, openings);
     let mtrace = mem.trace();
     let mproof = stark_prove_ext(&mem, &mtrace, 32, 8);
     assert!(
         stark_verify_ext(&mem, &mproof, 32, 8),
         "the batched query-opening authentication was rejected in-circuit"
+    );
+
+    // The wide-trace chain: the zero digest through the row's chunks, then the
+    // Merkle path to the absorbed trace root, walking the same index.
+    let qd = &proof.queries[0];
+    let n_chunks = qd.trace.len().div_ceil(RATE);
+    let mut siblings: Vec<[Fp; RATE]> = Vec::new();
+    for c in 0..n_chunks {
+        let mut sib = [Fp::ZERO; RATE];
+        for lane in 0..RATE {
+            if let Some(v) = qd.trace.get(c * RATE + lane) {
+                sib[lane] = *v;
+            }
+        }
+        siblings.push(sib);
+    }
+    siblings.extend(qd.trace_path.iter().copied());
+    let mut directions = alloc::vec![false; n_chunks];
+    directions.extend(cons_dirs);
+    let chain = Opening {
+        leaf: [Fp::ZERO; RATE],
+        root: proof.trace_root,
+        siblings,
+        directions,
+    };
+    let cmem = MultiMembership::new_witness(h.clone(), 2, alloc::vec![chain]);
+    let ctrace = cmem.trace();
+    let cproof = stark_prove_ext(&cmem, &ctrace, 32, 8);
+    assert!(
+        stark_verify_ext(&cmem, &cproof, 32, 8),
+        "the wide-trace chain opening was rejected in-circuit"
     );
 }
 
@@ -385,7 +461,11 @@ fn the_deep_x_product_chain_matches_native() {
     // The bits of p, LSB first, are the deep opening's path directions.
     let ops = query_openings_query0(&air, &proof, extra, &h, &[]);
     let dirs = &ops[1].directions;
-    let p: usize = dirs.iter().enumerate().map(|(lv, &b)| (b as usize) << lv).sum();
+    let p: usize = dirs
+        .iter()
+        .enumerate()
+        .map(|(lv, &b)| (b as usize) << lv)
+        .sum();
 
     let n_folds = proof.fri.roots.len();
     let blowup = proof.fri.final_layer.len();
@@ -399,7 +479,10 @@ fn the_deep_x_product_chain_matches_native() {
             x = x * Fp2::from_base(omega.pow(1u64 << k));
         }
     }
-    assert_eq!(x, dx, "the product chain does not reproduce the real DEEP x");
+    assert_eq!(
+        x, dx,
+        "the product chain does not reproduce the real DEEP x"
+    );
 }
 
 // The DEEP-x derivation as an in-circuit region: prove the running product computes
@@ -418,7 +501,11 @@ fn the_index_point_region_derives_the_real_deep_x() {
 
     let ops = query_openings_query0(&air, &proof, extra, &h, &[]);
     let dirs = &ops[1].directions;
-    let p: usize = dirs.iter().enumerate().map(|(lv, &b)| (b as usize) << lv).sum();
+    let p: usize = dirs
+        .iter()
+        .enumerate()
+        .map(|(lv, &b)| (b as usize) << lv)
+        .sum();
     let bits = dirs.len();
 
     let n_folds = proof.fri.roots.len();
@@ -428,7 +515,11 @@ fn the_index_point_region_derives_the_real_deep_x() {
     let shift = Fp::from_u64(7);
 
     let ip = IndexPoint::new(omega, shift, bits, p);
-    assert_eq!(ip.point(), dx, "the region's derived point is not the real DEEP x");
+    assert_eq!(
+        ip.point(),
+        dx,
+        "the region's derived point is not the real DEEP x"
+    );
     let tr = ip.trace();
     let iproof = stark_prove_ext(&ip, &tr, 32, 8);
     assert!(
@@ -530,7 +621,10 @@ fn the_join_split_compose_formula_matches_compose_ext() {
             (w[*col] - Fp2::from_base(*expected)) * (z - Fp2::from_base(g.pow(*row as u64))).inv();
         acc = acc + ci.coeffs[3 + j] * q;
     }
-    assert_eq!(acc, ci.comp_z, "the inlined join-split compose formula did not match compose_ext");
+    assert_eq!(
+        acc, ci.comp_z,
+        "the inlined join-split compose formula did not match compose_ext"
+    );
 }
 
 // The fourth and hardest recursion fragment: verify compose_ext AT z in-circuit
@@ -568,8 +662,16 @@ fn the_real_poseidon_compose_at_z_verifies_in_circuit() {
         })
         .collect();
 
-    let cc =
-        ComposeCheck::new(window, periodic, coeffs, ci.z, ci.comp_z, g.pow(t - 1), t, boundaries);
+    let cc = ComposeCheck::new(
+        window,
+        periodic,
+        coeffs,
+        ci.z,
+        ci.comp_z,
+        g.pow(t - 1),
+        t,
+        boundaries,
+    );
     let ctrace = cc.trace();
     let cproof = stark_prove_ext(&cc, &ctrace, 32, 8);
     assert!(
@@ -611,10 +713,22 @@ fn the_real_poseidon_compose_at_z_rejects_a_wrong_value() {
         .collect();
 
     let wrong = ci.comp_z + Fp2::from_base(Fp::from_u64(1));
-    let cc = ComposeCheck::new(window, periodic, coeffs, ci.z, wrong, g.pow(t - 1), t, boundaries);
+    let cc = ComposeCheck::new(
+        window,
+        periodic,
+        coeffs,
+        ci.z,
+        wrong,
+        g.pow(t - 1),
+        t,
+        boundaries,
+    );
     let ctrace = cc.trace();
     let cproof = stark_prove_ext(&cc, &ctrace, 32, 8);
-    assert!(!stark_verify_ext(&cc, &cproof, 32, 8), "a dishonest composition value verified");
+    assert!(
+        !stark_verify_ext(&cc, &cproof, 32, 8),
+        "a dishonest composition value verified"
+    );
 }
 
 // Pin the exact sponge alignment before arithmetizing it: a hand-run Poseidon
@@ -642,10 +756,8 @@ fn the_transcript_sponge_reproduces_the_stark_challenges() {
         c
     };
 
-    for root in &proof.trace_roots {
-        for lane in root {
-            absorb(&mut st, *lane);
-        }
+    for lane in &proof.trace_root {
+        absorb(&mut st, *lane);
     }
     let ncoeffs = ci.coeffs.len();
     let mut coeffs = Vec::with_capacity(ncoeffs);
@@ -654,7 +766,10 @@ fn the_transcript_sponge_reproduces_the_stark_challenges() {
         let c1 = squeeze(&mut st);
         coeffs.push(Fp2::new(c0, c1));
     }
-    assert_eq!(coeffs, ci.coeffs, "the hand-run sponge did not reproduce the coefficients");
+    assert_eq!(
+        coeffs, ci.coeffs,
+        "the hand-run sponge did not reproduce the coefficients"
+    );
 
     for lane in &proof.comp_root {
         absorb(&mut st, *lane);
@@ -700,10 +815,8 @@ fn the_real_poseidon_transcript_derivation_verifies_in_circuit() {
         *st = h.permute(*st);
     };
 
-    for root in &proof.trace_roots {
-        for lane in root {
-            absorb(&mut ops, &mut st, *lane);
-        }
+    for lane in &proof.trace_root {
+        absorb(&mut ops, &mut st, *lane);
     }
     for _ in 0..ci.coeffs.len() * 2 {
         squeeze(&mut ops, &mut st);
@@ -766,7 +879,11 @@ fn the_transcript_witness_form_proves_the_same_sponge_without_pinning() {
     // One extra trace column for the absorbed value; the AIR is instance-independent.
     assert_eq!(tc.trace_width(), WIDTH + 1);
     assert_eq!(tc.periodic_columns().len(), WIDTH + 1);
-    assert_eq!(tc.boundary().len(), WIDTH, "only the sponge-empty boundaries remain");
+    assert_eq!(
+        tc.boundary().len(),
+        WIDTH,
+        "only the sponge-empty boundaries remain"
+    );
     let tr = tc.trace();
     // Native check first: every transition row must vanish, boundaries must hold.
     let w = tc.trace_width();
@@ -828,8 +945,16 @@ fn the_transcript_and_compose_are_wired_into_one_proof() {
             expected: *expected,
         })
         .collect();
-    let compose =
-        ComposeCheck::new(window, periodic, coeffs, ci.z, ci.comp_z, g.pow(t - 1), t, boundaries);
+    let compose = ComposeCheck::new(
+        window,
+        periodic,
+        coeffs,
+        ci.z,
+        ci.comp_z,
+        g.pow(t - 1),
+        t,
+        boundaries,
+    );
     let ctrace = compose.trace();
 
     // Region 0: transcript derivation. z is squeezed at operations after the trace
@@ -846,10 +971,8 @@ fn the_transcript_and_compose_are_wired_into_one_proof() {
         ops.push(TranscriptOp::Squeeze(c));
         *st = h.permute(*st);
     };
-    for root in &proof.trace_roots {
-        for lane in root {
-            absorb(&mut ops, &mut st, *lane);
-        }
+    for lane in &proof.trace_root {
+        absorb(&mut ops, &mut st, *lane);
     }
     for _ in 0..ci.coeffs.len() * 2 {
         squeeze(&mut ops, &mut st);
@@ -936,8 +1059,16 @@ fn the_transcript_compose_and_deep_are_wired_into_one_proof() {
             expected: *expected,
         })
         .collect();
-    let compose =
-        ComposeCheck::new(window, periodic, coeffs, ci.z, ci.comp_z, g.pow(t - 1), t, boundaries);
+    let compose = ComposeCheck::new(
+        window,
+        periodic,
+        coeffs,
+        ci.z,
+        ci.comp_z,
+        g.pow(t - 1),
+        t,
+        boundaries,
+    );
     let ctrace = compose.trace();
 
     // Region 2: the DEEP check, holding comp_z (its composition term claim) as a
@@ -959,10 +1090,8 @@ fn the_transcript_compose_and_deep_are_wired_into_one_proof() {
         ops.push(TranscriptOp::Squeeze(c));
         *st = h.permute(*st);
     };
-    for root in &proof.trace_roots {
-        for lane in root {
-            absorb(&mut ops, &mut st, *lane);
-        }
+    for lane in &proof.trace_root {
+        absorb(&mut ops, &mut st, *lane);
     }
     for _ in 0..ci.coeffs.len() * 2 {
         squeeze(&mut ops, &mut st);
@@ -976,8 +1105,11 @@ fn the_transcript_compose_and_deep_are_wired_into_one_proof() {
     let transcript = TranscriptCheck::new(h.clone(), 2, ops);
     let ttrace = transcript.trace();
 
-    let regions: Vec<Box<dyn AirExt>> =
-        alloc::vec![Box::new(transcript) as Box<dyn AirExt>, Box::new(compose), Box::new(deepck),];
+    let regions: Vec<Box<dyn AirExt>> = alloc::vec![
+        Box::new(transcript) as Box<dyn AirExt>,
+        Box::new(compose),
+        Box::new(deepck),
+    ];
     let l = 4usize;
     let t_height = 1usize << regions[0].log_trace_len();
     let c_off = t_height; // compose region offset
@@ -1051,10 +1183,22 @@ fn the_full_verifier_computation_and_fold_are_wired_into_one_proof() {
     let bnds: Vec<ComposeBoundary> = air
         .boundary()
         .iter()
-        .map(|(col, row, e)| ComposeBoundary { col: *col, g_row: g.pow(*row as u64), expected: *e })
+        .map(|(col, row, e)| ComposeBoundary {
+            col: *col,
+            g_row: g.pow(*row as u64),
+            expected: *e,
+        })
         .collect();
-    let compose =
-        ComposeCheck::new(window, cperiodic, coeffs, ci.z, ci.comp_z, g.pow(t - 1), t, bnds);
+    let compose = ComposeCheck::new(
+        window,
+        cperiodic,
+        coeffs,
+        ci.z,
+        ci.comp_z,
+        g.pow(t - 1),
+        t,
+        bnds,
+    );
     let ctrace = compose.trace();
 
     // Region 2: DEEP.
@@ -1075,10 +1219,8 @@ fn the_full_verifier_computation_and_fold_are_wired_into_one_proof() {
         ops.push(TranscriptOp::Squeeze(c));
         *st = h.permute(*st);
     };
-    for root in &proof.trace_roots {
-        for lane in root {
-            absorb(&mut ops, &mut st, *lane);
-        }
+    for lane in &proof.trace_root {
+        absorb(&mut ops, &mut st, *lane);
     }
     for _ in 0..ci.coeffs.len() * 2 {
         squeeze(&mut ops, &mut st);
@@ -1187,8 +1329,14 @@ fn the_full_verifier_computation_and_fold_are_wired_into_one_proof() {
     sigma.swap((z_op * l) * k + widx(0), c_off * k + widx(22));
     sigma.swap(((z_op + 1) * l) * k + widx(0), c_off * k + widx(23));
     for i in 0..8 {
-        sigma.swap(((12 + 2 * i) * l) * k + widx(0), c_off * k + widx(24 + 2 * i));
-        sigma.swap(((12 + 2 * i + 1) * l) * k + widx(0), c_off * k + widx(25 + 2 * i));
+        sigma.swap(
+            ((12 + 2 * i) * l) * k + widx(0),
+            c_off * k + widx(24 + 2 * i),
+        );
+        sigma.swap(
+            ((12 + 2 * i + 1) * l) * k + widx(0),
+            c_off * k + widx(25 + 2 * i),
+        );
     }
     // comp_z.
     sigma.swap(c_off * k + widx(54), d_off * k + widx(4));
@@ -1246,10 +1394,22 @@ fn the_full_recursive_verifier_is_wired_into_one_proof() {
     let cbnds: Vec<ComposeBoundary> = air
         .boundary()
         .iter()
-        .map(|(col, row, e)| ComposeBoundary { col: *col, g_row: g.pow(*row as u64), expected: *e })
+        .map(|(col, row, e)| ComposeBoundary {
+            col: *col,
+            g_row: g.pow(*row as u64),
+            expected: *e,
+        })
         .collect();
-    let compose =
-        ComposeCheck::new(window, cperiodic, coeffs, ci.z, ci.comp_z, g.pow(t - 1), t, cbnds);
+    let compose = ComposeCheck::new(
+        window,
+        cperiodic,
+        coeffs,
+        ci.z,
+        ci.comp_z,
+        g.pow(t - 1),
+        t,
+        cbnds,
+    );
     let ctrace = compose.trace();
 
     // Region 2: DEEP.
@@ -1270,10 +1430,8 @@ fn the_full_recursive_verifier_is_wired_into_one_proof() {
         ops.push(TranscriptOp::Squeeze(c));
         *st = h.permute(*st);
     };
-    for root in &proof.trace_roots {
-        for lane in root {
-            absorb(&mut ops, &mut st, *lane);
-        }
+    for lane in &proof.trace_root {
+        absorb(&mut ops, &mut st, *lane);
     }
     for _ in 0..ci.coeffs.len() * 2 {
         squeeze(&mut ops, &mut st);
@@ -1343,7 +1501,12 @@ fn the_full_recursive_verifier_is_wired_into_one_proof() {
     let siblings = op0.a_path.clone();
     let depth = siblings.len();
     let directions: Vec<bool> = (0..depth).map(|lv| (i0 >> lv) & 1 == 1).collect();
-    let opening = Opening { leaf: pack_ext(op0.a), root: fri.roots[0], siblings, directions };
+    let opening = Opening {
+        leaf: pack_ext(op0.a),
+        root: fri.roots[0],
+        siblings,
+        directions,
+    };
     let mem = MultiMembership::new(h.clone(), 2, alloc::vec![opening]);
     let (mrow, mcol) = mem.opened_cells()[0];
     let mtrace = mem.trace();
@@ -1394,16 +1557,28 @@ fn the_full_recursive_verifier_is_wired_into_one_proof() {
     sigma.swap((z_op * l) * k + widx(0), c_off * k + widx(22));
     sigma.swap(((z_op + 1) * l) * k + widx(0), c_off * k + widx(23));
     for i in 0..8 {
-        sigma.swap(((12 + 2 * i) * l) * k + widx(0), c_off * k + widx(24 + 2 * i));
-        sigma.swap(((12 + 2 * i + 1) * l) * k + widx(0), c_off * k + widx(25 + 2 * i));
+        sigma.swap(
+            ((12 + 2 * i) * l) * k + widx(0),
+            c_off * k + widx(24 + 2 * i),
+        );
+        sigma.swap(
+            ((12 + 2 * i + 1) * l) * k + widx(0),
+            c_off * k + widx(25 + 2 * i),
+        );
     }
     // comp_z.
     sigma.swap(c_off * k + widx(54), d_off * k + widx(4));
     sigma.swap(c_off * k + widx(55), d_off * k + widx(5));
     // betas.
     for m in 0..n_folds {
-        sigma.swap((ft_off + (6 * m + 4) * l) * k + widx(0), (f_off + m) * k + widx(0));
-        sigma.swap((ft_off + (6 * m + 5) * l) * k + widx(0), (f_off + m) * k + widx(1));
+        sigma.swap(
+            (ft_off + (6 * m + 4) * l) * k + widx(0),
+            (f_off + m) * k + widx(0),
+        );
+        sigma.swap(
+            (ft_off + (6 * m + 5) * l) * k + widx(0),
+            (f_off + m) * k + widx(1),
+        );
     }
     // the fold's layer-0 opened value equals the Merkle-authenticated leaf.
     sigma.swap((f_off) * k + widx(2), (m_off + mrow) * k + widx(mcol));
@@ -1460,7 +1635,10 @@ fn gen_publics_bound_reference() {
     let tc = TranscriptCheck::new(h.clone(), 2, ops);
     let ttrace = tc.trace();
     let proof = stark_prove_ext(&tc, &ttrace, 32, 8);
-    assert!(stark_verify_ext(&tc, &proof, 32, 8), "the publics-bound transcript was rejected");
+    assert!(
+        stark_verify_ext(&tc, &proof, 32, 8),
+        "the publics-bound transcript was rejected"
+    );
 
     // The FS input column is the inject periodic column (index WIDTH); word j of
     // intent i is at row (i*11+j)*l in that column.

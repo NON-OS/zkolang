@@ -47,17 +47,21 @@ pub fn deep(lay: &Layout, out: &mut Vec<Bind>) {
             &[(comp_row, 6, cr, cc), (comp_row, 7, cr, cc + 1)],
         ));
 
-        // Every trace value feeding query q's batch == q's authenticated opening.
-        for c in 0..lay.width_inner {
-            let leaf_row = m_off + lay.ocells[q][3 + c].0;
-            let leaf_col = lay.ocells[q][3 + c].1;
-            for lane in 0..2 {
-                let mut cells: Vec<(usize, usize)> = (0..lay.window_inner)
-                    .map(|k| (d_off + k * lay.width_inner + c, 6 + lane))
-                    .collect();
-                cells.push((leaf_row, leaf_col + lane));
-                out.push(cycle(lay.span, &cells));
-            }
+        // Every trace value feeding query q's batch == the chunk lane of q's
+        // trace chain opening, and its high lane == the chain's pinned zero
+        // leaf, so a base-lifted value cannot smuggle an extension part.
+        let ta = lay.ta_off[q];
+        for (c, cell) in lay.tchunk_cells[q].iter().enumerate() {
+            let mut cells: Vec<(usize, usize)> = (0..lay.window_inner)
+                .map(|k| (d_off + k * lay.width_inner + c, 6))
+                .collect();
+            cells.push((ta + cell.0, cell.1));
+            out.push(cycle(lay.span, &cells));
+            let mut hi: Vec<(usize, usize)> = (0..lay.window_inner)
+                .map(|k| (d_off + k * lay.width_inner + c, 7))
+                .collect();
+            hi.push((ta, 0));
+            out.push(cycle(lay.span, &hi));
         }
 
         // Sidecar: each periodic quotient's value == the authenticated chunk
@@ -72,7 +76,12 @@ pub fn deep(lay: &Layout, out: &mut Vec<Bind>) {
                     lay.span,
                     &[(pa + cell.0, cell.1), (d_off + base + j, 6)],
                 ));
-                out.push(labeled("c1zero", lay.span, alloc::vec![0, 7], &[(pa, 0, d_off + base + j, 7)]));
+                out.push(labeled(
+                    "c1zero",
+                    lay.span,
+                    alloc::vec![0, 7],
+                    &[(pa, 0, d_off + base + j, 7)],
+                ));
             }
         }
 

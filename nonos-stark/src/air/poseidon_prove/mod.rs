@@ -25,3 +25,5 @@ mod sidecar;
 mod trace;
 
 pub use pre::stark_prove_poseidon_pre_pub;
+pub(crate) use queries::open as open_query;
+pub(crate) use trace::commit_wide;

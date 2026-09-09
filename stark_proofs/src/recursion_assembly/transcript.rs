@@ -30,10 +30,8 @@ pub fn stark_transcript<A: AirExt>(
     for &p in &inner.publics {
         absorb(h, &mut ops, &mut st, p);
     }
-    for root in &inner.proof.trace_roots {
-        for lane in root {
-            absorb(h, &mut ops, &mut st, *lane);
-        }
+    for lane in &inner.proof.trace_root {
+        absorb(h, &mut ops, &mut st, *lane);
     }
     for _ in 0..inner.ci.coeffs.len() * 2 {
         squeeze(h, &mut ops, &mut st);

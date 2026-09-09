@@ -33,6 +33,12 @@ pub struct Layout {
     pub m_off: Vec<usize>,
     pub i_off: Vec<usize>,
     pub fp_off: Vec<usize>,
+    /// The wide trace commitment's chain opening, one region per query: its
+    /// offsets, the chunk lane cell of every trace value, and its total depth
+    /// (row chunks plus tree levels).
+    pub ta_off: Vec<usize>,
+    pub tchunk_cells: Vec<Vec<(usize, usize)>>,
+    pub ta_depth: usize,
     pub z_op: usize,
     pub deep_coeff_op: usize,
     pub pub_len: usize,

@@ -15,20 +15,22 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 use super::super::super::field::{Fp, Fp2};
-use super::super::super::poseidon_merkle::{pack_base, PoseidonMerkleTree};
+use super::super::super::poseidon_merkle::PoseidonMerkleTree;
+use super::super::periodic_poseidon::hash_periodic_row;
 use super::super::poseidon::{Poseidon, RATE};
-use super::super::prove_ext::{eval_base, Domain};
+use super::super::prove_ext::Domain;
 use super::super::types_poseidon_ext::StarkQueryExtP;
-use super::trace::{CommittedTrace, TREE_CUT};
+use super::trace::{row_at, WideTrace, TREE_CUT};
 use alloc::vec::Vec;
 
-/// One opened query: trace values by Horner from the coefficients, paths by
-/// rebuilding each pruned chunk's leaves the same way. The values are exactly
-/// what the dropped extension held, at exactly the positions a path needs.
-pub(super) fn open(
+/// One opened query: the row's values by Horner from the coefficients, one
+/// path whose pruned chunk is rebuilt by hashing each neighbouring row the
+/// same way the commit did. The leaf binds all the columns at once.
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn open(
     h: &Poseidon,
     d: &Domain,
-    tr: &CommittedTrace,
+    wt: &WideTrace,
     comp_d: &[Fp2],
     comp_tree: &PoseidonMerkleTree,
     deep_d: &[Fp2],
@@ -37,27 +39,14 @@ pub(super) fn open(
 ) -> StarkQueryExtP {
     let chunk = 1usize << TREE_CUT;
     let base_j = p & !(chunk - 1);
-    let trace: Vec<Fp> = tr
-        .coeffs
-        .iter()
-        .map(|cf| eval_base(cf, d.point(p)))
-        .collect();
-    let trace_paths: Vec<Vec<[Fp; RATE]>> = tr
-        .trees
-        .iter()
-        .zip(&tr.coeffs)
-        .map(|(tree, cf)| {
-            let leaves: Vec<[Fp; RATE]> = (0..chunk)
-                .map(|o| pack_base(eval_base(cf, d.point(base_j + o))))
-                .collect();
-            tree.open_with(h, p, &leaves)
-        })
+    let leaves: Vec<[Fp; RATE]> = (0..chunk)
+        .map(|o| hash_periodic_row(h, &row_at(d, &wt.coeffs, base_j + o)))
         .collect();
     StarkQueryExtP {
         deep: deep_d[p],
         deep_path: deep_tree.open(p),
-        trace,
-        trace_paths,
+        trace: row_at(d, &wt.coeffs, p),
+        trace_path: wt.tree.open_with(h, p, &leaves),
         comp: comp_d[p],
         comp_path: comp_tree.open(p),
     }

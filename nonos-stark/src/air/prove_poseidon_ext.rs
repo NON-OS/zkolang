@@ -24,16 +24,12 @@ use super::super::air::{Poseidon, RATE};
 use super::super::field::{Fp, Fp2};
 use super::super::fri::root_of_unity;
 use super::super::fri_poseidon_ext::fri_prove_poseidon_ext;
-use super::super::poly::{eval_cols_on_subgroup_ext, intt, lde};
-use super::super::poseidon_merkle::{pack_base, pack_ext, PoseidonMerkleTree, PrunedPoseidonTree};
+use super::super::poly::eval_cols_on_subgroup_ext;
+use super::super::poseidon_merkle::{pack_ext, PoseidonMerkleTree};
 use super::super::poseidon_transcript::PoseidonTranscript;
 use super::composition::{compose_ext, domain_params_blown, num_coeffs};
 use super::draw_ood_poseidon::draw_ood_point_poseidon;
 use super::spec::AirExt;
-
-/// Levels dropped from the bottom of each per-column tree: memory divided by
-/// 2^cut, a query rebuilds its own chunk. Six keeps a wide trace in megabytes.
-const TREE_CUT: u32 = 6;
 use super::types_poseidon_ext::{StarkProofExtP, StarkQueryExtP};
 use alloc::vec::Vec;
 
@@ -81,36 +77,19 @@ pub fn stark_prove_poseidon_ext_pub<A: AirExt>(
     let window_size = air.window_size();
 
     let g = root_of_unity(log_t);
-    let omega = root_of_unity(log_n);
     let shift = Fp::from_u64(SHIFT);
 
     let mut transcript = PoseidonTranscript::new(hasher.clone());
     for &p in publics {
         transcript.absorb(p);
     }
-    let mut trace_coeffs: Vec<Vec<Fp>> = Vec::with_capacity(width);
-    let mut trace_trees: Vec<PrunedPoseidonTree> = Vec::with_capacity(width);
-    let mut trace_roots: Vec<[Fp; RATE]> = Vec::with_capacity(width);
-    // A column's extension, its commitment and its interpolation depend on that
-    // column alone, so the columns run together. The extension itself is
-    // transient: hashed into a pruned tree and dropped, because a full tree
-    // per column is two nodes a leaf and, across a wide trace, tens of
-    // gigabytes serving thirty-two openings. The transcript still absorbs the
-    // roots in column order below, which is what the verifier replays.
-    let built: Vec<(PrunedPoseidonTree, Vec<Fp>)> = crate::par::map_index(width, |c| {
-        let column: Vec<Fp> = (0..t).map(|i| trace[i * width + c]).collect();
-        let column_d = lde(&column, g, shift, omega, n);
-        let leaves: Vec<[Fp; RATE]> = column_d.iter().map(|v| pack_base(*v)).collect();
-        let tree = PrunedPoseidonTree::commit(hasher, &leaves, TREE_CUT);
-        let coeffs = intt(&column, g);
-        (tree, coeffs)
-    });
-    for (tree, coeffs) in built {
-        transcript.absorb_digest(&tree.root());
-        trace_roots.push(tree.root());
-        trace_coeffs.push(coeffs);
-        trace_trees.push(tree);
-    }
+    // The whole trace under one root: the extension is transient, hashed row
+    // by row into a pruned tree and dropped, and the transcript absorbs one
+    // digest however wide the trace is.
+    let d = super::prove_ext::Domain::of(air, extra_blowup_bits);
+    let wt = super::poseidon_prove::commit_wide(hasher, &d, trace);
+    let trace_coeffs = &wt.coeffs;
+    transcript.absorb_digest(&wt.tree.root());
 
     let coeffs: Vec<Fp2> = (0..num_coeffs(air))
         .map(|_| transcript.challenge_fp2())
@@ -121,15 +100,14 @@ pub fn stark_prove_poseidon_ext_pub<A: AirExt>(
     // coefficients, each pass extends one coset at a time, and the arithmetic
     // is the keccak path's to the element. Only the transcript and the trees
     // differ between the two provers now.
-    let d = super::prove_ext::Domain::of(air, extra_blowup_bits);
     let pc = super::prove_ext::periodic_coeffs(&periodic_cols, &d);
-    let comp_d = super::prove_ext::over_domain(air, &d, &trace_coeffs, &pc, &coeffs);
+    let comp_d = super::prove_ext::over_domain(air, &d, trace_coeffs, &pc, &coeffs);
     let comp_leaves: Vec<[Fp; RATE]> = comp_d.iter().map(|v| pack_ext(*v)).collect();
     let comp_tree = PoseidonMerkleTree::commit(hasher, &comp_leaves);
     transcript.absorb_digest(&comp_tree.root());
 
     let z = draw_ood_point_poseidon(&mut transcript, shift, n, t);
-    let ood_frame = super::prove_ext::ood_frame(&trace_coeffs, &d, z);
+    let ood_frame = super::prove_ext::ood_frame(trace_coeffs, &d, z);
     for value in &ood_frame {
         transcript.absorb(value.c0);
         transcript.absorb(value.c1);
@@ -144,7 +122,7 @@ pub fn stark_prove_poseidon_ext_pub<A: AirExt>(
 
     let deep_d = super::prove_ext::deep_over_domain(
         &d,
-        &trace_coeffs,
+        trace_coeffs,
         &comp_d,
         &ood_frame,
         comp_z,
@@ -167,37 +145,13 @@ pub fn stark_prove_poseidon_ext_pub<A: AirExt>(
     let mut queries: Vec<StarkQueryExtP> = Vec::with_capacity(n_queries);
     for _ in 0..n_queries {
         let p = transcript.challenge_index(n);
-        // Values by Horner from the coefficients, paths by rebuilding the
-        // pruned chunk's leaves the same way: the values the dropped
-        // extension held, at exactly the positions a path needs.
-        let trace_vals: Vec<Fp> = trace_coeffs
-            .iter()
-            .map(|cf| super::prove_ext::eval_base(cf, d.point(p)))
-            .collect();
-        let chunk = 1usize << TREE_CUT;
-        let base_j = p & !(chunk - 1);
-        let trace_paths: Vec<Vec<[Fp; RATE]>> = trace_trees
-            .iter()
-            .zip(&trace_coeffs)
-            .map(|(tree, cf)| {
-                let leaves: Vec<[Fp; RATE]> = (0..chunk)
-                    .map(|o| pack_base(super::prove_ext::eval_base(cf, d.point(base_j + o))))
-                    .collect();
-                tree.open_with(hasher, p, &leaves)
-            })
-            .collect();
-        queries.push(StarkQueryExtP {
-            deep: deep_d[p],
-            deep_path: deep_tree.open(p),
-            trace: trace_vals,
-            trace_paths,
-            comp: comp_d[p],
-            comp_path: comp_tree.open(p),
-        });
+        queries.push(super::poseidon_prove::open_query(
+            hasher, &d, &wt, &comp_d, &comp_tree, &deep_d, &deep_tree, p,
+        ));
     }
 
     StarkProofExtP {
-        trace_roots,
+        trace_root: wt.tree.root(),
         comp_root: comp_tree.root(),
         ood_frame,
         fri,
