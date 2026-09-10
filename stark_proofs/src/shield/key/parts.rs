@@ -27,6 +27,14 @@ pub enum Break {
     /// nullifier hashes moves. Two of these over one note are two nullifiers, and
     /// two nullifiers over one note is that note spent twice.
     ForeignIndex,
+    /// The same double spend through bit zero alone, the leaf's own left or right.
+    /// `ForeignIndex` adds one, which carries past bit zero for an odd position and
+    /// is then caught by a higher bit's binding. This flips bit zero with xor, so
+    /// every higher bit is untouched and still agrees with the membership, and the
+    /// recovered scalar and the nullifier both move to the sibling position. Only
+    /// bit zero differs from what the pool authenticated. If nothing pins it, the
+    /// note retires under two positions.
+    ForeignIndex0,
 }
 
 pub struct NullifierParts {
@@ -55,7 +63,11 @@ pub fn nullifier_parts(
 
     let spend_pk = derive(&h, sk).spend_pk;
     let nk = derive(&h, nk_sk).nk;
-    let idx = if brk == Break::ForeignIndex { leaf_index + 1 } else { leaf_index };
+    let idx = match brk {
+        Break::ForeignIndex => leaf_index + 1,
+        Break::ForeignIndex0 => leaf_index ^ 1,
+        _ => leaf_index,
+    };
     let t = h.compress(&nk, &target);
     let nf = h.compress(&t, &tag(idx));
 
