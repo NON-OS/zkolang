@@ -81,7 +81,9 @@ fn main() {
          \"log_n_inner\": {},\n  \"pbits\": {},\n  \"fbits\": {},\n  \"t_inner\": {},\n  \
          \"n_pz\": {},\n  \"pa_depth\": {},\n  \"n_chunks\": {},\n  \"frame_len\": {},\n  \
          \"n_coeff\": {},\n  \"c_periodic_col\": {},\n  \"c_z_col\": {},\n  \"c_coeff_col\": {},\n  \
-         \"c_comp_z_col\": {},\n  \"sel_col\": {},\n  \"row_col\": {},\n  \"outer_periodic_root_keccak\": \"{}\",\n  \
+         \"c_comp_z_col\": {},\n  \"sel_col\": {},\n  \"row_col\": {},\n  \
+         \"strip_off\": {},\n  \"strip_k\": {},\n  \"strip_echo_width\": {},\n  \
+         \"strip_n_out\": {},\n  \"strip_rows\": {},\n  \"outer_periodic_root_keccak\": \"{}\",\n  \
          \"groups\": [\n    {}\n  ]\n}}\n",
         lay.span,
         lay.l,
@@ -114,6 +116,11 @@ fn main() {
         lay.c_comp_z_col,
         sel_idx,
         row_idx,
+        lay.strip_off,
+        lay.strip_k,
+        lay.strip_echo_width,
+        lay.strip_n_out,
+        lay.strip_rows,
         {
             let r = stark_proofs::crypto::stark::air::periodic_root(&asm.wired, 0);
             r.iter().map(|b| format!("{b:02x}")).collect::<String>()

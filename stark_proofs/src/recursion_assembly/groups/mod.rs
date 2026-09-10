@@ -10,6 +10,7 @@ mod pack;
 mod periodic;
 mod roots;
 mod statement;
+mod strip;
 mod uf;
 
 pub use collapse::collapse;
@@ -20,3 +21,4 @@ pub use index::index;
 pub use periodic::periodic;
 pub use roots::roots;
 pub use statement::statement;
+pub use strip::strip;

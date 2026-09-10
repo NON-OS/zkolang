@@ -6,8 +6,12 @@ extern crate alloc;
 
 pub mod crypto;
 
+pub mod compose_pipeline;
+
 #[cfg(test)]
 mod air_tests;
+#[cfg(test)]
+mod compose_pipeline_tests;
 #[cfg(test)]
 mod compose_step_tests;
 // field_ext_tests + field_tests disabled: files lost to a /tmp wipe (LOCAL only).
