@@ -54,8 +54,19 @@ the position as a field element from the bits that carry it, the assembly pins t
 bits to the membership directions, and the recovered scalar to the cell the fourth
 compression absorbs. Without it a prover keeps the note and the ownership honest and
 moves only the scalar, which is a second nullifier for one note, which is a note spent
-twice. `shield::test::double_spend` is that forgery. **Bit zero is not yet pinned**;
-see the open membership item above.
+twice. `shield::test::double_spend::a_note_cannot_be_retired_under_a_foreign_index` is
+that forgery.
+
+Bit zero, the leaf's own left or right at the bottom of the tree, was the one bit the
+higher directions left free: it lives only in which half of the initial state the leaf
+occupies, so the recovered scalar could disagree with it and retire the note under the
+sibling position. `a_note_cannot_be_retired_under_a_flipped_bit_zero` is that forgery,
+and it satisfied until the pin landed. The pinned membership witnesses the bottom
+direction as a bit and a canonical leaf it selects from the two halves; the fold binds
+the canonical leaf, so the bit names the half the leaf actually occupies, and the
+assembly binds the bit to the recovered scalar. `Zkolang.IndexBit.bottom_bit_pinned`
+proves that a bit selecting the authenticated leaf from two distinct halves equals the
+real direction, so the pin leaves no freedom. The forgery now rejects.
 
 Six binding families in the recursive verifier, each with a forgery, in `family_tests`.
 Fold, index and periodic had no gate until recently, and index is the seam the assembly
