@@ -20,6 +20,12 @@ import Zkolang.Wiring
 import Zkolang.Opening
 import Zkolang.Stream
 import Zkolang.BatchInv
+import Zkolang.SboxSplit
+import Zkolang.Pratt
+import Zkolang.GrandProduct
+import Zkolang.Nullifier
+import Zkolang.Quotient
+import Zkolang.Fold
 
 /-!
 The soundness of the zKølang standard library gadgets, in Lean 4 over the core library
