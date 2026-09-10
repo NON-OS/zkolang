@@ -182,6 +182,32 @@ impl Poseidon {
         for (s, v) in sbox.iter_mut().zip(state.iter()) {
             *s = v.pow(7);
         }
+        self.mds_rc(&sbox, rc)
+    }
+
+    /// The round over witnessed squares: `x2` and `x4` arrive as cells, the
+    /// S-box is `x4 * x2 * state` at degree three, and the caller checks the
+    /// two square constraints this returns beside the round itself. Same
+    /// algebra as `round_generic`, two degrees cheaper per constraint.
+    pub fn round_split_generic<F: Felt>(
+        &self,
+        state: &[F; WIDTH],
+        x2: &[F; WIDTH],
+        x4: &[F; WIDTH],
+        rc: &[F; WIDTH],
+    ) -> ([F; WIDTH], [F; WIDTH], [F; WIDTH]) {
+        let mut sbox = [F::ZERO; WIDTH];
+        let mut c2 = [F::ZERO; WIDTH];
+        let mut c4 = [F::ZERO; WIDTH];
+        for j in 0..WIDTH {
+            c2[j] = x2[j] - state[j] * state[j];
+            c4[j] = x4[j] - x2[j] * x2[j];
+            sbox[j] = x4[j] * x2[j] * state[j];
+        }
+        (self.mds_rc(&sbox, rc), c2, c4)
+    }
+
+    fn mds_rc<F: Felt>(&self, sbox: &[F; WIDTH], rc: &[F; WIDTH]) -> [F; WIDTH] {
         let mut out = [F::ZERO; WIDTH];
         for (j, o) in out.iter_mut().enumerate() {
             let mut acc = rc[j];

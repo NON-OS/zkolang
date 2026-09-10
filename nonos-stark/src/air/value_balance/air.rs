@@ -14,6 +14,13 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+//! The value-balance region and its transition. A row carries four cells: the running signed
+//! accumulator, the note's two value limbs, and the recomposed value. The transition advances
+//! the accumulator by the leg's sign times the value and pins the recomposition, both at
+//! degree one, so the sum stays a linear constraint. The leg sign rides a public periodic
+//! column, so a prover cannot relabel an output row as an input to mint value; the trusted
+//! part of the shape is public, not witness.
+
 use super::super::super::field::{Felt, Fp};
 use super::leg::Leg;
 use alloc::vec;
@@ -43,6 +50,15 @@ impl ValueBalance {
     pub(super) fn transition_impl<F: Felt>(&self, window: &[F], periodic: &[F]) -> Vec<F> {
         let (acc, lo, hi, value) = (window[0], window[1], window[2], window[3]);
         let shift = F::from_base(Fp::from_u64(LIMB_SHIFT));
+        /*
+         * Two constraints, both degree one. The first recomposes the note value from its low
+         * and high limbs, value = lo + hi * 2^32, so the limbs stay raw cells a caller can
+         * range-prove and bind while the whole amount is still available in one column. The
+         * second advances the running sum: the next accumulator is this one plus the leg's
+         * sign times the value, where the sign rides periodic[0] and is public. The final
+         * accumulator is pinned to zero by a boundary, so a satisfying trace is one whose
+         * signed values sum to zero, which is conservation.
+         */
         vec![
             value - lo - hi * shift,
             window[4] - acc - periodic[0] * value,

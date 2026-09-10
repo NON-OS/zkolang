@@ -14,6 +14,12 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+//! Keccak-f[1600], the permutation behind the keccak commitment path. The twenty-four rounds
+//! run the standard theta, rho, pi, chi, and iota steps over the 25-lane state. This is the
+//! hash the on-chain verifier's world uses, kept beside the Poseidon path so a proof can
+//! commit under whichever hash its setting wants; the settlement path is keccak because that
+//! is what an Ethereum verifier computes cheaply.
+
 extern crate alloc;
 use alloc::vec::Vec;
 

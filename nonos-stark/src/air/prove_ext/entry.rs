@@ -14,6 +14,12 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+//! The public entry points of the money-grade STARK prover over the extension field. A caller
+//! hands an AIR and a trace and gets a proof; the blown variants raise the FRI rate for more
+//! soundness per query, and the bound variant seeds the transcript with a context so a proof
+//! drawn under one context does not verify under another. Every entry funnels into the
+//! streaming driver in `run`; the stages it sequences live in the sibling modules.
+
 use super::super::spec::AirExt;
 use super::super::types_ext::StarkProofExt;
 use super::run::prove;

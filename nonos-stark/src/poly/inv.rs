@@ -14,6 +14,14 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+//! Batch inversion: invert a whole slice with one field inversion. It runs the prefix products
+//! forward, inverts the single total, then walks back peeling one element at a time, so n
+//! inversions become one inversion and about 3n multiplications. Each output is the exact value
+//! `.inv()` would give, since a field inverse is unique; only the operation count changes. It
+//! pays for itself wherever inversions cluster, the DEEP quotients at every domain point and
+//! the Lagrange weights on a subgroup, where a field inversion costs around sixty
+//! multiplications. The machine-checked `BatchInv` module proves the identity it relies on.
+
 use super::super::field::Felt;
 use alloc::vec::Vec;
 

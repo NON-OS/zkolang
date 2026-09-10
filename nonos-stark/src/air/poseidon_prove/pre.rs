@@ -14,6 +14,14 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+//! The preprocessed Poseidon prover, sequencing the protocol whose passes live in the sibling
+//! modules. It commits the trace under the wide root, draws the composition coefficients,
+//! commits the composition, draws the out-of-domain point, absorbs the frame and the periodic
+//! claims, widens the DEEP draw to one quotient per periodic column, builds and commits the
+//! DEEP polynomial, runs FRI, and opens each query with its sidecar row. A prover here is a
+//! transcript order over passes that are byte-for-byte the plain path's, plus the baked
+//! periodic root that turns the schedule from a proven region into a committed constant.
+
 use super::super::super::field::Fp2;
 use super::super::super::fri_poseidon_ext::fri_prove_poseidon_ext;
 use super::super::super::poseidon_merkle::{pack_ext, PoseidonMerkleTree};

@@ -14,6 +14,13 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+//! The prover driver: the transcript walk in one place, so the order a prover commits and
+//! draws is written once and every stage hangs off it. It commits the trace, draws the
+//! composition coefficients, builds and commits the composition, draws the out-of-domain
+//! point, absorbs the frame, draws the DEEP coefficients, builds and commits the DEEP
+//! polynomial, runs FRI, and opens the queries. Nothing here holds an algorithm; each step
+//! calls its stage module, so the driver reads as the protocol it is.
+
 use super::super::super::field::Fp2;
 use super::super::super::fri_ext::fri_prove_ext;
 use super::super::super::merkle::MerkleTree;

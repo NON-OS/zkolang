@@ -14,6 +14,12 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+//! The evaluation domain, one object both prover and verifier derive the same way so they
+//! agree on sizes without passing them. It carries the trace length, the blown-up evaluation
+//! length, the coset shift, and the generators, and it maps a query index to its coset point.
+//! The shift is 7, a nonzero element off the trace subgroup, so every evaluation point lies
+//! outside the domain the trace interpolates and no divisor in the composition vanishes.
+
 use super::super::super::field::Fp;
 use super::super::super::fri::root_of_unity;
 use super::super::composition::domain_params_blown;

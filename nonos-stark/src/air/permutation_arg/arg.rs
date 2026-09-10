@@ -14,6 +14,15 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+//! The grand-product permutation argument: the mechanism that forces a set of trace cells to
+//! hold equal values without naming them by position. Each binding is a class of cells rotated
+//! into a cycle, and a running product over the challenged cells is one exactly when the cells
+//! respect every cycle, so the accumulator's start-and-end boundary of one is the whole set of
+//! bindings at once. Its soundness is proven in the Lean development: the accumulator computes
+//! the product its boundary claims, so a tampered wiring cannot close, and the step from a
+//! product of one to a matching multiset is the Schwartz-Zippel bound named there. This is the
+//! outer circuit's degree ceiling and the nullifier binding, so it is load-bearing twice over.
+
 use super::cycles::WirePermutation;
 use crate::field::Fp;
 use alloc::vec::Vec;
@@ -59,6 +68,17 @@ impl WiredPermutationArg {
         let mut acc = Fp::ONE;
         for r in 0..n {
             z[r] = acc;
+            /*
+             * Each cell enters the numerator tagged by its own position and the denominator
+             * tagged by the position it maps to under the permutation. The random beta and
+             * gamma turn "value at position p" into a single field element v + beta * p +
+             * gamma, so a numerator factor cancels a denominator factor only when the two
+             * cells share both value and, across the cycle, position tag. A cycle of cells
+             * therefore contributes one to the product exactly when every cell in it holds the
+             * same value; any mismatch leaves a factor uncancelled and the final product is
+             * not one. This is the algebra the Lean grand-product soundness proves, and the
+             * cancellation-implies-equality direction is where Schwartz-Zippel is invoked.
+             */
             let mut num = Fp::ONE;
             let mut den = Fp::ONE;
             for j in 0..self.width {

@@ -14,6 +14,14 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+//! Disjointness, the precondition the collapse to one permutation rests on. When every binding
+//! owned its own product the classes could not interfere, and one permutation removes that
+//! separation, so a class laid over a cell that already carries an image would rewrite the
+//! earlier cycle and silently drop its binding. Requiring the classes to be pairwise disjoint
+//! restores the separation: a cell belongs to at most one class, so laying a class down leaves
+//! every other class exactly as it was. The Lean `Wiring` module proves the same property; this
+//! is the runtime check that the classes an assembly hands over actually meet it.
+
 use super::cycles::Cell;
 use alloc::vec::Vec;
 

@@ -21,10 +21,21 @@ pub(super) fn opcode_constraints<F: Felt>(c: &Cols<F>) -> Vec<F> {
         c.s_add * (c.d - (c.a + c.b)),
         c.s_sub * (c.d - (c.a - c.b)),
         c.s_mul * (c.d - c.a * c.b),
-        // Invert: aux is a inverse, forcing a nonzero, and the result equals it.
+        /*
+         * Invert. The prover witnesses aux and the first constraint forces a * aux = 1,
+         * which has no solution when a is zero, so an inverse of zero leaves the trace
+         * unprovable rather than returning a wrong value. The second copies the witnessed
+         * inverse into the result.
+         */
         c.s_inv * (c.a * c.aux - one),
         c.s_inv * (c.d - c.aux),
-        // Equality: d is one exactly when a == b, with aux the difference inverse.
+        /*
+         * Equality, as a bit with one witnessed inverse. When a equals b the difference is
+         * zero: the first constraint holds for any d, and the second collapses to d = 1.
+         * When a and b differ the first forces d = 0, and the second is satisfied only by
+         * aux = 1 / (a - b), a witness that exists precisely because the difference is
+         * nonzero. So d is one exactly when the operands agree, with no branch.
+         */
         c.s_eq * (c.d * diff),
         c.s_eq * (c.d + diff * c.aux - one),
         // Select: c is boolean and d = c ? a : b, written c*a + b - c*b.

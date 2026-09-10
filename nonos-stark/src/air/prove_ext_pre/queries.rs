@@ -14,6 +14,12 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+//! Opening the queries on the preprocessed path. Each sampled position reveals the trace,
+//! composition, and DEEP values as on the plain path, and alongside them the opened row of the
+//! baked periodic schedule with its path to the baked root. The verifier checks that opened
+//! row against the root it holds as a constant, so the schedule is authenticated per query
+//! without the prover ever recomputing it.
+
 use super::super::super::field::{Fp, Fp2};
 use super::super::super::merkle::MerkleTree;
 use super::super::super::transcript::Transcript;

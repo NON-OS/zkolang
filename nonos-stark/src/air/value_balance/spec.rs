@@ -14,6 +14,11 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+//! The `Air` and `AirExt` shape of the value-balance region: width four, a two-row window,
+//! two transition constraints, and constraint degree one. The degree is the point, a
+//! conservation sum that never rises above linear, so the region costs almost nothing in the
+//! blowup it forces on any assembly that carries it.
+
 use super::super::super::field::{Fp, Fp2};
 use super::super::spec::{Air, AirExt};
 use super::air::ValueBalance;

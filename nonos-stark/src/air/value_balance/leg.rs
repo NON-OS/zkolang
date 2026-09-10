@@ -14,6 +14,11 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+//! Which side of the balance a row sits on: an input adds its value, an output subtracts it,
+//! a pad row contributes nothing. The leg is public structure carried on a periodic column
+//! rather than witness, which is the fact the region's soundness rests on: a prover chooses
+//! the values on the rows but not whether a row counts as an input or an output.
+
 use super::super::super::field::Fp;
 
 /// Which side of the balance a row sits on. Batch layout is public structure, not

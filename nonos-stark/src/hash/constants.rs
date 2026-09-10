@@ -14,6 +14,11 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+//! The Keccak-f[1600] round constants and the rho and pi offsets, the fixed tables the
+//! permutation steps read. They are the standard values from the Keccak specification,
+//! transcribed rather than derived, and kept in one place so `keccak` reads as the algorithm
+//! and not the table.
+
 pub(crate) const ROUND_CONSTANTS: [u64; 24] = [
     0x0000000000000001,
     0x0000000000008082,

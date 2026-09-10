@@ -14,6 +14,12 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+//! Opening the periodic sidecar for a query. The preprocessed path holds the periodic schedule
+//! as a baked commitment rather than recomputing it, so a proof carries the claimed periodic
+//! values at the out-of-domain point and, per query, one opened row of the committed schedule
+//! with its path to the baked root. This is the pass that emits that opened row, the object a
+//! recursion binds against the root it holds as a constant instead of half its rows.
+
 use super::super::super::field::Fp;
 use super::super::super::poseidon_merkle::PrunedPoseidonTree;
 use super::super::periodic_poseidon::{hash_periodic_row, PERIODIC_TREE_CUT};

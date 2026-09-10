@@ -14,6 +14,12 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+//! Bindings as cycles. A binding class is a set of cells forced equal, and it is enforced by
+//! rotating the class into one cycle of a permutation: each cell's successor is the next in its
+//! class, wrapping to the first. A cell no class holds is its own successor, which is what keeps
+//! disjoint classes from disturbing one another. This module builds the permutation from the
+//! classes; `disjoint` proves the property that makes the single shared permutation safe.
+
 use alloc::vec::Vec;
 
 /// A trace cell, addressed the way the copy constraints name one.
