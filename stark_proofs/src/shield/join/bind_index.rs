@@ -17,10 +17,16 @@ pub fn index_classes(l: &Layout) -> Vec<Class> {
     let mut c = Vec::new();
     let rounds = 1usize << POOL_LOG_ROUNDS;
     for (i, &base) in l.index.iter().enumerate() {
+        // Bit zero is the leaf's own bottom direction. It rode nowhere on the trace
+        // until the membership pinned it: the pinned form witnesses it as a bit at
+        // the opening's start row, one column past the sibling columns, and a
+        // select constraint ties it to the half the leaf occupies. Binding it here
+        // is what stops the recovered scalar from retiring the note under the
+        // sibling position, the one bit the higher directions leave free.
+        let dir0_row = l.member[i];
+        c.push(pair(base, IndexScalar::BIT, dir0_row, WIDTH + 1 + RATE));
         // Level m's direction rides the membership trace on the last round row of
-        // level m-1: the trace carries directions[1..depth], because directions[0]
-        // was consumed building the opening's initial state and lives only in which
-        // half of that state the leaf occupies. Bit zero is not bound here.
+        // level m-1: the trace carries directions[1..depth].
         for m in 1..l.depth {
             let dir_row = l.member[i] + (m - 1) * rounds + rounds - 1;
             c.push(pair(base + m, IndexScalar::BIT, dir_row, WIDTH));

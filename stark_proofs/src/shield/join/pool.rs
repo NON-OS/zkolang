@@ -21,8 +21,11 @@ pub fn pool_membership(h: &Poseidon, cms: &[[Fp; RATE]; 2], depth: usize) -> Poo
     let mut leaf_col = Vec::with_capacity(2);
     for (i, cm) in cms.iter().enumerate() {
         let (sibs, dirs) = tree.path(leaves[i]);
-        leaf_col.push(if dirs[0] { RATE } else { 0 });
         let m = note_member(h, *cm, sibs, dirs, tree.root());
+        // The membership pins the bottom bit, so the note commitment binds to the
+        // canonical leaf, whose column is fixed rather than chosen by the bottom
+        // direction. The select constraint ties that leaf back to the real half.
+        leaf_col.push(m.region.leaf_col());
         regions.push(ShieldRegion::Membership(m.region));
         traces.push(m.witness);
     }
