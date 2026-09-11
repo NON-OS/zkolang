@@ -35,14 +35,20 @@ pub fn lde(values: &[Fp], trace_gen: Fp, shift: Fp, coset_gen: Fp, target_len: u
 /// polynomial over many cosets interpolates once and calls this per coset, rather
 /// than paying the interpolation again for every one of them.
 pub fn lde_from_coeffs(coeffs: &[Fp], shift: Fp, coset_gen: Fp, target_len: usize) -> Vec<Fp> {
-    let mut c = coeffs.to_vec();
-    // Extend the coefficient list to the target degree with zeros.
-    c.resize(target_len, Fp::ZERO);
-    // Fold the coset shift into the coefficients: evaluating `sum c_i (shift*x)^i`
-    // is evaluating `sum (c_i shift^i) x^i`, so scale then transform.
+    // Evaluate `P(x) = sum coeffs[j] x^j` on the coset `shift * {coset_gen^i}` for
+    // `i` in `0..target_len`. On that coset `coset_gen` has order `target_len`, so
+    // at `x = shift * coset_gen^i` the term `x^j` is `shift^j * coset_gen^(i * (j
+    // mod target_len))`: coefficient `j` lands on residue `j mod target_len` with
+    // weight `shift^j`. Folding the high coefficients onto their residue, rather
+    // than dropping them, is what evaluates a polynomial whose degree reaches or
+    // exceeds `target_len` correctly, which a blinded trace column `f + r * Z_H`
+    // (degree `t + deg r`) is. Below `target_len` nothing folds and this is the
+    // plain scale-and-transform, identical to the coefficient.
+    let mut c = alloc::vec![Fp::ZERO; target_len];
     let mut s = Fp::ONE;
-    for v in c.iter_mut() {
-        *v = *v * s;
+    for (j, &cj) in coeffs.iter().enumerate() {
+        let k = j % target_len;
+        c[k] = c[k] + cj * s;
         s = s * shift;
     }
     ntt(&c, coset_gen)

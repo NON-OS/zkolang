@@ -83,4 +83,44 @@ mod tests {
         assert_ne!(col0, col1, "two columns share a blinding");
         assert_ne!(col0, seed2, "two seeds share a blinding");
     }
+
+    /// End to end: a blinded proof verifies under the plain verifier, which is the
+    /// whole point, the blinding is invisible to it, and the proof differs from the
+    /// unblinded one, so the openings genuinely moved. Squaring is degree two, so
+    /// its composition bound leaves room for the higher-degree blinded columns.
+    #[test]
+    fn a_blinded_proof_verifies_and_moves_the_openings() {
+        use crate::air::{
+            serialize_proof_ext, stark_prove_ext, stark_prove_ext_zk, stark_verify_ext, Air,
+            Squaring,
+        };
+
+        let log_t = 5u32; // t = 32; degree 2 gives a bound of 64, room for a degree-8 blind
+        let seed_v = Fp::from_u64(3);
+        let air = Squaring { log_t, seed: seed_v };
+        let t = 1usize << log_t;
+        let mut trace = Vec::with_capacity(t);
+        let mut x = seed_v;
+        for _ in 0..t {
+            trace.push(x);
+            x = x * x;
+        }
+
+        let nq = 8;
+        let plain = stark_prove_ext(&air, &trace, nq, 0);
+        assert!(stark_verify_ext(&air, &plain, nq, 0), "the plain proof did not verify");
+
+        let h = hasher();
+        let seed = [Fp::from_u64(1), Fp::from_u64(2), Fp::from_u64(3), Fp::from_u64(4)];
+        let blind: Vec<Vec<Fp>> =
+            (0..air.trace_width()).map(|c| blinding_poly(&h, &seed, c, nq)).collect();
+        let zk = stark_prove_ext_zk(&air, &trace, nq, 0, 0, &blind);
+
+        assert!(stark_verify_ext(&air, &zk, nq, 0), "the blinded proof did not verify");
+        assert_ne!(
+            serialize_proof_ext(&plain),
+            serialize_proof_ext(&zk),
+            "blinding did not change the proof"
+        );
+    }
 }

@@ -24,6 +24,7 @@ use super::super::spec::AirExt;
 use super::super::types_ext::StarkProofExt;
 use super::run::prove;
 use crate::field::Fp;
+use alloc::vec::Vec;
 
 /// Prove that `trace` satisfies `air` at money-grade soundness. Layout and domain
 /// sizing match the base prover; `grind_bits` is the FRI proof-of-work.
@@ -33,7 +34,27 @@ pub fn stark_prove_ext<A: AirExt>(
     n_queries: usize,
     grind_bits: u32,
 ) -> StarkProofExt {
-    prove(air, trace, n_queries, grind_bits, 0, &[])
+    prove(air, trace, n_queries, grind_bits, 0, &[], &[])
+}
+
+/// The hiding prover: the same proof with each trace column blinded by
+/// `blind[c] * Z_H`, so the FRI query openings reveal nothing about the witness.
+/// `blind[c]` is the prover's secret blinding polynomial for column `c`, one per
+/// column, degree at least `n_queries` for full hiding, drawn from private entropy
+/// (`air::blinding_poly` expands a secret seed). The proof verifies under the plain
+/// `stark_verify_ext`: the blinding is invisible to the verifier, which is the
+/// point. The domain must have room for the higher-degree blinded polynomials,
+/// `constraint_degree * blinding_degree` below the composition bound, which holds
+/// with margin for the deployment circuits.
+pub fn stark_prove_ext_zk<A: AirExt>(
+    air: &A,
+    trace: &[Fp],
+    n_queries: usize,
+    grind_bits: u32,
+    extra_blowup_bits: u32,
+    blind: &[Vec<Fp>],
+) -> StarkProofExt {
+    prove(air, trace, n_queries, grind_bits, extra_blowup_bits, &[], blind)
 }
 
 /// The same prover, with `extra_blowup_bits` of FRI low-degree headroom. Zero is
@@ -47,7 +68,7 @@ pub fn stark_prove_ext_blown<A: AirExt>(
     grind_bits: u32,
     extra_blowup_bits: u32,
 ) -> StarkProofExt {
-    prove(air, trace, n_queries, grind_bits, extra_blowup_bits, &[])
+    prove(air, trace, n_queries, grind_bits, extra_blowup_bits, &[], &[])
 }
 
 /// The same prover bound to `context`, which is absorbed into the transcript before
@@ -69,5 +90,6 @@ pub fn stark_prove_ext_blown_bound<A: AirExt>(
         grind_bits,
         extra_blowup_bits,
         context,
+        &[],
     )
 }
