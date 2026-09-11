@@ -53,6 +53,37 @@ pub fn stark_prove_poseidon_ext<A: AirExt>(
         extra_blowup_bits,
         hasher,
         &[],
+        &[],
+    )
+}
+
+/// The hiding Poseidon prover: the same proof with each trace column blinded by
+/// `blind[c] * Z_H`, so the query openings reveal nothing about the witness. This
+/// is the prover the deployed transfer runs on; the blinding is what makes the
+/// proof itself, not only the commitments, hide the amounts and the link.
+/// `blind[c]` is the prover's secret blinding polynomial for column `c` (one per
+/// column, degree at least `n_queries`), from private entropy via `blinding_poly`.
+/// The proof verifies under the plain `stark_verify_poseidon_ext_pub`.
+#[allow(clippy::too_many_arguments)]
+pub fn stark_prove_poseidon_ext_zk<A: AirExt>(
+    air: &A,
+    trace: &[Fp],
+    n_queries: usize,
+    grind_bits: u32,
+    extra_blowup_bits: u32,
+    hasher: &Poseidon,
+    publics: &[Fp],
+    blind: &[Vec<Fp>],
+) -> StarkProofExtP {
+    stark_prove_poseidon_ext_pub(
+        air,
+        trace,
+        n_queries,
+        grind_bits,
+        extra_blowup_bits,
+        hasher,
+        publics,
+        blind,
     )
 }
 
@@ -68,6 +99,7 @@ pub fn stark_prove_poseidon_ext_pub<A: AirExt>(
     extra_blowup_bits: u32,
     hasher: &Poseidon,
     publics: &[Fp],
+    blind: &[Vec<Fp>],
 ) -> StarkProofExtP {
     let log_t = air.log_trace_len();
     let t = 1usize << log_t;
@@ -87,7 +119,7 @@ pub fn stark_prove_poseidon_ext_pub<A: AirExt>(
     // by row into a pruned tree and dropped, and the transcript absorbs one
     // digest however wide the trace is.
     let d = super::prove_ext::Domain::of(air, extra_blowup_bits);
-    let wt = super::poseidon_prove::commit_wide(hasher, &d, trace);
+    let wt = super::poseidon_prove::commit_wide(hasher, &d, trace, blind);
     let trace_coeffs = &wt.coeffs;
     transcript.absorb_digest(&wt.tree.root());
 

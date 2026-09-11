@@ -29,7 +29,7 @@ fn setup() -> (
 #[test]
 fn the_sidecar_proof_verifies_against_the_baked_root() {
     let (air, witness, h, root) = setup();
-    let pre = stark_prove_poseidon_pre_pub(&air, &witness, NQ, GRIND, EXTRA, &h, &[]);
+    let pre = stark_prove_poseidon_pre_pub(&air, &witness, NQ, GRIND, EXTRA, &h, &[], &[]);
     assert!(
         stark_verify_poseidon_pre_pub(&air, &pre, NQ, GRIND, EXTRA, &h, &[], &root),
         "an honest sidecar proof must verify against the registered root"
@@ -39,7 +39,7 @@ fn the_sidecar_proof_verifies_against_the_baked_root() {
 #[test]
 fn a_wrong_periodic_root_rejects() {
     let (air, witness, h, mut root) = setup();
-    let pre = stark_prove_poseidon_pre_pub(&air, &witness, NQ, GRIND, EXTRA, &h, &[]);
+    let pre = stark_prove_poseidon_pre_pub(&air, &witness, NQ, GRIND, EXTRA, &h, &[], &[]);
     root[0] = root[0] + Fp::ONE;
     assert!(
         !stark_verify_poseidon_pre_pub(&air, &pre, NQ, GRIND, EXTRA, &h, &[], &root),
@@ -50,7 +50,7 @@ fn a_wrong_periodic_root_rejects() {
 #[test]
 fn a_tampered_periodic_claim_rejects() {
     let (air, witness, h, root) = setup();
-    let mut pre = stark_prove_poseidon_pre_pub(&air, &witness, NQ, GRIND, EXTRA, &h, &[]);
+    let mut pre = stark_prove_poseidon_pre_pub(&air, &witness, NQ, GRIND, EXTRA, &h, &[], &[]);
     pre.periodic_z[0] = pre.periodic_z[0] + crate::crypto::stark::field::Fp2::ONE;
     assert!(
         !stark_verify_poseidon_pre_pub(&air, &pre, NQ, GRIND, EXTRA, &h, &[], &root),
@@ -61,7 +61,7 @@ fn a_tampered_periodic_claim_rejects() {
 #[test]
 fn a_tampered_periodic_opening_rejects() {
     let (air, witness, h, root) = setup();
-    let mut pre = stark_prove_poseidon_pre_pub(&air, &witness, NQ, GRIND, EXTRA, &h, &[]);
+    let mut pre = stark_prove_poseidon_pre_pub(&air, &witness, NQ, GRIND, EXTRA, &h, &[], &[]);
     pre.openings[0].row[0] = pre.openings[0].row[0] + Fp::ONE;
     assert!(
         !stark_verify_poseidon_pre_pub(&air, &pre, NQ, GRIND, EXTRA, &h, &[], &root),

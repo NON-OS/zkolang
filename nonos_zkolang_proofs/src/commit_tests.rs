@@ -65,7 +65,8 @@ fn a_proof_is_rejected_under_a_forged_statement() {
     publics.extend_from_slice(&trace.public_inputs);
     publics.extend_from_slice(&trace.public_outputs);
 
-    let proof = stark_prove_poseidon_ext_pub(&air, &flat, QUERIES, GRIND, BLOWUP, &h, &publics);
+    let proof =
+        stark_prove_poseidon_ext_pub(&air, &flat, QUERIES, GRIND, BLOWUP, &h, &publics, &[]);
     assert!(
         stark_verify_poseidon_ext_pub(&air, &proof, QUERIES, GRIND, BLOWUP, &h, &publics),
         "an honestly bound proof was rejected"

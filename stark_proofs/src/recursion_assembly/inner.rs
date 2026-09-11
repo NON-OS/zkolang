@@ -122,7 +122,7 @@ pub fn join_split_fixture() -> (WiredExt, Vec<Fp>, Vec<Fp>) {
 
 pub fn join_split(h: &Poseidon) -> Inner {
     let (air, witness, publics) = join_split_fixture();
-    let proof = stark_prove_poseidon_ext_pub(&air, &witness, NQ, GRIND, EXTRA, h, &publics);
+    let proof = stark_prove_poseidon_ext_pub(&air, &witness, NQ, GRIND, EXTRA, h, &publics, &[]);
     let ci = compose_inputs_pub(&air, &proof, EXTRA, h, &publics);
     let t = 1u64 << air.log_trace_len();
     let g = root_of_unity(air.log_trace_len());
@@ -185,7 +185,7 @@ pub fn shield_join_split(h: &Poseidon) -> Inner<WiredMultiGen> {
         std::sync::OnceLock::new();
     let pre = PRE
         .get_or_init(|| {
-            stark_prove_poseidon_pre_pub(&js.wired, &js.witness, NQ, GRIND, extra(), h, &publics)
+            stark_prove_poseidon_pre_pub(&js.wired, &js.witness, NQ, GRIND, extra(), h, &publics, &[])
         })
         .clone();
     let ci = compose_inputs_pre(&js.wired, &pre, extra(), h, &publics);

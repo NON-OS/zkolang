@@ -47,6 +47,7 @@ pub(super) fn prove<A: AirExt>(
     grind_bits: u32,
     extra_blowup_bits: u32,
     context: &[u8],
+    blind: &[Vec<Fp>],
 ) -> StarkProofExt {
     let d = Domain::of(air, extra_blowup_bits);
 
@@ -56,6 +57,23 @@ pub(super) fn prove<A: AirExt>(
     }
 
     let trace_coeffs = coset::trace_coeffs(trace, &d);
+    // Zero-knowledge blinding: replace each column f by f + r * Z_H. On the trace
+    // domain Z_H is zero, so the values and every constraint are unchanged; off it,
+    // where the queries open, the values are randomized by the prover's secret r,
+    // so the openings carry nothing about the witness. Everything downstream, the
+    // commitment, the composition, the frame, and the DEEP, reads the blinded
+    // coefficients, so the whole proof is consistent and the verifier needs no
+    // knowledge of r. An empty `blind` is the plain, non-hiding prover.
+    let trace_coeffs = if blind.is_empty() {
+        trace_coeffs
+    } else {
+        assert_eq!(blind.len(), d.width, "one blinding polynomial per trace column");
+        trace_coeffs
+            .into_iter()
+            .zip(blind)
+            .map(|(cf, r)| crate::poly::blind_coeffs(&cf, d.t, r))
+            .collect()
+    };
     let trace_tree = commit::wide_streamed(&trace_coeffs, &d);
     let trace_root = trace_tree.root();
     transcript.absorb_digest(&trace_root);
