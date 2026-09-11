@@ -34,6 +34,15 @@ The two properties a private-value system must never violate are theorems, not t
   value. With the range proofs holding both sides below `p`, the canonical representative is
   each side itself and the congruence forces integer equality. Range checks and the balance
   constraint are one guarantee, and the wraparound vector is closed.
+- **The bottom index bit is pinned** (`IndexBit.bottom_bit_pinned`). A note's position feeds
+  the nullifier as a scalar; every path direction but the bottom one was bound to that
+  scalar, and the bottom one lived only in which half of the initial state the leaf sat, so
+  the scalar could disagree in that bit and retire the note under the sibling position, a
+  second nullifier for one note. The pinned membership witnesses the bottom direction as a
+  bit selecting a canonical leaf from the two halves; the theorem proves that a bit which
+  selects the authenticated leaf from two distinct halves equals the real direction, so
+  binding it to the scalar's low bit leaves no freedom. This is the semantic content of the
+  `a_note_cannot_be_retired_under_a_flipped_bit_zero` forgery, which satisfied until the pin.
 
 ## The proof-system soundness core
 

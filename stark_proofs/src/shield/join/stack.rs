@@ -51,7 +51,7 @@ pub fn stack(
     // The position each membership authenticated, recovered as the scalar the
     // nullifier hashes. Placed after membership so a reader meets the position
     // where it is proven, then where it is consumed.
-    let ix = super::index::positions(&leaves, depth);
+    let ix = super::index::positions(&leaves, depth, brk);
     regions.extend(ix.regions);
     traces.extend(ix.traces);
 

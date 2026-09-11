@@ -47,6 +47,15 @@ pub struct MultiMembership {
     /// falling from degree 8 to 4. Opt-in, appended columns, so the default
     /// forms and everything built on their coordinates stay byte-identical.
     split: bool,
+    /// Pin the bottom index bit. The path direction of the bottom level lives only
+    /// in which half of the initial state the leaf occupies, so a scalar that
+    /// hashes the position (a nullifier over a leaf index) is otherwise free to
+    /// disagree with it in that one bit and retire the note under the sibling
+    /// position. This witnesses the bottom direction as a bit and a canonical leaf
+    /// it selects from the two halves, so the assembly can bind the bit to the
+    /// recovered scalar. Opt-in, appended columns, so the default forms and the
+    /// coordinates built on them stay byte-identical.
+    pin0: bool,
 }
 
 impl MultiMembership {
@@ -55,7 +64,7 @@ impl MultiMembership {
     /// instance-specific structure, fine for a per-proof AIR.
     pub fn new(hasher: Poseidon, log_rounds: u32, openings: Vec<Opening>) -> MultiMembership {
         let depth = openings.first().map(|o| o.siblings.len()).unwrap_or(0);
-        MultiMembership { hasher, log_rounds, depth, openings, witness_path: false, split: false }
+        MultiMembership { hasher, log_rounds, depth, openings, witness_path: false, split: false, pin0: false }
     }
 
     /// The production form: the sibling and direction of each compression ride the
@@ -71,7 +80,7 @@ impl MultiMembership {
         openings: Vec<Opening>,
     ) -> MultiMembership {
         let depth = openings.first().map(|o| o.siblings.len()).unwrap_or(0);
-        MultiMembership { hasher, log_rounds, depth, openings, witness_path: true, split: false }
+        MultiMembership { hasher, log_rounds, depth, openings, witness_path: true, split: false, pin0: false }
     }
 
     /// The production form with the S-box split: two witnessed squares per
@@ -83,7 +92,41 @@ impl MultiMembership {
         openings: Vec<Opening>,
     ) -> MultiMembership {
         let depth = openings.first().map(|o| o.siblings.len()).unwrap_or(0);
-        MultiMembership { hasher, log_rounds, depth, openings, witness_path: true, split: true }
+        MultiMembership { hasher, log_rounds, depth, openings, witness_path: true, split: true, pin0: false }
+    }
+
+    /// The production form with the bottom index bit pinned: a witnessed bottom
+    /// direction and a canonical leaf selected from the two halves, appended after
+    /// the sibling columns. Everything else is `new_witness` to the cell. The
+    /// assembly binds the bit column to the recovered index scalar's low bit, and
+    /// the fold to the canonical leaf, so the position a nullifier hashes cannot
+    /// disagree with the one the path authenticated in its bottom bit.
+    pub fn new_witness_pin0(
+        hasher: Poseidon,
+        log_rounds: u32,
+        openings: Vec<Opening>,
+    ) -> MultiMembership {
+        let depth = openings.first().map(|o| o.siblings.len()).unwrap_or(0);
+        MultiMembership { hasher, log_rounds, depth, openings, witness_path: true, split: false, pin0: true }
+    }
+
+    /// The column carrying the witnessed bottom direction, when pinned. Appended
+    /// after the state, direction, and sibling columns.
+    pub fn dir0_col(&self) -> usize {
+        WIDTH + 1 + RATE
+    }
+
+    /// The first column of the canonical leaf, when pinned: the leaf the fold binds
+    /// to, selected from the two initial-state halves by the bottom direction.
+    pub fn leaf_col(&self) -> usize {
+        self.dir0_col() + 1
+    }
+
+    /// The trace cell holding opening `o`'s witnessed bottom direction: the row it
+    /// starts on, and the direction column. The assembly binds the recovered
+    /// scalar's low bit here.
+    pub fn dir0_cell(&self, o: usize) -> (usize, usize) {
+        (o * self.span(), self.dir0_col())
     }
 
     fn rounds(&self) -> usize {
@@ -161,6 +204,15 @@ impl MultiMembership {
                     trace[r * w + WIDTH + 1 + c] = *s;
                 }
             }
+            // The bottom direction and the canonical leaf, written on the row each
+            // opening starts, where the select constraint reads the two halves.
+            if self.pin0 && within == 0 && opening < count {
+                let o = &self.openings[opening];
+                trace[r * w + self.dir0_col()] = if o.directions[0] { Fp::ONE } else { Fp::ZERO };
+                for (j, v) in o.leaf.iter().enumerate() {
+                    trace[r * w + self.leaf_col() + j] = *v;
+                }
+            }
             if is_op_bnd {
                 state = self.initial_state(&self.openings[opening + 1]);
             } else if is_slot_bnd {
@@ -188,6 +240,14 @@ impl MultiMembership {
     /// opened value, so the fold runs on exactly what the opening committed.
     pub fn opened_cells(&self) -> alloc::vec::Vec<(usize, usize)> {
         let span = self.span();
+        // When the bottom bit is pinned, the fold binds the canonical leaf, at a
+        // fixed column, rather than whichever half the direction placed it in. The
+        // select constraint ties that canonical cell back to the real half, so the
+        // fold still runs on what the opening committed.
+        if self.pin0 {
+            let col = self.leaf_col();
+            return self.openings.iter().enumerate().map(|(o, _)| (o * span, col)).collect();
+        }
         self.openings
             .iter()
             .enumerate()
@@ -280,6 +340,23 @@ impl MultiMembership {
             out.push(dir * (one - dir));
         }
         out.extend(squares);
+        // The bottom direction pin, on the row each opening starts. `d0` is that
+        // direction as a bit, and the canonical leaf is the half it selects from
+        // the initial state. The fold binds the canonical leaf, so it holds the
+        // real leaf only when `d0` names the half the leaf actually occupies,
+        // which the walked root already pins to the true position; the assembly
+        // then binds `d0` to the recovered scalar's low bit, closing the one bit
+        // the path directions left free.
+        if self.pin0 {
+            let op_start = periodic[WIDTH + 2];
+            let d0 = window[self.dir0_col()];
+            out.push(op_start * d0 * (one - d0));
+            for j in 0..RATE {
+                let leaf_c = window[self.leaf_col() + j];
+                let selected = (one - d0) * state[j] + d0 * state[RATE + j];
+                out.push(op_start * (leaf_c - selected));
+            }
+        }
         out
     }
 }
@@ -301,7 +378,7 @@ impl Air for MultiMembership {
 
     fn trace_width(&self) -> usize {
         let base = if self.witness_path { WIDTH + 1 + RATE } else { WIDTH };
-        base + if self.split { 2 * WIDTH } else { 0 }
+        base + if self.split { 2 * WIDTH } else { 0 } + if self.pin0 { 1 + RATE } else { 0 }
     }
 
     fn window_size(&self) -> usize {
@@ -318,7 +395,7 @@ impl Air for MultiMembership {
 
     fn num_transition(&self) -> usize {
         let base = if self.witness_path { WIDTH + 1 } else { WIDTH };
-        base + if self.split { 2 * WIDTH } else { 0 }
+        base + if self.split { 2 * WIDTH } else { 0 } + if self.pin0 { 1 + RATE } else { 0 }
     }
 
     fn periodic_columns(&self) -> Vec<Vec<Fp>> {
@@ -332,7 +409,11 @@ impl Air for MultiMembership {
         // Production: rc[WIDTH], slot_bnd, op_bnd. Dir and sib are trace, and the
         // reset is gone: it held the next opening's leaf and sibling, which is
         // witness, and witness in these columns moves the verifier key per proof.
-        let cols_len = if self.witness_path { WIDTH + 2 } else { WIDTH + 3 + RATE + WIDTH };
+        let cols_len = if self.witness_path {
+            WIDTH + 2 + if self.pin0 { 1 } else { 0 }
+        } else {
+            WIDTH + 3 + RATE + WIDTH
+        };
         let mut cols: Vec<Vec<Fp>> = (0..cols_len).map(|_| Vec::with_capacity(n)).collect();
 
         for r in 0..n {
@@ -351,6 +432,12 @@ impl Air for MultiMembership {
 
             cols[WIDTH].push(if is_slot_boundary && !is_op_boundary { Fp::ONE } else { Fp::ZERO });
             cols[WIDTH + 1].push(if is_op_boundary { Fp::ONE } else { Fp::ZERO });
+
+            // The opening-start selector, one on the first row of each real
+            // opening, where the bottom-bit and canonical-leaf constraints apply.
+            if self.pin0 {
+                cols[WIDTH + 2].push(if within == 0 && opening < count { Fp::ONE } else { Fp::ZERO });
+            }
 
             if !self.witness_path {
                 // Reset state to the next opening's initial, at an opening boundary

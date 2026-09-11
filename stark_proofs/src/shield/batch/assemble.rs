@@ -6,9 +6,8 @@ use crate::crypto::stark::field::Fp;
 use crate::shield::join::{
     bind_classes, public_classes_at, IntentParts, Layout, REGIONS_PER_INTENT,
 };
-use crate::crypto::stark::air::classes_are_disjoint;
 use crate::shield::wire::offsets;
-use crate::shield::wire_pack::{packed_groups, CAP};
+use crate::shield::wire_pack::{groups_enforce, packed_groups, CAP};
 use alloc::boxed::Box;
 use alloc::vec::Vec;
 
@@ -61,10 +60,6 @@ pub fn assemble(parts: Vec<IntentParts>) -> BatchProof {
     }
     g.extend(price_uniform(&pub_off));
 
-    // Classes are the bindings; one group each is how they are enforced today.
-    // Disjointness is a precondition of merging them, so it is proven before the
-    // mechanism is allowed to assume it.
-    debug_assert!(classes_are_disjoint(&g), "binding classes overlap");
     // Regions stack vertically and share columns, so the addressable width is the
     // widest region, not the sum.
     // An intent lays out balance, four note commitments, two pool memberships, two
@@ -75,6 +70,11 @@ pub fn assemble(parts: Vec<IntentParts>) -> BatchProof {
         .flat_map(|_| alloc::vec![0usize, 1, 1, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6])
         .collect();
     let groups = packed_groups(span, &g, CAP);
+    // Every binding class ends up on one cycle of the group that carries it, which
+    // is what forces its cells equal. Checked on the built groups rather than
+    // assumed from a disjointness precondition on the raw classes, so a class that
+    // packing failed to enforce is caught here instead of passing silently.
+    debug_assert!(groups_enforce(&groups, &g), "a binding class is not enforced by its group");
     let wired = WiredMultiGen::new_kinds(regions, &kinds, groups);
     let witness = wired.trace(&traces);
     BatchProof { wired, witness, intents }

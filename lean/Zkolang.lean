@@ -26,6 +26,7 @@ import Zkolang.GrandProduct
 import Zkolang.Nullifier
 import Zkolang.Quotient
 import Zkolang.Fold
+import Zkolang.IndexBit
 
 /-!
 The soundness of the zKølang standard library gadgets, in Lean 4 over the core library

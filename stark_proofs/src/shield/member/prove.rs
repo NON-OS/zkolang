@@ -23,7 +23,7 @@ pub fn note_member(
 ) -> NoteMember {
     let depth = sibs.len();
     let opening = Opening { leaf, root, siblings: sibs, directions: dirs };
-    let region = MultiMembership::new_witness(h.clone(), POOL_LOG_ROUNDS, alloc::vec![opening]);
+    let region = MultiMembership::new_witness_pin0(h.clone(), POOL_LOG_ROUNDS, alloc::vec![opening]);
     let witness = region.trace();
     let w = region.trace_width();
     let row = depth * (1usize << POOL_LOG_ROUNDS);
