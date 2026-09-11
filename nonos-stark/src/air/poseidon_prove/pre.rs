@@ -61,7 +61,7 @@ pub fn stark_prove_poseidon_pre_pub<A: AirExt>(
     for &p in publics {
         transcript.absorb(p);
     }
-    let tr = trace::commit_wide(h, &d, witness);
+    let tr = trace::commit_wide(h, &d, witness, &[]);
     transcript.absorb_digest(&tr.tree.root());
 
     let coeffs: Vec<Fp2> = (0..num_coeffs(air))

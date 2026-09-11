@@ -123,4 +123,43 @@ mod tests {
             "blinding did not change the proof"
         );
     }
+
+    /// The same, on the Poseidon prover the deployed transfer runs on: a blinded
+    /// proof verifies under the plain Poseidon verifier and its out-of-domain
+    /// frame moves, so the proof over the real commitment path hides too.
+    #[test]
+    fn a_blinded_poseidon_proof_verifies_and_moves_the_frame() {
+        use crate::air::{
+            stark_prove_poseidon_ext, stark_prove_poseidon_ext_zk, stark_verify_poseidon_ext_pub,
+            Air, Squaring,
+        };
+
+        let h = hasher();
+        let air = Squaring { log_t: 5, seed: Fp::from_u64(3) };
+        let t = 1usize << 5;
+        let mut trace = Vec::with_capacity(t);
+        let mut x = Fp::from_u64(3);
+        for _ in 0..t {
+            trace.push(x);
+            x = x * x;
+        }
+
+        let nq = 8;
+        let plain = stark_prove_poseidon_ext(&air, &trace, nq, 0, 0, &h);
+        assert!(
+            stark_verify_poseidon_ext_pub(&air, &plain, nq, 0, 0, &h, &[]),
+            "the plain poseidon proof did not verify"
+        );
+
+        let bseed = [Fp::from_u64(5), Fp::from_u64(6), Fp::from_u64(7), Fp::from_u64(8)];
+        let blind: Vec<Vec<Fp>> =
+            (0..air.trace_width()).map(|c| blinding_poly(&h, &bseed, c, nq)).collect();
+        let zk = stark_prove_poseidon_ext_zk(&air, &trace, nq, 0, 0, &h, &[], &blind);
+
+        assert!(
+            stark_verify_poseidon_ext_pub(&air, &zk, nq, 0, 0, &h, &[]),
+            "the blinded poseidon proof did not verify"
+        );
+        assert_ne!(plain.ood_frame, zk.ood_frame, "blinding did not move the frame");
+    }
 }

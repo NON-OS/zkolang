@@ -140,7 +140,7 @@ pub use power_chain::PowerChain;
 pub use prove::{stark_prove, stark_prove_bound};
 pub use prove_ext::{stark_prove_ext, stark_prove_ext_blown, stark_prove_ext_blown_bound, stark_prove_ext_zk};
 pub use prove_ext_pre::stark_prove_ext_preprocessed;
-pub use prove_poseidon_ext::{stark_prove_poseidon_ext, stark_prove_poseidon_ext_pub};
+pub use prove_poseidon_ext::{stark_prove_poseidon_ext, stark_prove_poseidon_ext_pub, stark_prove_poseidon_ext_zk};
 pub use publics::Publics;
 pub use query_openings::{query_openings_pre_queryk, query_openings_query0, query_openings_queryk};
 pub use range_check::RangeCheck;

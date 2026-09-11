@@ -42,11 +42,26 @@ pub(crate) struct WideTrace {
     pub tree: PrunedPoseidonTree,
 }
 
-pub(crate) fn commit_wide(h: &Poseidon, d: &Domain, trace: &[Fp]) -> WideTrace {
+pub(crate) fn commit_wide(h: &Poseidon, d: &Domain, trace: &[Fp], blind: &[Vec<Fp>]) -> WideTrace {
     let coeffs: Vec<Vec<Fp>> = crate::par::map_index(d.width, |c| {
         let column: Vec<Fp> = (0..d.t).map(|i| trace[i * d.width + c]).collect();
         intt(&column, d.g)
     });
+    // Zero-knowledge blinding: each column f becomes f + r * Z_H, unchanged on the
+    // trace domain so no constraint moves, randomized off it where the queries
+    // open. The blinded coefficients flow into the extension, the commitment, and
+    // out through `WideTrace.coeffs` into the frame and DEEP, so the whole proof is
+    // consistent. An empty `blind` is the plain, non-hiding commitment.
+    let coeffs: Vec<Vec<Fp>> = if blind.is_empty() {
+        coeffs
+    } else {
+        assert_eq!(blind.len(), d.width, "one blinding polynomial per trace column");
+        coeffs
+            .into_iter()
+            .zip(blind)
+            .map(|(cf, r)| crate::poly::blind_coeffs(&cf, d.t, r))
+            .collect()
+    };
     let columns_d: Vec<Vec<Fp>> =
         crate::par::map_slice(&coeffs, |cf| lde_from_coeffs(cf, d.shift, d.omega, d.n));
     let leaves: Vec<[Fp; RATE]> = crate::par::map_index(d.n, |i| {

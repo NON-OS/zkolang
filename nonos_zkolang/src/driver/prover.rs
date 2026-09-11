@@ -18,6 +18,6 @@ use crate::air::StepAir;
 /// replay one transcript.
 pub(super) fn prove_verify(air: &StepAir, flat: &[Fp], publics: &[Fp]) -> bool {
     let hasher = Poseidon::new(2, [Fp::ZERO; RATE]);
-    let proof = stark_prove_poseidon_ext_pub(air, flat, QUERIES, GRIND, BLOWUP, &hasher, publics);
+    let proof = stark_prove_poseidon_ext_pub(air, flat, QUERIES, GRIND, BLOWUP, &hasher, publics, &[]);
     stark_verify_poseidon_ext_pub(air, &proof, QUERIES, GRIND, BLOWUP, &hasher, publics)
 }
