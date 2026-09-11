@@ -23,6 +23,7 @@ axiom-free by hand.
 #print axioms Zkolang.Nullifier.no_double_spend
 #print axioms Zkolang.Transfer.no_inflation_in_field
 #print axioms Zkolang.IndexBit.bottom_bit_pinned
+#print axioms Zkolang.IndexBit.recovers_the_position
 #print axioms Zkolang.GrandProduct.boundary_forces_prod_one
 #print axioms Zkolang.Quotient.boundary_quotient_sound
 #print axioms Zkolang.Fold.decompose

@@ -99,4 +99,32 @@ theorem bottom_bit_pinned_in_field (d r L S : Int)
     (hsel : select d (lowHalf r L S) (highHalf r L S) = L) : cong d r :=
   transfer (bottom_bit_pinned d r L S hd hr hne hsel)
 
+/-- The recovery the `IndexScalar` gadget runs: the accumulator starts at `a` and
+each row adds `bit * 2^k`, the bit at its weight, walking the bits low first. -/
+def acc (a : Int) (k : Nat) : List Int → Int
+  | [] => a
+  | b :: bs => acc (a + b * 2 ^ k) (k + 1) bs
+
+/-- The position the same bits encode: the weighted sum, low bit first. -/
+def weighted (k : Nat) : List Int → Int
+  | [] => 0
+  | b :: bs => b * 2 ^ k + weighted (k + 1) bs
+
+/-- The accumulation is the weighted sum, offset by wherever it started. The
+running sum the gadget commits carries no arithmetic error: the final cell holds
+exactly the accumulator's start plus the position the bits encode. -/
+theorem acc_eq_weighted (a : Int) (k : Nat) (bs : List Int) :
+    acc a k bs = a + weighted k bs := by
+  induction bs generalizing a k with
+  | nil => simp [acc, weighted]
+  | cons b bs ih =>
+    simp only [acc, weighted, ih, Int.add_assoc]
+
+/-- From a zero boundary, the recovered scalar is exactly the position the bits
+encode. With the bits bound to the authenticated path directions, this is the tie
+the nullifier's index rests on: the number it hashes is the position that was
+proven, not one that happens to agree. -/
+theorem recovers_the_position (bs : List Int) : acc 0 0 bs = weighted 0 bs := by
+  simpa using acc_eq_weighted 0 0 bs
+
 end Zkolang.IndexBit
