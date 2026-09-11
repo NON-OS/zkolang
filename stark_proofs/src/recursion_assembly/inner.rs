@@ -185,7 +185,7 @@ pub fn shield_join_split(h: &Poseidon) -> Inner<WiredMultiGen> {
         std::sync::OnceLock::new();
     let pre = PRE
         .get_or_init(|| {
-            stark_prove_poseidon_pre_pub(&js.wired, &js.witness, NQ, GRIND, extra(), h, &publics)
+            stark_prove_poseidon_pre_pub(&js.wired, &js.witness, NQ, GRIND, extra(), h, &publics, &[])
         })
         .clone();
     let ci = compose_inputs_pre(&js.wired, &pre, extra(), h, &publics);

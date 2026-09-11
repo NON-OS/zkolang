@@ -54,6 +54,7 @@ pub fn stark_prove_poseidon_pre_pub<A: AirExt>(
     extra_blowup_bits: u32,
     h: &Poseidon,
     publics: &[Fp],
+    blind: &[Vec<Fp>],
 ) -> StarkProofExtPPre {
     let d = Domain::of(air, extra_blowup_bits);
 
@@ -61,7 +62,12 @@ pub fn stark_prove_poseidon_pre_pub<A: AirExt>(
     for &p in publics {
         transcript.absorb(p);
     }
-    let tr = trace::commit_wide(h, &d, witness, &[]);
+    // Zero-knowledge blinding of the trace, one polynomial per column, empty for
+    // the plain non-hiding proof. It flows through the commitment and out via the
+    // frame, so the whole preprocessed proof hides when a blind is given. This is
+    // the deployed transfer's prover: passing a fresh per-proof blind here is what
+    // makes a real transfer's proof, not only its commitments, reveal nothing.
+    let tr = trace::commit_wide(h, &d, witness, blind);
     transcript.absorb_digest(&tr.tree.root());
 
     let coeffs: Vec<Fp2> = (0..num_coeffs(air))
