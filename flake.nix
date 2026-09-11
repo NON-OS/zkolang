@@ -29,7 +29,6 @@
           pkgs.cargo-audit  # the advisory gate
           pkgs.gitleaks     # the secret scan
           pkgs.elan         # the Lean toolchain manager reads lean/lean-toolchain
-          pkgs.pandoc       # the paper build
           pkgs.git
         ];
       in
