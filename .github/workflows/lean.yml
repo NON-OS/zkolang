@@ -61,3 +61,21 @@ jobs:
             exit 1
           fi
           echo "no sorry, no admit"
+
+      # The trust base, checked rather than claimed. Audit.lean prints the axioms
+      # each load-bearing theorem actually depends on; a clean core proof rests
+      # only on propext, Classical.choice, and Quot.sound. native_decide would add
+      # ofReduceBool, trusting the compiler's evaluator, and a sorry would add
+      # sorryAx. Either fails the gate, so VERIFICATION.md's "no native_decide, no
+      # axiom" is enforced by the build.
+      - name: axiom audit
+        working-directory: lean
+        run: |
+          set -euo pipefail
+          out=$(lake env lean Zkolang/Audit.lean 2>&1)
+          echo "$out"
+          if echo "$out" | grep -qE 'ofReduceBool|sorryAx'; then
+            echo "a theorem depends on a compiler-trust or placeholder axiom"
+            exit 1
+          fi
+          echo "axiom base clean: no ofReduceBool, no sorryAx"
