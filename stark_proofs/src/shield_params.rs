@@ -29,3 +29,43 @@ pub mod deployment {
     /// Extra blowup over the minimal rate-one-half domain: rate 1/16.
     pub const EXTRA_BLOWUP_BITS: u32 = 3;
 }
+
+/// Conjectured FRI security in bits at a soundness point: each query catches a
+/// non-low-degree codeword with probability the rate sets, `log2(1/rate)` bits,
+/// and the grind adds its bits on top. The rate is `1 / 2^(1 + extra_blowup)`,
+/// so the per-query yield is `1 + extra_blowup` bits.
+pub const fn security_bits(n_queries: usize, grind_bits: u32, extra_blowup_bits: u32) -> u32 {
+    n_queries as u32 * (1 + extra_blowup_bits) + grind_bits
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The money point clears 128-bit soundness. This is the gate that stops a
+    /// silent downward drift of the settlement rate: change the deployment
+    /// numbers below the line and the suite goes red here, not on chain.
+    #[test]
+    fn the_deployment_point_is_at_least_128_bit() {
+        let bits = security_bits(
+            deployment::N_QUERIES,
+            deployment::GRIND_BITS,
+            deployment::EXTRA_BLOWUP_BITS,
+        );
+        assert!(bits >= 128, "deployment soundness is {bits} bits, below the 128-bit floor");
+    }
+
+    /// The development point is deliberately weaker, and labelled so. If it ever
+    /// reaches deployment strength the distinction has collapsed and a test may
+    /// be running at money cost by accident.
+    #[test]
+    fn the_development_point_is_below_the_money_point() {
+        let dev_bits = security_bits(dev::N_QUERIES, dev::GRIND_BITS, dev::EXTRA_BLOWUP_BITS);
+        let dep_bits = security_bits(
+            deployment::N_QUERIES,
+            deployment::GRIND_BITS,
+            deployment::EXTRA_BLOWUP_BITS,
+        );
+        assert!(dev_bits < dep_bits, "the development point is not weaker than deployment");
+    }
+}
