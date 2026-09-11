@@ -7,19 +7,34 @@
 //! verifies in the process that made it has not been shown to travel.
 
 use stark_proofs::crypto::stark::air::{
-    deserialize_proof_ext, serialize_proof_ext, stark_prove_ext, stark_verify_ext, Air,
+    deserialize_proof_ext, serialize_proof_ext, stark_prove_ext_blown, stark_verify_ext_blown, Air,
 };
 use stark_proofs::recursion_assembly::{assemble, assemble_real, Tamper};
+use stark_proofs::shield_params::{deployment, dev};
 use std::time::Instant;
-
-const N_QUERIES: usize = stark_proofs::shield_params::dev::N_QUERIES;
-const GRIND_BITS: u32 = stark_proofs::shield_params::dev::GRIND_BITS;
 
 fn main() {
     let out = std::env::args().nth(1).unwrap_or_else(|| "recursion.proof".into());
     // "real" asks for the recursion over the deployed join-split; anything
     // else keeps the fixture inner, which stays as the regression shape.
     let real = std::env::args().nth(2).as_deref() == Some("real");
+    // The outer rate. `deployment` raises it to 1/16 for 128-bit settlement
+    // soundness; the default is the rate-1/2 development point every test and the
+    // byte-digest gate run at, so their shape does not move. The inner already
+    // proves at the deployment rate regardless; this dials the outer to match.
+    let deploy = std::env::args().nth(3).as_deref() == Some("deployment");
+    let (n_queries, grind_bits, extra_blowup) = if deploy {
+        (deployment::N_QUERIES, deployment::GRIND_BITS, deployment::EXTRA_BLOWUP_BITS)
+    } else {
+        (dev::N_QUERIES, dev::GRIND_BITS, dev::EXTRA_BLOWUP_BITS)
+    };
+    println!(
+        "params    {} queries, {} grind bits, extra blowup {} (rate 1/{})",
+        n_queries,
+        grind_bits,
+        extra_blowup,
+        1usize << (1 + extra_blowup)
+    );
 
     let t0 = Instant::now();
     let asm = if real { assemble_real(Tamper::None) } else { assemble(Tamper::None) };
@@ -35,7 +50,7 @@ fn main() {
     println!("assembled in {:?}", built);
 
     let t1 = Instant::now();
-    let proof = stark_prove_ext(&asm.wired, &asm.witness, N_QUERIES, GRIND_BITS);
+    let proof = stark_prove_ext_blown(&asm.wired, &asm.witness, n_queries, grind_bits, extra_blowup);
     let proved = t1.elapsed();
     println!("proved in {:?}", proved);
 
@@ -48,7 +63,7 @@ fn main() {
     // shown to survive being written down and handed over.
     let read = deserialize_proof_ext(&bytes).expect("the proof we just wrote did not parse");
     let t2 = Instant::now();
-    let ok = stark_verify_ext(&asm.wired, &read, N_QUERIES, GRIND_BITS);
+    let ok = stark_verify_ext_blown(&asm.wired, &read, n_queries, grind_bits, extra_blowup);
     println!("verified from disk in {:?}: {}", t2.elapsed(), ok);
 
     if !ok {
