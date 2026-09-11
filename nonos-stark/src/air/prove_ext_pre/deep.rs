@@ -14,6 +14,12 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+//! The DEEP polynomial for the preprocessed path. It carries the plain path's trace and
+//! composition quotients and adds one quotient per periodic column, each subtracting the
+//! claimed periodic value at the out-of-domain point and dividing by its vanishing factor. The
+//! extra quotients are what tie the baked schedule's opened rows to the claims the composition
+//! consumed, so the sidecar is bound rather than trusted.
+
 use super::super::super::field::{Fp, Fp2};
 use super::super::prove_ext::{batch_inv, extend, Domain, BLOCK};
 use alloc::vec::Vec;

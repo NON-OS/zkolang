@@ -14,6 +14,13 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+//! The composition polynomial over the evaluation domain, built one block of rows at a time.
+//! At each point it evaluates the AIR's transition and boundary constraints on the trace
+//! window, batches them under the transcript coefficients, and divides by the domain vanishing
+//! polynomial, so the result is a genuine polynomial exactly when every constraint holds. The
+//! block size trades memory for call overhead; the pass streams like the others, so the whole
+//! composition is never held at once.
+
 use super::super::super::field::{Fp, Fp2};
 use super::super::composition::compose_ext;
 use super::super::spec::AirExt;

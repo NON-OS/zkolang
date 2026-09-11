@@ -8,6 +8,7 @@ pub mod auth;
 pub mod build;
 pub mod compose;
 pub mod compose_step;
+mod strip;
 pub mod deep;
 pub mod fri;
 pub mod groups;

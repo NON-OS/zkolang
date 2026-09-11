@@ -14,6 +14,14 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+//! The permutation argument, the single grand product that enforces every copy binding at
+//! once. `cycles` turns binding classes into a permutation, `arg` runs the challenged running
+//! product whose unit boundary is the whole set of bindings, `disjoint` proves the classes do
+//! not collide so one shared permutation is safe, and `layable` checks the classes an assembly
+//! hands over can be laid down. The Lean `Wiring` and `GrandProduct` modules prove the two
+//! properties this rests on: disjointness preserves earlier bindings, and the accumulator
+//! computes the product its boundary claims.
+
 mod arg;
 mod cycles;
 mod disjoint;

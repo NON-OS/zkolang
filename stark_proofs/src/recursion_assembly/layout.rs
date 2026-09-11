@@ -39,6 +39,17 @@ pub struct Layout {
     pub ta_off: Vec<usize>,
     pub tchunk_cells: Vec<Vec<(usize, usize)>>,
     pub ta_depth: usize,
+    /// The compose strip's cycles as absolute (row, col) pairs: echo cells to
+    /// their producers and final accumulators to the flat acc cells. Empty
+    /// when the assembly runs the flat recompute.
+    pub strip_cycles: Vec<((usize, usize), (usize, usize))>,
+    /// The strip's shape for the layout emit: zero everywhere the assembly
+    /// runs the flat recompute.
+    pub strip_off: usize,
+    pub strip_k: usize,
+    pub strip_echo_width: usize,
+    pub strip_n_out: usize,
+    pub strip_rows: usize,
     pub z_op: usize,
     pub deep_coeff_op: usize,
     pub pub_len: usize,

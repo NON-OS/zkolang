@@ -14,6 +14,12 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+//! Schoolbook multiplication over limbs. Each output weight sums the partial products that
+//! land on it and the carry from the weight below, so the full product is eight 16-bit limbs
+//! with an explicit carry at each weight. Keeping the carries explicit is what lets the
+//! circuit constrain the multiplication limb by limb rather than trusting a single wide
+//! product a field element could not hold.
+
 use super::limbs::{split, LIMB_BITS, LIMB_MASK, N_LIMBS};
 
 pub const N_OUT: usize = 2 * N_LIMBS;

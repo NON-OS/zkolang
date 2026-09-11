@@ -9,7 +9,7 @@
 use super::inner::{Inner, LOG_ROUNDS};
 use super::layout::{offsets, Layout};
 use super::tamper::Tamper;
-use super::{auth, compose, compose_step, deep, fri, groups, inner, periodic, points, transcript};
+use super::{auth, compose, compose_step, deep, fri, groups, inner, periodic, points, strip, transcript};
 use crate::crypto::stark::air::{Air, AirExt, GenericTransition, GpGroup, Poseidon, WiredMultiExt};
 use crate::crypto::stark::field::{Fp, Fp2};
 use alloc::boxed::Box;
@@ -168,6 +168,12 @@ pub fn assemble_capped(tamper: Tamper, tamper_q: usize, cap: usize) -> Assembly 
         ta_off,
         tchunk_cells,
         ta_depth,
+        strip_cycles: Vec::new(),
+        strip_off: 0,
+        strip_k: 0,
+        strip_echo_width: 0,
+        strip_n_out: 0,
+        strip_rows: 0,
         z_op,
         deep_coeff_op,
         pub_len,
@@ -373,8 +379,10 @@ pub fn assemble_over<A: AirExt + GenericTransition + 'static>(
             &inner.ci.coeffs,
         );
     }
+    std::eprintln!("[asm] strip side");
+    let ss = strip::strip_side(&inner);
     std::eprintln!("[asm] compose gen");
-    let (cregion, ctrace) = compose_step::compose_gen_region(inner);
+    let (cregion, ctrace) = compose_step::compose_gen_region_strip(inner, ss.stmt.clone());
     std::eprintln!("[asm] compose done");
     let frame_len = cregion.frame_len();
     let n_coeff = cregion.num_coeff();
@@ -382,13 +390,15 @@ pub fn assemble_over<A: AirExt + GenericTransition + 'static>(
     let c_z_col = cregion.z_col();
     let c_coeff_col = cregion.coeff_col(0);
     let c_comp_z_col = cregion.comp_z_col();
+    let flat_acc: Vec<usize> = (0..ss.acc_cols.len() / 2).map(|i| cregion.acc_col(i)).collect();
 
     let mut regions: Vec<Box<dyn AirExt>> = alloc::vec![
         Box::new(ts.region) as Box<dyn AirExt>,
         Box::new(cregion),
+        Box::new(ss.region),
         Box::new(ft.transcript),
     ];
-    let mut traces: Vec<Vec<Fp>> = alloc::vec![ts.trace, ctrace, ft.ttrace];
+    let mut traces: Vec<Vec<Fp>> = alloc::vec![ts.trace, ctrace, ss.trace, ft.ttrace];
     if let Some((pzregion, pztrace)) = pz {
         regions.push(Box::new(pzregion));
         traces.push(pztrace);
@@ -397,11 +407,28 @@ pub fn assemble_over<A: AirExt + GenericTransition + 'static>(
     traces.extend(q_traces);
 
     let (off, span) = offsets(&regions);
-    let (c_off, ft_off) = (off[1], off[2]);
+    let (c_off, strip_off, ft_off) = (off[1], off[2], off[3]);
+    // The strip's cycles in absolute coordinates: echoes to producers,
+    // final accumulators to the flat acc cells.
+    let mut strip_cycles: Vec<((usize, usize), (usize, usize))> = Vec::new();
+    for ((r, col), home) in &ss.cycles {
+        let a = (strip_off + r, *col);
+        let b = match home {
+            strip::Home::Flat(u) => (c_off, *u),
+            strip::Home::Strip(pr, pc) => (strip_off + pr, *pc),
+        };
+        strip_cycles.push((a, b));
+    }
+    for (j, sc) in ss.acc_cols.iter().enumerate() {
+        strip_cycles.push((
+            (strip_off + ss.final_row, *sc),
+            (c_off, flat_acc[j / 2] + (j % 2)),
+        ));
+    }
     // Shared count and per-query stride depend on which optional regions run.
-    let base = if with_sidecar { 3 } else { 4 };
+    let base = if with_sidecar { 4 } else { 5 };
     let stride = if with_sidecar { 7 } else { 6 };
-    let pz_off = if with_sidecar { 0 } else { off[3] };
+    let pz_off = if with_sidecar { 0 } else { off[4] };
     let d_off: Vec<usize> = (0..n_q).map(|k| off[base + k * stride]).collect();
     let f_off: Vec<usize> = (0..n_q).map(|k| off[base + k * stride + 1]).collect();
     let m_off: Vec<usize> = (0..n_q).map(|k| off[base + k * stride + 2]).collect();
@@ -434,6 +461,12 @@ pub fn assemble_over<A: AirExt + GenericTransition + 'static>(
         ta_off,
         tchunk_cells,
         ta_depth,
+        strip_cycles,
+        strip_off,
+        strip_k: ss.k,
+        strip_echo_width: ss.echo_width,
+        strip_n_out: ss.n_out,
+        strip_rows: ss.used_rows,
         z_op,
         deep_coeff_op,
         pub_len,
@@ -479,7 +512,7 @@ pub fn assemble_over<A: AirExt + GenericTransition + 'static>(
     let gps = fuse(build_groups(&lay), &lay, &regions);
     std::eprintln!("[asm] groups fused");
     let n_groups = gps.len();
-    let shared = if with_sidecar { 3 } else { 4 };
+    let shared = if with_sidecar { 4 } else { 5 };
     let per_q = if with_sidecar { 7 } else { 6 };
     let kinds: Vec<usize> = (0..shared)
         .chain((0..n_q).flat_map(|_| shared..shared + per_q))
@@ -534,6 +567,7 @@ fn build_groups(lay: &Layout) -> Vec<groups::Bind> {
     groups::fold(lay, &mut gps);
     groups::index(lay, &mut gps);
     groups::periodic(lay, &mut gps);
+    groups::strip(lay, &mut gps);
     gps
 }
 
@@ -609,6 +643,12 @@ pub fn assemble_step(tamper: Tamper) -> Assembly {
         ta_off: alloc::vec![off[6]],
         tchunk_cells: alloc::vec![ta.chunk_cells],
         ta_depth: ta.depth,
+        strip_cycles: Vec::new(),
+        strip_off: 0,
+        strip_k: 0,
+        strip_echo_width: 0,
+        strip_n_out: 0,
+        strip_rows: 0,
         z_op,
         deep_coeff_op,
         pub_len,

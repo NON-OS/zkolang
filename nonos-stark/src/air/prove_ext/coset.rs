@@ -14,6 +14,13 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+//! The coset passes the streaming prover shares. `trace_coeffs` interpolates the trace columns
+//! to coefficients, `periodic_coeffs` does the same for the periodic columns, and `extend`
+//! evaluates one coset of the low-degree extension from those coefficients on demand. Holding
+//! coefficients and extending a coset at a time is what keeps the working set to one coset
+//! rather than the whole extension, so every later pass, the commitment, the composition, the
+//! DEEP polynomial, draws its coset through here instead of materializing the extension once.
+
 use super::super::super::field::Fp;
 use super::super::super::poly::{intt, lde_from_coeffs};
 use super::setup::Domain;

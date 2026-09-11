@@ -372,7 +372,7 @@ fn the_merkle_witness_form_authenticates_the_real_opening() {
         siblings,
         directions,
     };
-    let mem = MultiMembership::new_witness(h.clone(), 2, alloc::vec![opening]);
+    let mem = MultiMembership::new_witness(h.clone(), 2, alloc::vec![opening.clone()]);
     // Instance-independent AIR: direction plus RATE sibling columns in the trace,
     // no pinned boundary.
     assert_eq!(mem.trace_width(), WIDTH + 1 + RATE);
@@ -382,6 +382,21 @@ fn the_merkle_witness_form_authenticates_the_real_opening() {
     assert!(
         stark_verify_ext(&mem, &mproof, 32, 8),
         "the production-form Merkle opening was rejected in-circuit"
+    );
+
+    // The split form: two witnessed squares per lane appended after the
+    // sibling columns, the same real opening, and the region's own degree
+    // report falling from 8 to 4. It must prove and verify in-circuit like
+    // the closed form it replaces in the recursion.
+    let mem = MultiMembership::new_witness_split(h.clone(), 2, alloc::vec![opening]);
+    assert_eq!(mem.trace_width(), WIDTH + 1 + RATE + 2 * WIDTH);
+    assert_eq!(mem.constraint_degree(), 4);
+    assert_eq!(mem.boundary().len(), 0);
+    let mtrace = mem.trace();
+    let mproof = stark_prove_ext(&mem, &mtrace, 32, 8);
+    assert!(
+        stark_verify_ext(&mem, &mproof, 32, 8),
+        "the split-form Merkle opening was rejected in-circuit"
     );
 }
 

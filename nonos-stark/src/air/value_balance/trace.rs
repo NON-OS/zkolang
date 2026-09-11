@@ -14,6 +14,11 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+//! The witness for the value-balance region. Each note's two limbs are placed, the value is
+//! recomposed, and the signed accumulator is carried forward row by row. The terms arrive in
+//! the same order as the legs, so the value on a row and the sign the region applies to it
+//! cannot drift apart: the single source of the layout the constraints check.
+
 use super::super::super::field::Fp;
 use super::air::{ValueBalance, LIMB_SHIFT};
 use super::leg::Leg;

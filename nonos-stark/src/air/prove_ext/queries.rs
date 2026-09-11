@@ -14,6 +14,12 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+//! Opening the consistency queries. At each sampled position the prover reveals the trace,
+//! composition, and DEEP values with their Merkle paths, so the verifier can check that the
+//! opened values are the committed ones and that the DEEP quotient the values imply matches the
+//! opened DEEP value. `eval_base` recovers a column's value at a query point from its
+//! coefficients by Horner, so the opening reads the streamed trace without a stored extension.
+
 use super::super::super::field::{Fp, Fp2};
 use super::super::super::merkle::MerkleTree;
 use super::super::super::transcript::Transcript;

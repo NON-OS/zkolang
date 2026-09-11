@@ -14,6 +14,13 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+//! The wide trace commitment for the Poseidon path. The whole trace commits under one root
+//! whose leaf i is the compress-chain digest of row i, the rule the periodic commitment
+//! already uses, so a query opens one path binding every column of a row at once. This is the
+//! wide-trace campaign in code: seventeen per-query openings become four and the transcript
+//! absorbs one root instead of fourteen, and because the row-hash gadget is the periodic
+//! chain's, the recursion authenticates the opening with a region it already has.
+
 use super::super::super::field::Fp;
 use super::super::super::poly::{intt, lde_from_coeffs};
 use super::super::super::poseidon_merkle::PrunedPoseidonTree;

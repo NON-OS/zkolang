@@ -14,6 +14,10 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+//! The `Publics` region and its shape: width one, each row a public word pinned to its value
+//! by a boundary constraint, no transition. The whole region is boundary, because a public
+//! word is a fact about a specific cell, not a rule relating rows.
+
 use super::super::spec::{Air, AirExt};
 use super::super::super::field::{Fp, Fp2};
 use alloc::vec;

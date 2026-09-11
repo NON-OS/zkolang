@@ -14,6 +14,12 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+//! Opening a query against the wide trace root. The row's values come by Horner from the
+//! coefficients, and the single path's pruned chunk is rebuilt by hashing each neighbouring
+//! row the same way the commit did, so the values are exactly what the dropped extension held
+//! at the positions the path needs. One path per query carries the whole row, which is the
+//! opening the wide commitment bought.
+
 use super::super::super::field::{Fp, Fp2};
 use super::super::super::poseidon_merkle::PoseidonMerkleTree;
 use super::super::periodic_poseidon::hash_periodic_row;

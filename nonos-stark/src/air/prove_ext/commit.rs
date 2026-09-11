@@ -14,6 +14,13 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+//! The streaming trace commitment, the pass that keeps the prover inside a laptop. The trace
+//! lives as coefficients; this extends it one coset at a time, hashes each extended row into a
+//! Merkle tree, and drops the coset before the next, so the working set is one coset rather
+//! than the whole low-degree extension. The extension is tens of terabytes if materialized for
+//! the settlement circuit and is never materialized. The tree it returns is the object the
+//! transcript absorbs and the queries open.
+
 use super::super::super::field::Fp;
 use super::super::super::merkle::hash_leaf_wide;
 use super::super::super::merkle::MerkleTree;

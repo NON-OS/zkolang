@@ -14,6 +14,13 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+//! The DEEP polynomial over the evaluation domain. It combines the trace and composition
+//! evaluations into quotients that are low degree exactly when the claimed out-of-domain
+//! values are correct: each quotient subtracts the claim and divides by the point's vanishing
+//! factor, so a wrong claim leaves a pole and fails the low-degree test. The result is what
+//! FRI folds, and it ties the sampled trace values to the out-of-domain frame the composition
+//! was checked against.
+
 use super::super::super::field::{Fp, Fp2};
 use super::super::super::poly::batch_inv;
 use super::compose::BLOCK;

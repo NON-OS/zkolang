@@ -14,6 +14,13 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+//! Drawing the out-of-domain point. The verifier samples one point in the extension field to
+//! test the composition away from the trace domain, and the draw rejects any point that lands
+//! in the domain, so no divisor in the composition vanishes. The point comes from the
+//! transcript, so prover and verifier draw the same one, and its being off the domain is what
+//! makes the low-degree test sound: agreement at a random off-domain point forces the
+//! polynomial identity by the Schwartz-Zippel bound.
+
 use super::super::super::field::{Fp, Fp2};
 use super::super::super::transcript::Transcript;
 

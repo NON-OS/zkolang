@@ -14,6 +14,12 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+//! The out-of-domain frame: the trace window, the periodic columns, and the composition all
+//! evaluated at the sampled point z. `ood_frame` reads each trace column at z and its shifts,
+//! `periodic_at_z` the periodic columns, and `comp_at_z` the composition value the DEEP check
+//! consumes. These are the claims the prover absorbs into the transcript and the verifier
+//! recomputes, so the frame is the hinge between the composition check and the DEEP quotients.
+
 use super::super::super::field::{Fp, Fp2};
 use super::super::super::poly::{eval_cols_on_subgroup_ext, eval_ext};
 use super::super::composition::compose_ext;

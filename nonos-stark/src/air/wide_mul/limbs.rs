@@ -14,6 +14,12 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+//! The limb decomposition: a 64-bit value as four little-endian 16-bit limbs. The width is
+//! chosen so a product of two limbs and its accumulated carries stay well inside the field,
+//! and the count covers a full 64-bit value. The soundness rule lives with the split: every
+//! limb must be range-checked in circuit, because a decomposition whose limbs are unbounded
+//! reassembles to any value, which is the overflow the wide-mul gadget exists to close.
+
 pub const LIMB_BITS: u32 = 16;
 pub const LIMB_MASK: u64 = (1u64 << LIMB_BITS) - 1;
 pub const N_LIMBS: usize = 4;

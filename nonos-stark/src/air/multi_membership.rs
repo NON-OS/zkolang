@@ -43,6 +43,10 @@ pub struct MultiMembership {
     depth: usize,
     openings: Vec<Opening>,
     witness_path: bool,
+    /// The S-box split: x2 and x4 witnessed per lane, the round constraint
+    /// falling from degree 8 to 4. Opt-in, appended columns, so the default
+    /// forms and everything built on their coordinates stay byte-identical.
+    split: bool,
 }
 
 impl MultiMembership {
@@ -51,7 +55,7 @@ impl MultiMembership {
     /// instance-specific structure, fine for a per-proof AIR.
     pub fn new(hasher: Poseidon, log_rounds: u32, openings: Vec<Opening>) -> MultiMembership {
         let depth = openings.first().map(|o| o.siblings.len()).unwrap_or(0);
-        MultiMembership { hasher, log_rounds, depth, openings, witness_path: false }
+        MultiMembership { hasher, log_rounds, depth, openings, witness_path: false, split: false }
     }
 
     /// The production form: the sibling and direction of each compression ride the
@@ -67,7 +71,19 @@ impl MultiMembership {
         openings: Vec<Opening>,
     ) -> MultiMembership {
         let depth = openings.first().map(|o| o.siblings.len()).unwrap_or(0);
-        MultiMembership { hasher, log_rounds, depth, openings, witness_path: true }
+        MultiMembership { hasher, log_rounds, depth, openings, witness_path: true, split: false }
+    }
+
+    /// The production form with the S-box split: two witnessed squares per
+    /// lane after the sibling columns, ceiling 4 instead of 8. Everything
+    /// else is `new_witness` to the cell.
+    pub fn new_witness_split(
+        hasher: Poseidon,
+        log_rounds: u32,
+        openings: Vec<Opening>,
+    ) -> MultiMembership {
+        let depth = openings.first().map(|o| o.siblings.len()).unwrap_or(0);
+        MultiMembership { hasher, log_rounds, depth, openings, witness_path: true, split: true }
     }
 
     fn rounds(&self) -> usize {
@@ -114,9 +130,17 @@ impl MultiMembership {
         let w = self.trace_width();
 
         let mut trace = alloc::vec![Fp::ZERO; n * w];
+        let sq_base = WIDTH + 1 + RATE;
         let mut state = self.initial_state(&self.openings[0]);
         for r in 0..n {
             trace[r * w..r * w + WIDTH].copy_from_slice(&state);
+            if self.split {
+                for j in 0..WIDTH {
+                    let x2 = state[j] * state[j];
+                    trace[r * w + sq_base + j] = x2;
+                    trace[r * w + sq_base + WIDTH + j] = x2 * x2;
+                }
+            }
             let pr = self.hasher.round_with_rc(&state, &self.hasher.round_constant(r % l));
             let opening = r / span;
             let within = r % span;
@@ -220,10 +244,23 @@ impl MultiMembership {
             reset.copy_from_slice(&periodic[WIDTH + 3 + RATE..WIDTH + 3 + RATE + WIDTH]);
         }
 
-        let pr = self.hasher.round_generic(&state, &rc);
         let one = F::ONE;
+        let mut squares: Vec<F> = Vec::new();
+        let pr = if self.split {
+            let sq = WIDTH + 1 + RATE;
+            let mut x2 = [F::ZERO; WIDTH];
+            let mut x4 = [F::ZERO; WIDTH];
+            x2.copy_from_slice(&window[sq..sq + WIDTH]);
+            x4.copy_from_slice(&window[sq + WIDTH..sq + 2 * WIDTH]);
+            let (pr, c2, c4) = self.hasher.round_split_generic(&state, &x2, &x4, &rc);
+            squares.extend(c2);
+            squares.extend(c4);
+            pr
+        } else {
+            self.hasher.round_generic(&state, &rc)
+        };
 
-        let mut out = Vec::with_capacity(WIDTH + 1);
+        let mut out = Vec::with_capacity(WIDTH + 1 + squares.len());
         for (j, next) in window[stride..stride + WIDTH].iter().enumerate() {
             let slot_inject = if j < RATE {
                 (one - dir) * pr[j] + dir * sib[j]
@@ -242,6 +279,7 @@ impl MultiMembership {
         if self.witness_path {
             out.push(dir * (one - dir));
         }
+        out.extend(squares);
         out
     }
 }
@@ -262,11 +300,8 @@ impl Air for MultiMembership {
     }
 
     fn trace_width(&self) -> usize {
-        if self.witness_path {
-            WIDTH + 1 + RATE
-        } else {
-            WIDTH
-        }
+        let base = if self.witness_path { WIDTH + 1 + RATE } else { WIDTH };
+        base + if self.split { 2 * WIDTH } else { 0 }
     }
 
     fn window_size(&self) -> usize {
@@ -274,15 +309,16 @@ impl Air for MultiMembership {
     }
 
     fn constraint_degree(&self) -> usize {
-        8
+        if self.split {
+            4
+        } else {
+            8
+        }
     }
 
     fn num_transition(&self) -> usize {
-        if self.witness_path {
-            WIDTH + 1
-        } else {
-            WIDTH
-        }
+        let base = if self.witness_path { WIDTH + 1 } else { WIDTH };
+        base + if self.split { 2 * WIDTH } else { 0 }
     }
 
     fn periodic_columns(&self) -> Vec<Vec<Fp>> {

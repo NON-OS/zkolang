@@ -14,6 +14,13 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+//! The preprocessed prover driver: the same transcript walk as the plain path, but the
+//! periodic schedule enters as a baked root rather than a recomputed region. It absorbs the
+//! claimed periodic values after the frame, widens the DEEP coefficient draw to cover one
+//! quotient per periodic column, and opens the sidecar row per query. The schedule bake is the
+//! half of the settlement circuit this deletes, so a proof carries claims and opened rows in
+//! place of the recompute.
+
 use super::super::super::field::Fp2;
 use super::super::super::fri_ext::fri_prove_ext;
 use super::super::super::merkle::MerkleTree;

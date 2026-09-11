@@ -49,6 +49,9 @@ struct Slots {
     nt: usize, // inner num_transition
     b: usize,  // inner boundary count
     k: usize,  // tower height = inner log_trace_len, so z^t = z^(2^k)
+    /// Strip mode: the recompute leaves for the strip region, and `nt` acc
+    /// slots arrive for its final accumulators, bound in by cycle.
+    strip: bool,
 }
 
 impl Slots {
@@ -82,8 +85,11 @@ impl Slots {
     fn tower(&self, k: usize) -> usize {
         self.quot(self.b) + k
     }
+    fn acc(&self, i: usize) -> usize {
+        self.tower(self.k) + i
+    }
     fn total(&self) -> usize {
-        self.tower(self.k)
+        self.tower(self.k) + if self.strip { self.nt } else { 0 }
     }
     /// Ext2 transition constraints: tower + z_h_inv + E + out + boundary + comp_z.
     fn num_constraints(&self) -> usize {
@@ -102,6 +108,10 @@ pub struct ComposeCheckGen<A> {
     t: u64,
     boundaries: Vec<ComposeBoundary>,
     slots: Slots,
+    /// Strip mode: the statement side of each base output, evaluated here
+    /// over the frame and periodic cells; the product side arrives in the
+    /// acc slots from the strip region.
+    strip_stmt: Option<Vec<super::compose_strip::OutStatement>>,
 }
 
 impl<A: AirExt + GenericTransition> ComposeCheckGen<A> {
@@ -129,6 +139,7 @@ impl<A: AirExt + GenericTransition> ComposeCheckGen<A> {
             nt: air.num_transition(),
             b: air.boundary().len(),
             k: log_t as usize,
+            strip: false,
         };
         let boundaries = air
             .boundary()
@@ -150,7 +161,25 @@ impl<A: AirExt + GenericTransition> ComposeCheckGen<A> {
             t,
             boundaries,
             slots,
+            strip_stmt: None,
         }
+    }
+
+    /// The strip form: same slots plus one acc cell per transition, the
+    /// recompute constraints replaced by pins `out = acc + statement`, the
+    /// statement evaluated over this region's own frame and periodic cells.
+    /// Base input lane u of the recording is window column u here, by the
+    /// shared ordering of frame-then-periodic pairs.
+    pub fn into_strip(mut self, stmt: Vec<super::compose_strip::OutStatement>) -> Self {
+        assert_eq!(stmt.len(), 2 * self.slots.nt, "one statement per base output");
+        self.slots.strip = true;
+        self.strip_stmt = Some(stmt);
+        self
+    }
+
+    /// The base column of acc cell `i`, for the strip binding.
+    pub fn acc_col(&self, i: usize) -> usize {
+        2 * self.slots.acc(i)
     }
 
     // The cell-column accessors: this region is the single source of truth for
@@ -222,6 +251,26 @@ impl<A: AirExt + GenericTransition> ComposeCheckGen<A> {
         for (i, v) in out.iter().enumerate() {
             put(s.out(i), *v);
         }
+        if let Some(stmt) = &self.strip_stmt {
+            // acc = out - statement, per base lane; the strip's totals land
+            // here through the cycle and this is the value they must hold.
+            let lane = |u: usize| -> Fp {
+                let (slot, l) = (u / 2, u % 2);
+                let v = if slot < s.w / 2 { self.frame[slot] } else { self.periodic[slot - s.w / 2] };
+                if l == 0 { v.c0 } else { v.c1 }
+            };
+            for i in 0..s.nt {
+                let mut sc0 = stmt[2 * i].constant;
+                for (u, c) in &stmt[2 * i].input_coeffs {
+                    sc0 = sc0 + *c * lane(*u as usize);
+                }
+                let mut sc1 = stmt[2 * i + 1].constant;
+                for (u, c) in &stmt[2 * i + 1].input_coeffs {
+                    sc1 = sc1 + *c * lane(*u as usize);
+                }
+                put(s.acc(i), Fp2 { c0: out[i].c0 - sc0, c1: out[i].c1 - sc1 });
+            }
+        }
         put(s.comp_z(), self.comp_z);
 
         for (j, b) in self.boundaries.iter().enumerate() {
@@ -261,14 +310,32 @@ impl<A: AirExt + GenericTransition> ComposeCheckGen<A> {
         let e = rd(s.e());
         res.push(e - (z - base(self.g_tm1)) * z_h_inv);
 
-        // Recompute every inner transition from the frame over the tower Ext2<F>,
-        // and pin each witnessed value to it. This is where an arbitrary inner AIR
-        // is arithmetized: its own constraint code, evaluated at Ext2<F>.
-        let frame: Vec<Ext2<F>> = (0..s.w).map(|i| rd(s.frame(i))).collect();
-        let per: Vec<Ext2<F>> = (0..s.p).map(|i| rd(s.periodic(i))).collect();
-        let recomputed = self.air.transition_gen::<Ext2<F>>(&frame, &per);
-        for i in 0..s.nt {
-            res.push(rd(s.out(i)) - recomputed[i]);
+        if let Some(stmt) = &self.strip_stmt {
+            // Strip mode: the products live in the strip region; here each
+            // out pins to its acc cell plus the statement's linear part over
+            // this region's own cells. Base input lane u is window column u.
+            for i in 0..s.nt {
+                let ev = |j: usize| -> F {
+                    let mut acc = F::from_base(stmt[j].constant);
+                    for (u, c) in &stmt[j].input_coeffs {
+                        acc = acc + F::from_base(*c) * window[*u as usize];
+                    }
+                    acc
+                };
+                let stmt_v = Ext2::new(ev(2 * i), ev(2 * i + 1));
+                res.push(rd(s.out(i)) - rd(s.acc(i)) - stmt_v);
+            }
+        } else {
+            // Recompute every inner transition from the frame over the tower
+            // Ext2<F>, and pin each witnessed value to it. This is where an
+            // arbitrary inner AIR is arithmetized: its own constraint code,
+            // evaluated at Ext2<F>.
+            let frame: Vec<Ext2<F>> = (0..s.w).map(|i| rd(s.frame(i))).collect();
+            let per: Vec<Ext2<F>> = (0..s.p).map(|i| rd(s.periodic(i))).collect();
+            let recomputed = self.air.transition_gen::<Ext2<F>>(&frame, &per);
+            for i in 0..s.nt {
+                res.push(rd(s.out(i)) - recomputed[i]);
+            }
         }
 
         // Boundary quotients: q * (z - g^row) = frame[col] - expected.
@@ -319,9 +386,14 @@ impl<A: AirExt + GenericTransition> Air for ComposeCheckGen<A> {
     }
 
     fn constraint_degree(&self) -> usize {
-        // The recompute constraint carries the inner transition's degree in the
-        // frame variables; the comp_z batching is degree three. Take the larger.
-        self.air.constraint_degree().max(3)
+        // The recompute constraint carries the inner transition's degree in
+        // the frame variables; the comp_z batching is degree three. In strip
+        // mode the recompute is elsewhere and the pins are linear.
+        if self.strip_stmt.is_some() {
+            3
+        } else {
+            self.air.constraint_degree().max(3)
+        }
     }
 
     fn num_transition(&self) -> usize {
