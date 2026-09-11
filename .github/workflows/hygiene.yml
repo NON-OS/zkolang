@@ -1,0 +1,80 @@
+name: hygiene
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# New push, old run dies: a superseded run burning minutes helps nobody.
+concurrency:
+  group: hygiene-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  clean:
+    name: no traces, secrets, or coordination leaks
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The commit-message scan needs history, not just the tip.
+          fetch-depth: 0
+
+      # This is a public repo. Nothing in the tree should read as machine
+      # authored or expose where the work runs. The patterns live here rather
+      # than in a reviewer's memory, so a slip fails the build instead of
+      # shipping. This file excludes itself, since it names the very strings it
+      # forbids.
+      - name: the tree carries no authorship trace or host secret
+        run: |
+          set -euo pipefail
+          self=':(exclude).github/workflows/hygiene.yml'
+
+          traces='Co-Authored-By:.*Claude|Claude-Session|Generated with \[Claude|🤖|anthropic\.com|session_01[A-Za-z0-9]{18,}'
+          secrets='sshpass|-----BEGIN [A-Z ]*PRIVATE KEY-----|root@[0-9]{1,3}\.[0-9]{1,3}\.[0-9]'
+          # Coordination notes belong outside the repo, never committed. These
+          # are the filenames they take.
+          coord='cutover|-handoff|settlement-recursion-|nox-smc'
+
+          fail=0
+          if git grep -nIE "$traces" -- . "$self"; then
+            echo "::error::an authorship trace is in the tree; commits and content read as human here"
+            fail=1
+          fi
+          if git grep -nIE "$secrets" -- . "$self"; then
+            echo "::error::a host secret is in the tree; credentials and access never land in the repo"
+            fail=1
+          fi
+          if git ls-files | grep -nE "$coord"; then
+            echo "::error::a coordination note is committed; those stay outside the repo tree"
+            fail=1
+          fi
+          if [ "$fail" -eq 0 ]; then echo "tree is clean"; fi
+          exit "$fail"
+
+      # Commit messages are the other public surface. Em-dashes and machine
+      # trailers read as machine authored, so the range this event introduces has
+      # to be clean. History before it is out of scope: this gates what lands.
+      - name: the new commit messages read as human
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          before='${{ github.event.before }}'
+          range=""
+          if [ -n "$base" ]; then
+            range="$base..${{ github.sha }}"
+          elif [ -n "$before" ] && git rev-parse --quiet --verify "$before^{commit}" >/dev/null 2>&1 \
+               && [ "$before" != "0000000000000000000000000000000000000000" ]; then
+            range="$before..${{ github.sha }}"
+          fi
+          if [ -z "$range" ]; then
+            echo "no commit range for this event; nothing to scan"
+            exit 0
+          fi
+          if git log --format='%B' "$range" | grep -nE '—|Co-Authored-By:.*Claude|Claude-Session'; then
+            echo "::error::a new commit message carries an em-dash or an authorship trailer"
+            exit 1
+          fi
+          echo "new commit messages are clean"
