@@ -6,7 +6,7 @@
 //! publics, plus the replayed composition inputs every region reads from.
 
 use crate::crypto::stark::air::{
-    compose_inputs, compose_inputs_pre, compose_inputs_pub, periodic_root_poseidon,
+    blinding_poly, compose_inputs, compose_inputs_pre, compose_inputs_pub, periodic_root_poseidon,
     stark_prove_poseidon_ext, stark_prove_poseidon_ext_pub, stark_prove_poseidon_pre_pub,
     Accumulator, Air, AirExt, ComposeInputs, PeriodicOpeningP, Poseidon, RangeCheck,
     StarkProofExtP, WiredExt, WiredMultiGen, RATE,
@@ -188,6 +188,54 @@ pub fn shield_join_split(h: &Poseidon) -> Inner<WiredMultiGen> {
             stark_prove_poseidon_pre_pub(&js.wired, &js.witness, NQ, GRIND, extra(), h, &publics, &[])
         })
         .clone();
+    let ci = compose_inputs_pre(&js.wired, &pre, extra(), h, &publics);
+    let t = 1u64 << js.wired.log_trace_len();
+    let g = root_of_unity(js.wired.log_trace_len());
+    let sidecar = Some(Sidecar {
+        periodic_z: pre.periodic_z,
+        openings: pre.openings,
+        root,
+    });
+    Inner {
+        air: js.wired,
+        publics,
+        proof: pre.proof,
+        ci,
+        t,
+        g,
+        sidecar,
+    }
+}
+
+/// The deployed transfer, proved hiding. The same circuit, witness and statement as
+/// `shield_join_split`, with each trace column blinded by `r * Z_H` where `r` is
+/// expanded from `seed`, so the proof reveals nothing beyond the intent it binds.
+/// This is the entry the private-transfer cutover calls, with a fresh per-proof seed
+/// drawn from the capsule's CSPRNG (`air::seed_from_entropy` turns raw bytes into
+/// the seed).
+///
+/// It does not memoize. The plain path caches its one proof because the witness is
+/// deterministic and re-proving is expensive; a hiding proof must not be cached, or
+/// two transfers would carry the same blinding and the openings would cancel to the
+/// witness. The blind is the deployment query count, which the deployed circuit's
+/// composition bound admits with margin (see the pre-path tests).
+pub fn shield_join_split_hidden(h: &Poseidon, seed: &[Fp; RATE]) -> Inner<WiredMultiGen> {
+    let js = crate::shield::test::scenario::balanced_deployed(crate::shield::key::Break::None);
+    let publics = js.intent.clone();
+    let root = periodic_root_poseidon(&js.wired, extra(), h);
+    let blind: Vec<Vec<Fp>> = (0..js.wired.trace_width())
+        .map(|c| blinding_poly(h, seed, c, NQ))
+        .collect();
+    let pre = stark_prove_poseidon_pre_pub(
+        &js.wired,
+        &js.witness,
+        NQ,
+        GRIND,
+        extra(),
+        h,
+        &publics,
+        &blind,
+    );
     let ci = compose_inputs_pre(&js.wired, &pre, extra(), h, &publics);
     let t = 1u64 << js.wired.log_trace_len();
     let g = root_of_unity(js.wired.log_trace_len());

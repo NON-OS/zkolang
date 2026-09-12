@@ -16,8 +16,10 @@ The CI axiom gate runs this file and fails if the output names `ofReduceBool` or
 the placeholder axiom, so the "no native_decide, no placeholder" claim in
 `VERIFICATION.md` is enforced by the build rather than by discipline. The theorems
 below are the load-bearing ones: the two money guarantees, the index-bit pin, the
-proof-system soundness core, and the primality certificate that has to be
-axiom-free by hand.
+proof-system soundness core, the primality certificate that has to be axiom-free by
+hand, and the zero-knowledge blinding identities, that blinding is invisible on the
+trace domain so it costs no soundness, and that off the domain the value moves by
+exactly the secret times the vanishing polynomial, where the hiding lives.
 -/
 
 #print axioms Zkolang.Nullifier.no_double_spend
@@ -29,3 +31,5 @@ axiom-free by hand.
 #print axioms Zkolang.Fold.decompose
 #print axioms Zkolang.SboxSplit.split_sound
 #print axioms Zkolang.Pratt.witness_full
+#print axioms Zkolang.Blinding.invisible_on_domain
+#print axioms Zkolang.Blinding.shift_off_domain

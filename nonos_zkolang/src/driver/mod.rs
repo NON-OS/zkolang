@@ -21,6 +21,9 @@ mod source;
 pub use error::RunError;
 pub use prove::prove_program;
 pub use report::Report;
-pub use source::{evaluate, prove_source, prove_source_with_inputs, prove_source_with_witness};
+pub use source::{
+    evaluate, prove_source, prove_source_with_inputs, prove_source_with_witness,
+    prove_source_with_witness_zk,
+};
 
 pub(crate) use log_t::choose_log_t;
