@@ -24,4 +24,8 @@ pub enum RunError {
     Layout(BuildError),
     /// The program needs more steps than the driver will size a trace to.
     ProgramTooLong { steps: usize },
+    /// A hidden proof was asked for on a trace too small to carry a blinding of the
+    /// query count, so the openings could not be made jointly uniform. The honest
+    /// answer is to refuse rather than return a proof that hides less than it claims.
+    TraceTooSmallToHide { log_trace_len: u32 },
 }

@@ -24,9 +24,45 @@
 //! fresh; a deterministic seed reproduces a proof for a test without weakening the
 //! construction, since the seed is the secret either way.
 
-use super::super::field::Fp;
+use super::super::field::{Fp, P};
 use super::poseidon::{Poseidon, RATE};
 use alloc::vec::Vec;
+
+/// Draw a blinding seed from raw entropy: `RATE` field elements, uniform on the
+/// field, consumed from `bytes` eight at a time in little-endian order. The caller
+/// supplies the entropy (the OS CSPRNG in a capsule, the kernel entropy capability
+/// in the kernel); this only turns bytes into a uniform field seed, so the sourcing
+/// stays at the edge and the field draw stays testable.
+///
+/// Uniformity is the whole point of a blinding seed, so a raw eight-byte word that
+/// lands at or above `P` is rejected and the next word tried, rather than reduced.
+/// `Fp::from_u64` folds `[P, 2^64)` back onto `[0, 2^32 - 1)` with one subtraction,
+/// which is a correct reduction but would make the low `2^32 - 1` residues twice as
+/// likely; a biased seed weakens the hiding it is meant to provide. The rejection
+/// rate is `(2^64 - P) / 2^64`, about `2^-32`, so the draw almost never skips.
+///
+/// `None` when `bytes` runs out before `RATE` words are accepted; the caller must
+/// pass enough entropy, `RATE * 8` bytes plus a margin for the rare rejection.
+pub fn seed_from_entropy(bytes: &[u8]) -> Option<[Fp; RATE]> {
+    let mut out = [Fp::ZERO; RATE];
+    let mut filled = 0usize;
+    let mut i = 0usize;
+    while filled < RATE {
+        if i + 8 > bytes.len() {
+            return None;
+        }
+        let mut word = [0u8; 8];
+        word.copy_from_slice(&bytes[i..i + 8]);
+        i += 8;
+        let v = u64::from_le_bytes(word);
+        if v < P {
+            // v is already canonical, so from_u64 returns it unchanged.
+            out[filled] = Fp::from_u64(v);
+            filled += 1;
+        }
+    }
+    Some(out)
+}
 
 /// The blinding polynomial for one column: `deg + 1` coefficients, low degree
 /// first, expanded from `seed` by Poseidon in counter mode. A distinct
@@ -55,6 +91,53 @@ mod tests {
 
     fn hasher() -> Poseidon {
         Poseidon::new(5, [Fp::ZERO; RATE])
+    }
+
+    /// The seed draw is a deterministic function of the entropy bytes and lands
+    /// canonical: same bytes, same seed, every element below `P`.
+    #[test]
+    fn a_seed_draw_is_deterministic_and_canonical() {
+        let mut bytes = Vec::new();
+        for k in 0..RATE * 8 {
+            bytes.push((7 * k + 1) as u8);
+        }
+        let a = seed_from_entropy(&bytes).expect("enough entropy");
+        let b = seed_from_entropy(&bytes).expect("enough entropy");
+        assert_eq!(a, b, "the same bytes gave two different seeds");
+        for e in a.iter() {
+            assert!(e.value() < P, "a drawn element is not canonical");
+        }
+    }
+
+    /// An eight-byte word at or above `P` is skipped, not folded: the seed drawn
+    /// from a rejected word followed by good words equals the seed from the good
+    /// words alone, so the rejection keeps the draw uniform instead of biasing the
+    /// low residues.
+    #[test]
+    fn an_out_of_range_word_is_rejected_not_folded() {
+        let mut good = Vec::new();
+        for k in 0..RATE * 8 {
+            good.push((3 * k + 5) as u8);
+        }
+        // u64::MAX is above P, so the leading word must be skipped.
+        let mut with_reject = Vec::new();
+        with_reject.extend_from_slice(&u64::MAX.to_le_bytes());
+        with_reject.extend_from_slice(&good);
+
+        let from_good = seed_from_entropy(&good).expect("enough entropy");
+        let from_reject = seed_from_entropy(&with_reject).expect("enough entropy");
+        assert_eq!(
+            from_good, from_reject,
+            "the out-of-range word was folded in rather than skipped"
+        );
+    }
+
+    /// Too few bytes to fill `RATE` accepted words is a refusal, not a short or
+    /// zero-padded seed.
+    #[test]
+    fn insufficient_entropy_refuses() {
+        let bytes = alloc::vec![0u8; RATE * 8 - 1];
+        assert!(seed_from_entropy(&bytes).is_none(), "a short entropy buffer must refuse");
     }
 
     /// The blinding has the requested degree and is a deterministic function of

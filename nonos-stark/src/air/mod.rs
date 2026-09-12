@@ -51,7 +51,7 @@ mod value_balance;
 mod wide_mul;
 mod zk;
 pub use fusion::region_offsets;
-pub use zk::blinding_poly;
+pub use zk::{blinding_poly, seed_from_entropy};
 mod deep_terms_pre;
 pub mod replay;
 pub mod replay_ext;
