@@ -40,6 +40,9 @@ fn render_run(src: &str, e: &RunError) -> String {
         RunError::Execute(pe) => format!("cannot run: {pe:?}"),
         RunError::Layout(be) => format!("cannot lay out the trace: {be:?}"),
         RunError::ProgramTooLong { steps } => format!("program too long: {steps} steps"),
+        RunError::TraceTooSmallToHide { log_trace_len } => {
+            format!("trace too small to hide: log_trace_len {log_trace_len}")
+        }
     }
 }
 

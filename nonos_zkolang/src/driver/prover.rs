@@ -65,7 +65,9 @@ pub(super) fn prove_verify_zk(
         .collect();
     let proof =
         stark_prove_poseidon_ext_pub(air, flat, QUERIES, GRIND, BLOWUP, &hasher, publics, &blind);
-    Some(stark_verify_poseidon_ext_pub(air, &proof, QUERIES, GRIND, BLOWUP, &hasher, publics))
+    Some(stark_verify_poseidon_ext_pub(
+        air, &proof, QUERIES, GRIND, BLOWUP, &hasher, publics,
+    ))
 }
 
 #[cfg(test)]

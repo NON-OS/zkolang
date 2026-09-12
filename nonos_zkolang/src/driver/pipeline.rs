@@ -49,7 +49,15 @@ fn prepare(program: &[Op], inputs: &[Fp], n_public: usize) -> Result<Prepared, R
     let flat = air.build_trace(&trace).map_err(RunError::Layout)?;
     let trace_len = 1usize << log_trace_len;
     let publics = build_publics(program, trace_len, &trace);
-    Ok(Prepared { air, flat, publics, trace, steps, log_trace_len, trace_len })
+    Ok(Prepared {
+        air,
+        flat,
+        publics,
+        trace,
+        steps,
+        log_trace_len,
+        trace_len,
+    })
 }
 
 fn report(p: &Prepared, program: &[Op], verified: bool) -> Report {
@@ -86,7 +94,10 @@ pub(super) fn run_and_prove_hidden(
     seed: &[Fp; RATE],
 ) -> Result<Report, RunError> {
     let p = prepare(program, inputs, n_public)?;
-    let verified = prove_verify_zk(&p.air, &p.flat, &p.publics, seed)
-        .ok_or(RunError::TraceTooSmallToHide { log_trace_len: p.log_trace_len })?;
+    let verified = prove_verify_zk(&p.air, &p.flat, &p.publics, seed).ok_or(
+        RunError::TraceTooSmallToHide {
+            log_trace_len: p.log_trace_len,
+        },
+    )?;
     Ok(report(&p, program, verified))
 }
