@@ -25,8 +25,10 @@ use super::super::super::fri::root_of_unity;
 use super::super::composition::domain_params_blown;
 use super::super::spec::AirExt;
 
-/// The coset shift every NONOS STARK domain uses.
-pub(in crate::air) const SHIFT: u64 = 7;
+/// The coset shift every NONOS STARK domain uses: the Goldilocks multiplicative
+/// generator, a fixed constant for every point and every proof. Public so a
+/// verifier's shape can carry it from the emit rather than type it.
+pub const SHIFT: u64 = 7;
 
 /// The evaluation geometry every pass reads. The domain is `blowup` cosets of
 /// the order-`t` subgroup: position `j = c + blowup * i` is the point

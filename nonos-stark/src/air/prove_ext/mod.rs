@@ -37,6 +37,7 @@ pub(in crate::air) use compose::{over_domain, BLOCK};
 pub(in crate::air) use coset::{extend, periodic_coeffs, trace_coeffs};
 pub(in crate::air) use deep::over_domain as deep_over_domain;
 pub use entry::{stark_prove_ext, stark_prove_ext_blown, stark_prove_ext_blown_bound, stark_prove_ext_zk};
+pub use setup::SHIFT as COSET_SHIFT;
 pub(in crate::air) use frame::{comp_at_z, ood_frame, periodic_at_z};
 pub(in crate::air) use ood::draw_ood_point_ext;
 pub(in crate::air) use queries::eval_base;

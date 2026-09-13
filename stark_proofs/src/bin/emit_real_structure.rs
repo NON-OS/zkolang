@@ -21,7 +21,7 @@
 //! transfer mode under any other value rather than emit a shape that does not
 //! match the proof it was built over.
 
-use stark_proofs::crypto::stark::air::Air;
+use stark_proofs::crypto::stark::air::{Air, COSET_SHIFT};
 use stark_proofs::recursion_assembly::build::assemble_over;
 use stark_proofs::recursion_assembly::{assemble_real, inner, Tamper};
 use stark_proofs::shield_params::{deployment, transfer};
@@ -162,9 +162,9 @@ fn main() {
         "outer     point={point} span={} log_trace_len={log_trace_len} degree={degree} \
          max_group_width={max_group_width} log_domain_rate_half={log_domain} \
          extra_blowup_bits={extra_blowup_bits} log_domain={outer_log_domain} \
-         grind_bits={grind_bits} inner_n_queries={} outer_n_queries={outer_n_queries} \
-         trace_width={} num_transition={num_transition} num_boundary={num_boundary} \
-         n_coeffs={n_coeffs}",
+         grind_bits={grind_bits} coset_shift={COSET_SHIFT} inner_n_queries={} \
+         outer_n_queries={outer_n_queries} trace_width={} num_transition={num_transition} \
+         num_boundary={num_boundary} n_coeffs={n_coeffs}",
         asm.lay.span,
         asm.lay.n_q,
         asm.wired.trace_width()
@@ -186,7 +186,7 @@ fn main() {
          \"inner_log_trace_len\": {},\n  \"inner_trace_width\": {},\n  \"n_queries\": {},\n  \
          \"inner_n_queries\": {},\n  \"outer_n_queries\": {},\n  \"max_group_width\": {},\n  \
          \"grind_bits\": {},\n  \"extra_blowup_bits\": {},\n  \"log_domain\": {},\n  \
-         \"periodic_root_poseidon\": \"{}\"\n}}\n",
+         \"coset_shift\": {},\n  \"periodic_root_poseidon\": \"{}\"\n}}\n",
         point,
         asm.wired.log_trace_len(),
         asm.wired.trace_width(),
@@ -204,6 +204,7 @@ fn main() {
         grind_bits,
         extra_blowup_bits,
         outer_log_domain,
+        COSET_SHIFT,
         root_hex,
     );
     std::fs::write(&out, &json).expect("write structure");
