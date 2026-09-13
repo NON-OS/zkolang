@@ -74,9 +74,11 @@ pub(super) fn prove_verify_zk(
 mod tests {
     use super::*;
 
-    // The StepAir shape the transfer prover runs on: constraint degree three, a
-    // two-row window. The hiding floor is computed against these, so the test tracks
-    // the real AIR without depending on the private layout constants.
+    /*
+     * The StepAir shape the transfer prover runs on: constraint degree three, a
+     * two-row window. The hiding floor is computed against these, so the test tracks
+     * the real AIR without depending on the private layout constants.
+     */
     const STEP_DEGREE: usize = 3;
     const STEP_WINDOW: usize = 2;
 
@@ -87,14 +89,18 @@ mod tests {
     /// silently move it is caught here.
     #[test]
     fn the_hiding_floor_is_log_t_six() {
-        // t = 32 (log_t = 5): (2*32 - 2)/3 = 20 slots, short of the 32 the query
-        // count needs, so hiding is refused.
+        /*
+         * t = 32 (log_t = 5): (2*32 - 2)/3 = 20 slots, short of the 32 the query
+         * count needs, so hiding is refused.
+         */
         assert!(
             max_blind_degree(1 << 5, STEP_DEGREE, STEP_WINDOW) < QUERIES,
             "log_t 5 must be below the hiding floor"
         );
-        // t = 64 (log_t = 6): (2*64 - 2)/3 = 42 slots, room for the 32 query
-        // openings with margin, so hiding is admitted.
+        /*
+         * t = 64 (log_t = 6): (2*64 - 2)/3 = 42 slots, room for the 32 query
+         * openings with margin, so hiding is admitted.
+         */
         assert!(
             max_blind_degree(1 << 6, STEP_DEGREE, STEP_WINDOW) >= QUERIES,
             "log_t 6 must clear the hiding floor"

@@ -20,6 +20,7 @@
 //! primitive `n`-th root of unity, where `n` is the length, a power of two.
 
 use super::super::field::Fp;
+use super::super::par::for_each_chunk_mut;
 use alloc::vec::Vec;
 
 /// Reorder `a` into bit-reversed index order in place.
@@ -53,18 +54,23 @@ pub fn ntt(coeffs: &[Fp], omega: Fp) -> Vec<Fp> {
     while len <= n {
         // A primitive len-th root of unity.
         let w_len = omega.pow((n / len) as u64);
-        let mut start = 0usize;
-        while start < n {
+        let half = len / 2;
+        /*
+         * One stage's butterflies fall into blocks of `len` that touch nothing
+         * outside themselves, so the blocks go wide. Each block walks its own
+         * twiddle up from one, exactly as the serial loop did, so the arithmetic,
+         * and with it the proof, is the same whichever way the crate is built.
+         */
+        for_each_chunk_mut(&mut a, len, |block| {
             let mut w = Fp::ONE;
-            for j in 0..len / 2 {
-                let u = a[start + j];
-                let v = a[start + j + len / 2] * w;
-                a[start + j] = u + v;
-                a[start + j + len / 2] = u - v;
+            for j in 0..half {
+                let u = block[j];
+                let v = block[j + half] * w;
+                block[j] = u + v;
+                block[j + half] = u - v;
                 w = w * w_len;
             }
-            start += len;
-        }
+        });
         len <<= 1;
     }
     a

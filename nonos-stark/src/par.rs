@@ -61,3 +61,26 @@ where
 {
     items.iter().map(f).collect()
 }
+
+/// Apply a mutation to each `size`-long chunk of a slice, the chunks disjoint. With
+/// the `parallel` feature the chunks run across every core; without it they run in
+/// order. No two chunks share an element, so the result is the same either way,
+/// which is what lets the transform's butterflies, which touch one block at a
+/// time, go wide without changing a bit of the proof.
+#[cfg(feature = "parallel")]
+pub fn for_each_chunk_mut<T, F>(items: &mut [T], size: usize, f: F)
+where
+    T: Send,
+    F: Fn(&mut [T]) + Send + Sync,
+{
+    use rayon::prelude::*;
+    items.par_chunks_mut(size).for_each(f);
+}
+
+#[cfg(not(feature = "parallel"))]
+pub fn for_each_chunk_mut<T, F>(items: &mut [T], size: usize, f: F)
+where
+    F: Fn(&mut [T]),
+{
+    items.chunks_mut(size).for_each(f);
+}

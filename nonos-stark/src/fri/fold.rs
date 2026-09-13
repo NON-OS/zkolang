@@ -33,12 +33,20 @@ pub fn fold_layer(evals: &[Fp], beta: Fp, shift: Fp, omega: Fp, inv2: Fp) -> Vec
     let mut out = Vec::with_capacity(half);
     // x walks the first half of the domain: shift, shift*omega, ... The point
     // paired with x is -x = shift*omega^(i + n/2), which sits at `hi[i]`.
-    let mut x = shift;
+    /*
+     * The odd part divides by x = shift * omega^i. Its inverse is shift^-1 *
+     * omega^-i, so it is walked as a running product from one inversion of shift
+     * and one of omega, rather than inverting x afresh at every point. A field
+     * inversion costs on the order of a hundred multiplications, and the values
+     * are identical, since the inverse of a product is the product of the inverses.
+     */
+    let omega_inv = omega.inv();
+    let mut x_inv = shift.inv();
     for (a, b) in lo.iter().zip(hi.iter()) {
         let even = (*a + *b) * inv2;
-        let odd = (*a - *b) * inv2 * x.inv();
+        let odd = (*a - *b) * inv2 * x_inv;
         out.push(even + beta * odd);
-        x = x * omega;
+        x_inv = x_inv * omega_inv;
     }
     out
 }
@@ -53,12 +61,14 @@ pub fn fold_first(evals: &[Fp], beta: Fp2, shift: Fp, omega: Fp, inv2: Fp) -> Ve
     let half = evals.len() / 2;
     let (lo, hi) = evals.split_at(half);
     let mut out = Vec::with_capacity(half);
-    let mut x = shift;
+    // The running inverse of x, as in `fold_layer`.
+    let omega_inv = omega.inv();
+    let mut x_inv = shift.inv();
     for (a, b) in lo.iter().zip(hi.iter()) {
         let even = (*a + *b) * inv2;
-        let odd = (*a - *b) * inv2 * x.inv();
+        let odd = (*a - *b) * inv2 * x_inv;
         out.push(Fp2::from_base(even) + beta.mul_base(odd));
-        x = x * omega;
+        x_inv = x_inv * omega_inv;
     }
     out
 }
@@ -71,12 +81,14 @@ pub fn fold_ext(evals: &[Fp2], beta: Fp2, shift: Fp, omega: Fp, inv2: Fp) -> Vec
     let half = evals.len() / 2;
     let (lo, hi) = evals.split_at(half);
     let mut out = Vec::with_capacity(half);
-    let mut x = shift;
+    // The running inverse of x, as in `fold_layer`.
+    let omega_inv = omega.inv();
+    let mut x_inv = shift.inv();
     for (a, b) in lo.iter().zip(hi.iter()) {
         let even = (*a + *b).mul_base(inv2);
-        let odd = (*a - *b).mul_base(inv2).mul_base(x.inv());
+        let odd = (*a - *b).mul_base(inv2).mul_base(x_inv);
         out.push(even + beta * odd);
-        x = x * omega;
+        x_inv = x_inv * omega_inv;
     }
     out
 }

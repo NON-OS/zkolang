@@ -87,10 +87,12 @@ fn a_blinded_sidecar_proof_verifies_and_moves_the_frame() {
         "the plain sidecar proof must verify"
     );
 
-    // The largest blind the fixture's composition bound admits, capped at the query
-    // count. Each column rises to degree t + b, so the blinded composition must stay
-    // under B = (degree * t).next_power_of_two(); this is the same bound the driver
-    // enforces, computed from the fixture's own AIR so the test cannot outrun it.
+    /*
+     * The largest blind the fixture's composition bound admits, capped at the query
+     * count. Each column rises to degree t + b, so the blinded composition must stay
+     * under B = (degree * t).next_power_of_two(); this is the same bound the driver
+     * enforces, computed from the fixture's own AIR so the test cannot outrun it.
+     */
     let t = 1usize << air.log_trace_len();
     let degree = air.constraint_degree().max(1);
     let bound = (degree * t).next_power_of_two();

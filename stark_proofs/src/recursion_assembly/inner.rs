@@ -254,3 +254,48 @@ pub fn shield_join_split_hidden(h: &Poseidon, seed: &[Fp; RATE]) -> Inner<WiredM
         sidecar,
     }
 }
+
+/// The deployed transfer proved at an explicit soundness point, unmemoized. The
+/// memoized `shield_join_split` is the recursion's fixture at the settlement
+/// point; this takes its queries, grind and blowup as arguments so the same
+/// circuit can be proved and timed at the transfer point, which reaches the same
+/// 128 bits over a quarter of the settlement domain. That is how the cost of a
+/// transaction and the cost of a settlement become two measured numbers rather
+/// than one number standing in for both.
+pub fn shield_join_split_at(
+    h: &Poseidon,
+    nq: usize,
+    grind: u32,
+    extra_bits: u32,
+) -> Inner<WiredMultiGen> {
+    let js = crate::shield::test::scenario::balanced_deployed(crate::shield::key::Break::None);
+    let publics = js.intent.clone();
+    let root = periodic_root_poseidon(&js.wired, extra_bits, h);
+    let pre = stark_prove_poseidon_pre_pub(
+        &js.wired,
+        &js.witness,
+        nq,
+        grind,
+        extra_bits,
+        h,
+        &publics,
+        &[],
+    );
+    let ci = compose_inputs_pre(&js.wired, &pre, extra_bits, h, &publics);
+    let t = 1u64 << js.wired.log_trace_len();
+    let g = root_of_unity(js.wired.log_trace_len());
+    let sidecar = Some(Sidecar {
+        periodic_z: pre.periodic_z,
+        openings: pre.openings,
+        root,
+    });
+    Inner {
+        air: js.wired,
+        publics,
+        proof: pre.proof,
+        ci,
+        t,
+        g,
+        sidecar,
+    }
+}
