@@ -24,7 +24,7 @@
 use stark_proofs::crypto::stark::air::Air;
 use stark_proofs::recursion_assembly::build::assemble_over;
 use stark_proofs::recursion_assembly::{assemble_real, inner, Tamper};
-use stark_proofs::shield_params::transfer;
+use stark_proofs::shield_params::{deployment, transfer};
 use std::time::Instant;
 
 fn main() {
@@ -110,9 +110,32 @@ fn main() {
     let degree = asm.wired.constraint_degree();
     let log_trace_len = asm.wired.log_trace_len();
     let log_domain = (2 * (degree << log_trace_len).next_power_of_two()).trailing_zeros();
+    /*
+     * The outer degree is the larger of the region degree and the widest group,
+     * plus 2, and on this shape the widest group is what pins it. Its width is
+     * printed beside the degree because it is the quantity one step from moving
+     * the degree, and the domain with it.
+     */
+    let max_group_width = asm
+        .wired
+        .group_params()
+        .iter()
+        .map(|(cols, _, _)| cols.len())
+        .max()
+        .unwrap_or(0);
+    /*
+     * Two query counts, named apart. The inner count is the number of inner
+     * proof queries the recursion attests, the per query region blocks in the
+     * layout; it is what `n_q` has always been. The outer count is the outer's
+     * own FRI query count, a parameter of whoever proves it, not of the
+     * assembly, and for the chain it is the settlement point's. A verifier that
+     * multiplies per query gas by the wrong one is off by their ratio.
+     */
+    let outer_n_queries = deployment::N_QUERIES;
     println!(
         "outer     point={point} span={} log_trace_len={log_trace_len} degree={degree} \
-         log_domain={log_domain} n_queries={} trace_width={}",
+         max_group_width={max_group_width} log_domain={log_domain} inner_n_queries={} \
+         outer_n_queries={outer_n_queries} trace_width={}",
         asm.lay.span,
         asm.lay.n_q,
         asm.wired.trace_width()
@@ -131,6 +154,7 @@ fn main() {
         "{{\n  \"point\": \"{}\",\n  \"log_trace_len\": {},\n  \"trace_width\": {},\n  \
          \"num_transition\": {},\n  \"num_groups\": {},\n  \"constraint_degree\": {},\n  \
          \"inner_log_trace_len\": {},\n  \"inner_trace_width\": {},\n  \"n_queries\": {},\n  \
+         \"inner_n_queries\": {},\n  \"outer_n_queries\": {},\n  \"max_group_width\": {},\n  \
          \"periodic_root_poseidon\": \"{}\"\n}}\n",
         point,
         asm.wired.log_trace_len(),
@@ -141,6 +165,9 @@ fn main() {
         asm.lay.t_inner.trailing_zeros(),
         asm.lay.width_inner,
         asm.lay.n_q,
+        asm.lay.n_q,
+        outer_n_queries,
+        max_group_width,
         root_hex,
     );
     std::fs::write(&out, &json).expect("write structure");
