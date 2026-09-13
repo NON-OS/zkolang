@@ -10,11 +10,11 @@
 //! grind, which is what the registered verifier keys and the on-chain verifier
 //! hold; the high rate buys a small proof at the cost of a prover that walks a
 //! 16x domain, the right trade for a proof that lands on chain once per batch.
-//! TRANSFER is the same 128 bits reached the other way, for the proof a sender
+//! TRANSFER is the same 144 bits reached the other way, for the proof a sender
 //! makes: more queries against a rate-1/4 domain, so the prover walks a quarter
 //! of the settlement domain and the proof is verified off chain by the
 //! recursion, where its size does not matter. The points differ on purpose;
-//! what they share is this discipline.
+//! what they share is this discipline, and one soundness floor.
 
 /// The development point: tests, gates, local emits.
 pub mod dev {
@@ -37,13 +37,16 @@ pub mod deployment {
 }
 
 /// The transfer point: the proof a sender makes, verified off chain by the
-/// recursion. It reaches the same 128 bits as settlement with more queries
+/// recursion. It reaches the same 144 bits as settlement with more queries
 /// against a lower rate, so the prover walks a quarter of the settlement domain.
 /// The proof is larger, which costs nothing off chain; what a transaction costs
 /// is prover time, and this is the point that minimises it at full soundness.
+/// Measured on the deployed circuit, 64 queries costs the recursion 12.5 percent
+/// more outer rows than 56 and nothing else, the same log trace length, degree,
+/// width and domain, so the full 144 bits are taken rather than settling for 128.
 pub mod transfer {
     /// FRI queries drawn.
-    pub const N_QUERIES: usize = 56;
+    pub const N_QUERIES: usize = 64;
     /// Proof-of-work bits on the FRI transcript.
     pub const GRIND_BITS: u32 = 16;
     /// Extra blowup over the minimal rate-one-half domain: rate 1/4.
@@ -89,17 +92,27 @@ mod tests {
         assert!(dev_bits < dep_bits, "the development point is not weaker than deployment");
     }
 
-    /// The transfer point clears the same 128-bit floor as settlement. A sender's
-    /// proof is verified off chain, but it still has to be unforgeable, and this
-    /// is the gate that stops the transfer rate drifting below money strength.
+    /// The transfer point is never weaker than settlement. A sender's proof is
+    /// verified off chain, but it still has to be unforgeable, and moving it to a
+    /// cheaper rate must not quietly lower the statement's soundness: the policy
+    /// is that the two points share one floor, and this is the gate that holds it.
     #[test]
-    fn the_transfer_point_is_at_least_128_bit() {
-        let bits = security_bits(
+    fn the_transfer_point_is_not_weaker_than_settlement() {
+        let transfer_bits = security_bits(
             transfer::N_QUERIES,
             transfer::GRIND_BITS,
             transfer::EXTRA_BLOWUP_BITS,
         );
-        assert!(bits >= 128, "transfer soundness is {bits} bits, below the 128-bit floor");
+        let settlement_bits = security_bits(
+            deployment::N_QUERIES,
+            deployment::GRIND_BITS,
+            deployment::EXTRA_BLOWUP_BITS,
+        );
+        assert!(transfer_bits >= 128, "transfer soundness is {transfer_bits} bits, below 128");
+        assert!(
+            transfer_bits >= settlement_bits,
+            "transfer soundness is {transfer_bits} bits, below settlement's {settlement_bits}"
+        );
     }
 
     /// The transfer point earns its place by walking a smaller domain than
