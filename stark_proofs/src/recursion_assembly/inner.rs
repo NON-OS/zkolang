@@ -217,14 +217,16 @@ pub fn shield_join_split(h: &Poseidon) -> Inner<WiredMultiGen> {
 /// It does not memoize. The plain path caches its one proof because the witness is
 /// deterministic and re-proving is expensive; a hiding proof must not be cached, or
 /// two transfers would carry the same blinding and the openings would cancel to the
-/// witness. The blind is the deployment query count, which the deployed circuit's
+/// witness. The blind degree is the number of points a column is opened at, the
+/// query rows plus the out-of-domain frame, which the deployed circuit's
 /// composition bound admits with margin (see the pre-path tests).
 pub fn shield_join_split_hidden(h: &Poseidon, seed: &[Fp; RATE]) -> Inner<WiredMultiGen> {
     let js = crate::shield::test::scenario::balanced_deployed(crate::shield::key::Break::None);
     let publics = js.intent.clone();
     let root = periodic_root_poseidon(&js.wired, extra(), h);
+    let deg = NQ + js.wired.window_size();
     let blind: Vec<Vec<Fp>> = (0..js.wired.trace_width())
-        .map(|c| blinding_poly(h, seed, c, NQ))
+        .map(|c| blinding_poly(h, seed, c, deg))
         .collect();
     let pre = stark_prove_poseidon_pre_pub(
         &js.wired,

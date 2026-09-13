@@ -97,7 +97,7 @@ fn a_blinded_sidecar_proof_verifies_and_moves_the_frame() {
     let degree = air.constraint_degree().max(1);
     let bound = (degree * t).next_power_of_two();
     let fit = (bound + t).saturating_sub(degree * t + air.window_size()) / degree;
-    let deg = NQ.min(fit);
+    let deg = (NQ + air.window_size()).min(fit);
     assert!(deg >= 1, "the fixture must admit at least a degree-one blind");
 
     let seed = [Fp::from_u64(5), Fp::from_u64(6), Fp::from_u64(7), Fp::from_u64(8)];
@@ -116,11 +116,12 @@ fn a_blinded_sidecar_proof_verifies_and_moves_the_frame() {
 }
 
 /// The private-transfer cutover has the deployed prover pass a blinding of the
-/// deployment query count. This proves the deployed circuit is large enough to carry
-/// one: its composition bound admits a blind of degree at least `N_QUERIES`, so the
-/// cutover cannot silently under-blind the real transfer. The margin is read from the
-/// deployed AIR itself, not a hand bound, so a circuit change that shrank it below the
-/// query count fails here rather than in production.
+/// exposed point count, the query rows plus the out-of-domain frame. This proves the
+/// deployed circuit is large enough to carry one: its composition bound admits a
+/// blind of degree at least `N_QUERIES + window`, so the cutover cannot silently
+/// under-blind the real transfer. The margin is read from the deployed AIR itself,
+/// not a hand bound, so a circuit change that shrank it below the exposed count
+/// fails here rather than in production.
 #[test]
 fn the_deployed_transfer_admits_a_full_strength_blind() {
     use crate::crypto::stark::air::Air;
@@ -130,9 +131,9 @@ fn the_deployed_transfer_admits_a_full_strength_blind() {
     let degree = air.constraint_degree().max(1);
     let bound = (degree * t).next_power_of_two();
     let fit = (bound + t).saturating_sub(degree * t + air.window_size()) / degree;
-    let need = crate::shield_params::deployment::N_QUERIES;
+    let need = crate::shield_params::deployment::N_QUERIES + air.window_size();
     assert!(
         fit >= need,
-        "the deployed transfer must admit a query-count blinding: room for {fit}, need {need}"
+        "the deployed transfer must admit an exposed-count blinding: room for {fit}, need {need}"
     );
 }
