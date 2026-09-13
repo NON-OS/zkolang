@@ -133,6 +133,20 @@ fn main() {
      */
     let outer_n_queries = deployment::N_QUERIES;
     /*
+     * The rest of the outer's proving point, emitted rather than assumed. The
+     * grind is the proof of work bits the verifier must demand: a proof ground
+     * to 16 clears a check of 8, so a verifier that enforced the wrong number
+     * would accept identically and only the published bound would be wrong.
+     * The blowup sets the outer's evaluation domain, which is (2 * bound) shifted
+     * by the extra bits; a rule that derives the domain from the degree and the
+     * trace length alone is the rate one half domain, and is short by exactly
+     * these bits for a proof at the settlement rate. The log domain is emitted
+     * with the extra folded in so nothing downstream derives it without them.
+     */
+    let grind_bits = deployment::GRIND_BITS;
+    let extra_blowup_bits = deployment::EXTRA_BLOWUP_BITS;
+    let outer_log_domain = log_domain + extra_blowup_bits;
+    /*
      * The composition coefficient count the transcript draws before z: one per
      * transition constraint and one per boundary. A verifier that burns one draw
      * too few or too many squeezes a different z, and every quantity after it,
@@ -146,9 +160,11 @@ fn main() {
     let n_coeffs = num_transition + num_boundary;
     println!(
         "outer     point={point} span={} log_trace_len={log_trace_len} degree={degree} \
-         max_group_width={max_group_width} log_domain={log_domain} inner_n_queries={} \
-         outer_n_queries={outer_n_queries} trace_width={} num_transition={num_transition} \
-         num_boundary={num_boundary} n_coeffs={n_coeffs}",
+         max_group_width={max_group_width} log_domain_rate_half={log_domain} \
+         extra_blowup_bits={extra_blowup_bits} log_domain={outer_log_domain} \
+         grind_bits={grind_bits} inner_n_queries={} outer_n_queries={outer_n_queries} \
+         trace_width={} num_transition={num_transition} num_boundary={num_boundary} \
+         n_coeffs={n_coeffs}",
         asm.lay.span,
         asm.lay.n_q,
         asm.wired.trace_width()
@@ -169,6 +185,7 @@ fn main() {
          \"num_groups\": {},\n  \"constraint_degree\": {},\n  \
          \"inner_log_trace_len\": {},\n  \"inner_trace_width\": {},\n  \"n_queries\": {},\n  \
          \"inner_n_queries\": {},\n  \"outer_n_queries\": {},\n  \"max_group_width\": {},\n  \
+         \"grind_bits\": {},\n  \"extra_blowup_bits\": {},\n  \"log_domain\": {},\n  \
          \"periodic_root_poseidon\": \"{}\"\n}}\n",
         point,
         asm.wired.log_trace_len(),
@@ -184,6 +201,9 @@ fn main() {
         asm.lay.n_q,
         outer_n_queries,
         max_group_width,
+        grind_bits,
+        extra_blowup_bits,
+        outer_log_domain,
         root_hex,
     );
     std::fs::write(&out, &json).expect("write structure");
