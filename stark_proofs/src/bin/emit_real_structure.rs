@@ -132,10 +132,23 @@ fn main() {
      * multiplies per query gas by the wrong one is off by their ratio.
      */
     let outer_n_queries = deployment::N_QUERIES;
+    /*
+     * The composition coefficient count the transcript draws before z: one per
+     * transition constraint and one per boundary. A verifier that burns one draw
+     * too few or too many squeezes a different z, and every quantity after it,
+     * the deep coefficients, the consistency indices, the fold positions,
+     * diverges in a way that reads as a bad proof rather than a misconfigured
+     * verifier. So the boundary count and the sum are both emitted, and nothing
+     * downstream has to reconstruct either.
+     */
+    let num_transition = asm.wired.num_transition();
+    let num_boundary = asm.wired.boundary().len();
+    let n_coeffs = num_transition + num_boundary;
     println!(
         "outer     point={point} span={} log_trace_len={log_trace_len} degree={degree} \
          max_group_width={max_group_width} log_domain={log_domain} inner_n_queries={} \
-         outer_n_queries={outer_n_queries} trace_width={}",
+         outer_n_queries={outer_n_queries} trace_width={} num_transition={num_transition} \
+         num_boundary={num_boundary} n_coeffs={n_coeffs}",
         asm.lay.span,
         asm.lay.n_q,
         asm.wired.trace_width()
@@ -152,14 +165,17 @@ fn main() {
 
     let json = format!(
         "{{\n  \"point\": \"{}\",\n  \"log_trace_len\": {},\n  \"trace_width\": {},\n  \
-         \"num_transition\": {},\n  \"num_groups\": {},\n  \"constraint_degree\": {},\n  \
+         \"num_transition\": {},\n  \"num_boundary\": {},\n  \"n_coeffs\": {},\n  \
+         \"num_groups\": {},\n  \"constraint_degree\": {},\n  \
          \"inner_log_trace_len\": {},\n  \"inner_trace_width\": {},\n  \"n_queries\": {},\n  \
          \"inner_n_queries\": {},\n  \"outer_n_queries\": {},\n  \"max_group_width\": {},\n  \
          \"periodic_root_poseidon\": \"{}\"\n}}\n",
         point,
         asm.wired.log_trace_len(),
         asm.wired.trace_width(),
-        asm.wired.num_transition(),
+        num_transition,
+        num_boundary,
+        n_coeffs,
         asm.n_groups,
         asm.wired.constraint_degree(),
         asm.lay.t_inner.trailing_zeros(),
