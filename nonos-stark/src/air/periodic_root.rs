@@ -25,7 +25,7 @@
 use alloc::vec::Vec;
 
 use super::super::field::Fp;
-use super::super::merkle::{hash_leaf_wide_periodic, MerkleTree};
+use super::super::merkle::{hash_leaf_wide_periodic, MerkleTree, PeriodicLeafHasher};
 use super::composition::domain_params_blown;
 use super::prove_ext::{extend, periodic_coeffs, Domain};
 use super::spec::AirExt;
@@ -42,10 +42,72 @@ pub(super) fn periodic_tree<A: AirExt>(
 ) -> (Vec<Vec<Fp>>, MerkleTree) {
     let d = Domain::of(air, extra_blowup_bits);
     let cols = air.periodic_columns();
+    let n_cols = cols.len();
     let coeffs = periodic_coeffs(&cols, &d);
+    /*
+     * The columns are read once, to interpolate, and dropped here. Everything
+     * below works from the coefficients, so holding both would keep the whole
+     * periodic set twice, and on a wide outer that set is gigabytes.
+     */
+    drop(cols);
     // A columnless AIR commits the empty tree, as the materialized committer
     // always did: it took its leaf count from the columns, this path takes it
     // from the domain, and only the empty case can tell them apart.
+    if n_cols == 0 {
+        return (coeffs, MerkleTree::commit_wide_periodic(&[]));
+    }
+    let mut digests = alloc::vec![[0u8; 32]; d.n];
+    for c in 0..d.blowup {
+        /*
+         * One incremental leaf hash per row of the coset, the tag already
+         * absorbed. The columns then stream past a chunk at a time, each row
+         * absorbing its value from each column in column order, which is byte
+         * for byte the row the materialised committer hashes whole, so the
+         * digest is the same and no row is ever built. The working set is one
+         * chunk of columns and the leaf states, instead of every column over
+         * the coset and a fresh row allocation per leaf.
+         */
+        let mut leaves: Vec<PeriodicLeafHasher> =
+            (0..d.t).map(|_| PeriodicLeafHasher::new()).collect();
+        for chunk in coeffs.chunks(COLUMN_CHUNK) {
+            let ext = extend(chunk, &d, c);
+            crate::par::for_each_chunk_mut_indexed(&mut leaves, LEAF_CHUNK, |base, rows| {
+                for (j, leaf) in rows.iter_mut().enumerate() {
+                    let i = base + j;
+                    for col in &ext {
+                        leaf.absorb(col[i]);
+                    }
+                }
+            });
+        }
+        for (i, leaf) in leaves.into_iter().enumerate() {
+            digests[c + d.blowup * i] = leaf.finalize();
+        }
+    }
+    let pad = alloc::vec![Fp::ZERO; n_cols];
+    let tree = MerkleTree::from_leaf_digests(digests, hash_leaf_wide_periodic(&pad));
+    (coeffs, tree)
+}
+
+/// Columns extended per pass. Sized so a chunk over one coset stays in the
+/// low hundreds of megabytes on the widest outer.
+const COLUMN_CHUNK: usize = 64;
+
+/// Leaves per parallel task when a chunk's values are absorbed.
+const LEAF_CHUNK: usize = 4096;
+
+/// The committer as it stood before the leaf hashes streamed: every column held
+/// over the coset and a row built per leaf. Kept only as the reference the lean
+/// path is checked against, so a change to the streaming can never move the root
+/// without a test saying so.
+#[cfg(test)]
+pub(super) fn periodic_tree_held<A: AirExt>(
+    air: &A,
+    extra_blowup_bits: u32,
+) -> (Vec<Vec<Fp>>, MerkleTree) {
+    let d = Domain::of(air, extra_blowup_bits);
+    let cols = air.periodic_columns();
+    let coeffs = periodic_coeffs(&cols, &d);
     if cols.is_empty() {
         return (coeffs, MerkleTree::commit_wide_periodic(&[]));
     }
@@ -121,6 +183,39 @@ mod tests {
     impl AirExt for NoPeriodic {
         fn transition_ext(&self, w: &[Fp2], _p: &[Fp2]) -> Vec<Fp2> {
             alloc::vec![w[1] - w[0]]
+        }
+    }
+
+    /// A leaf absorbed one value at a time is the leaf hashed whole: same tag,
+    /// same bytes, same order, same sponge. This is the equality the streaming
+    /// committer rests on, checked at the leaf before it is checked at the root.
+    #[test]
+    fn a_streamed_leaf_equals_the_whole_row_hash() {
+        for len in [0usize, 1, 3, 17, 64] {
+            let row: Vec<Fp> = (0..len).map(|i| Fp::from_u64(7 * i as u64 + 11)).collect();
+            let mut h = PeriodicLeafHasher::new();
+            for &v in &row {
+                h.absorb(v);
+            }
+            assert_eq!(h.finalize(), hash_leaf_wide_periodic(&row), "leaf of width {len} moved");
+        }
+    }
+
+    /// The lean committer, one chunk of columns and the leaf states at a time,
+    /// commits the identical tree to the committer that held every column and
+    /// built every row. Checked on an AIR with real periodic columns, at the
+    /// minimal rate and a raised one, so both the coset decomposition and the
+    /// chunking are covered. A root that moved here would move under every
+    /// registered verifier key at once.
+    #[test]
+    fn the_lean_committer_matches_the_held_one() {
+        use super::super::index_scalar::IndexScalar;
+        let air = IndexScalar::new(6, 5);
+        assert!(!air.periodic_columns().is_empty(), "the test AIR must carry periodic columns");
+        for extra in [0u32, 1] {
+            let lean = periodic_tree(&air, extra).1.root();
+            let held = periodic_tree_held(&air, extra).1.root();
+            assert_eq!(lean, held, "the lean periodic root moved at extra blowup {extra}");
         }
     }
 

@@ -19,7 +19,7 @@
 //! single native opcode instead of a costly in-Solidity hash.
 
 use super::super::field::{Fp, Fp2};
-use crate::hash::keccak256;
+use crate::hash::{keccak256, Keccak};
 use alloc::vec::Vec;
 
 const DOM_LEAF: &[u8] = b"NONOS-STARK-MERKLE-LEAF";
@@ -73,6 +73,38 @@ pub fn hash_leaf_wide_periodic(row: &[Fp]) -> [u8; 32] {
         buf.extend_from_slice(&v.value().to_le_bytes());
     }
     keccak256(&buf)
+}
+
+/// The wide periodic leaf hash absorbed one value at a time. `hash_leaf_wide_periodic`
+/// hashes a row whole; this pushes the same bytes in the same order, the tag and then
+/// each value's little endian encoding, through the same sponge, so a leaf built from
+/// columns streamed past it in column order finalises to the identical digest. It is
+/// what lets a committer hold one chunk of columns at a time instead of all of them.
+pub struct PeriodicLeafHasher(Keccak);
+
+impl PeriodicLeafHasher {
+    pub fn new() -> PeriodicLeafHasher {
+        let mut k = Keccak::new(512, 32, 0x01);
+        k.update(DOM_LEAF_PERIODIC);
+        PeriodicLeafHasher(k)
+    }
+
+    pub fn absorb(&mut self, v: Fp) {
+        self.0.update(&v.value().to_le_bytes());
+    }
+
+    pub fn finalize(self) -> [u8; 32] {
+        let out = self.0.finalize();
+        let mut h = [0u8; 32];
+        h.copy_from_slice(&out);
+        h
+    }
+}
+
+impl Default for PeriodicLeafHasher {
+    fn default() -> PeriodicLeafHasher {
+        PeriodicLeafHasher::new()
+    }
 }
 
 /// Hash two child digests into their parent, with a distinct domain tag.

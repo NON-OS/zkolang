@@ -84,3 +84,31 @@ where
 {
     items.chunks_mut(size).for_each(f);
 }
+
+/// `for_each_chunk_mut` with each chunk told where it starts, so a task that
+/// mutates its chunk can also read a matching index from something it does not
+/// own. The chunks are disjoint and the base index is a pure function of the
+/// chunk's position, so the result is the same in either form.
+#[cfg(feature = "parallel")]
+pub fn for_each_chunk_mut_indexed<T, F>(items: &mut [T], size: usize, f: F)
+where
+    T: Send,
+    F: Fn(usize, &mut [T]) + Send + Sync,
+{
+    use rayon::prelude::*;
+    items
+        .par_chunks_mut(size)
+        .enumerate()
+        .for_each(|(k, chunk)| f(k * size, chunk));
+}
+
+#[cfg(not(feature = "parallel"))]
+pub fn for_each_chunk_mut_indexed<T, F>(items: &mut [T], size: usize, f: F)
+where
+    F: Fn(usize, &mut [T]),
+{
+    items
+        .chunks_mut(size)
+        .enumerate()
+        .for_each(|(k, chunk)| f(k * size, chunk));
+}

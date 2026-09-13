@@ -22,7 +22,7 @@
 mod constants;
 mod keccak;
 
-use keccak::Keccak;
+pub(crate) use keccak::Keccak;
 
 /// Ethereum-style Keccak-256 (0x01 padding), the transcript and Merkle hash.
 pub fn keccak256(data: &[u8]) -> [u8; 32] {

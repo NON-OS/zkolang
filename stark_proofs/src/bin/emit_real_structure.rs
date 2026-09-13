@@ -71,7 +71,7 @@ fn main() {
 
     let h = inner::hasher();
     let t0 = Instant::now();
-    let asm = if at_transfer {
+    let mut asm = if at_transfer {
         let inner_at = inner::shield_join_split_at(
             &h,
             queries,
@@ -91,6 +91,13 @@ fn main() {
         eprintln!("the full-coverage assembly does not satisfy; refusing to emit its shape");
         std::process::exit(1);
     }
+
+    /*
+     * The witness is read by the satisfaction walk and by nothing after it. The
+     * shape and the layout come from the wired AIR and the layout alone, so the
+     * witness goes now rather than sit under the outer periodic root's working set.
+     */
+    drop(core::mem::take(&mut asm.witness));
 
     /*
      * The numbers a re-gate compares first, on one line so they cannot be missed.
