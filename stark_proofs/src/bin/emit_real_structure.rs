@@ -230,7 +230,16 @@ fn main() {
         let r = stark_proofs::crypto::stark::air::periodic_root(&asm.wired, 0);
         r.iter().map(|b| format!("{b:02x}")).collect()
     };
-    eprintln!("outer periodic root done");
+    /*
+     * The outer's own periodic columns: what a query's periodic row carries,
+     * and what the chain opens against the keccak root above. This is not
+     * n_pz. That one counts the inner's periodic columns, which the recursion
+     * checks in circuit against the Poseidon root in the shape. Two
+     * commitments over two column sets, under two hashes, and reading one for
+     * the other fails every opening, so both are emitted side by side.
+     */
+    let outer_n_periodic = asm.wired.periodic_columns().len();
+    eprintln!("outer periodic root done, {outer_n_periodic} outer periodic columns");
     eprintln!("reading the permutation columns");
     let (sel_idx, row_idx, sig_base) = asm.wired.permutation_columns();
     eprintln!("permutation columns read; formatting {} groups", sig_base.len());
@@ -259,7 +268,8 @@ fn main() {
          \"n_coeff\": {},\n  \"c_periodic_col\": {},\n  \"c_z_col\": {},\n  \"c_coeff_col\": {},\n  \
          \"c_comp_z_col\": {},\n  \"sel_col\": {},\n  \"row_col\": {},\n  \
          \"strip_off\": {},\n  \"strip_k\": {},\n  \"strip_echo_width\": {},\n  \
-         \"strip_n_out\": {},\n  \"strip_rows\": {},\n  \"outer_periodic_root_keccak\": \"{}\",\n  \
+         \"strip_n_out\": {},\n  \"strip_rows\": {},\n  \"outer_n_periodic\": {},\n  \
+         \"outer_periodic_root_keccak\": \"{}\",\n  \
          \"groups\": [\n    {}\n  ]\n}}\n",
         lay.span,
         lay.l,
@@ -297,6 +307,7 @@ fn main() {
         lay.strip_echo_width,
         lay.strip_n_out,
         lay.strip_rows,
+        outer_n_periodic,
         outer_root_hex,
         groups_json.join(",\n    "),
     );
