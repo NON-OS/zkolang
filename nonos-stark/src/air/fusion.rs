@@ -60,6 +60,10 @@ pub(super) struct Stack {
     pub kind_of: Vec<usize>,
     pub n_kinds: usize,
     pub kind_slot: Vec<usize>,
+    /// How many periodic columns a kind owns. Held here because the only other
+    /// way to ask is to build the columns, and the transition evaluator asks
+    /// once per row of the extended domain.
+    pub kind_slots: Vec<usize>,
     pub kind_first: Vec<usize>,
 }
 
@@ -95,10 +99,13 @@ impl Stack {
             }
         }
         let mut kind_slot = Vec::with_capacity(n_kinds);
+        let mut kind_slots = Vec::with_capacity(n_kinds);
         let mut s = 0usize;
         for &first in &kind_first {
             kind_slot.push(s);
-            s += regions[first].periodic_columns().len();
+            let n = regions[first].periodic_columns().len();
+            kind_slots.push(n);
+            s += n;
         }
         let log_span = row.next_power_of_two().trailing_zeros();
         Stack {
@@ -111,6 +118,7 @@ impl Stack {
             kind_of: kinds.to_vec(),
             n_kinds,
             kind_slot,
+            kind_slots,
             kind_first,
         }
     }
@@ -172,7 +180,7 @@ pub(super) fn combine<F: Felt>(
             local.extend_from_slice(&window[step * stride..step * stride + w]);
         }
         let base = sel + stack.kind_slot[k];
-        let slots = region.periodic_columns().len();
+        let slots = stack.kind_slots[k];
         let values = region_transition(i, &local, &periodic[base..base + slots]);
         for (c, v) in values.into_iter().enumerate() {
             out[c] = out[c] + s * v;
