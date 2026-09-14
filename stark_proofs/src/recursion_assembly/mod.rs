@@ -21,6 +21,7 @@ pub mod tamper;
 pub mod transcript;
 
 pub use build::{
-    assemble, assemble_capped, assemble_q, assemble_real, assemble_real_capped, build_groups_for, assemble_step,
+    assemble, assemble_capped, assemble_many, assemble_over, assemble_q, assemble_real,
+    assemble_real_capped, assemble_step, build_groups_for, Aggregate, Assembly,
 };
 pub use tamper::Tamper;

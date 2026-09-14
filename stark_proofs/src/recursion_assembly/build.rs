@@ -255,13 +255,14 @@ pub fn assemble_real_capped(tamper: Tamper, cap: usize) -> Assembly {
 /// recompute over the tower rides the full per-query recursion. The deployed
 /// join-split comes through here, and so does any compiled zkolang program,
 /// which is what makes writing a new circuit in the language enough to make
-/// it aggregatable.
-pub fn assemble_over<A: AirExt + GenericTransition + 'static>(
+/// it aggregatable. It stops at the regions; placing them is `combine`, which
+/// is what lets one outer carry a batch rather than a single inner.
+fn parts_over<A: AirExt + GenericTransition + 'static>(
     h: &Poseidon,
     inner: Inner<A>,
     tamper: Tamper,
     cap: usize,
-) -> Assembly {
+) -> Parts {
     let n_q = inner.proof.queries.len().min(cap);
     let with_sidecar = inner.sidecar.is_some();
 
@@ -346,6 +347,8 @@ pub fn assemble_over<A: AirExt + GenericTransition + 'static>(
     }
 
     let ts = transcript::stark_transcript(h, &inner, n_terms);
+    let ts_claim_op = ts.claim_op;
+    let (ft_n_folds, ft_log_n) = (ft.n_folds, ft.log_n);
     let width_inner = inner.air.trace_width();
     let pchunk_len = inner
         .sidecar
@@ -406,135 +409,294 @@ pub fn assemble_over<A: AirExt + GenericTransition + 'static>(
     regions.extend(q_boxes);
     traces.extend(q_traces);
 
-    let (off, span) = offsets(&regions);
-    let (c_off, strip_off, ft_off) = (off[1], off[2], off[3]);
-    // The strip's cycles in absolute coordinates: echoes to producers,
-    // final accumulators to the flat acc cells.
-    let mut strip_cycles: Vec<((usize, usize), (usize, usize))> = Vec::new();
-    for ((r, col), home) in &ss.cycles {
-        let a = (strip_off + r, *col);
-        let b = match home {
-            strip::Home::Flat(u) => (c_off, *u),
-            strip::Home::Strip(pr, pc) => (strip_off + pr, *pc),
-        };
-        strip_cycles.push((a, b));
-    }
-    for (j, sc) in ss.acc_cols.iter().enumerate() {
-        strip_cycles.push((
-            (strip_off + ss.final_row, *sc),
-            (c_off, flat_acc[j / 2] + (j % 2)),
-        ));
-    }
-    // Shared count and per-query stride depend on which optional regions run.
-    let base = if with_sidecar { 4 } else { 5 };
-    let stride = if with_sidecar { 7 } else { 6 };
-    let pz_off = if with_sidecar { 0 } else { off[4] };
-    let d_off: Vec<usize> = (0..n_q).map(|k| off[base + k * stride]).collect();
-    let f_off: Vec<usize> = (0..n_q).map(|k| off[base + k * stride + 1]).collect();
-    let m_off: Vec<usize> = (0..n_q).map(|k| off[base + k * stride + 2]).collect();
-    let ta_off: Vec<usize> = (0..n_q).map(|k| off[base + k * stride + 3]).collect();
-    let pa_off: Vec<usize> = if with_sidecar {
-        (0..n_q).map(|k| off[base + k * stride + 4]).collect()
-    } else {
-        Vec::new()
-    };
-    let i_off: Vec<usize> = (0..n_q)
-        .map(|k| off[base + k * stride + stride - 2])
-        .collect();
-    let fp_off: Vec<usize> = (0..n_q)
-        .map(|k| off[base + k * stride + stride - 1])
-        .collect();
-
-    let lay = Layout {
-        span,
-        l: 1usize << LOG_ROUNDS,
+    Parts {
+        regions,
+        traces,
+        publics,
+        with_sidecar,
         n_q,
         i0,
-        c_off,
-        ft_off,
-        pz_off,
-        d_off,
-        f_off,
-        m_off,
-        i_off,
-        fp_off,
-        ta_off,
-        tchunk_cells,
+        depth,
+        n_open,
+        pbits,
+        fbits,
+        pa_depth,
         ta_depth,
-        strip_cycles,
-        strip_off,
+        ocells,
+        tchunk_cells,
+        pchunk_cells,
+        cycles: ss.cycles,
+        acc_cols: ss.acc_cols,
+        final_row: ss.final_row,
+        flat_acc,
         strip_k: ss.k,
         strip_echo_width: ss.echo_width,
         strip_n_out: ss.n_out,
         strip_rows: ss.used_rows,
         z_op,
+        claim_op: ts_claim_op,
         deep_coeff_op,
+        n_terms,
+        width_inner,
+        t_inner,
+        n_pz,
+        pchunk_len,
         pub_len,
         ntr,
         ncoeff2,
-        n_terms,
-        width_inner,
-        // The sidecar appends one term per periodic column behind the frame
-        // and composition terms; the window is what remains, and it divides
-        // exactly or the term list is not what this layout thinks it is.
-        window_inner: {
-            let frame_terms = n_terms - 1 - pchunk_len;
-            assert!(
-                frame_terms % width_inner == 0,
-                "deep terms do not tile the frame: {frame_terms} over width {width_inner}"
-            );
-            frame_terms / width_inner
-        },
-        ocells,
-        depth,
-        n_open,
-        n_folds: ft.n_folds,
-        log_n: ft.log_n,
-        pbits,
-        fbits,
-        t_inner,
-        n_pz,
-        sidecar: with_sidecar,
-        claim_op: ts.claim_op,
-        pa_off,
-        pchunk_cells,
-        pa_depth,
-        n_chunks: n_pz.div_ceil(crate::crypto::stark::air::RATE),
         frame_len,
         n_coeff,
         c_periodic_col,
         c_z_col,
         c_coeff_col,
         c_comp_z_col,
-    };
+        n_folds: ft_n_folds,
+        log_n: ft_log_n,
+        sidecar_root,
+    }
+}
+
+/// One inner's regions and the data its layout needs, before any row is placed.
+/// Offsets are deliberately absent: they exist only once the parts are laid end
+/// to end, which is what lets one outer carry several inners.
+struct Parts {
+    regions: Vec<Box<dyn AirExt>>,
+    traces: Vec<Vec<Fp>>,
+    publics: Vec<Fp>,
+    with_sidecar: bool,
+    n_q: usize,
+    i0: usize,
+    depth: usize,
+    n_open: usize,
+    pbits: usize,
+    fbits: usize,
+    pa_depth: usize,
+    ta_depth: usize,
+    ocells: Vec<Vec<(usize, usize)>>,
+    tchunk_cells: Vec<Vec<(usize, usize)>>,
+    pchunk_cells: Vec<Vec<(usize, usize)>>,
+    cycles: Vec<((usize, usize), strip::Home)>,
+    acc_cols: Vec<usize>,
+    final_row: usize,
+    flat_acc: Vec<usize>,
+    strip_k: usize,
+    strip_echo_width: usize,
+    strip_n_out: usize,
+    strip_rows: usize,
+    z_op: usize,
+    claim_op: usize,
+    deep_coeff_op: usize,
+    n_terms: usize,
+    width_inner: usize,
+    t_inner: usize,
+    n_pz: usize,
+    pchunk_len: usize,
+    pub_len: usize,
+    ntr: usize,
+    ncoeff2: usize,
+    frame_len: usize,
+    n_coeff: usize,
+    c_periodic_col: usize,
+    c_z_col: usize,
+    c_coeff_col: usize,
+    c_comp_z_col: usize,
+    n_folds: usize,
+    log_n: u32,
+    sidecar_root: Option<[Fp; crate::crypto::stark::air::RATE]>,
+}
+
+/// An outer over one or more inners: the same engine, one layout per inner.
+pub struct Aggregate {
+    pub wired: WiredMultiExt,
+    pub witness: Vec<Fp>,
+    pub lays: Vec<Layout>,
+    pub publics: Vec<Fp>,
+    pub n_groups: usize,
+    pub region_offsets: Vec<usize>,
+}
+
+/// Lay the parts end to end and bind them into one engine. Every inner keeps its
+/// own layout over the shared trace, so its regions are bound only to its own
+/// openings; the kinds repeat, so the constraint set does not grow with the
+/// number of inners and only the row count does.
+fn combine(parts: Vec<Parts>) -> Aggregate {
+    assert!(!parts.is_empty(), "an outer needs at least one inner");
+    let with_sidecar = parts[0].with_sidecar;
+    let n_q = parts[0].n_q;
+    for p in &parts {
+        assert!(
+            p.with_sidecar == with_sidecar && p.n_q == n_q,
+            "aggregated inners must share their shape"
+        );
+    }
+
+    let mut regions: Vec<Box<dyn AirExt>> = Vec::new();
+    let mut traces: Vec<Vec<Fp>> = Vec::new();
+    let mut starts: Vec<usize> = Vec::with_capacity(parts.len());
+    let mut publics: Vec<Fp> = Vec::new();
+    let mut parts = parts;
+    for p in parts.iter_mut() {
+        starts.push(regions.len());
+        regions.append(&mut p.regions);
+        traces.append(&mut p.traces);
+        publics.extend_from_slice(&p.publics);
+    }
+    let (off, span) = offsets(&regions);
+
+    let base = if with_sidecar { 4 } else { 5 };
+    let stride = if with_sidecar { 7 } else { 6 };
+    let mut lays: Vec<Layout> = Vec::with_capacity(parts.len());
+    for (p, &s) in parts.iter().zip(starts.iter()) {
+        let o = &off[s..];
+        let (c_off, strip_off, ft_off) = (o[1], o[2], o[3]);
+        // The strip's cycles in absolute coordinates: echoes to producers,
+        // final accumulators to the flat acc cells.
+        let mut strip_cycles: Vec<((usize, usize), (usize, usize))> = Vec::new();
+        for ((r, col), home) in &p.cycles {
+            let a = (strip_off + r, *col);
+            let b = match home {
+                strip::Home::Flat(u) => (c_off, *u),
+                strip::Home::Strip(pr, pc) => (strip_off + pr, *pc),
+            };
+            strip_cycles.push((a, b));
+        }
+        for (j, sc) in p.acc_cols.iter().enumerate() {
+            strip_cycles.push((
+                (strip_off + p.final_row, *sc),
+                (c_off, p.flat_acc[j / 2] + (j % 2)),
+            ));
+        }
+        let pz_off = if with_sidecar { 0 } else { o[4] };
+        let d_off: Vec<usize> = (0..n_q).map(|k| o[base + k * stride]).collect();
+        let f_off: Vec<usize> = (0..n_q).map(|k| o[base + k * stride + 1]).collect();
+        let m_off: Vec<usize> = (0..n_q).map(|k| o[base + k * stride + 2]).collect();
+        let ta_off: Vec<usize> = (0..n_q).map(|k| o[base + k * stride + 3]).collect();
+        let pa_off: Vec<usize> = if with_sidecar {
+            (0..n_q).map(|k| o[base + k * stride + 4]).collect()
+        } else {
+            Vec::new()
+        };
+        let i_off: Vec<usize> = (0..n_q)
+            .map(|k| o[base + k * stride + stride - 2])
+            .collect();
+        let fp_off: Vec<usize> = (0..n_q)
+            .map(|k| o[base + k * stride + stride - 1])
+            .collect();
+
+        lays.push(Layout {
+            span,
+            l: 1usize << LOG_ROUNDS,
+            n_q,
+            i0: p.i0,
+            c_off,
+            ft_off,
+            pz_off,
+            d_off,
+            f_off,
+            m_off,
+            i_off,
+            fp_off,
+            ta_off,
+            tchunk_cells: p.tchunk_cells.clone(),
+            ta_depth: p.ta_depth,
+            strip_cycles,
+            strip_off,
+            strip_k: p.strip_k,
+            strip_echo_width: p.strip_echo_width,
+            strip_n_out: p.strip_n_out,
+            strip_rows: p.strip_rows,
+            z_op: p.z_op,
+            deep_coeff_op: p.deep_coeff_op,
+            pub_len: p.pub_len,
+            ntr: p.ntr,
+            ncoeff2: p.ncoeff2,
+            n_terms: p.n_terms,
+            width_inner: p.width_inner,
+            /*
+             * The sidecar appends one term per periodic column behind the frame
+             * and composition terms; the window is what remains, and it divides
+             * exactly or the term list is not what this layout thinks it is.
+             */
+            window_inner: {
+                let frame_terms = p.n_terms - 1 - p.pchunk_len;
+                assert!(
+                    frame_terms % p.width_inner == 0,
+                    "deep terms do not tile the frame: {frame_terms} over width {}",
+                    p.width_inner
+                );
+                frame_terms / p.width_inner
+            },
+            ocells: p.ocells.clone(),
+            depth: p.depth,
+            n_open: p.n_open,
+            n_folds: p.n_folds,
+            log_n: p.log_n,
+            pbits: p.pbits,
+            fbits: p.fbits,
+            t_inner: p.t_inner,
+            n_pz: p.n_pz,
+            sidecar: with_sidecar,
+            claim_op: p.claim_op,
+            pa_off,
+            pchunk_cells: p.pchunk_cells.clone(),
+            pa_depth: p.pa_depth,
+            n_chunks: p.n_pz.div_ceil(crate::crypto::stark::air::RATE),
+            frame_len: p.frame_len,
+            n_coeff: p.n_coeff,
+            c_periodic_col: p.c_periodic_col,
+            c_z_col: p.c_z_col,
+            c_coeff_col: p.c_coeff_col,
+            c_comp_z_col: p.c_comp_z_col,
+        });
+    }
 
     std::eprintln!("[asm] offsets/layout");
-    let gps = fuse(build_groups(&lay), &lay, &regions);
+    /*
+     * Every inner's binds are built against its own layout and collapse together
+     * over the one trace, so an inner's regions stay bound to that inner's
+     * openings and nothing crosses between them.
+     */
+    let mut binds: Vec<groups::Bind> = Vec::new();
+    for lay in &lays {
+        binds.extend(build_groups(lay));
+    }
+    let width = regions.iter().map(|r| r.trace_width()).max().unwrap_or(1);
+    let gps = groups::collapse(&binds, span, width);
     std::eprintln!("[asm] groups fused");
     let n_groups = gps.len();
     let shared = if with_sidecar { 4 } else { 5 };
     let per_q = if with_sidecar { 7 } else { 6 };
-    let kinds: Vec<usize> = (0..shared)
+    /*
+     * The kinds repeat across inners: an inner's region has the same shape and
+     * the same rules whichever inner it belongs to, so the constraint set is
+     * fixed and only the rows grow with the count.
+     */
+    let one: Vec<usize> = (0..shared)
         .chain((0..n_q).flat_map(|_| shared..shared + per_q))
         .collect();
-    // The chain openings anchor to constants no region pins in witness form:
-    // the zero leaf that starts every chain, and for the sidecar the baked
-    // periodic root every chain must reach. The trace chain's root is the
-    // proof's, bound to the transcript's absorb cells by the roots family, so
-    // only its zero leaf pins here.
+    let kinds: Vec<usize> = (0..lays.len()).flat_map(|_| one.iter().copied()).collect();
+    /*
+     * The chain openings anchor to constants no region pins in witness form:
+     * the zero leaf that starts every chain, and for the sidecar the baked
+     * periodic root every chain must reach. The trace chain's root is the
+     * proof's, bound to the transcript's absorb cells by the roots family, so
+     * only its zero leaf pins here.
+     */
     let mut pins: Vec<(usize, usize, Fp)> = Vec::new();
-    for q in 0..n_q {
-        // Boundary tuples are (column, row, value).
-        for j in 0..crate::crypto::stark::air::RATE {
-            pins.push((j, lay.ta_off[q], Fp::ZERO));
-        }
-    }
-    if let Some(root) = sidecar_root {
+    for (p, lay) in parts.iter().zip(lays.iter()) {
         for q in 0..n_q {
-            let pa = lay.pa_off[q];
+            // Boundary tuples are (column, row, value).
             for j in 0..crate::crypto::stark::air::RATE {
-                pins.push((j, pa, Fp::ZERO));
-                pins.push((j, pa + lay.pa_depth * lay.l, root[j]));
+                pins.push((j, lay.ta_off[q], Fp::ZERO));
+            }
+        }
+        if let Some(root) = p.sidecar_root {
+            for q in 0..n_q {
+                let pa = lay.pa_off[q];
+                for j in 0..crate::crypto::stark::air::RATE {
+                    pins.push((j, pa, Fp::ZERO));
+                    pins.push((j, pa + lay.pa_depth * lay.l, root[j]));
+                }
             }
         }
     }
@@ -542,14 +704,49 @@ pub fn assemble_over<A: AirExt + GenericTransition + 'static>(
     std::eprintln!("[asm] engine built");
     let witness = wired.trace(&traces);
     std::eprintln!("[asm] witness placed");
-    Assembly {
+    Aggregate {
         wired,
         witness,
-        lay,
+        lays,
         publics,
         n_groups,
         region_offsets: off,
     }
+}
+
+/// The outer over one inner, which is what every existing caller builds.
+pub fn assemble_over<A: AirExt + GenericTransition + 'static>(
+    h: &Poseidon,
+    inner: Inner<A>,
+    tamper: Tamper,
+    cap: usize,
+) -> Assembly {
+    let agg = combine(alloc::vec![parts_over(h, inner, tamper, cap)]);
+    Assembly {
+        wired: agg.wired,
+        witness: agg.witness,
+        lay: agg.lays.into_iter().next().expect("one inner, one layout"),
+        publics: agg.publics,
+        n_groups: agg.n_groups,
+        region_offsets: agg.region_offsets,
+    }
+}
+
+/// The outer over several inners: one settlement proof carrying a batch. The
+/// inners ride side by side over one trace, each with its own layout, so the
+/// row count is the sum and the constraint set is the same one an outer over a
+/// single inner proves.
+pub fn assemble_many<A: AirExt + GenericTransition + 'static>(
+    h: &Poseidon,
+    inners: Vec<Inner<A>>,
+    cap: usize,
+) -> Aggregate {
+    assert!(!inners.is_empty(), "a batch needs at least one inner");
+    let parts = inners
+        .into_iter()
+        .map(|inner| parts_over(h, inner, Tamper::None, cap))
+        .collect();
+    combine(parts)
 }
 
 /// The capped real assembly next to its raw binds, for the bind-truth probe.

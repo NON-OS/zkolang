@@ -244,6 +244,67 @@ fn probe_bind_truth() {
     assert!(fails == 0, "{fails} bind violations");
 }
 
+/// Two inners under one outer, which is what a batch is. The gate is the same
+/// as the single-inner one, witness satisfaction, plus the two facts that make
+/// aggregation worth building: the rows are the sum, so the cost per inner does
+/// not grow, and the constraint set is the single-inner one, so the verifier on
+/// the other side sees the same shape at a larger domain. Capped, because the
+/// point here is the wiring rather than the size.
+#[test]
+#[ignore]
+fn two_inners_ride_one_outer() {
+    use crate::recursion_assembly::{assemble_many, assemble_real_capped, inner};
+    let cap = 2;
+    let one = assemble_real_capped(Tamper::None, cap);
+    let h = inner::hasher();
+    let agg = assemble_many(
+        &h,
+        alloc::vec![inner::shield_join_split(&h), inner::shield_join_split(&h)],
+        cap,
+    );
+    std::println!(
+        "one: span {} rows 2^{} width {} transitions {} groups {}",
+        one.lay.span,
+        one.wired.log_trace_len(),
+        one.wired.trace_width(),
+        one.wired.num_transition(),
+        one.n_groups
+    );
+    std::println!(
+        "two: span {} rows 2^{} width {} transitions {} groups {}",
+        agg.lays[0].span,
+        agg.wired.log_trace_len(),
+        agg.wired.trace_width(),
+        agg.wired.num_transition(),
+        agg.n_groups
+    );
+    assert!(agg.lays.len() == 2, "a two-inner outer must carry two layouts");
+    assert!(
+        agg.lays[0].span == 2 * one.lay.span,
+        "two inners must occupy twice the rows: {} against {}",
+        agg.lays[0].span,
+        one.lay.span
+    );
+    assert!(
+        agg.lays[1].c_off >= one.lay.span,
+        "the second inner must sit past the first, not on top of it"
+    );
+    assert!(
+        agg.wired.trace_width() == one.wired.trace_width()
+            && agg.wired.constraint_degree() == one.wired.constraint_degree()
+            && agg.wired.num_transition() == one.wired.num_transition(),
+        "a batch must not widen the outer or change its rules"
+    );
+    assert!(
+        agg.publics.len() == 2 * one.publics.len(),
+        "each inner carries its own statement into the outer"
+    );
+    assert!(
+        crate::witness_satisfies::satisfies(&agg.wired, &agg.witness),
+        "the two-inner assembly does not satisfy its own constraints"
+    );
+}
+
 /// A bent opened periodic value must break the compress chain to the baked
 /// root: the same cells feed the deep quotients, so if this passed, an opened
 /// row would be decoration.
