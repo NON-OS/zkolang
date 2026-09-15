@@ -5,7 +5,7 @@ use crate::crypto::stark::field::Fp;
 use super::assoc::assoc_membership;
 use super::keys::key_hierarchies;
 use crate::shield::key::Break;
-use super::pool::pool_membership;
+use super::pool::{pool_membership, pool_membership_against, Witnessed};
 use super::notes::note_regions;
 use crate::shield::note::Note;
 use alloc::vec::Vec;
@@ -24,15 +24,28 @@ pub struct Stack {
     pub depth: usize,
 }
 
+/// Where the two input notes are proven to live.
+///
+/// `Planted` builds a tree holding only those notes and proves against its own
+/// root, which is what the fixtures want and what no deployment can accept.
+/// `Published` proves against a root the pool already published, with the
+/// openings supplied by whoever read the tree.
+pub enum Anchor<'a> {
+    Planted,
+    Published { openings: [&'a Witnessed; 2], root: [Fp; RATE] },
+}
+
 /// Region order: balance, four notes, two memberships, two key hierarchies. The
 /// bindings address regions by that order.
-pub fn stack(
+#[allow(clippy::too_many_arguments)]
+pub fn stack_anchored(
     h: &Poseidon,
     notes: [&Note; 4],
     sks: [[Fp; RATE]; 2],
     brk: Break,
     bal: (ShieldRegion, Vec<Fp>),
     depth: usize,
+    anchor: Anchor<'_>,
 ) -> Stack {
     let n = note_regions(notes, brk);
     let span_op = n.span_op;
@@ -42,7 +55,26 @@ pub fn stack(
     regions.extend(n.regions);
     traces.extend(n.traces);
 
-    let p = pool_membership(h, &[cms[0], cms[1]], depth);
+    let p = match anchor {
+        Anchor::Planted => pool_membership(h, &[cms[0], cms[1]], depth),
+        Anchor::Published { openings, root } => {
+            /*
+             * A path shorter or longer than the tree walks to a root at the
+             * wrong height, and the walk would still be honest arithmetic, so
+             * it would not fail as a constraint. It fails here instead, where
+             * the caller can still see which input was wrong.
+             */
+            for (i, o) in openings.iter().enumerate() {
+                assert_eq!(
+                    o.siblings.len(),
+                    depth,
+                    "input {i} opening is {} levels against a depth {depth} tree",
+                    o.siblings.len()
+                );
+            }
+            pool_membership_against(h, &[cms[0], cms[1]], openings, root)
+        }
+    };
     let leaves = p.leaves.clone();
     let leaf_col = p.leaf_col.clone();
     regions.extend(p.regions);

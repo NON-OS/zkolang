@@ -2,7 +2,7 @@
 
 use super::intent::publics_region;
 use super::settle::Settle;
-use super::stack::stack;
+use super::stack::{stack_anchored, Anchor};
 use super::terms::balance;
 use crate::crypto::stark::air::{ShieldRegion, Poseidon, RATE};
 use crate::crypto::stark::field::Fp;
@@ -39,13 +39,39 @@ pub fn intent_parts(
     flip: Option<usize>,
     depth: usize,
 ) -> IntentParts {
+    intent_parts_anchored(
+        inputs,
+        outputs,
+        public_amount,
+        fee,
+        brk,
+        st,
+        flip,
+        depth,
+        Anchor::Planted,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn intent_parts_anchored(
+    inputs: [Spend; 2],
+    outputs: [&Note; 2],
+    public_amount: u64,
+    fee: u64,
+    brk: Break,
+    st: Settle,
+    flip: Option<usize>,
+    depth: usize,
+    anchor: Anchor<'_>,
+) -> IntentParts {
     let notes = [inputs[0].note, inputs[1].note, outputs[0], outputs[1]];
     let values = [notes[0].value, notes[1].value, notes[2].value, notes[3].value];
     let (air, trace) = balance(&values, public_amount, fee);
 
     let h = Poseidon::new(POOL_LOG_ROUNDS, [Fp::ZERO; RATE]);
     let sks = [inputs[0].sk, inputs[1].sk];
-    let mut s = stack(&h, notes, sks, brk, (ShieldRegion::Balance(air), trace), depth);
+    let mut s =
+        stack_anchored(&h, notes, sks, brk, (ShieldRegion::Balance(air), trace), depth, anchor);
 
     let (intent, pub_air) =
         publics_region(&s, public_amount, fee, notes[0].asset_id, st, flip);

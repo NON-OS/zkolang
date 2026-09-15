@@ -64,6 +64,8 @@ mod note_edge;
 #[cfg(test)]
 mod owns;
 #[cfg(test)]
+mod published_root;
+#[cfg(test)]
 mod publics;
 #[cfg(test)]
 mod publics_scope;
