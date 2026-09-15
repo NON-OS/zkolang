@@ -158,6 +158,17 @@ fn main() {
     let num_transition = asm.wired.num_transition();
     let num_boundary = asm.wired.boundary().len();
     let n_coeffs = num_transition + num_boundary;
+    /*
+     * The inner's own two counts. The compose region is one fixed-order run, so
+     * a verifier that knows where the coefficients start can derive the whole
+     * slot map from these rather than carry a transcribed table, and a wrong
+     * count moves the derivation instead of failing loudly. They come off the
+     * inner AIR the emitter already builds for the periodic root, so nothing
+     * downstream has to guess them from the outer's totals.
+     */
+    let inner_air = stark_proofs::shield_deployed_wired();
+    let inner_n_transitions = inner_air.num_transition();
+    let inner_n_boundary = inner_air.boundary().len();
     println!(
         "outer     point={point} span={} log_trace_len={log_trace_len} degree={degree} \
          max_group_width={max_group_width} log_domain_rate_half={log_domain} \
@@ -186,7 +197,9 @@ fn main() {
          \"inner_log_trace_len\": {},\n  \"inner_trace_width\": {},\n  \"n_queries\": {},\n  \
          \"inner_n_queries\": {},\n  \"outer_n_queries\": {},\n  \"max_group_width\": {},\n  \
          \"grind_bits\": {},\n  \"extra_blowup_bits\": {},\n  \"log_domain\": {},\n  \
-         \"coset_shift\": {},\n  \"periodic_root_poseidon\": \"{}\"\n}}\n",
+         \"coset_shift\": {},\n  \"inner_n_transitions\": {},\n  \
+         \"inner_n_boundary\": {},\n  \"outer_fri_queries\": {},\n  \
+         \"periodic_root_poseidon\": \"{}\"\n}}\n",
         point,
         asm.wired.log_trace_len(),
         asm.wired.trace_width(),
@@ -205,6 +218,16 @@ fn main() {
         extra_blowup_bits,
         outer_log_domain,
         COSET_SHIFT,
+        inner_n_transitions,
+        inner_n_boundary,
+        /*
+         * The same value as `outer_n_queries` under the name that says which
+         * FRI it counts. The old key stays for one release so a reader pinned
+         * to it does not break; after that the ambiguous name goes, because a
+         * count of 32 sitting beside a 64 query transfer point is exactly the
+         * pair a verifier multiplies the wrong way round.
+         */
+        outer_n_queries,
         root_hex,
     );
     std::fs::write(&out, &json).expect("write structure");
@@ -240,6 +263,49 @@ fn main() {
      */
     let outer_n_periodic = asm.wired.periodic_columns().len();
     eprintln!("outer periodic root done, {outer_n_periodic} outer periodic columns");
+    /*
+     * The kind map: which constraint body each kind runs, where its periodic
+     * values begin, and how wide its body is. This is the one thing about the
+     * outer that a verifier cannot derive from any other emitted number, because
+     * it is a statement about how the assembler pushed its regions rather than a
+     * property of the trace.
+     */
+    let kmap = asm.wired.kind_map();
+    /*
+     * The widest arity among the kinds that are not compose. The widest arity
+     * overall is already `group_constraint_base` under another name, because
+     * the fused AIR takes the maximum arity as its region lane count and then
+     * appends one lane per group, so emitting it again would be the same
+     * subtraction twice with two names. What is not derivable is where compose
+     * stops being the only contributor: every kind contributes at every index
+     * below its own arity, so a verifier that dispatches per lane needs to know
+     * how far up the vector a second body can still reach. Compose is named
+     * rather than inferred from the width, because a body being widest is a
+     * fact about this circuit and not a definition.
+     */
+    let max_noncompose_arity = kmap
+        .iter()
+        .zip(&asm.kind_bodies)
+        .filter(|(_, body)| **body != "compose")
+        .map(|(&(_, _, arity, _), _)| arity)
+        .max()
+        .unwrap_or(0);
+    assert_eq!(
+        kmap.len(),
+        asm.kind_bodies.len(),
+        "every kind must name the body it runs"
+    );
+    let kinds_json: Vec<String> = kmap
+        .iter()
+        .zip(&asm.kind_bodies)
+        .enumerate()
+        .map(|(k, (&(base, slots, arity, instances), body))| {
+            format!(
+                "{{\"kind\": {k}, \"body\": \"{body}\", \"periodic_base\": {base}, \
+                 \"slots\": {slots}, \"arity\": {arity}, \"instances\": {instances}}}"
+            )
+        })
+        .collect();
     eprintln!("reading the permutation columns");
     let (sel_idx, row_idx, sig_base) = asm.wired.permutation_columns();
     eprintln!("permutation columns read; formatting {} groups", sig_base.len());
@@ -270,6 +336,9 @@ fn main() {
          \"strip_off\": {},\n  \"strip_k\": {},\n  \"strip_echo_width\": {},\n  \
          \"strip_n_out\": {},\n  \"strip_rows\": {},\n  \"outer_n_periodic\": {},\n  \
          \"outer_periodic_root_keccak\": \"{}\",\n  \
+         \"max_noncompose_arity\": {},\n  \"group_column_base\": {},\n  \
+         \"group_constraint_base\": {},\n  \
+         \"kinds\": [\n    {}\n  ],\n  \
          \"groups\": [\n    {}\n  ]\n}}\n",
         lay.span,
         lay.l,
@@ -309,6 +378,21 @@ fn main() {
         lay.strip_rows,
         outer_n_periodic,
         outer_root_hex,
+        max_noncompose_arity,
+        /*
+         * Two bases with the same arithmetic shape over different vectors, so
+         * both are named rather than left to be inferred. The column base is
+         * where the grand product running product columns begin in the trace:
+         * each group owns one and they sit at the end, so it is the trace width
+         * less the group count. The constraint base is where those groups' lanes
+         * begin in the constraint vector: the transitions the regions write,
+         * less the same count. Reading one where the other was meant lands in
+         * the wrong vector entirely, and both read as "something minus the
+         * group count", which is exactly why they are emitted apart.
+         */
+        asm.wired.trace_width() - asm.n_groups,
+        num_transition - asm.n_groups,
+        kinds_json.join(",\n    "),
         groups_json.join(",\n    "),
     );
     let lay_out = out.replace(".json", "-layout.json");

@@ -23,6 +23,43 @@ pub struct Assembly {
     pub n_groups: usize,
     /// Each region's first row in the stacked trace, in region order.
     pub region_offsets: Vec<usize>,
+    /*
+     * Which constraint body each kind runs, in kind order. The selector column
+     * tells a verifier which kind a row belongs to but not which rule that kind
+     * enforces, and the mapping is a property of how the regions were pushed
+     * rather than anything recoverable from the trace or the layout. Carrying
+     * it here is what lets the on chain side be driven by the emitted shape
+     * instead of a transcribed table that silently rots when the region list
+     * changes.
+     */
+    pub kind_bodies: Vec<&'static str>,
+}
+
+/*
+ * The constraint body each region runs, in the order the regions are pushed.
+ * Two switches decide the list. The accumulator strip exists only on the
+ * aggregating path, so an outer built by `combine` carries a body that the
+ * single region fixture never builds; and the periodic-z region is present
+ * exactly when the sidecar is off, the sidecar replacing it with a per query
+ * authentication instead. Deriving the names from the same two switches the
+ * layout uses keeps the emitted map from drifting away from the region list,
+ * which a written out table would do at the first reorder.
+ */
+fn body_names(with_strip: bool, with_sidecar: bool) -> Vec<&'static str> {
+    let mut v: Vec<&'static str> = alloc::vec!["transcript", "compose"];
+    if with_strip {
+        v.push("strip");
+    }
+    v.push("transcript");
+    if !with_sidecar {
+        v.push("periodic_z");
+    }
+    v.extend_from_slice(&["deep", "fold", "membership", "membership"]);
+    if with_sidecar {
+        v.push("periodic_auth");
+    }
+    v.extend_from_slice(&["index", "index"]);
+    v
 }
 
 /// The join-split recursion attesting every inner query, with `tamper` applied to
@@ -230,6 +267,8 @@ pub fn assemble_capped(tamper: Tamper, tamper_q: usize, cap: usize) -> Assembly 
         publics: inner.publics,
         n_groups,
         region_offsets: off,
+        /* The fixture has no accumulator strip; only the aggregating path does. */
+        kind_bodies: body_names(false, false),
     }
 }
 
@@ -513,6 +552,8 @@ pub struct Aggregate {
     pub publics: Vec<Fp>,
     pub n_groups: usize,
     pub region_offsets: Vec<usize>,
+    /// Which constraint body each kind runs, in kind order. See `Assembly`.
+    pub kind_bodies: Vec<&'static str>,
 }
 
 /// Lay the parts end to end and bind them into one engine. Every inner keeps its
@@ -704,6 +745,19 @@ fn combine(parts: Vec<Parts>) -> Aggregate {
     std::eprintln!("[asm] engine built");
     let witness = wired.trace(&traces);
     std::eprintln!("[asm] witness placed");
+    /*
+     * The aggregating path always builds the accumulator strip, so its kind
+     * list carries a body the fixture assembly never runs and every kind after
+     * compose sits one place later than it does there. A port that assumes the
+     * fixture's kind order lands on the wrong body from compose onward, which
+     * is the reason this is emitted rather than described.
+     */
+    let bodies = body_names(true, with_sidecar);
+    debug_assert_eq!(
+        bodies.len(),
+        shared + per_q,
+        "the body list and the kind list must describe the same regions"
+    );
     Aggregate {
         wired,
         witness,
@@ -711,6 +765,7 @@ fn combine(parts: Vec<Parts>) -> Aggregate {
         publics,
         n_groups,
         region_offsets: off,
+        kind_bodies: bodies,
     }
 }
 
@@ -729,6 +784,7 @@ pub fn assemble_over<A: AirExt + GenericTransition + 'static>(
         publics: agg.publics,
         n_groups: agg.n_groups,
         region_offsets: agg.region_offsets,
+        kind_bodies: agg.kind_bodies,
     }
 }
 
@@ -896,6 +952,12 @@ pub fn assemble_step(tamper: Tamper) -> Assembly {
         pts.fptrace,
         pztrace,
     ]);
+    /*
+     * The step assembly gives every region its own kind and pushes them in a
+     * different order from the query blocks, so it names its bodies directly
+     * rather than through `body_names`. It is a single query probe and is not
+     * a shape anything on chain derives from.
+     */
     Assembly {
         wired,
         witness,
@@ -903,5 +965,17 @@ pub fn assemble_step(tamper: Tamper) -> Assembly {
         publics,
         n_groups,
         region_offsets: off,
+        kind_bodies: alloc::vec![
+            "transcript",
+            "compose",
+            "deep",
+            "transcript",
+            "fold",
+            "membership",
+            "membership",
+            "index",
+            "index",
+            "periodic_z",
+        ],
     }
 }

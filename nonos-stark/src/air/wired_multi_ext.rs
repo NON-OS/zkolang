@@ -82,6 +82,31 @@ impl WiredMultiExt {
         self.regions.iter().map(|r| r.constraint_degree()).collect()
     }
 
+    /*
+     * Per kind, in kind order: where the kind's periodic values begin, how many
+     * it owns, how many constraint indices its body writes, and how many
+     * regions run it. A verifier evaluating the transition at z needs the first
+     * two to slice the periodic vector and the third to know how far into the
+     * shared constraint vector that kind reaches; none of the three is
+     * recoverable from the trace, and the widest arity here is the overlap
+     * width, so a reader that has this does not have to be told it separately.
+     */
+    pub fn kind_map(&self) -> Vec<(usize, usize, usize, usize)> {
+        let sel = self.stack.n_kinds;
+        (0..self.stack.n_kinds)
+            .map(|k| {
+                let first = self.stack.kind_first[k];
+                let instances = self.stack.kind_of.iter().filter(|&&j| j == k).count();
+                (
+                    sel + self.stack.kind_slot[k],
+                    self.stack.kind_slots[k],
+                    self.regions[first].num_transition(),
+                    instances,
+                )
+            })
+            .collect()
+    }
+
     pub fn new(regions: Vec<Box<dyn AirExt>>, groups: Vec<GpGroup>) -> WiredMultiExt {
         let kinds: Vec<usize> = (0..regions.len()).collect();
         WiredMultiExt::new_kinds(regions, &kinds, groups)
