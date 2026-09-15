@@ -29,6 +29,7 @@
 
 use super::super::field::{Felt, Fp, Fp2};
 use super::spec::{Air, AirExt};
+use crate::poly::batch_inv;
 use alloc::vec::Vec;
 
 /// The extension non-residue, so `(p + q X)(r + s X) = (pr + W qs) + (ps + qr) X`.
@@ -61,19 +62,40 @@ impl PeriodicZ {
         (self.z.pow(t) - Fp2::ONE) * Fp2::from_base(Fp::from_u64(t)).inv()
     }
 
-    fn quotient(&self, j: usize, i: usize) -> Fp2 {
-        let x = self.h.pow(i as u64);
-        Fp2::from_base(self.cols[j][i] * x) * (self.z - Fp2::from_base(x)).inv()
+    /// The row factor of the barycentric term, `x_i / (z - x_i)`, for every row
+    /// of the domain. It depends on the row and not on the column, so it is
+    /// built once and read by every column: computing it per cell cost one
+    /// exponentiation and one inversion per column per row, which on the
+    /// deployed set is seventy times more of each than the work needs.
+    fn row_weights(&self) -> Vec<Fp2> {
+        let t = self.t();
+        let mut xs = Vec::with_capacity(t);
+        let mut x = Fp::ONE;
+        for _ in 0..t {
+            xs.push(x);
+            x = x * self.h;
+        }
+        let dens: Vec<Fp2> = xs.iter().map(|&x| self.z - Fp2::from_base(x)).collect();
+        let invs = batch_inv(&dens);
+        xs.iter()
+            .zip(invs.iter())
+            .map(|(&x, inv)| Fp2::from_base(x) * *inv)
+            .collect()
+    }
+
+    fn quotient_with(&self, w: &[Fp2], j: usize, i: usize) -> Fp2 {
+        Fp2::from_base(self.cols[j][i]) * w[i]
     }
 
     /// The derived evaluations, one per column, for the caller to bind against.
     pub fn values(&self) -> Vec<Fp2> {
         let e = self.prefactor();
+        let w = self.row_weights();
         (0..self.cols.len())
             .map(|j| {
                 let mut acc = Fp2::ZERO;
                 for i in 0..self.t() {
-                    acc = acc + self.quotient(j, i);
+                    acc = acc + self.quotient_with(&w, j, i);
                 }
                 acc * e
             })
@@ -106,11 +128,12 @@ impl PeriodicZ {
             tr[k * w + 7] = tw.c1;
             tw = tw.square();
         }
+        let rw = self.row_weights();
         for j in 0..self.cols.len() {
             let mut acc = Fp2::ZERO;
             for i in 0..self.t() {
                 let r = j * self.t() + i;
-                let q = self.quotient(j, i);
+                let q = self.quotient_with(&rw, j, i);
                 tr[r * w] = q.c0;
                 tr[r * w + 1] = q.c1;
                 tr[r * w + 2] = acc.c0;

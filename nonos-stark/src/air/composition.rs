@@ -21,6 +21,7 @@
 //! coefficients. Prover and verifier both call this, so the algebra is identical
 //! on the two sides by construction.
 
+use alloc::vec::Vec;
 use super::super::field::{Fp, Fp2};
 use super::spec::{Air, AirExt};
 
@@ -93,20 +94,48 @@ pub fn compose<A: Air>(air: &A, g: Fp, x: Fp, window: &[Fp], periodic: &[Fp], co
 /// enter through `Fp2::from_base`, and the batching coefficients are drawn from the
 /// extension for the same soundness. On a base-embedded point and base-embedded
 /// inputs it agrees with `compose` embedded, by construction.
-pub fn compose_ext<A: AirExt>(
+/// The parts of the composition that depend on the AIR and the domain but not
+/// on the point: the exemption points, the boundary list itself, and the trace
+/// domain point each boundary sits on. Built once per proof. Evaluating them
+/// inside the per point loop cost one exponentiation per boundary per row and
+/// rebuilt the boundary list every row, which on the deployed outer is 1,186 of
+/// each for every one of millions of points.
+pub struct ComposePlan {
+    t: u64,
+    exempt_pts: Vec<Fp>,
+    boundary: Vec<(usize, usize, Fp)>,
+    boundary_pts: Vec<Fp>,
+}
+
+impl ComposePlan {
+    pub fn new<A: Air>(air: &A, g: Fp) -> ComposePlan {
+        let t = 1u64 << air.log_trace_len();
+        let exempt_pts = (1..air.window_size()).map(|k| g.pow(t - k as u64)).collect();
+        let boundary = air.boundary();
+        let boundary_pts = boundary.iter().map(|(_, row, _)| g.pow(*row as u64)).collect();
+        ComposePlan { t, exempt_pts, boundary, boundary_pts }
+    }
+}
+
+/// The composition at `z` against a prepared plan, with the caller owning the
+/// scratch the boundary denominators are inverted in. One inversion serves the
+/// whole boundary set: at 1,186 boundaries that is one exponentiation by p-2
+/// instead of 1,186 of them.
+pub fn compose_ext_planned<A: AirExt>(
     air: &A,
-    g: Fp,
+    plan: &ComposePlan,
     z: Fp2,
     window: &[Fp2],
     periodic: &[Fp2],
     coeffs: &[Fp2],
+    den: &mut Vec<Fp2>,
+    prefix: &mut Vec<Fp2>,
 ) -> Fp2 {
-    let t = 1u64 << air.log_trace_len();
-    let z_h_inv = (z.pow(t) - Fp2::ONE).inv();
+    let z_h_inv = (z.pow(plan.t) - Fp2::ONE).inv();
 
     let mut exempt = Fp2::ONE;
-    for k in 1..air.window_size() {
-        exempt = exempt * (z - Fp2::from_base(g.pow(t - k as u64)));
+    for p in &plan.exempt_pts {
+        exempt = exempt * (z - Fp2::from_base(*p));
     }
 
     let mut acc = Fp2::ZERO;
@@ -115,12 +144,29 @@ pub fn compose_ext<A: AirExt>(
         acc = acc + *coeff * (*value * exempt * z_h_inv);
     }
 
+    den.clear();
+    den.extend(plan.boundary_pts.iter().map(|p| z - Fp2::from_base(*p)));
+    crate::poly::batch_inv_in_place(den, prefix);
+
     let boundary_coeffs = &coeffs[transition.len()..];
-    for ((col, row, expected), coeff) in air.boundary().iter().zip(boundary_coeffs.iter()) {
-        let quotient = (window[*col] - Fp2::from_base(*expected))
-            * (z - Fp2::from_base(g.pow(*row as u64))).inv();
-        acc = acc + *coeff * quotient;
+    for (((col, _, expected), coeff), inv) in
+        plan.boundary.iter().zip(boundary_coeffs.iter()).zip(den.iter())
+    {
+        acc = acc + *coeff * ((window[*col] - Fp2::from_base(*expected)) * *inv);
     }
 
     acc
+}
+
+pub fn compose_ext<A: AirExt>(
+    air: &A,
+    g: Fp,
+    z: Fp2,
+    window: &[Fp2],
+    periodic: &[Fp2],
+    coeffs: &[Fp2],
+) -> Fp2 {
+    let plan = ComposePlan::new(air, g);
+    let (mut den, mut prefix) = (Vec::new(), Vec::new());
+    compose_ext_planned(air, &plan, z, window, periodic, coeffs, &mut den, &mut prefix)
 }

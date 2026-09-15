@@ -22,7 +22,7 @@
 //! composition is never held at once.
 
 use super::super::super::field::{Fp, Fp2};
-use super::super::composition::compose_ext;
+use super::super::composition::{compose_ext_planned, ComposePlan};
 use super::super::spec::AirExt;
 use super::coset::extend;
 use super::setup::Domain;
@@ -45,6 +45,13 @@ pub(in crate::air) fn over_domain<A: AirExt>(
     periodic: &[Vec<Fp>],
     coeffs: &[Fp2],
 ) -> Vec<Fp2> {
+    /*
+     * The plan holds everything the composition needs that does not depend on
+     * the point: the exemption points, the boundary list and its domain points.
+     * Built once here rather than rebuilt inside the per point call, which is
+     * what it used to be.
+     */
+    let plan = ComposePlan::new(air, d.g);
     let mut comp_d = alloc::vec![Fp2::ZERO; d.n];
     for c in 0..d.blowup {
         let cols = extend(trace, d, c);
@@ -56,6 +63,10 @@ pub(in crate::air) fn over_domain<A: AirExt>(
             let mut window: Vec<Fp2> = Vec::with_capacity(d.window * d.width);
             let mut periodic_i: Vec<Fp2> = Vec::with_capacity(per.len());
             let mut out: Vec<Fp2> = Vec::with_capacity(hi - lo);
+            // The denominator set and its prefixes, owned by the block so the
+            // per point inversion allocates nothing.
+            let mut den: Vec<Fp2> = Vec::new();
+            let mut prefix: Vec<Fp2> = Vec::new();
             let mut x = shift_c * d.sub.pow(lo as u64);
             for i in lo..hi {
                 window.clear();
@@ -67,13 +78,15 @@ pub(in crate::air) fn over_domain<A: AirExt>(
                 }
                 periodic_i.clear();
                 periodic_i.extend(per.iter().map(|p| Fp2::from_base(p[i])));
-                out.push(compose_ext(
+                out.push(compose_ext_planned(
                     air,
-                    d.g,
+                    &plan,
                     Fp2::from_base(x),
                     &window,
                     &periodic_i,
                     coeffs,
+                    &mut den,
+                    &mut prefix,
                 ));
                 x = x * d.sub;
             }

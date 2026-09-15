@@ -35,6 +35,9 @@ pub struct Fused {
     offsets: Vec<usize>,
     /// First periodic slot each region owns, after the selectors.
     slot_offsets: Vec<usize>,
+    /// Each region's periodic column count, held because the only other way to
+    /// ask is to build the columns and the transition evaluator asks per row.
+    slot_counts: Vec<usize>,
     width: usize,
     window: usize,
     log_len: u32,
@@ -51,16 +54,19 @@ impl Fused {
         let mut slot = 0usize;
         let mut width = 1usize;
         let mut window = 2usize;
+        let mut slot_counts = Vec::with_capacity(regions.len());
         for region in &regions {
             offsets.push(row);
             slot_offsets.push(slot);
             row += region.rows();
-            slot += region.periodic_columns().len();
+            let n = region.periodic_columns().len();
+            slot_counts.push(n);
+            slot += n;
             width = width.max(region.trace_width());
             window = window.max(region.window_size());
         }
         let log_len = row.next_power_of_two().trailing_zeros();
-        Fused { regions, offsets, slot_offsets, width, window, log_len }
+        Fused { regions, offsets, slot_offsets, slot_counts, width, window, log_len }
     }
 
     fn height(&self, i: usize) -> usize {
@@ -168,7 +174,7 @@ impl Air for Fused {
                 local.extend_from_slice(&window[k * self.width..k * self.width + w]);
             }
             let base = sel + self.slot_offsets[i];
-            let slots = region.periodic_columns().len();
+            let slots = self.slot_counts[i];
             let values = region.transition(&local, &periodic[base..base + slots]);
             for (c, v) in values.into_iter().enumerate() {
                 out[c] = out[c] + s * v;

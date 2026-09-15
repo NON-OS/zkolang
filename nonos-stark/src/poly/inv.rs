@@ -50,3 +50,25 @@ pub fn batch_inv<F: Felt>(vals: &[F]) -> Vec<F> {
     }
     out
 }
+
+/// The same batch inverse, in place, with the caller owning the scratch. A
+/// prover loop that inverts a set per row wants the allocation to happen once
+/// rather than once per row: at a thousand denominators over a domain of
+/// millions the allocator, not the arithmetic, becomes the cost.
+///
+/// Every input must be nonzero, as above.
+pub fn batch_inv_in_place<F: Felt>(vals: &mut [F], prefix: &mut Vec<F>) {
+    prefix.clear();
+    prefix.reserve(vals.len());
+    let mut acc = F::ONE;
+    for v in vals.iter() {
+        prefix.push(acc);
+        acc = acc * *v;
+    }
+    let mut inv = acc.inv();
+    for i in (0..vals.len()).rev() {
+        let v = vals[i];
+        vals[i] = inv * prefix[i];
+        inv = inv * v;
+    }
+}
