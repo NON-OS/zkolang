@@ -72,44 +72,55 @@ pub(in crate::air) fn periodic_tree_over(
         return (coeffs, MerkleTree::commit_wide_periodic(&[]));
     }
     /*
-     * Cosets are independent. Each reads the shared coefficients and produces
-     * its own rows, so the work parallelises across cosets rather than only
-     * inside one, and that is the difference between a wide machine being busy
-     * and a wide machine waiting. Parallelising only the absorb left a 56 core
-     * box under a fifth loaded on the settlement outer, because a column chunk
-     * is 64 wide and nothing else is in flight while one coset finishes.
+     * Cosets are independent, so the work parallelises across them rather than
+     * only inside one. Parallelising only the absorb left a 56 core box under a
+     * fifth loaded on the settlement outer, because a column chunk is 64 wide
+     * and nothing else is in flight while one coset finishes.
+     *
+     * In batches, though, and the reason is memory rather than taste. Each
+     * coset in flight holds its own leaf states and its own extended chunk, and
+     * on the settlement outer that is most of two hundred megabytes apiece.
+     * Turning every coset loose at once let the machine ask for tens of
+     * gigabytes beyond the coefficients and the kernel killed the prover three
+     * hours in. A batch bounds what is live to the batch size, which keeps the
+     * speed and gives the peak a ceiling that does not move with the core count.
      *
      * Digest order is untouched. Each coset still walks its rows in the same
      * order and they are scattered to the same positions afterwards, so the
      * tree above them and the root are the ones the sequential walk produced.
      */
-    let per_coset: Vec<Vec<[u8; 32]>> = crate::par::map_index(d.blowup, |c| {
-        /*
-         * One incremental leaf hash per row of the coset, the tag already
-         * absorbed. The columns then stream past a chunk at a time, each row
-         * absorbing its value from each column in column order, which is byte
-         * for byte the row the materialised committer hashes whole, so the
-         * digest is the same and no row is ever built. The working set is one
-         * chunk of columns and the leaf states, instead of every column over
-         * the coset and a fresh row allocation per leaf.
-         */
-        let mut leaves: Vec<PeriodicLeafHasher> =
-            (0..d.t).map(|_| PeriodicLeafHasher::new()).collect();
-        for chunk in coeffs.chunks(COLUMN_CHUNK) {
-            let ext = extend(chunk, d, c);
-            for (i, leaf) in leaves.iter_mut().enumerate() {
-                for col in &ext {
-                    leaf.absorb(col[i]);
+    let mut digests = alloc::vec![[0u8; 32]; d.n];
+    let mut first = 0usize;
+    while first < d.blowup {
+        let batch = core::cmp::min(COSET_BATCH, d.blowup - first);
+        let rows: Vec<Vec<[u8; 32]>> = crate::par::map_index(batch, |k| {
+            let c = first + k;
+            /*
+             * One incremental leaf hash per row of the coset, the tag already
+             * absorbed. The columns then stream past a chunk at a time, each
+             * row absorbing its value from each column in column order, which
+             * is byte for byte the row the materialised committer hashes
+             * whole, so the digest is the same and no row is ever built.
+             */
+            let mut leaves: Vec<PeriodicLeafHasher> =
+                (0..d.t).map(|_| PeriodicLeafHasher::new()).collect();
+            for chunk in coeffs.chunks(COLUMN_CHUNK) {
+                let ext = extend(chunk, d, c);
+                for (i, leaf) in leaves.iter_mut().enumerate() {
+                    for col in &ext {
+                        leaf.absorb(col[i]);
+                    }
                 }
             }
+            leaves.into_iter().map(|leaf| leaf.finalize()).collect()
+        });
+        for (k, row) in rows.into_iter().enumerate() {
+            let c = first + k;
+            for (i, dig) in row.into_iter().enumerate() {
+                digests[c + d.blowup * i] = dig;
+            }
         }
-        leaves.into_iter().map(|leaf| leaf.finalize()).collect()
-    });
-    let mut digests = alloc::vec![[0u8; 32]; d.n];
-    for (c, rows) in per_coset.into_iter().enumerate() {
-        for (i, dig) in rows.into_iter().enumerate() {
-            digests[c + d.blowup * i] = dig;
-        }
+        first += batch;
     }
     let pad = alloc::vec![Fp::ZERO; n_cols];
     let tree = MerkleTree::from_leaf_digests(digests, hash_leaf_wide_periodic(&pad));
@@ -119,6 +130,12 @@ pub(in crate::air) fn periodic_tree_over(
 /// Columns extended per pass. Sized so a chunk over one coset stays in the
 /// low hundreds of megabytes on the widest outer.
 const COLUMN_CHUNK: usize = 64;
+
+/// Cosets held in flight at once. Each carries its own leaf states and its own
+/// extended chunk, so this is the knob that bounds peak memory: eight is a few
+/// gigabytes on the widest outer, and it does not grow when the machine has
+/// more cores. Turning every coset loose instead is what the kernel killed.
+const COSET_BATCH: usize = 8;
 
 /// The committer as it stood before the leaf hashes streamed: every column held
 /// over the coset and a row built per leaf. Kept only as the reference the lean
