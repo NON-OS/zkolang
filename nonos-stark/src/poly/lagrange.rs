@@ -96,6 +96,24 @@ pub fn eval_cols_on_subgroup(g: Fp, t: usize, cols: &[Vec<Fp>], z: Fp) -> Vec<Fp
         .collect()
 }
 
+/// Each column's polynomial at `z`, read from its coefficients rather than its
+/// values on the subgroup.
+///
+/// Same polynomial and therefore the same value as
+/// [`eval_cols_on_subgroup_ext`], which a test holds it to. It exists because a
+/// caller that already has the coefficients can use this and drop the columns,
+/// and on a wide outer the columns are gigabytes that would otherwise have to
+/// stay alive until the out-of-domain point is drawn.
+pub fn eval_coeff_cols_at_ext(coeffs: &[Vec<Fp>], z: Fp2) -> Vec<Fp2> {
+    crate::par::map_slice(coeffs, |col| {
+        let mut acc = Fp2::ZERO;
+        for c in col.iter().rev() {
+            acc = acc * z + Fp2::from_base(*c);
+        }
+        acc
+    })
+}
+
 pub fn eval_cols_on_subgroup_ext(g: Fp, t: usize, cols: &[Vec<Fp>], z: Fp2) -> Vec<Fp2> {
     use super::inv::batch_inv;
     let mut dens = Vec::with_capacity(t);
@@ -113,13 +131,51 @@ pub fn eval_cols_on_subgroup_ext(g: Fp, t: usize, cols: &[Vec<Fp>], z: Fp2) -> V
         weights.push(scale * Fp2::from_base(gi) * *inv);
         gi = gi * g;
     }
-    cols.iter()
-        .map(|col| {
-            let mut acc = Fp2::ZERO;
-            for (y, w) in col.iter().zip(&weights) {
-                acc = acc + Fp2::from_base(*y) * *w;
-            }
-            acc
-        })
-        .collect()
+    /*
+     * The weights are shared and each column's sum is independent, so the
+     * columns divide across cores. On a wide outer this is 2,649 columns of a
+     * quarter million rows each, which is the difference between one core
+     * walking 694 million multiply-adds and the machine doing it. The sum
+     * within a column stays in order, so every value is the one the serial
+     * walk produced.
+     */
+    crate::par::map_slice(cols, |col| {
+        let mut acc = Fp2::ZERO;
+        for (y, w) in col.iter().zip(&weights) {
+            acc = acc + Fp2::from_base(*y) * *w;
+        }
+        acc
+    })
+}
+
+#[cfg(test)]
+mod coeff_eval_tests {
+    use super::*;
+    use crate::poly::ntt::intt;
+    use crate::fri::root_of_unity;
+
+    /*
+     * The coefficient evaluator against the barycentric one. They are the same
+     * polynomial at the same point, so they must agree exactly; the prover
+     * swapped to the first because it can drop the columns, and this is what
+     * says the swap moved no value. A disagreement here changes what the
+     * transcript absorbs and therefore every challenge after it.
+     */
+    #[test]
+    fn evaluating_from_coefficients_matches_the_subgroup_form() {
+        for log_t in [3u32, 6, 8] {
+            let t = 1usize << log_t;
+            let g = root_of_unity(log_t);
+            let cols: Vec<Vec<Fp>> = (0..5)
+                .map(|c| {
+                    (0..t).map(|i| Fp::from_u64((7 * i as u64 + 3) * (c as u64 + 1) + 11)).collect()
+                })
+                .collect();
+            let coeffs: Vec<Vec<Fp>> = cols.iter().map(|col| intt(col, g)).collect();
+            let z = Fp2 { c0: Fp::from_u64(0x1234_5678_9abc_def0), c1: Fp::from_u64(42) };
+            let bary = eval_cols_on_subgroup_ext(g, t, &cols, z);
+            let horner = eval_coeff_cols_at_ext(&coeffs, z);
+            assert_eq!(bary, horner, "the two evaluators disagree at log_t {log_t}");
+        }
+    }
 }

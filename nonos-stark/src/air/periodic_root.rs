@@ -41,9 +41,24 @@ pub(super) fn periodic_tree<A: AirExt>(
     extra_blowup_bits: u32,
 ) -> (Vec<Vec<Fp>>, MerkleTree) {
     let d = Domain::of(air, extra_blowup_bits);
-    let cols = air.periodic_columns();
+    periodic_tree_over(air.periodic_columns(), &d)
+}
+
+/*
+ * The same commitment over columns the caller already holds.
+ *
+ * A prover that needs the periodic columns for anything else would otherwise
+ * build them twice, once for itself and once in here, and on the settlement
+ * outer one copy is 2,649 columns of a quarter million elements, about five
+ * and a half gigabytes. Taking them by value lets the caller hand over its
+ * only copy and lets this function drop it at the same point it always did.
+ */
+pub(in crate::air) fn periodic_tree_over(
+    cols: Vec<Vec<Fp>>,
+    d: &Domain,
+) -> (Vec<Vec<Fp>>, MerkleTree) {
     let n_cols = cols.len();
-    let coeffs = periodic_coeffs(&cols, &d);
+    let coeffs = periodic_coeffs(&cols, d);
     /*
      * The columns are read once, to interpolate, and dropped here. Everything
      * below works from the coefficients, so holding both would keep the whole
@@ -81,7 +96,7 @@ pub(super) fn periodic_tree<A: AirExt>(
         let mut leaves: Vec<PeriodicLeafHasher> =
             (0..d.t).map(|_| PeriodicLeafHasher::new()).collect();
         for chunk in coeffs.chunks(COLUMN_CHUNK) {
-            let ext = extend(chunk, &d, c);
+            let ext = extend(chunk, d, c);
             for (i, leaf) in leaves.iter_mut().enumerate() {
                 for col in &ext {
                     leaf.absorb(col[i]);

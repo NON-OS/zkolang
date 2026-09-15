@@ -26,11 +26,12 @@ use super::super::super::fri_ext::fri_prove_ext;
 use super::super::super::merkle::MerkleTree;
 use super::super::super::transcript::Transcript;
 use super::super::composition::num_coeffs;
-use super::super::periodic_root::periodic_tree;
+use super::super::periodic_root::periodic_tree_over;
 use super::super::prove_ext::{
-    comp_at_z, draw_ood_point_ext, ood_frame, over_domain, periodic_at_z, trace_coeffs,
-    wide_streamed, Domain,
+    comp_at_z, draw_ood_point_ext, ood_frame, over_domain, trace_coeffs, wide_streamed,
+    Domain,
 };
+use crate::poly::eval_coeff_cols_at_ext;
 use super::super::spec::AirExt;
 use super::super::types_ext::StarkProofExt;
 use super::super::types_ext_pre::StarkProofExtPre;
@@ -64,8 +65,18 @@ pub fn stark_prove_ext_preprocessed<A: AirExt>(
         .map(|_| transcript.challenge_fp2())
         .collect();
 
-    let periodic_cols = air.periodic_columns();
-    let (pc, p_tree) = periodic_tree(air, extra_blowup_bits);
+    /*
+     * The columns are built once and handed to the committer, which drops them
+     * as soon as it has interpolated them. Building them here and again inside
+     * the committer paid for the construction twice and held two copies of a
+     * set that is gigabytes wide on the settlement outer.
+     *
+     * Everything below wanted them for two things: the count, and the value at
+     * the out-of-domain point. The count is taken before the handover and the
+     * value comes off the coefficients, which are the same polynomials.
+     */
+    let (pc, p_tree) = periodic_tree_over(air.periodic_columns(), &d);
+    let n_periodic = pc.len();
     let comp_d = over_domain(air, &d, &tc, &pc, &coeffs);
     let comp_tree = MerkleTree::commit_ext(&comp_d);
     transcript.absorb_digest(&comp_tree.root());
@@ -76,14 +87,14 @@ pub fn stark_prove_ext_preprocessed<A: AirExt>(
         transcript.absorb_fp(value.c0);
         transcript.absorb_fp(value.c1);
     }
-    let periodic_z = periodic_at_z(&d, &periodic_cols, z);
+    let periodic_z = eval_coeff_cols_at_ext(&pc, z);
     for value in &periodic_z {
         transcript.absorb_fp(value.c0);
         transcript.absorb_fp(value.c1);
     }
     let comp_z = comp_at_z(air, &d, &frame, &periodic_z, z, &coeffs);
 
-    let deep_coeffs: Vec<Fp2> = (0..d.width * d.window + 1 + periodic_cols.len())
+    let deep_coeffs: Vec<Fp2> = (0..d.width * d.window + 1 + n_periodic)
         .map(|_| transcript.challenge_fp2())
         .collect();
     let deep_d = deep::over_domain(
