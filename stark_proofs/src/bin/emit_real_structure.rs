@@ -286,7 +286,7 @@ fn main() {
     let max_noncompose_arity = kmap
         .iter()
         .zip(&asm.kind_bodies)
-        .filter(|(_, body)| **body != "compose")
+        .filter(|(_, (body, _))| *body != "compose")
         .map(|(&(_, _, arity, _), _)| arity)
         .max()
         .unwrap_or(0);
@@ -299,13 +299,28 @@ fn main() {
         .iter()
         .zip(&asm.kind_bodies)
         .enumerate()
-        .map(|(k, (&(base, slots, arity, instances), body))| {
+        .map(|(k, (&(base, slots, arity, instances), (body, role)))| {
             format!(
-                "{{\"kind\": {k}, \"body\": \"{body}\", \"periodic_base\": {base}, \
-                 \"slots\": {slots}, \"arity\": {arity}, \"instances\": {instances}}}"
+                "{{\"kind\": {k}, \"body\": \"{body}\", \"role\": \"{role}\", \
+                 \"periodic_base\": {base}, \"slots\": {slots}, \"arity\": {arity}, \
+                 \"instances\": {instances}}}"
             )
         })
         .collect();
+    /*
+     * A kind that owns no periodic columns leaves the next kind starting at the
+     * same base, so the base list is not injective and cannot identify a kind at
+     * all. Counted here rather than left as a remark, so a reader who wants to
+     * know whether the property still holds can read a number instead of
+     * rediscovering it.
+     */
+    let base_collisions = kmap
+        .iter()
+        .enumerate()
+        .filter(|(i, &(base, _, _, _))| {
+            kmap.iter().take(*i).any(|&(other, _, _, _)| other == base)
+        })
+        .count();
     eprintln!("reading the permutation columns");
     let (sel_idx, row_idx, sig_base) = asm.wired.permutation_columns();
     eprintln!("permutation columns read; formatting {} groups", sig_base.len());
@@ -336,7 +351,8 @@ fn main() {
          \"strip_off\": {},\n  \"strip_k\": {},\n  \"strip_echo_width\": {},\n  \
          \"strip_n_out\": {},\n  \"strip_rows\": {},\n  \"outer_n_periodic\": {},\n  \
          \"outer_periodic_root_keccak\": \"{}\",\n  \
-         \"max_noncompose_arity\": {},\n  \"group_column_base\": {},\n  \
+         \"max_noncompose_arity\": {},\n  \"periodic_base_collisions\": {},\n  \
+         \"group_column_base\": {},\n  \
          \"group_constraint_base\": {},\n  \
          \"kinds\": [\n    {}\n  ],\n  \
          \"groups\": [\n    {}\n  ]\n}}\n",
@@ -379,6 +395,7 @@ fn main() {
         outer_n_periodic,
         outer_root_hex,
         max_noncompose_arity,
+        base_collisions,
         /*
          * Two bases with the same arithmetic shape over different vectors, so
          * both are named rather than left to be inferred. The column base is

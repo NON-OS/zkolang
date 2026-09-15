@@ -32,7 +32,7 @@ pub struct Assembly {
      * instead of a transcribed table that silently rots when the region list
      * changes.
      */
-    pub kind_bodies: Vec<&'static str>,
+    pub kind_bodies: Vec<(&'static str, &'static str)>,
 }
 
 /*
@@ -45,20 +45,40 @@ pub struct Assembly {
  * layout uses keeps the emitted map from drifting away from the region list,
  * which a written out table would do at the first reorder.
  */
-fn body_names(with_strip: bool, with_sidecar: bool) -> Vec<&'static str> {
-    let mut v: Vec<&'static str> = alloc::vec!["transcript", "compose"];
+fn body_names(with_strip: bool, with_sidecar: bool) -> Vec<(&'static str, &'static str)> {
+    let mut v: Vec<(&'static str, &'static str)> =
+        alloc::vec![("transcript", "stark_transcript"), ("compose", "compose")];
     if with_strip {
-        v.push("strip");
+        v.push(("strip", "accumulator_strip"));
     }
-    v.push("transcript");
+    v.push(("transcript", "fri_transcript"));
     if !with_sidecar {
-        v.push("periodic_z");
+        v.push(("periodic_z", "periodic_at_z"));
     }
-    v.extend_from_slice(&["deep", "fold", "membership", "membership"]);
+    /*
+     * Three of these run one body between them. The membership body is a
+     * Merkle chain and nothing about it knows what it is authenticating, so
+     * the same evaluator serves all three and a verifier needs one, not three.
+     *
+     * What differs is the anchor, and that difference is a soundness one. The
+     * FRI and trace chains terminate at a root the proof carries, bound to the
+     * transcript's absorb cells; the periodic chain terminates at a root baked
+     * into the verifier at deployment, pinned here as a boundary constant. A
+     * reader that took the periodic chain's root from the proof would be
+     * letting the prover choose the schedule it is checked against, so the
+     * role is emitted beside the body rather than left to be inferred from a
+     * name that happens to differ.
+     */
+    v.extend_from_slice(&[
+        ("deep", "deep_quotient"),
+        ("fold", "fri_fold"),
+        ("membership", "fri_auth"),
+        ("membership", "trace_auth"),
+    ]);
     if with_sidecar {
-        v.push("periodic_auth");
+        v.push(("membership", "periodic_auth"));
     }
-    v.extend_from_slice(&["index", "index"]);
+    v.extend_from_slice(&[("index", "index_point"), ("index", "fold_point")]);
     v
 }
 
@@ -552,8 +572,9 @@ pub struct Aggregate {
     pub publics: Vec<Fp>,
     pub n_groups: usize,
     pub region_offsets: Vec<usize>,
-    /// Which constraint body each kind runs, in kind order. See `Assembly`.
-    pub kind_bodies: Vec<&'static str>,
+    /// Which constraint body each kind runs, and the role it plays, in kind
+    /// order. See `Assembly`.
+    pub kind_bodies: Vec<(&'static str, &'static str)>,
 }
 
 /// Lay the parts end to end and bind them into one engine. Every inner keeps its
@@ -966,16 +987,16 @@ pub fn assemble_step(tamper: Tamper) -> Assembly {
         n_groups,
         region_offsets: off,
         kind_bodies: alloc::vec![
-            "transcript",
-            "compose",
-            "deep",
-            "transcript",
-            "fold",
-            "membership",
-            "membership",
-            "index",
-            "index",
-            "periodic_z",
+            ("transcript", "stark_transcript"),
+            ("compose", "compose"),
+            ("deep", "deep_quotient"),
+            ("transcript", "fri_transcript"),
+            ("fold", "fri_fold"),
+            ("membership", "fri_auth"),
+            ("membership", "trace_auth"),
+            ("index", "index_point"),
+            ("index", "fold_point"),
+            ("periodic_z", "periodic_at_z"),
         ],
     }
 }
