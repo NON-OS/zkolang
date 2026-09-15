@@ -127,7 +127,7 @@ pub use measure::measure_capsule;
 pub use merkle_membership::MerkleMembership;
 pub use multi_membership::{MultiMembership, Opening};
 pub use periodic_poseidon::{hash_periodic_row, periodic_root_poseidon, periodic_tree_poseidon};
-pub use periodic_root::periodic_root;
+pub use periodic_root::{periodic_domain_log, periodic_root};
 pub use periodic_z::PeriodicZ;
 pub use permutation::Permutation;
 pub use permutation2::Permutation2;

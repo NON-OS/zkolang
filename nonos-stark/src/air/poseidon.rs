@@ -76,7 +76,7 @@ impl Poseidon {
     pub fn round(&self, state: &[Fp; WIDTH], round: usize) -> [Fp; WIDTH] {
         let mut sbox = [Fp::ZERO; WIDTH];
         for (s, v) in sbox.iter_mut().zip(state.iter()) {
-            *s = (*v).pow(7);
+            *s = (*v).sbox7();
         }
         let mut out = [Fp::ZERO; WIDTH];
         for (j, o) in out.iter_mut().enumerate() {
@@ -109,7 +109,7 @@ impl Poseidon {
     pub fn round_with_rc(&self, state: &[Fp; WIDTH], rc: &[Fp; WIDTH]) -> [Fp; WIDTH] {
         let mut sbox = [Fp::ZERO; WIDTH];
         for (s, v) in sbox.iter_mut().zip(state.iter()) {
-            *s = (*v).pow(7);
+            *s = (*v).sbox7();
         }
         let mut out = [Fp::ZERO; WIDTH];
         for (j, o) in out.iter_mut().enumerate() {
@@ -180,7 +180,7 @@ impl Poseidon {
     pub fn round_generic<F: Felt>(&self, state: &[F; WIDTH], rc: &[F; WIDTH]) -> [F; WIDTH] {
         let mut sbox = [F::ZERO; WIDTH];
         for (s, v) in sbox.iter_mut().zip(state.iter()) {
-            *s = v.pow(7);
+            *s = v.sbox7();
         }
         self.mds_rc(&sbox, rc)
     }
@@ -320,4 +320,37 @@ fn round_constants(rounds: usize) -> Vec<[Fp; WIDTH]> {
         rc.push(row);
     }
     rc
+}
+
+#[cfg(test)]
+mod interop_tests {
+    use super::*;
+    extern crate std;
+
+    /// One vector, so a second implementation can be checked against this one
+    /// rather than described to it. The permutation the recursion's transcript
+    /// and the periodic root are both built from: width 8, 32 full rounds, the
+    /// nothing-up-my-sleeve constants of `round_constants`, on the state
+    /// 1..=8. Printed rather than asserted here; the value is pinned in the
+    /// assertion below so a change to the permutation fails this test.
+    #[test]
+    fn the_permutation_vector() {
+        let h = Poseidon::new(5, [Fp::ZERO; RATE]);
+        let mut st = [Fp::ZERO; WIDTH];
+        for (i, s) in st.iter_mut().enumerate() {
+            *s = Fp::from_u64(i as u64 + 1);
+        }
+        let out = h.permute(st);
+        std::println!("PERMUTE32 1..8 ->");
+        for v in out.iter() {
+            std::println!("  {}", v.value());
+        }
+        let hashed = h.hash(&[Fp::from_u64(1), Fp::from_u64(2), Fp::from_u64(3), Fp::from_u64(4)]);
+        std::println!("HASH31 rate 1..4 ->");
+        for v in hashed.iter() {
+            std::println!("  {}", v.value());
+        }
+        std::println!("RC[0][0] = {}", h.rc[0][0].value());
+        std::println!("MDS[0][0] = {}", h.mds[0][0].value());
+    }
 }

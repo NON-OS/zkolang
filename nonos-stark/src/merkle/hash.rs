@@ -115,3 +115,38 @@ pub(super) fn hash_node(left: &[u8; 32], right: &[u8; 32]) -> [u8; 32] {
     buf.extend_from_slice(right);
     keccak256(&buf)
 }
+
+#[cfg(test)]
+mod kat_tests {
+    use super::*;
+    extern crate std;
+
+    /// A known answer for the wide periodic leaf and a two leaf root, so a
+    /// second implementation can be checked against a number rather than a
+    /// description. The leaf is the domain tag followed by each value's
+    /// canonical little endian 8 bytes, keccak256 over the whole buffer; the
+    /// node is its own tag followed by the two child digests.
+    #[test]
+    fn the_periodic_leaf_kat() {
+        let a = [Fp::from_u64(1), Fp::from_u64(2), Fp::from_u64(3), Fp::from_u64(4)];
+        let b = [
+            Fp::from_u64(0xFFFF_FFFF_0000_0000),
+            Fp::from_u64(7),
+            Fp::from_u64(0),
+            Fp::from_u64(0xFFFF_FFFF_0000_0000),
+        ];
+        let la = hash_leaf_wide_periodic(&a);
+        let lb = hash_leaf_wide_periodic(&b);
+        let root = hash_node(&la, &lb);
+        let hex = |d: &[u8; 32]| {
+            let mut s = std::string::String::new();
+            for x in d.iter() {
+                s.push_str(&std::format!("{x:02x}"));
+            }
+            s
+        };
+        std::println!("PERIODIC_LEAF  [1,2,3,4]                 = {}", hex(&la));
+        std::println!("PERIODIC_LEAF  [p-1 as 2^64-2^32, 7,0,.] = {}", hex(&lb));
+        std::println!("PERIODIC_ROOT2 node(la, lb)              = {}", hex(&root));
+    }
+}
