@@ -39,6 +39,37 @@ use super::{deep, queries};
 use crate::field::Fp;
 use alloc::vec::Vec;
 
+/*
+ * Phase timing, so a long run says where it is instead of printing nothing
+ * between its first line and its last. A settlement proof runs for hours and
+ * the only signal used to be that the process was still alive, which is the
+ * difference between waiting and being blind. Present only under the parallel
+ * feature, which is the build that has a standard library to print with.
+ */
+struct Phase {
+    #[cfg(feature = "parallel")]
+    at: std::time::Instant,
+}
+
+impl Phase {
+    fn start() -> Phase {
+        Phase {
+            #[cfg(feature = "parallel")]
+            at: std::time::Instant::now(),
+        }
+    }
+
+    #[allow(unused_variables)]
+    fn done(&mut self, what: &str) {
+        #[cfg(feature = "parallel")]
+        {
+            let now = std::time::Instant::now();
+            std::eprintln!("[prove] {what} in {:?}", now.duration_since(self.at));
+            self.at = now;
+        }
+    }
+}
+
 /// Prove `trace` against `air` with the periodic sidecar, at the given FRI
 /// rate. The verifier must hold the matching baked periodic root.
 ///
@@ -54,12 +85,14 @@ pub fn stark_prove_ext_preprocessed<A: AirExt>(
     extra_blowup_bits: u32,
 ) -> StarkProofExtPre {
     let d = Domain::of(air, extra_blowup_bits);
+    let mut phase = Phase::start();
 
     let mut transcript = Transcript::new(b"NONOS-STARK-EXT");
     let tc = trace_coeffs(trace, &d);
     let trace_tree = wide_streamed(&tc, &d);
     let trace_root = trace_tree.root();
     transcript.absorb_digest(&trace_root);
+    phase.done("trace commitment");
 
     let coeffs: Vec<Fp2> = (0..num_coeffs(air))
         .map(|_| transcript.challenge_fp2())
@@ -77,9 +110,11 @@ pub fn stark_prove_ext_preprocessed<A: AirExt>(
      */
     let (pc, p_tree) = periodic_tree_over(air.periodic_columns(), &d);
     let n_periodic = pc.len();
+    phase.done("periodic commitment");
     let comp_d = over_domain(air, &d, &tc, &pc, &coeffs);
     let comp_tree = MerkleTree::commit_ext(&comp_d);
     transcript.absorb_digest(&comp_tree.root());
+    phase.done("composition");
 
     let z = draw_ood_point_ext(&mut transcript, d.shift, d.n, d.t);
     let frame = ood_frame(&tc, &d, z);
@@ -93,6 +128,7 @@ pub fn stark_prove_ext_preprocessed<A: AirExt>(
         transcript.absorb_fp(value.c1);
     }
     let comp_z = comp_at_z(air, &d, &frame, &periodic_z, z, &coeffs);
+    phase.done("out of domain");
 
     let deep_coeffs: Vec<Fp2> = (0..d.width * d.window + 1 + n_periodic)
         .map(|_| transcript.challenge_fp2())
@@ -110,6 +146,7 @@ pub fn stark_prove_ext_preprocessed<A: AirExt>(
     );
 
     let fri = fri_prove_ext(&deep_d, d.shift, d.fri_log_blowup, n_queries, grind_bits);
+    phase.done("deep and fri");
     let deep_tree = MerkleTree::commit_ext(&deep_d);
     transcript.absorb_digest(&fri.roots[0]);
 
@@ -126,6 +163,7 @@ pub fn stark_prove_ext_preprocessed<A: AirExt>(
         &deep_d,
         &deep_tree,
     );
+    phase.done("query openings");
     StarkProofExtPre {
         proof: StarkProofExt {
             trace_root,
