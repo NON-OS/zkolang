@@ -56,8 +56,19 @@ pub(super) fn periodic_tree<A: AirExt>(
     if n_cols == 0 {
         return (coeffs, MerkleTree::commit_wide_periodic(&[]));
     }
-    let mut digests = alloc::vec![[0u8; 32]; d.n];
-    for c in 0..d.blowup {
+    /*
+     * Cosets are independent. Each reads the shared coefficients and produces
+     * its own rows, so the work parallelises across cosets rather than only
+     * inside one, and that is the difference between a wide machine being busy
+     * and a wide machine waiting. Parallelising only the absorb left a 56 core
+     * box under a fifth loaded on the settlement outer, because a column chunk
+     * is 64 wide and nothing else is in flight while one coset finishes.
+     *
+     * Digest order is untouched. Each coset still walks its rows in the same
+     * order and they are scattered to the same positions afterwards, so the
+     * tree above them and the root are the ones the sequential walk produced.
+     */
+    let per_coset: Vec<Vec<[u8; 32]>> = crate::par::map_index(d.blowup, |c| {
         /*
          * One incremental leaf hash per row of the coset, the tag already
          * absorbed. The columns then stream past a chunk at a time, each row
@@ -71,17 +82,18 @@ pub(super) fn periodic_tree<A: AirExt>(
             (0..d.t).map(|_| PeriodicLeafHasher::new()).collect();
         for chunk in coeffs.chunks(COLUMN_CHUNK) {
             let ext = extend(chunk, &d, c);
-            crate::par::for_each_chunk_mut_indexed(&mut leaves, LEAF_CHUNK, |base, rows| {
-                for (j, leaf) in rows.iter_mut().enumerate() {
-                    let i = base + j;
-                    for col in &ext {
-                        leaf.absorb(col[i]);
-                    }
+            for (i, leaf) in leaves.iter_mut().enumerate() {
+                for col in &ext {
+                    leaf.absorb(col[i]);
                 }
-            });
+            }
         }
-        for (i, leaf) in leaves.into_iter().enumerate() {
-            digests[c + d.blowup * i] = leaf.finalize();
+        leaves.into_iter().map(|leaf| leaf.finalize()).collect()
+    });
+    let mut digests = alloc::vec![[0u8; 32]; d.n];
+    for (c, rows) in per_coset.into_iter().enumerate() {
+        for (i, dig) in rows.into_iter().enumerate() {
+            digests[c + d.blowup * i] = dig;
         }
     }
     let pad = alloc::vec![Fp::ZERO; n_cols];
@@ -92,9 +104,6 @@ pub(super) fn periodic_tree<A: AirExt>(
 /// Columns extended per pass. Sized so a chunk over one coset stays in the
 /// low hundreds of megabytes on the widest outer.
 const COLUMN_CHUNK: usize = 64;
-
-/// Leaves per parallel task when a chunk's values are absorbed.
-const LEAF_CHUNK: usize = 4096;
 
 /// The committer as it stood before the leaf hashes streamed: every column held
 /// over the coset and a row built per leaf. Kept only as the reference the lean
