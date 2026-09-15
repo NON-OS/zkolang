@@ -45,7 +45,7 @@ fn main() {
     );
 
     let t0 = Instant::now();
-    let asm = if real { assemble_real(Tamper::None) } else { assemble(Tamper::None) };
+    let mut asm = if real { assemble_real(Tamper::None) } else { assemble(Tamper::None) };
     println!(
         "assembly  width={} log_trace_len={} degree={} transitions={} groups={}",
         asm.wired.trace_width(),
@@ -57,16 +57,14 @@ fn main() {
     println!("assembled in {:?}", t0.elapsed());
 
     /*
-     * The root the contract bakes. It is computed here from the same AIR the
-     * proof is about, so the artifact and the constant a verifier holds cannot
-     * describe two different periodic column sets. It is printed whether or not
-     * the proof succeeds, because a deployment needs it either way.
+     * Prove first, then compute the root the contract bakes.
+     *
+     * Both build the same periodic tree, which on the settlement outer is the
+     * largest allocation in the process. Doing the root first meant the
+     * allocator had held that peak once before the prover asked for it again,
+     * and the machine was killed rather than finishing. Ordering them apart
+     * gives the process one peak instead of a peak on top of a high water mark.
      */
-    let t1 = Instant::now();
-    let root = periodic_root(&asm.wired, extra_blowup);
-    let root_hex: String = root.iter().map(|b| format!("{b:02x}")).collect();
-    println!("periodic root {root_hex} in {:?}", t1.elapsed());
-
     let t2 = Instant::now();
     let pre = stark_prove_ext_preprocessed(
         &asm.wired,
@@ -85,6 +83,19 @@ fn main() {
     let bytes = serialize_pre(&pre);
     std::fs::write(&out, &bytes).expect("write proof");
     println!("wrote {} bytes to {out}", bytes.len());
+
+    /*
+     * The witness is read by the prover and by nothing after it. Dropping it
+     * before the root is computed takes the trace off the heap while the
+     * periodic set is being built, which is the one place those two would
+     * otherwise be live together.
+     */
+    drop(core::mem::take(&mut asm.witness));
+
+    let t1 = Instant::now();
+    let root = periodic_root(&asm.wired, extra_blowup);
+    let root_hex: String = root.iter().map(|b| format!("{b:02x}")).collect();
+    println!("periodic root {root_hex} in {:?}", t1.elapsed());
 
     let t3 = Instant::now();
     let ok = stark_verify_ext_preprocessed(
