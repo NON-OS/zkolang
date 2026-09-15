@@ -8,4 +8,3 @@ mod json;
 mod run;
 mod structure;
 mod vector;
-mod wire;

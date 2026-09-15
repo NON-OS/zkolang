@@ -67,7 +67,7 @@ fn baked_root(air: &WiredExt, extra_blowup_bits: u32) -> [u8; 32] {
     MerkleTree::commit_wide_periodic(&extended).root()
 }
 
-fn setup() -> (WiredExt, StarkProofExtPre, [u8; 32]) {
+pub(crate) fn setup() -> (WiredExt, StarkProofExtPre, [u8; 32]) {
     let air = join_split_air();
     let w = witness(&air);
     let proof = stark_prove_ext_preprocessed(&air, &w, 32, 8, 0);

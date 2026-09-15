@@ -3,7 +3,7 @@
 //! assembled verifier, with the batch publics' positions in the transcript
 //! inject column.
 
-use super::wire::serialize_pre;
+use crate::proof_wire::serialize_pre;
 use crate::crypto::stark::air::{Air, StarkProofExtPre, WIDTH};
 use crate::recursion_assembly::build::Assembly;
 use alloc::string::String;

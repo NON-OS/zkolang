@@ -67,6 +67,7 @@ mod dims_transfer_tests;
 mod preprocessed_tests;
 #[cfg(test)]
 mod production_vector_gen;
+pub mod proof_wire;
 pub mod recursion_assembly;
 #[cfg(test)]
 mod recursion_assembly_tests;
