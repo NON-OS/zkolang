@@ -344,7 +344,9 @@ fn main() {
          \"z_op\": {},\n  \"claim_op\": {},\n  \"deep_coeff_op\": {},\n  \"pub_len\": {},\n  \
          \"ntr\": {},\n  \"ncoeff2\": {},\n  \"n_terms\": {},\n  \"width_inner\": {},\n  \
          \"window_inner\": {},\n  \"depth\": {},\n  \"n_open\": {},\n  \"n_folds\": {},\n  \
-         \"log_n_inner\": {},\n  \"pbits\": {},\n  \"fbits\": {},\n  \"t_inner\": {},\n  \
+         \"log_n_inner\": {},\n  \"inner_log_fri_domain\": {},\n  \
+         \"inner_fold_layers\": {},\n  \
+         \"pbits\": {},\n  \"fbits\": {},\n  \"t_inner\": {},\n  \
          \"n_pz\": {},\n  \"pa_depth\": {},\n  \"n_chunks\": {},\n  \"frame_len\": {},\n  \
          \"n_coeff\": {},\n  \"c_periodic_col\": {},\n  \"c_z_col\": {},\n  \"c_coeff_col\": {},\n  \
          \"c_comp_z_col\": {},\n  \"sel_col\": {},\n  \"row_col\": {},\n  \
@@ -372,7 +374,18 @@ fn main() {
         lay.depth,
         lay.n_open,
         lay.n_folds,
+        /*
+         * Three names for two quantities, until the old one goes. `log_n_inner`
+         * is the log of the inner's FRI evaluation domain, the height of the
+         * fold tower, and it is emitted again as `inner_log_fri_domain` because
+         * the old name reads as a sibling of `inner_log_trace_len` and is not
+         * one: the trace is 13 where the domain is 21. The layer count is
+         * emitted beside it so the pair cannot be mistaken for one number. The
+         * old key stays for one release, then goes.
+         */
         lay.log_n,
+        lay.log_n,
+        lay.n_folds,
         lay.pbits,
         lay.fbits,
         lay.t_inner,
