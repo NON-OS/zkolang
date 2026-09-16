@@ -28,7 +28,10 @@ mod golden_vk_tests;
 mod witness_satisfies;
 
 /// The satisfaction walk, for binaries that gate a shape before shipping it.
-pub fn witness_satisfies_public(air: &(impl crypto::stark::air::Air + Sync), witness: &[crypto::stark::field::Fp]) -> bool {
+pub fn witness_satisfies_public(
+    air: &(impl crypto::stark::air::Air + Sync),
+    witness: &[crypto::stark::field::Fp],
+) -> bool {
     witness_satisfies::satisfies(air, witness)
 }
 

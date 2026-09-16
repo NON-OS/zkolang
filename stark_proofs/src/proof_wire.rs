@@ -54,11 +54,18 @@ mod tests {
         let (_air, pre, _root) = crate::preprocessed_tests::setup();
         let bytes = serialize_pre(&pre);
         let base = serialize_proof_ext(&pre.proof);
-        assert_eq!(&bytes[..base.len()], &base[..], "the base half must be the proof encoding");
+        assert_eq!(
+            &bytes[..base.len()],
+            &base[..],
+            "the base half must be the proof encoding"
+        );
         let back = deserialize_proof_ext(&base).expect("the base half must parse on its own");
         assert_eq!(back.trace_root, pre.proof.trace_root);
         assert_eq!(back.comp_root, pre.proof.comp_root);
         assert_eq!(back.queries.len(), pre.proof.queries.len());
-        assert!(bytes.len() > base.len(), "the sidecar must follow the base half");
+        assert!(
+            bytes.len() > base.len(),
+            "the sidecar must follow the base half"
+        );
     }
 }

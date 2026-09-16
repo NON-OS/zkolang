@@ -17,6 +17,25 @@ pub struct BatchProof {
     pub intents: Vec<Vec<Fp>>,
 }
 
+/// Which rule each inner kind enforces, in kind order.
+///
+/// It lives beside the kind list below and is checked against it, because the
+/// two are one statement written twice and the pair is only safe while they
+/// cannot drift. A reader dispatching on the index alone gets no warning when a
+/// kind changes body: the wrong rule is still arithmetic, it just computes a
+/// different transition. Two of these are memberships and two are Poseidon
+/// chains of the same width, so index and shape are both ambiguous and only the
+/// name is not.
+pub const KIND_BODIES: [&str; 7] = [
+    "balance",
+    "note_commit",
+    "pool_membership",
+    "index_recovery",
+    "key_derivation",
+    "assoc_membership",
+    "publics",
+];
+
 /// Every intent's regions in one stack, each intent's own bindings emitted at its
 /// base, and the clearing price tied across all of them.
 pub fn assemble(parts: Vec<IntentParts>) -> BatchProof {
@@ -69,13 +88,25 @@ pub fn assemble(parts: Vec<IntentParts>) -> BatchProof {
     let kinds: Vec<usize> = (0..regions.len() / REGIONS_PER_INTENT)
         .flat_map(|_| alloc::vec![0usize, 1, 1, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6])
         .collect();
+    debug_assert_eq!(
+        KIND_BODIES.len(),
+        kinds.iter().copied().max().map(|m| m + 1).unwrap_or(0),
+        "the body names and the kind list must describe the same kinds"
+    );
     let groups = packed_groups(span, &g, CAP);
     // Every binding class ends up on one cycle of the group that carries it, which
     // is what forces its cells equal. Checked on the built groups rather than
     // assumed from a disjointness precondition on the raw classes, so a class that
     // packing failed to enforce is caught here instead of passing silently.
-    debug_assert!(groups_enforce(&groups, &g), "a binding class is not enforced by its group");
+    debug_assert!(
+        groups_enforce(&groups, &g),
+        "a binding class is not enforced by its group"
+    );
     let wired = WiredMultiGen::new_kinds(regions, &kinds, groups);
     let witness = wired.trace(&traces);
-    BatchProof { wired, witness, intents }
+    BatchProof {
+        wired,
+        witness,
+        intents,
+    }
 }

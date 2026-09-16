@@ -38,7 +38,10 @@ fn main() {
      */
     let queries = args
         .iter()
-        .find_map(|a| a.strip_prefix("queries=").and_then(|v| v.parse::<usize>().ok()))
+        .find_map(|a| {
+            a.strip_prefix("queries=")
+                .and_then(|v| v.parse::<usize>().ok())
+        })
         .unwrap_or(transfer::N_QUERIES);
     let out = args
         .iter()
@@ -51,7 +54,11 @@ fn main() {
                 "real-structure.json".into()
             }
         });
-    let point = if at_transfer { "transfer" } else { "settlement" };
+    let point = if at_transfer {
+        "transfer"
+    } else {
+        "settlement"
+    };
 
     /*
      * The blowup the outer's authentication assumes for the inner comes from the
@@ -168,7 +175,23 @@ fn main() {
      */
     let inner_air = stark_proofs::shield_deployed_wired();
     let inner_n_transitions = inner_air.num_transition();
-    let inner_n_boundary = inner_air.boundary().len();
+    let inner_boundary = inner_air.boundary();
+    let inner_n_boundary = inner_boundary.len();
+    /*
+     * The inner's boundary constraints themselves, not just how many there are.
+     *
+     * The count alone lets a reader size the coefficient draw; it does not let
+     * one evaluate the quotient cells, and without those the composition at z
+     * cannot be computed from proof bytes. At the frozen point these came from
+     * a fixture file, which is exactly the hand-carried input this emit exists
+     * to remove. They are written in the inner engine's own order, which is the
+     * order the coefficients were drawn against, so a consumer pairs the two by
+     * index and nothing has to agree about sorting.
+     */
+    let inner_boundary_json: Vec<String> = inner_boundary
+        .iter()
+        .map(|(col, row, val)| format!("[{col}, {row}, {}]", val.to_u64()))
+        .collect();
     println!(
         "outer     point={point} span={} log_trace_len={log_trace_len} degree={degree} \
          max_group_width={max_group_width} log_domain_rate_half={log_domain} \
@@ -182,7 +205,11 @@ fn main() {
     );
 
     let js = stark_proofs::shield_deployed_wired();
-    let root_extra = if at_transfer { transfer::EXTRA_BLOWUP_BITS } else { inner::extra() };
+    let root_extra = if at_transfer {
+        transfer::EXTRA_BLOWUP_BITS
+    } else {
+        inner::extra()
+    };
     let root = stark_proofs::crypto::stark::air::periodic_root_poseidon(&js, root_extra, &h);
     let root_hex: String = root
         .iter()
@@ -199,6 +226,7 @@ fn main() {
          \"grind_bits\": {},\n  \"extra_blowup_bits\": {},\n  \"log_domain\": {},\n  \
          \"coset_shift\": {},\n  \"inner_n_transitions\": {},\n  \
          \"inner_n_boundary\": {},\n  \"outer_fri_queries\": {},\n  \
+         \"inner_boundary\": [{}],\n  \
          \"periodic_root_poseidon\": \"{}\"\n}}\n",
         point,
         asm.wired.log_trace_len(),
@@ -228,6 +256,7 @@ fn main() {
          * pair a verifier multiplies the wrong way round.
          */
         outer_n_queries,
+        inner_boundary_json.join(", "),
         root_hex,
     );
     std::fs::write(&out, &json).expect("write structure");
@@ -248,9 +277,23 @@ fn main() {
      * so if the machine cannot hold it the run says where it died, rather than
      * ending after the shape with no layout and no message.
      */
-    eprintln!("computing the outer periodic root");
+    eprintln!("computing the outer periodic root at extra blowup {extra_blowup_bits}");
+    /*
+     * At the point's own rate, not at rate one half.
+     *
+     * This read `periodic_root(&asm.wired, 0)`. The periodic tree commits the
+     * coset extension of the periodic columns, and that extension's domain is
+     * the rate's, so a root taken at extra blowup zero and one taken at three
+     * are different trees over domains eight times apart. The prover and the
+     * verifier both use the point's own value, so the constant this file
+     * published was the one no settlement proof could ever open against, and a
+     * contract that baked it would have refused every proof it was handed.
+     *
+     * The rate is in the field name now as well, because this is one more
+     * value whose name did not say which instance of a quantity it was.
+     */
     let outer_root_hex: String = {
-        let r = stark_proofs::crypto::stark::air::periodic_root(&asm.wired, 0);
+        let r = stark_proofs::crypto::stark::air::periodic_root(&asm.wired, extra_blowup_bits);
         r.iter().map(|b| format!("{b:02x}")).collect()
     };
     /*
@@ -287,7 +330,7 @@ fn main() {
         .iter()
         .zip(&asm.kind_bodies)
         .filter(|(_, (body, _))| *body != "compose")
-        .map(|(&(_, _, arity, _), _)| arity)
+        .map(|(&(_, _, arity, _, _), _)| arity)
         .max()
         .unwrap_or(0);
     assert_eq!(
@@ -299,13 +342,15 @@ fn main() {
         .iter()
         .zip(&asm.kind_bodies)
         .enumerate()
-        .map(|(k, (&(base, slots, arity, instances), (body, role)))| {
-            format!(
-                "{{\"kind\": {k}, \"body\": \"{body}\", \"role\": \"{role}\", \
+        .map(
+            |(k, (&(base, slots, arity, instances, width), (body, role)))| {
+                format!(
+                    "{{\"kind\": {k}, \"body\": \"{body}\", \"role\": \"{role}\", \
                  \"periodic_base\": {base}, \"slots\": {slots}, \"arity\": {arity}, \
-                 \"instances\": {instances}}}"
-            )
-        })
+                 \"instances\": {instances}, \"region_width\": {width}}}"
+                )
+            },
+        )
         .collect();
     /*
      * A kind that owns no periodic columns leaves the next kind starting at the
@@ -317,13 +362,18 @@ fn main() {
     let base_collisions = kmap
         .iter()
         .enumerate()
-        .filter(|(i, &(base, _, _, _))| {
-            kmap.iter().take(*i).any(|&(other, _, _, _)| other == base)
+        .filter(|(i, &(base, _, _, _, _))| {
+            kmap.iter()
+                .take(*i)
+                .any(|&(other, _, _, _, _)| other == base)
         })
         .count();
     eprintln!("reading the permutation columns");
     let (sel_idx, row_idx, sig_base) = asm.wired.permutation_columns();
-    eprintln!("permutation columns read; formatting {} groups", sig_base.len());
+    eprintln!(
+        "permutation columns read; formatting {} groups",
+        sig_base.len()
+    );
     let groups_json: Vec<String> = asm
         .wired
         .group_params()
@@ -352,7 +402,7 @@ fn main() {
          \"c_comp_z_col\": {},\n  \"sel_col\": {},\n  \"row_col\": {},\n  \
          \"strip_off\": {},\n  \"strip_k\": {},\n  \"strip_echo_width\": {},\n  \
          \"strip_n_out\": {},\n  \"strip_rows\": {},\n  \"outer_n_periodic\": {},\n  \
-         \"outer_periodic_root_keccak\": \"{}\",\n  \
+         \"outer_periodic_root_keccak_at_deployment_rate\": \"{}\",\n  \
          \"max_noncompose_arity\": {},\n  \"periodic_base_collisions\": {},\n  \
          \"group_column_base\": {},\n  \
          \"group_constraint_base\": {},\n  \
@@ -426,7 +476,10 @@ fn main() {
         groups_json.join(",\n    "),
     );
     let lay_out = out.replace(".json", "-layout.json");
-    eprintln!("layout formatted, {} bytes; writing {lay_out}", layout.len());
+    eprintln!(
+        "layout formatted, {} bytes; writing {lay_out}",
+        layout.len()
+    );
     std::fs::write(&lay_out, &layout).expect("write layout");
     println!("wrote {lay_out}");
 }

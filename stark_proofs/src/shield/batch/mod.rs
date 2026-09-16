@@ -4,6 +4,6 @@ mod assemble;
 mod build;
 mod uniform;
 
-pub use assemble::{assemble, BatchProof};
+pub use assemble::{assemble, BatchProof, KIND_BODIES};
 pub use build::{batch, Batch};
 pub use uniform::{price_uniform, MAX_INTENTS};
