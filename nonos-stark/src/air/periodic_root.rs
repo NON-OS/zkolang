@@ -30,6 +30,32 @@ use super::composition::domain_params_blown;
 use super::prove_ext::{extend, periodic_coeffs, Domain};
 use super::spec::AirExt;
 
+/*
+ * Where the periodic commitment's memory actually goes.
+ *
+ * The prover reached this function holding 13.5 GB and was killed above 72,
+ * and every estimate of which step asked for the difference has been wrong.
+ * These say it rather than model it. Parallel builds only, which is the build
+ * that has a standard library to print with.
+ */
+#[cfg(feature = "parallel")]
+fn mark(what: &str) {
+    if let Ok(s) = std::fs::read_to_string("/proc/self/statm") {
+        let pages: u64 = s
+            .split_whitespace()
+            .nth(1)
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(0);
+        std::eprintln!(
+            "[periodic] {what}: resident {:.1} GB",
+            pages as f64 * 4096.0 / 1e9
+        );
+    }
+}
+
+#[cfg(not(feature = "parallel"))]
+fn mark(_what: &str) {}
+
 /// The periodic coefficients and the wide-periodic tree over their coset
 /// extension. Both the preprocessed prover and the root helper go through this,
 /// so the periodic domain size, the coset, and the leaf and node rules cannot
@@ -58,13 +84,16 @@ pub(in crate::air) fn periodic_tree_over(
     d: &Domain,
 ) -> (Vec<Vec<Fp>>, MerkleTree) {
     let n_cols = cols.len();
+    mark("columns built");
     let coeffs = periodic_coeffs(&cols, d);
+    mark("interpolated");
     /*
      * The columns are read once, to interpolate, and dropped here. Everything
      * below works from the coefficients, so holding both would keep the whole
      * periodic set twice, and on a wide outer that set is gigabytes.
      */
     drop(cols);
+    mark("columns dropped");
     // A columnless AIR commits the empty tree, as the materialized committer
     // always did: it took its leaf count from the columns, this path takes it
     // from the domain, and only the empty case can tell them apart.
@@ -90,6 +119,7 @@ pub(in crate::air) fn periodic_tree_over(
      * tree above them and the root are the ones the sequential walk produced.
      */
     let mut digests = alloc::vec![[0u8; 32]; d.n];
+    mark("digest array");
     let mut first = 0usize;
     while first < d.blowup {
         let batch = core::cmp::min(COSET_BATCH, d.blowup - first);
@@ -121,9 +151,14 @@ pub(in crate::air) fn periodic_tree_over(
             }
         }
         first += batch;
+        if first % (COSET_BATCH * 8) == 0 {
+            mark("cosets");
+        }
     }
+    mark("cosets done");
     let pad = alloc::vec![Fp::ZERO; n_cols];
     let tree = MerkleTree::from_leaf_digests(digests, hash_leaf_wide_periodic(&pad));
+    mark("tree built");
     (coeffs, tree)
 }
 
@@ -131,11 +166,22 @@ pub(in crate::air) fn periodic_tree_over(
 /// low hundreds of megabytes on the widest outer.
 const COLUMN_CHUNK: usize = 64;
 
-/// Cosets held in flight at once. Each carries its own leaf states and its own
-/// extended chunk, so this is the knob that bounds peak memory: eight is a few
-/// gigabytes on the widest outer, and it does not grow when the machine has
-/// more cores. Turning every coset loose instead is what the kernel killed.
-const COSET_BATCH: usize = 8;
+/// Cosets held in flight at once, which is the knob that bounds peak memory
+/// and, on a wide machine, the knob that bounds throughput.
+///
+/// Eight was chosen when a leaf hasher buffered every byte it was ever given,
+/// about 21 kB apiece. It no longer does: the struct measures 248 bytes and its
+/// one block of buffer never exceeds the rate, so a coset in flight now costs
+/// about 132 MB of leaf states and 134 MB of extended chunk, call it 266 MB.
+///
+/// At eight that is 2 GB and a 56 core box runs at eleven cores, because the
+/// absorb inside a coset is serial and only the batch is parallel. At thirty
+/// two it is 8.5 GB, which is comfortable against the tens of gigabytes free,
+/// and the machine is no longer the thing waiting.
+///
+/// Digest order does not depend on it: cosets are scattered to fixed positions
+/// afterwards, so this changes when work happens and never what is produced.
+const COSET_BATCH: usize = 32;
 
 /// The committer as it stood before the leaf hashes streamed: every column held
 /// over the coset and a row built per leaf. Kept only as the reference the lean
@@ -238,7 +284,11 @@ mod tests {
             for &v in &row {
                 h.absorb(v);
             }
-            assert_eq!(h.finalize(), hash_leaf_wide_periodic(&row), "leaf of width {len} moved");
+            assert_eq!(
+                h.finalize(),
+                hash_leaf_wide_periodic(&row),
+                "leaf of width {len} moved"
+            );
         }
     }
 
@@ -252,11 +302,17 @@ mod tests {
     fn the_lean_committer_matches_the_held_one() {
         use super::super::index_scalar::IndexScalar;
         let air = IndexScalar::new(6, 5);
-        assert!(!air.periodic_columns().is_empty(), "the test AIR must carry periodic columns");
+        assert!(
+            !air.periodic_columns().is_empty(),
+            "the test AIR must carry periodic columns"
+        );
         for extra in [0u32, 1] {
             let lean = periodic_tree(&air, extra).1.root();
             let held = periodic_tree_held(&air, extra).1.root();
-            assert_eq!(lean, held, "the lean periodic root moved at extra blowup {extra}");
+            assert_eq!(
+                lean, held,
+                "the lean periodic root moved at extra blowup {extra}"
+            );
         }
     }
 
@@ -265,6 +321,10 @@ mod tests {
         let (coeffs, tree) = periodic_tree(&NoPeriodic, 1);
         assert!(coeffs.is_empty());
         let empty = MerkleTree::commit_wide_periodic(&[]);
-        assert_eq!(tree.root(), empty.root(), "streamed and materialized roots diverge at zero columns");
+        assert_eq!(
+            tree.root(),
+            empty.root(),
+            "streamed and materialized roots diverge at zero columns"
+        );
     }
 }
