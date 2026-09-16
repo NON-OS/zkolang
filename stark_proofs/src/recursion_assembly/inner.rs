@@ -185,7 +185,17 @@ pub fn shield_join_split(h: &Poseidon) -> Inner<WiredMultiGen> {
         std::sync::OnceLock::new();
     let pre = PRE
         .get_or_init(|| {
-            stark_prove_poseidon_pre_pub(&js.wired, &js.witness, NQ, GRIND, extra(), h, &publics, &[])
+            stark_prove_poseidon_pre_pub(
+                &js.wired,
+                &js.witness,
+                NQ,
+                GRIND,
+                extra(),
+                h,
+                &publics,
+                &[],
+            )
+            .expect("nothing watches this proof, so nothing can cancel it")
         })
         .clone();
     let ci = compose_inputs_pre(&js.wired, &pre, extra(), h, &publics);
@@ -237,7 +247,8 @@ pub fn shield_join_split_hidden(h: &Poseidon, seed: &[Fp; RATE]) -> Inner<WiredM
         h,
         &publics,
         &blind,
-    );
+    )
+    .expect("nothing watches this proof, so nothing can cancel it");
     let ci = compose_inputs_pre(&js.wired, &pre, extra(), h, &publics);
     let t = 1u64 << js.wired.log_trace_len();
     let g = root_of_unity(js.wired.log_trace_len());
@@ -282,7 +293,8 @@ pub fn shield_join_split_at(
         h,
         &publics,
         &[],
-    );
+    )
+    .expect("nothing watches this proof, so nothing can cancel it");
     let ci = compose_inputs_pre(&js.wired, &pre, extra_bits, h, &publics);
     let t = 1u64 << js.wired.log_trace_len();
     let g = root_of_unity(js.wired.log_trace_len());

@@ -49,7 +49,11 @@ fn gen_production_structure() {
         .iter()
         .enumerate()
         .map(|(ri, &o)| {
-            let end = asm.region_offsets.get(ri + 1).copied().unwrap_or(asm.lay.span);
+            let end = asm
+                .region_offsets
+                .get(ri + 1)
+                .copied()
+                .unwrap_or(asm.lay.span);
             (o, end - o)
         })
         .collect();
@@ -93,14 +97,22 @@ fn gen_production_recursive_vector() {
     // commits with and a registration recomputes: one object, not agreement.
     let n_periodic = wired.periodic_columns().len();
     let periodic_root = periodic_root(wired, 3);
-    std::println!("committed {} periodic columns over 2^{}", n_periodic, log_dn);
+    std::println!(
+        "committed {} periodic columns over 2^{}",
+        n_periodic,
+        log_dn
+    );
 
     let off_heights: Vec<(usize, usize)> = asm
         .region_offsets
         .iter()
         .enumerate()
         .map(|(ri, &o)| {
-            let end = asm.region_offsets.get(ri + 1).copied().unwrap_or(asm.lay.span);
+            let end = asm
+                .region_offsets
+                .get(ri + 1)
+                .copied()
+                .unwrap_or(asm.lay.span);
             (o, end - o)
         })
         .collect();
@@ -118,9 +130,23 @@ fn gen_production_recursive_vector() {
 
     // The deployment proof with the periodic sidecar: rate 1/16, 16 grind
     // bits = 128-bit conjectured, verified against the baked root.
-    let wproof = stark_prove_ext_preprocessed(wired, &asm.witness, crate::shield_params::deployment::N_QUERIES, crate::shield_params::deployment::GRIND_BITS, crate::shield_params::deployment::EXTRA_BLOWUP_BITS);
+    let wproof = stark_prove_ext_preprocessed(
+        wired,
+        &asm.witness,
+        crate::shield_params::deployment::N_QUERIES,
+        crate::shield_params::deployment::GRIND_BITS,
+        crate::shield_params::deployment::EXTRA_BLOWUP_BITS,
+    )
+    .expect("nothing watches this proof, so nothing can cancel it");
     assert!(
-        stark_verify_ext_preprocessed(wired, &wproof, crate::shield_params::deployment::N_QUERIES, crate::shield_params::deployment::GRIND_BITS, crate::shield_params::deployment::EXTRA_BLOWUP_BITS, &periodic_root),
+        stark_verify_ext_preprocessed(
+            wired,
+            &wproof,
+            crate::shield_params::deployment::N_QUERIES,
+            crate::shield_params::deployment::GRIND_BITS,
+            crate::shield_params::deployment::EXTRA_BLOWUP_BITS,
+            &periodic_root
+        ),
         "the production recursive vector does not verify"
     );
 
@@ -130,7 +156,11 @@ fn gen_production_recursive_vector() {
         fri_log_blowup,
         &alloc::format!("{spec}/production-recursive-vector.json"),
     );
-    intermediates::emit(&asm, &wproof, &alloc::format!("{spec}/reference/intermediates.json"));
+    intermediates::emit(
+        &asm,
+        &wproof,
+        &alloc::format!("{spec}/reference/intermediates.json"),
+    );
 }
 
 /// The same gen for a zkolang step AIR inner: the recursion generalized over the
@@ -163,7 +193,11 @@ fn gen_step_recursive_vector() {
 
     let n_periodic = wired.periodic_columns().len();
     let periodic_root = periodic_root(wired, 3);
-    std::println!("step recursion: {} periodic columns over 2^{}", n_periodic, log_dn);
+    std::println!(
+        "step recursion: {} periodic columns over 2^{}",
+        n_periodic,
+        log_dn
+    );
 
     // The golden vk: the inner program's key, sized the same way the recursion
     // sized its inner (program_log_t), so the attested inner and the registered key
@@ -190,7 +224,11 @@ fn gen_step_recursive_vector() {
         .iter()
         .enumerate()
         .map(|(ri, &o)| {
-            let end = asm.region_offsets.get(ri + 1).copied().unwrap_or(asm.lay.span);
+            let end = asm
+                .region_offsets
+                .get(ri + 1)
+                .copied()
+                .unwrap_or(asm.lay.span);
             (o, end - o)
         })
         .collect();
@@ -206,13 +244,36 @@ fn gen_step_recursive_vector() {
         &alloc::format!("{}/step-air-structure.json", spec),
     );
 
-    let wproof = stark_prove_ext_preprocessed(wired, &asm.witness, crate::shield_params::deployment::N_QUERIES, crate::shield_params::deployment::GRIND_BITS, crate::shield_params::deployment::EXTRA_BLOWUP_BITS);
+    let wproof = stark_prove_ext_preprocessed(
+        wired,
+        &asm.witness,
+        crate::shield_params::deployment::N_QUERIES,
+        crate::shield_params::deployment::GRIND_BITS,
+        crate::shield_params::deployment::EXTRA_BLOWUP_BITS,
+    )
+    .expect("nothing watches this proof, so nothing can cancel it");
     assert!(
-        stark_verify_ext_preprocessed(wired, &wproof, crate::shield_params::deployment::N_QUERIES, crate::shield_params::deployment::GRIND_BITS, crate::shield_params::deployment::EXTRA_BLOWUP_BITS, &periodic_root),
+        stark_verify_ext_preprocessed(
+            wired,
+            &wproof,
+            crate::shield_params::deployment::N_QUERIES,
+            crate::shield_params::deployment::GRIND_BITS,
+            crate::shield_params::deployment::EXTRA_BLOWUP_BITS,
+            &periodic_root
+        ),
         "the step recursive vector does not verify"
     );
 
-    vector::emit(&asm, &wproof, fri_log_blowup, &alloc::format!("{}/step-recursive-vector.json", spec));
-    intermediates::emit(&asm, &wproof, &alloc::format!("{}/step-intermediates.json", spec));
+    vector::emit(
+        &asm,
+        &wproof,
+        fri_log_blowup,
+        &alloc::format!("{}/step-recursive-vector.json", spec),
+    );
+    intermediates::emit(
+        &asm,
+        &wproof,
+        &alloc::format!("{}/step-intermediates.json", spec),
+    );
     std::println!("step emit complete -> {}", spec);
 }
