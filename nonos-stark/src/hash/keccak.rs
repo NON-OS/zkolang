@@ -90,10 +90,51 @@ impl Keccak {
         }
     }
 
+    /*
+     * Absorb as the data arrives, keeping only the tail of an incomplete block.
+     *
+     * This used to append every byte to `buffer` and permute nothing until
+     * `finalize`, which makes the type an accumulator rather than a sponge: a
+     * hasher's memory grew with everything ever fed to it. On a wide circuit
+     * that is fatal rather than untidy. Each wide periodic leaf absorbs one
+     * value per periodic column, so at 2,649 columns one leaf held about 21 kB,
+     * and the committer holds a leaf per row of a coset. A quarter of a million
+     * rows times eight cosets in flight is tens of gigabytes of buffered input,
+     * and it is what the kernel killed the prover for three times.
+     *
+     * The digest is unchanged. Padding only ever applies to the final block, so
+     * absorbing the complete ones as they arrive and padding the remainder at
+     * the end is the same sponge absorbing the same bytes in the same order.
+     */
     pub fn update(&mut self, data: &[u8]) {
-        self.buffer.extend_from_slice(data);
+        let mut rest = data;
+        if !self.buffer.is_empty() {
+            let want = self.rate - self.buffer.len();
+            let take = core::cmp::min(want, rest.len());
+            self.buffer.extend_from_slice(&rest[..take]);
+            rest = &rest[take..];
+            if self.buffer.len() == self.rate {
+                let block = core::mem::take(&mut self.buffer);
+                self.absorb_block(&block);
+            }
+        }
+        while rest.len() >= self.rate {
+            let (block, tail) = rest.split_at(self.rate);
+            self.absorb_block(block);
+            rest = tail;
+        }
+        self.buffer.extend_from_slice(rest);
     }
 
+    /// One full rate block into the state, then the permutation.
+    fn absorb_block(&mut self, block: &[u8]) {
+        for (i, &byte) in block.iter().enumerate() {
+            self.state[i / 8] ^= (byte as u64) << ((i % 8) * 8);
+        }
+        keccak_f(&mut self.state);
+    }
+
+    /// The pad and the last block. Everything before it is already absorbed.
     fn absorb(&mut self) {
         self.buffer.push(self.suffix);
 
@@ -105,15 +146,9 @@ impl Keccak {
             *last |= 0x80;
         }
 
-        for chunk in self.buffer.chunks_exact(self.rate) {
-            for (i, &byte) in chunk.iter().enumerate() {
-                let lane_idx = i / 8;
-                let byte_idx = i % 8;
-                let byte_shift = byte_idx * 8;
-                self.state[lane_idx] ^= (byte as u64) << byte_shift;
-            }
-
-            keccak_f(&mut self.state);
+        let block = core::mem::take(&mut self.buffer);
+        for chunk in block.chunks_exact(self.rate) {
+            self.absorb_block(chunk);
         }
     }
 
@@ -158,5 +193,70 @@ impl Drop for Keccak {
             unsafe { core::ptr::write_volatile(byte, 0) };
         }
         core::sync::atomic::compiler_fence(core::sync::atomic::Ordering::SeqCst);
+    }
+}
+
+#[cfg(test)]
+mod sponge_tests {
+    use super::*;
+    use alloc::vec::Vec;
+
+    fn hash(chunks: &[&[u8]]) -> Vec<u8> {
+        let mut k = Keccak::new(512, 32, 0x01);
+        for c in chunks {
+            k.update(c);
+        }
+        k.finalize()
+    }
+
+    /*
+     * The sponge must not care how the input was handed to it.
+     *
+     * This is the property the type quietly did not need while `update` kept
+     * every byte and permuted at the end, and it is the property that lets it
+     * absorb as it goes. Sizes are chosen around the rate, 136 bytes here, so
+     * the cases cover a partial block, an exact block, a block and a byte, and
+     * a stream of single bytes, which is how a wide leaf actually feeds it.
+     */
+    #[test]
+    fn a_chunked_update_hashes_the_same_as_one() {
+        for len in [0usize, 1, 7, 135, 136, 137, 271, 272, 273, 1000, 21_192] {
+            let data: Vec<u8> = (0..len).map(|i| (i * 31 + 7) as u8).collect();
+            let whole = hash(&[&data]);
+            let ones: Vec<&[u8]> = data.chunks(1).collect();
+            let eights: Vec<&[u8]> = data.chunks(8).collect();
+            let awkward: Vec<&[u8]> = data.chunks(137).collect();
+            assert_eq!(whole, hash(&ones), "one byte at a time moved at {len}");
+            assert_eq!(whole, hash(&eights), "eight at a time moved at {len}");
+            assert_eq!(whole, hash(&awkward), "137 at a time moved at {len}");
+        }
+    }
+
+    /// A pinned digest, so a future change to the sponge fails here rather than
+    /// silently moving every commitment in the system.
+    #[test]
+    fn the_empty_and_abc_digests_are_pinned() {
+        let empty = hash(&[&[]]);
+        let abc = hash(&[b"abc"]);
+        let hex = |v: &[u8]| {
+            v.iter()
+                .map(|b| alloc::format!("{b:02x}"))
+                .collect::<alloc::string::String>()
+        };
+        /*
+         * The published Keccak-256 vectors, which is the hash Ethereum uses
+         * and therefore the one an on-chain verifier recomputes. These are not
+         * the SHA3-256 values; the suffix here is 0x01, the legacy padding.
+         * Pinned so a change to the sponge fails here instead of silently
+         * moving every commitment in the system.
+         */
+        assert_eq!(
+            hex(&empty),
+            "c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
+        );
+        assert_eq!(
+            hex(&abc),
+            "4e03657aea45a94fc7d47ba826c8d667c0d1e6e33a64a036ec44f58fa12d6c45"
+        );
     }
 }
