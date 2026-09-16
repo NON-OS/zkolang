@@ -64,9 +64,31 @@ impl Phase {
         #[cfg(feature = "parallel")]
         {
             let now = std::time::Instant::now();
-            std::eprintln!("[prove] {what} in {:?}", now.duration_since(self.at));
+            std::eprintln!(
+                "[prove] {what} in {:?}, resident {}",
+                now.duration_since(self.at),
+                resident()
+            );
             self.at = now;
         }
+    }
+}
+
+/*
+ * What the process is holding, read from the kernel rather than estimated.
+ * Every guess at this number tonight was wrong by a factor, and a phase that
+ * reports its own peak turns the next failure into one line instead of another
+ * evening. Linux only and best effort: a platform without the file says so.
+ */
+#[cfg(feature = "parallel")]
+fn resident() -> alloc::string::String {
+    use alloc::string::ToString;
+    match std::fs::read_to_string("/proc/self/statm") {
+        Ok(s) => {
+            let pages: u64 = s.split_whitespace().nth(1).and_then(|v| v.parse().ok()).unwrap_or(0);
+            alloc::format!("{:.1} GB", pages as f64 * 4096.0 / 1e9)
+        }
+        Err(_) => "unknown".to_string(),
     }
 }
 
