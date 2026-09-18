@@ -31,6 +31,7 @@ extern crate alloc;
 pub mod hash;
 
 pub mod air;
+pub mod attest_params;
 pub mod field;
 pub mod fri;
 pub mod fri_ext;

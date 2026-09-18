@@ -635,8 +635,8 @@ fn a_money_grade_attestation_survives_serialization() {
 #[test]
 fn a_built_trailer_is_accepted_by_the_gate_logic() {
     use crate::crypto::stark::air::{
-        build_attestation_trailer, deserialize_proof_ext, measure_capsule,
-        stark_verify_ext_blown_bound, MerkleMembership,
+        build_attestation_trailer, deserialize_proof_ext, measure_capsule_hybrid,
+        stark_verify_ext_blown_bound,
     };
     let log_rounds = 3u32;
     let hasher = Poseidon::new(log_rounds, [Fp::ZERO; RATE]);
@@ -666,18 +666,27 @@ fn a_built_trailer_is_accepted_by_the_gate_logic() {
     let directions: Vec<bool> = (0..depth).map(|i| (dirs[i / 8] >> (i % 8)) & 1 == 1).collect();
     let proof = deserialize_proof_ext(&trailer[sib_end + dir_bytes..]).expect("the proof parses");
 
-    // The kernel's own policy root, which enrollment publishes.
-    let leaves: Vec<[Fp; RATE]> = images.iter().map(|i| measure_capsule(&hasher, i)).collect();
+    // The kernel's own policy root, which enrollment publishes, and the leaf it
+    // measures from the image it is about to run.
+    let leaves: Vec<[Fp; RATE]> =
+        images.iter().map(|i| measure_capsule_hybrid(&hasher, i)).collect();
     let root = PoseidonMerkleTree::commit(&hasher, &leaves).root();
-    let air = MerkleMembership::new(hasher.clone(), log_rounds, root, siblings, directions);
+    let gate = |leaf: [Fp; RATE]| {
+        let opening = Opening { leaf, root, siblings: siblings.clone(), directions: directions.clone() };
+        MultiMembership::new(hasher.clone(), log_rounds, alloc::vec![opening])
+    };
 
     assert!(
-        stark_verify_ext_blown_bound(&air, &proof, 32, 16, 3, context),
+        stark_verify_ext_blown_bound(&gate(leaves[index]), &proof, 32, 16, 3, context),
         "a tool-built trailer was rejected by the gate logic"
     );
     assert!(
-        !stark_verify_ext_blown_bound(&air, &proof, 32, 16, 3, b"capsule:evil:v1"),
+        !stark_verify_ext_blown_bound(&gate(leaves[index]), &proof, 32, 16, 3, b"capsule:evil:v1"),
         "the trailer passed under the wrong capsule identity"
+    );
+    assert!(
+        !stark_verify_ext_blown_bound(&gate(leaves[2]), &proof, 32, 16, 3, context),
+        "the trailer passed for an image it was not built over"
     );
 }
 
@@ -688,7 +697,7 @@ fn a_built_trailer_is_accepted_by_the_gate_logic() {
 #[test]
 fn the_shared_verify_core_accepts_a_kernel_self_attestation() {
     use crate::crypto::stark::air::{
-        build_attestation_trailer, measure_capsule, verify_membership_trailer, RATE,
+        build_attestation_trailer, enroll_policy_root, verify_membership_trailer, RATE,
     };
     let log_rounds = 3u32;
     let hasher = Poseidon::new(log_rounds, [Fp::ZERO; RATE]);
@@ -701,31 +710,29 @@ fn the_shared_verify_core_accepts_a_kernel_self_attestation() {
         build_attestation_trailer(&hasher, log_rounds, &images, index, boot_ctx, 32, 16, 3);
 
     // The trust root the boot chain carries, as 32 bytes.
-    let leaves: Vec<[Fp; RATE]> = images.iter().map(|i| measure_capsule(&hasher, i)).collect();
-    let root_rate = PoseidonMerkleTree::commit(&hasher, &leaves).root();
+    let root_rate = enroll_policy_root(&hasher, &images);
     let mut root = [0u8; 32];
     for (i, lane) in root_rate.iter().enumerate() {
         root[i * 8..i * 8 + 8].copy_from_slice(&lane.value().to_le_bytes());
     }
 
     let depth = trailer[8] as usize;
+    let verify = |image: &[u8], ctx: &[u8]| {
+        verify_membership_trailer(
+            &hasher, log_rounds, root, image, depth, &trailer, ctx, 32, 16, 3,
+        )
+    };
     assert!(
-        verify_membership_trailer(&hasher, log_rounds, root, depth, &trailer, boot_ctx, 32, 16, 3),
+        verify(images[index], boot_ctx),
         "the kernel self-attestation was rejected by the shared core"
     );
     assert!(
-        !verify_membership_trailer(
-            &hasher,
-            log_rounds,
-            root,
-            depth,
-            &trailer,
-            b"kernel:boot:epoch:2",
-            32,
-            16,
-            3
-        ),
+        !verify(images[index], b"kernel:boot:epoch:2"),
         "a self-attestation passed under the wrong boot context"
+    );
+    assert!(
+        !verify(b"a kernel nobody enrolled", boot_ctx),
+        "a self-attestation passed for a kernel it was not built over"
     );
 }
 

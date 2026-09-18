@@ -54,3 +54,44 @@ pub fn measure_capsule(hasher: &Poseidon, image: &[u8]) -> [Fp; RATE] {
     digest.copy_from_slice(&state[..RATE]);
     digest
 }
+
+/// The domain separator for the hybrid measurement, absorbed before the digest
+/// so a hybrid leaf can never equal a direct leaf of the same bytes.
+const HYBRID_DOMAIN: u64 = 0x4E4F_4E4F_5342_3348; // "NONOSB3H"
+
+/// The hybrid measurement: BLAKE3 the image, then absorb only the 32-byte
+/// digest into the sponge, one permutation.
+///
+/// The direct measurement above is a sponge over every byte of the image. That
+/// is the cost of an enrolment, once, and it would be the cost of every spawn
+/// once the verifier measures the image itself, which it must. Both gates
+/// already hold a BLAKE3 measurement of what they are about to run, so the leaf
+/// costs them one permutation, and the scheme rests on BLAKE3 collision
+/// resistance, which their context already assumed.
+///
+/// The two schemes are domain separated, so a root built from one never
+/// verifies a trailer built from the other. Changing how a set is measured has
+/// to invalidate the set, not quietly reinterpret it.
+pub fn measure_capsule_hybrid(hasher: &Poseidon, image: &[u8]) -> [Fp; RATE] {
+    let digest = blake3::hash(image);
+    let bytes = digest.as_bytes();
+
+    let mut state = [Fp::ZERO; WIDTH];
+    state[0] = state[0] + Fp::from_u64(HYBRID_DOMAIN);
+    /*
+     * Four eight-byte words, each reduced into the field. The reduction folds
+     * the top 2^32 - 1 values of a word onto the bottom ones, so one lane can
+     * collide between two digests; all four together still carry close to 256
+     * bits, and a collision across all four is the collision BLAKE3 rules out.
+     */
+    for (lane, word) in bytes.chunks(8).enumerate() {
+        let mut buf = [0u8; 8];
+        buf.copy_from_slice(word);
+        state[lane + 1] = state[lane + 1] + Fp::from_u64(u64::from_le_bytes(buf));
+    }
+    state = hasher.permute(state);
+
+    let mut out = [Fp::ZERO; RATE];
+    out.copy_from_slice(&state[..RATE]);
+    out
+}
