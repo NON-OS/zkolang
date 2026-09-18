@@ -23,9 +23,7 @@
 //! verifier is proven against forgeries, not assumed sound.
 
 mod accumulator;
-mod attest;
 mod attest_build;
-mod attest_trailer;
 mod attest_verify;
 mod compose_check;
 mod compose_check_gen;
@@ -99,9 +97,7 @@ mod wired_multi_ext;
 mod wired_multi_gen;
 
 pub use accumulator::Accumulator;
-pub use attest::verify_membership_attestation;
 pub use attest_build::{build_attestation_trailer, build_attestation_trailer_from_set, MeasuredSet};
-pub use attest_trailer::verify_attestation_trailer;
 pub use attest_verify::verify_membership_trailer;
 pub use compose_check::{ComposeBoundary, ComposeCheck};
 pub use compose_check_gen::{ComposeCheckGen, GenericTransition};

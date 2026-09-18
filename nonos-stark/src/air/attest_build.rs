@@ -44,8 +44,8 @@ impl MeasuredSet {
     /// Measure every image directly into the sponge and commit them under one
     /// tree. A sponge over every byte of every image, and not what the gates
     /// verify: they measure the hybrid way, and the two are domain separated,
-    /// so a root built here verifies no gate trailer. It serves the
-    /// private-leaf attestation in `attest.rs` and the tests that pin it.
+    /// so a root built here verifies no gate trailer. Kept for callers that
+    /// commit to the bytes themselves rather than to a BLAKE3 digest of them.
     pub fn commit(hasher: &Poseidon, images: &[&[u8]]) -> MeasuredSet {
         let leaves = images.iter().map(|i| measure_capsule(hasher, i)).collect();
         Self::from_leaves(hasher, leaves)
