@@ -11,6 +11,8 @@ pub mod compose_pipeline;
 #[cfg(test)]
 mod air_tests;
 #[cfg(test)]
+mod attest_bind_tests;
+#[cfg(test)]
 mod compose_pipeline_tests;
 #[cfg(test)]
 mod compose_step_tests;

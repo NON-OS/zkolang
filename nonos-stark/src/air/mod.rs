@@ -23,9 +23,7 @@
 //! verifier is proven against forgeries, not assumed sound.
 
 mod accumulator;
-mod attest;
 mod attest_build;
-mod attest_trailer;
 mod attest_verify;
 mod compose_check;
 mod compose_check_gen;
@@ -99,9 +97,7 @@ mod wired_multi_ext;
 mod wired_multi_gen;
 
 pub use accumulator::Accumulator;
-pub use attest::verify_membership_attestation;
-pub use attest_build::build_attestation_trailer;
-pub use attest_trailer::verify_attestation_trailer;
+pub use attest_build::{build_attestation_trailer, build_attestation_trailer_from_set, MeasuredSet};
 pub use attest_verify::verify_membership_trailer;
 pub use compose_check::{ComposeBoundary, ComposeCheck};
 pub use compose_check_gen::{ComposeCheckGen, GenericTransition};
@@ -123,7 +119,7 @@ pub use fused::Fused;
 pub use fused_ext::FusedExt;
 pub use index_point::IndexPoint;
 pub use index_scalar::IndexScalar;
-pub use measure::measure_capsule;
+pub use measure::{measure_capsule, measure_capsule_hybrid};
 pub use merkle_membership::MerkleMembership;
 pub use multi_membership::{MultiMembership, Opening};
 pub use periodic_poseidon::{hash_periodic_row, periodic_root_poseidon, periodic_tree_poseidon};
