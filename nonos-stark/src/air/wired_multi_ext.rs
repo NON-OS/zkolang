@@ -89,6 +89,14 @@ impl WiredMultiExt {
         self.groups.iter().map(|g| g.wired_cols.len()).collect()
     }
 
+    /// Each group's permutation, for a caller asking which cells the wiring
+    /// actually binds. A slot the permutation fixes is in no class: its
+    /// numerator and denominator factors are the same value and cancel, so
+    /// moving that cell breaks nothing and pays for nothing.
+    pub fn group_sigmas(&self) -> Vec<&[usize]> {
+        self.groups.iter().map(|g| g.sigma.as_slice()).collect()
+    }
+
     /// Set the point the copy constraint is argued at.
     ///
     /// These belong to the proof, not the circuit: a grand product only argues

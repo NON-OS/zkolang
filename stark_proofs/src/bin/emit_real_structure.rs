@@ -58,7 +58,7 @@ fn main() {
 
     let h = inner::hasher();
     let t0 = Instant::now();
-    let mut asm = match at.assemble() {
+    let mut asm = match at.assemble_wired(Point::emit_wiring()) {
         Ok(asm) => asm,
         Err(why) => {
             eprintln!("{why}");
@@ -189,13 +189,13 @@ fn main() {
         .join("");
 
     /*
-     * Derived from the engine, never typed. The assembly is built through the
-     * packed path today, which argues the copy constraint at circuit
-     * constants, so this says so. It becomes "transcript" when the emit moves
-     * to the two round prover, and it has to move with it rather than being
-     * edited ahead of it.
+     * Derived from the emit's own choice, never typed. The challenges are
+     * still circuit constants because the emit proves through the one round
+     * prover; that field becomes "transcript" when the emit moves, and it has
+     * to move with it rather than being edited ahead of it.
      */
     let (permutation_challenges, permutation_challenge_root) = ("constant", "null");
+    let wiring = Point::emit_wiring().name();
 
     let json = format!(
         "{{\n  \"point\": \"{}\",\n  \"n_inners\": {},\n  \
@@ -209,6 +209,7 @@ fn main() {
          \"coset_shift\": {},\n  \"inner_n_transitions\": {},\n  \
          \"inner_n_boundary\": {},\n  \"outer_fri_queries\": {},\n  \
          \"inner_boundary\": [{}],\n  \
+         \"wiring\": \"{}\",\n  \
          \"permutation_challenges\": \"{}\",\n  \
          \"permutation_challenge_root\": {},\n  \
          \"periodic_root_poseidon\": \"{}\"\n}}\n",
@@ -251,6 +252,15 @@ fn main() {
          */
         outer_n_queries,
         inner_boundary_json.join(", "),
+        /*
+         * How the copy constraint is shaped: "packed" is one grand product per
+         * bin-packed group, "chained" is one permutation over every wired
+         * column carried through accumulators. The two have different periodic
+         * sets and different roots, so a verifier built from a layout that did
+         * not say which one it describes would walk the wrong number of sigma
+         * columns and blame the proof.
+         */
+        wiring,
         /*
          * Where the copy constraint's challenges come from, and which root
          * they are drawn against. Required, with no default, so a verifier

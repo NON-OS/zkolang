@@ -304,6 +304,13 @@ pub fn assemble_real(tamper: Tamper) -> Assembly {
     assemble_real_capped(tamper, usize::MAX)
 }
 
+/// The real-inner assembly with the copy constraint argued either way.
+pub fn assemble_real_wired(tamper: Tamper, wiring: Wiring) -> Assembly {
+    let h = inner::hasher();
+    let inner = inner::shield_join_split(&h);
+    assemble_over_wired(&h, inner, tamper, usize::MAX, wiring)
+}
+
 /// The real-inner assembly attesting only the first `cap` queries: the same
 /// per-query machinery and every binding, over a trace a fraction of the
 /// size. The wiring gate runs here; full coverage is cap >= n_queries.
@@ -856,7 +863,20 @@ pub fn assemble_over<A: AirExt + GenericTransition + 'static>(
     tamper: Tamper,
     cap: usize,
 ) -> Assembly {
-    let agg = combine(alloc::vec![parts_over(h, inner, tamper, cap)]);
+    assemble_over_wired(h, inner, tamper, cap, Wiring::Packed)
+}
+
+/// The same, argued either way. The emits take the chained form; the gates and
+/// the reject cases stay on the packed one so a circuit that has not moved
+/// keeps measuring what it measured.
+pub fn assemble_over_wired<A: AirExt + GenericTransition + 'static>(
+    h: &Poseidon,
+    inner: Inner<A>,
+    tamper: Tamper,
+    cap: usize,
+    wiring: Wiring,
+) -> Assembly {
+    let agg = combine_wired(alloc::vec![parts_over(h, inner, tamper, cap)], wiring);
     Assembly {
         wired: agg.wired,
         witness: agg.witness,
@@ -877,12 +897,21 @@ pub fn assemble_many<A: AirExt + GenericTransition + 'static>(
     inners: Vec<Inner<A>>,
     cap: usize,
 ) -> Aggregate {
+    assemble_many_wired(h, inners, cap, Wiring::Packed)
+}
+
+pub fn assemble_many_wired<A: AirExt + GenericTransition + 'static>(
+    h: &Poseidon,
+    inners: Vec<Inner<A>>,
+    cap: usize,
+    wiring: Wiring,
+) -> Aggregate {
     assert!(!inners.is_empty(), "a batch needs at least one inner");
     let parts = inners
         .into_iter()
         .map(|inner| parts_over(h, inner, Tamper::None, cap))
         .collect();
-    combine(parts)
+    combine_wired(parts, wiring)
 }
 
 /// The capped real assembly next to its raw binds, for the bind-truth probe.

@@ -191,7 +191,7 @@ fn main() {
 
     let t0 = Instant::now();
     let mut asm = if real {
-        match point.assemble() {
+        match point.assemble_wired(Point::emit_wiring()) {
             Ok(asm) => asm,
             Err(why) => {
                 eprintln!("{why}");

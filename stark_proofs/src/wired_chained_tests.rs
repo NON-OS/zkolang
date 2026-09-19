@@ -213,3 +213,52 @@ fn a_broken_copy_constraint_breaks_a_lane() {
         "a cell that no longer equals the cell it is wired to satisfied every lane"
     );
 }
+
+/// The real settlement outer, argued the chained way, accepts its own witness.
+///
+/// This is the gate the emits sit behind. The toys above prove the lanes are
+/// right; this proves they are right over the wiring that ships, at the width
+/// and depth that ships, which is the only place a mistake in the block
+/// arithmetic or the sigma placement would show up. Ignored because it
+/// assembles the settlement outer.
+#[test]
+#[ignore]
+fn the_settlement_outer_satisfies_when_chained() {
+    use crate::recursion_assembly::build::{assemble_real_wired, Wiring};
+    use crate::recursion_assembly::Tamper;
+    use crate::witness_satisfies::satisfies;
+
+    let packed = assemble_real_wired(Tamper::None, Wiring::Packed);
+    let chained = assemble_real_wired(Tamper::None, Wiring::Chained);
+
+    let (pn, cn) = (
+        Air::periodic_columns(&packed.wired).len(),
+        Air::periodic_columns(&chained.wired).len(),
+    );
+    std::println!(
+        "periodic columns {pn} -> {cn}, groups {} -> {}, width {} -> {}, degree {} -> {}",
+        packed.n_groups,
+        chained.n_groups,
+        Air::trace_width(&packed.wired),
+        Air::trace_width(&chained.wired),
+        Air::constraint_degree(&packed.wired),
+        Air::constraint_degree(&chained.wired),
+    );
+
+    assert!(
+        satisfies(&packed.wired, &packed.witness),
+        "the packed settlement outer does not satisfy, so this measures nothing"
+    );
+    assert!(
+        satisfies(&chained.wired, &chained.witness),
+        "the chained settlement outer does not accept its own witness"
+    );
+    assert!(
+        cn < pn,
+        "the chained form spends {cn} periodic columns against the packed {pn}"
+    );
+    assert!(
+        Air::constraint_degree(&chained.wired) <= Air::constraint_degree(&packed.wired),
+        "the chained form raised the degree, which would move the evaluation domain"
+    );
+}

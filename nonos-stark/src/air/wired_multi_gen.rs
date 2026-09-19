@@ -65,6 +65,12 @@ impl WiredMultiGen {
     pub fn group_params(&self) -> Vec<(Vec<usize>, Fp, Fp)> {
         self.wired.group_params()
     }
+
+    /// Each group's permutation, for a caller asking which cells are bound
+    /// rather than merely wired. See `WiredMultiExt::group_sigmas`.
+    pub fn group_sigmas(&self) -> Vec<&[usize]> {
+        self.wired.group_sigmas()
+    }
 }
 
 impl GenericTransition for WiredMultiGen {
