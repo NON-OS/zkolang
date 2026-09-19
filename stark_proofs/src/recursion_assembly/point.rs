@@ -12,8 +12,8 @@
 //! domain at whatever `NONOS_INNER_EXTRA` says. The check that those agree
 //! lives here, so a binary cannot assemble the transfer point without it.
 
-use super::build::assemble_over;
-use super::{assemble_real, inner, Assembly, Tamper};
+use super::build::{assemble_over_wired, assemble_real_wired, Wiring};
+use super::{inner, Assembly, Tamper};
 use crate::shield_params::{deployment, transfer};
 
 /// The outer to assemble.
@@ -137,9 +137,29 @@ impl Point {
         }
     }
 
+    /// How every emitted artifact argues its copy constraint.
+    ///
+    /// One value, read by every binary that emits a structure, a proof or a
+    /// set of constraint values, because three binaries that each decided this
+    /// for themselves would agree until the day one of them did not, and a
+    /// proof built over a different wiring than the structure describes is
+    /// indistinguishable from a right one until a verifier refuses it.
+    pub fn emit_wiring() -> Wiring {
+        Wiring::Chained
+    }
+
     /// Assemble the outer with its witness, refusing a transfer point whose
     /// environment would authenticate the inner at the wrong rate.
     pub fn assemble(self) -> Result<Assembly, String> {
+        self.assemble_wired(Wiring::Packed)
+    }
+
+    /// The same, with the copy constraint argued either way.
+    ///
+    /// The emits take `Chained`, which spends 368 sigma columns where the
+    /// packed form spends 2,025. The gates and the reject cases stay on
+    /// `Packed`, so a circuit nobody moved keeps measuring what it measured.
+    pub fn assemble_wired(self, wiring: Wiring) -> Result<Assembly, String> {
         /*
          * Every point but the transfer proves its inner at the deployment
          * rate, and the environment must not be able to lower it silently.
@@ -170,7 +190,7 @@ impl Point {
             ));
         }
         match self {
-            Point::Settlement => Ok(assemble_real(Tamper::None)),
+            Point::Settlement => Ok(assemble_real_wired(Tamper::None, wiring)),
             Point::Transfer { queries } => {
                 if inner::extra() != transfer::EXTRA_BLOWUP_BITS {
                     return Err(format!(
@@ -187,7 +207,7 @@ impl Point {
                     transfer::GRIND_BITS,
                     transfer::EXTRA_BLOWUP_BITS,
                 );
-                Ok(assemble_over(&h, inner_at, Tamper::None, usize::MAX))
+                Ok(assemble_over_wired(&h, inner_at, Tamper::None, usize::MAX, wiring))
             }
             /*
              * A batch is `inners` copies of the settlement inner laid end to
@@ -215,7 +235,7 @@ impl Point {
                     *s = js.intent[i];
                 }
                 let inner_live = inner::shield_join_split_of(&h, js, Some(&seed));
-                Ok(assemble_over(&h, inner_live, Tamper::None, usize::MAX))
+                Ok(assemble_over_wired(&h, inner_live, Tamper::None, usize::MAX, wiring))
             }
             Point::Batch { inners } => {
                 if inners == 0 {
@@ -225,7 +245,7 @@ impl Point {
                 let batch = (0..inners)
                     .map(|_| inner::shield_join_split(&h))
                     .collect::<alloc::vec::Vec<_>>();
-                let agg = super::build::assemble_many(&h, batch, usize::MAX);
+                let agg = super::build::assemble_many_wired(&h, batch, usize::MAX, wiring);
                 Ok(Assembly {
                     wired: agg.wired,
                     witness: agg.witness,

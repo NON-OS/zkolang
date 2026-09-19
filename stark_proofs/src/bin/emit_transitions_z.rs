@@ -105,7 +105,7 @@ fn main() {
     );
 
     let t0 = Instant::now();
-    let asm = match point.assemble() {
+    let asm = match point.assemble_wired(Point::emit_wiring()) {
         Ok(asm) => asm,
         Err(why) => {
             eprintln!("{why}");
