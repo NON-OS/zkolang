@@ -60,8 +60,27 @@ pub(in crate::air) fn wide_streamed(coeffs: &[Vec<Fp>], d: &Domain) -> MerkleTre
             digests[c + d.blowup * i] = h;
         }
     }
-    let pad = alloc::vec![Fp::ZERO; d.width];
+    let pad = alloc::vec![Fp::ZERO; coeffs.len()];
     MerkleTree::from_leaf_digests(digests, hash_leaf_wide(&pad))
+}
+
+/// Interpolate a range of the trace's columns.
+///
+/// The two round path commits the region columns before the permutation
+/// columns exist, so it cannot interpolate the trace in one call. Columns are
+/// independent, so this is `trace_coeffs` restricted to a range and nothing
+/// more.
+pub(in crate::air) fn trace_coeffs_cols(
+    trace: &[Fp],
+    d: &Domain,
+    lo: usize,
+    hi: usize,
+) -> Vec<Vec<Fp>> {
+    crate::par::map_index(hi - lo, |j| {
+        let c = lo + j;
+        let column: Vec<Fp> = (0..d.t).map(|i| trace[i * d.width + c]).collect();
+        crate::poly::intt(&column, d.g)
+    })
 }
 
 #[cfg(test)]

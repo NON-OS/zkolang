@@ -78,6 +78,7 @@ mod range_check;
 pub mod replay;
 pub mod replay_ext;
 pub mod replay_pre;
+pub mod rounds;
 mod serialize;
 mod serialize_ext;
 mod shield_region;
@@ -89,17 +90,20 @@ mod transcript_check;
 mod types;
 mod types_ext;
 mod types_ext_pre;
+mod types_ext_rounds;
 mod types_poseidon_ext;
 mod types_poseidon_pre;
 mod verify;
 mod verify_ext;
 mod verify_ext_pre;
+mod verify_ext_rounds;
 mod verify_poseidon_ext;
 mod verify_poseidon_pre;
 mod wired;
 mod wired_ext;
 mod wired_multi_ext;
 mod wired_multi_gen;
+mod wired_multi_rounds;
 
 pub use accumulator::Accumulator;
 pub use attest::verify_membership_attestation;
@@ -148,7 +152,7 @@ pub use prove_ext::{
 };
 pub use prove_ext_pre::{
     stark_prove_ext_preprocessed, stark_prove_ext_preprocessed_tree,
-    stark_prove_ext_preprocessed_watched,
+    stark_prove_ext_preprocessed_watched, stark_prove_ext_rounds,
 };
 pub use prove_poseidon_ext::{
     stark_prove_poseidon_ext, stark_prove_poseidon_ext_pub, stark_prove_poseidon_ext_zk,
@@ -167,12 +171,14 @@ pub use transcript_check::{TranscriptCheck, TranscriptOp};
 pub use types::{StarkProof, StarkQuery};
 pub use types_ext::{StarkProofExt, StarkQueryExt};
 pub use types_ext_pre::{PeriodicOpeningExt, StarkProofExtPre};
+pub use types_ext_rounds::StarkProofExtRounds;
 pub use types_poseidon_ext::{StarkProofExtP, StarkQueryExtP};
 pub use types_poseidon_pre::{PeriodicOpeningP, StarkProofExtPPre};
 pub use value_balance::{Leg, ValueBalance, LIMB_SHIFT};
 pub use verify::{stark_verify, stark_verify_bound};
 pub use verify_ext::{stark_verify_ext, stark_verify_ext_blown, stark_verify_ext_blown_bound};
 pub use verify_ext_pre::{stark_verify_ext_preprocessed, stark_verify_ext_preprocessed_pub};
+pub use verify_ext_rounds::stark_verify_ext_rounds;
 pub use verify_poseidon_ext::{stark_verify_poseidon_ext, stark_verify_poseidon_ext_pub};
 pub use verify_poseidon_pre::stark_verify_poseidon_pre_pub;
 pub use wide_mul::{split, wide_mul, Product, LIMB_BITS, LIMB_MASK, N_LIMBS, N_OUT};

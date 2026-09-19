@@ -55,6 +55,8 @@ mod wired_chained_tests;
 mod wired_challenge_tests;
 #[cfg(test)]
 mod wired_forgery_tests;
+#[cfg(test)]
+mod wired_rounds_tests;
 // ntt_tests disabled: file lost to a /tmp wipe (LOCAL only).
 #[cfg(test)]
 mod parallel_bytes_tests;

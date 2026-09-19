@@ -65,3 +65,50 @@ pub(super) fn open(
     }
     (queries, openings)
 }
+
+/// The same walk when the trace was committed in two rounds.
+///
+/// A query's row is still one row. What changes is that its region half
+/// authenticates under the first round's root and its permutation half under
+/// the second, so each position yields a second path.
+#[allow(clippy::too_many_arguments)]
+pub(super) fn open_rounds(
+    transcript: &mut Transcript,
+    n_queries: usize,
+    d: &Domain,
+    trace: &[Vec<Fp>],
+    region_tree: &MerkleTree,
+    perm_tree: &MerkleTree,
+    periodic: &[Vec<Fp>],
+    periodic_tree: &MerkleTree,
+    comp_d: &[Fp2],
+    comp_tree: &MerkleTree,
+    deep_d: &[Fp2],
+    deep_tree: &MerkleTree,
+) -> (
+    Vec<StarkQueryExt>,
+    Vec<PeriodicOpeningExt>,
+    Vec<Vec<[u8; 32]>>,
+) {
+    let mut queries = Vec::with_capacity(n_queries);
+    let mut openings = Vec::with_capacity(n_queries);
+    let mut perm_paths = Vec::with_capacity(n_queries);
+    for _ in 0..n_queries {
+        let p = transcript.challenge_index(d.n);
+        let x_p = d.shift * d.omega.pow(p as u64);
+        queries.push(StarkQueryExt {
+            deep: deep_d[p],
+            deep_path: deep_tree.open(p),
+            trace: trace.iter().map(|cf| eval_base(cf, x_p)).collect(),
+            trace_path: region_tree.open(p),
+            comp: comp_d[p],
+            comp_path: comp_tree.open(p),
+        });
+        perm_paths.push(perm_tree.open(p));
+        openings.push(PeriodicOpeningExt {
+            row: periodic.iter().map(|cf| eval_base(cf, x_p)).collect(),
+            path: periodic_tree.open(p),
+        });
+    }
+    (queries, openings, perm_paths)
+}
