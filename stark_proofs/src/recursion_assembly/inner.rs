@@ -185,6 +185,23 @@ pub fn shield_join_split(h: &Poseidon) -> Inner<WiredMultiGen> {
         std::sync::OnceLock::new();
     let pre = PRE
         .get_or_init(|| {
+            /*
+             * Blinded like a real spend, at a fixed seed because this one is a
+             * fixture and an artifact built from it should reproduce. A wallet
+             * draws from entropy. What matters here is that the emitted proof
+             * has the shape a wallet's proof has, rather than being the one
+             * case where the openings happen to be the trace.
+             */
+            let seed = [
+                Fp::from_u64(0x5ded_0001),
+                Fp::from_u64(0x5ded_0002),
+                Fp::from_u64(0x5ded_0003),
+                Fp::from_u64(0x5ded_0004),
+            ];
+            let deg = NQ + js.wired.window_size();
+            let blind: Vec<Vec<Fp>> = (0..js.wired.trace_width())
+                .map(|c| crate::crypto::stark::air::blinding_poly(h, &seed, c, deg))
+                .collect();
             stark_prove_poseidon_pre_pub(
                 &js.wired,
                 &js.witness,
@@ -193,7 +210,7 @@ pub fn shield_join_split(h: &Poseidon) -> Inner<WiredMultiGen> {
                 extra(),
                 h,
                 &publics,
-                &[],
+                &blind,
             )
             .expect("nothing watches this proof, so nothing can cancel it")
         })
