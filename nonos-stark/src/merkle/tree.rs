@@ -107,22 +107,63 @@ impl MerkleTree {
 
     /// Build the tree above a power-of-two leaf-digest level. Shared by both
     /// commit paths so node hashing has a single implementation.
-    fn build(mut level: Vec<[u8; 32]>) -> MerkleTree {
+    ///
+    /// Each level is a pure function of the one below it, node `i` from leaves
+    /// `2i` and `2i + 1`, so the level is hashed as an indexed map and comes
+    /// out in the same order the serial loop produced. Levels move into the
+    /// tree rather than being copied into it: on a 2^26 leaf domain the copy
+    /// was four gigabytes held twice for nothing.
+    fn build(level: Vec<[u8; 32]>) -> MerkleTree {
         let mut layers = Vec::new();
-        layers.push(level.clone());
-        while level.len() > 1 {
-            let mut next = Vec::with_capacity(level.len() / 2);
-            let mut i = 0;
-            while i + 1 < level.len() {
-                next.push(hash_node(&level[i], &level[i + 1]));
-                i += 2;
+        layers.push(level);
+        loop {
+            let below = layers.last().expect("the leaf level was just pushed");
+            if below.len() <= 1 {
+                break;
             }
-            level = next;
-            layers.push(level.clone());
+            let next = crate::par::map_index(below.len() / 2, |i| {
+                hash_node(&below[2 * i], &below[2 * i + 1])
+            });
+            layers.push(next);
         }
 
-        let root = layers.last().and_then(|top| top.first()).copied().unwrap_or([0u8; 32]);
+        let root = layers
+            .last()
+            .and_then(|top| top.first())
+            .copied()
+            .unwrap_or([0u8; 32]);
         MerkleTree { layers, root }
+    }
+
+    /// Every level of the tree, leaves first, root level last. This is the
+    /// whole state of a committed tree, exposed so a tree whose leaves are a
+    /// constant of the circuit can be kept and reloaded instead of rebuilt.
+    pub fn layers(&self) -> &[Vec<[u8; 32]>] {
+        &self.layers
+    }
+
+    /// A tree from levels a previous `build` produced. The shape is checked,
+    /// power of two leaves and each level half the one below down to a single
+    /// root, and the node hashes are not recomputed: a reloaded tree is used
+    /// to open paths that the proof's verifier then checks against the root,
+    /// so a corrupted level fails there, on the proof, rather than here.
+    pub fn from_layers(layers: Vec<Vec<[u8; 32]>>) -> Option<MerkleTree> {
+        let leaves = layers.first()?.len();
+        if leaves == 0 || !leaves.is_power_of_two() {
+            return None;
+        }
+        let mut expect = leaves;
+        for level in &layers {
+            if level.len() != expect {
+                return None;
+            }
+            expect /= 2;
+        }
+        if layers.last()?.len() != 1 {
+            return None;
+        }
+        let root = layers.last()?[0];
+        Some(MerkleTree { layers, root })
     }
 
     /// The commitment root.

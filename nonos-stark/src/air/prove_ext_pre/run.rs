@@ -29,7 +29,8 @@ use super::super::composition::num_coeffs;
 use super::super::periodic_root::periodic_tree_over;
 use super::super::progress::{Phase, Progress};
 use super::super::prove_ext::{
-    comp_at_z, draw_ood_point_ext, ood_frame, over_domain, trace_coeffs, wide_streamed, Domain,
+    comp_at_z, draw_ood_point_ext, ood_frame, over_domain, periodic_coeffs, trace_coeffs,
+    wide_streamed, Domain,
 };
 use super::super::spec::AirExt;
 use super::super::types_ext::StarkProofExt;
@@ -120,10 +121,62 @@ pub fn stark_prove_ext_preprocessed_watched<A: AirExt>(
     extra_blowup_bits: u32,
     watch: Option<&Progress>,
 ) -> Option<StarkProofExtPre> {
+    stark_prove_ext_preprocessed_tree(
+        air,
+        trace,
+        n_queries,
+        grind_bits,
+        extra_blowup_bits,
+        &[],
+        None,
+        watch,
+    )
+    .map(|(pre, _)| pre)
+}
+
+/// The same proof, with the periodic tree carried in and out.
+///
+/// The periodic commitment is a constant of the circuit: it depends on the
+/// periodic columns and the rate and on nothing the witness changes, which is
+/// why its root can be baked into a verifier. It was nonetheless rebuilt for
+/// every proof, half the running time of a settlement proof spent recomputing
+/// a value that had not moved, because the openings need the tree and only the
+/// root had been kept. A caller that holds the tree passes it here and the
+/// phase costs the interpolation of the columns and nothing else; a caller
+/// that does not gets the tree back beside the proof, to keep.
+///
+/// A supplied tree that does not fit the domain is not used: the tree is
+/// rebuilt and the rebuilt one returned, so a stale cache costs the old time
+/// and never a wrong proof. The proof is verified against the baked root by
+/// whoever asked for it, and a tree with the right shape and the wrong
+/// contents fails there.
+///
+/// `publics` are the statement's public inputs, absorbed into the transcript
+/// first of all, before the trace root, one field element each in order. A
+/// verifier absorbs the same words at the same point and derives the same
+/// challenges; one that absorbs different words derives different ones and
+/// the proof fails at its first query. That is what makes the proof a proof
+/// about these inputs rather than about some inputs: without it an accepted
+/// proof could be presented for any statement of the same shape. An empty
+/// slice absorbs nothing and leaves the transcript as it was.
+#[allow(clippy::too_many_arguments)]
+pub fn stark_prove_ext_preprocessed_tree<A: AirExt>(
+    air: &A,
+    trace: &[Fp],
+    n_queries: usize,
+    grind_bits: u32,
+    extra_blowup_bits: u32,
+    publics: &[Fp],
+    periodic_tree: Option<MerkleTree>,
+    watch: Option<&Progress>,
+) -> Option<(StarkProofExtPre, MerkleTree)> {
     let d = Domain::of(air, extra_blowup_bits);
     let mut phase = Phase::start(watch);
 
     let mut transcript = Transcript::new(b"NONOS-STARK-EXT");
+    for value in publics {
+        transcript.absorb_fp(*value);
+    }
     let tc = trace_coeffs(trace, &d);
     let trace_tree = wide_streamed(&tc, &d);
     let trace_root = trace_tree.root();
@@ -147,7 +200,14 @@ pub fn stark_prove_ext_preprocessed_watched<A: AirExt>(
      * the out-of-domain point. The count is taken before the handover and the
      * value comes off the coefficients, which are the same polynomials.
      */
-    let (pc, p_tree) = periodic_tree_over(air.periodic_columns(), &d);
+    let (pc, p_tree) = match periodic_tree {
+        Some(tree) if tree.len() == d.n => {
+            let cols = air.periodic_columns();
+            let pc = periodic_coeffs(&cols, &d);
+            (pc, tree)
+        }
+        _ => periodic_tree_over(air.periodic_columns(), &d),
+    };
     let n_periodic = pc.len();
     phase.done("periodic commitment");
     if phase.cancelled() {
@@ -218,7 +278,7 @@ pub fn stark_prove_ext_preprocessed_watched<A: AirExt>(
     if let Some(w) = watch {
         w.finish();
     }
-    Some(StarkProofExtPre {
+    let pre = StarkProofExtPre {
         proof: StarkProofExt {
             trace_root,
             comp_root: comp_tree.root(),
@@ -228,5 +288,6 @@ pub fn stark_prove_ext_preprocessed_watched<A: AirExt>(
         },
         periodic_z,
         openings,
-    })
+    };
+    Some((pre, p_tree))
 }
