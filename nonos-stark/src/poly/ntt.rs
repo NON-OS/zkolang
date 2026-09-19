@@ -20,7 +20,6 @@
 //! primitive `n`-th root of unity, where `n` is the length, a power of two.
 
 use super::super::field::Fp;
-use super::super::par::for_each_chunk_mut;
 use alloc::vec::Vec;
 
 /// Reorder `a` into bit-reversed index order in place.
@@ -50,31 +49,76 @@ pub fn ntt(coeffs: &[Fp], omega: Fp) -> Vec<Fp> {
     }
     bit_reverse(&mut a);
 
+    /*
+     * Serial, on purpose. Every caller runs one transform per column inside a
+     * map that is already parallel across columns, so a transform that also
+     * split its own butterflies into tasks was handing the scheduler a task
+     * per pair at the first stage: a quarter of a million tasks for a 2^19
+     * column, nineteen times over, for every one of thousands of columns per
+     * coset. Sampled on the box, that scheduling was more of the DEEP phase
+     * than the DEEP arithmetic. The butterflies themselves are unchanged.
+     *
+     * The twiddles for a stage are the same in every block of that stage, so
+     * they are walked up from one once, into a table, rather than once per
+     * block: half the multiplications of the stage, and the same values,
+     * because the table is the same running product the blocks each ran.
+     */
+    /*
+     * Twiddles are walked multiplicatively, never tabulated.
+     *
+     * A table of `omega^k` looks like the obvious trade, one multiplication
+     * for one load, and it is a loss here. At `n = 2^18` the table is a
+     * megabyte, the middle stages read it at a stride of kilobytes, and
+     * forty four threads each want their own: the tables alone exceed the
+     * shared cache and the transform goes from arithmetic-bound to
+     * memory-bound. Measured on the box, that cost more than the
+     * multiplications it removed. A running product is two registers.
+     */
     let mut len = 2usize;
     while len <= n {
-        // A primitive len-th root of unity.
         let w_len = omega.pow((n / len) as u64);
         let half = len / 2;
-        /*
-         * One stage's butterflies fall into blocks of `len` that touch nothing
-         * outside themselves, so the blocks go wide. Each block walks its own
-         * twiddle up from one, exactly as the serial loop did, so the arithmetic,
-         * and with it the proof, is the same whichever way the crate is built.
-         */
-        for_each_chunk_mut(&mut a, len, |block| {
-            let mut w = Fp::ONE;
+        if half < SHORT_STAGE {
+            /*
+             * Short blocks, many of them. Iterating blocks outermost paid a
+             * slice split and two fresh iterators per pair at exactly the
+             * stages that hold most of the pairs. With the twiddle outermost
+             * the walk is one multiplication per stage step and the inner
+             * loop is long. Same pairs, same twiddles, same order of
+             * arithmetic within a pair.
+             */
+            let mut tw = Fp::ONE;
             for j in 0..half {
-                let u = block[j];
-                let v = block[j + half] * w;
-                block[j] = u + v;
-                block[j + half] = u - v;
-                w = w * w_len;
+                let mut start = j;
+                while start < n {
+                    let u = a[start];
+                    let v = a[start + half] * tw;
+                    a[start] = u + v;
+                    a[start + half] = u - v;
+                    start += len;
+                }
+                tw = tw * w_len;
             }
-        });
+        } else {
+            for block in a.chunks_exact_mut(len) {
+                let (lo, hi) = block.split_at_mut(half);
+                let mut tw = Fp::ONE;
+                for (x, y) in lo.iter_mut().zip(hi.iter_mut()) {
+                    let u = *x;
+                    let v = *y * tw;
+                    *x = u + v;
+                    *y = u - v;
+                    tw = tw * w_len;
+                }
+            }
+        }
         len <<= 1;
     }
     a
 }
+
+/// Below this half-block length a stage runs twiddle-outer, block-inner.
+const SHORT_STAGE: usize = 32;
 
 /// Interpolate `evals` on `{omega^0, ..., omega^{n-1}}` back to coefficients: the
 /// transform with the inverse root, scaled by `1/n`.
@@ -88,4 +132,42 @@ pub fn intt(evals: &[Fp], omega: Fp) -> Vec<Fp> {
         }
     }
     a
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::fri::root_of_unity;
+
+    /// The transform inverts, at the sizes a settlement column has, and a
+    /// bench line for the size the prover runs it at thousands of times per
+    /// coset. Run the bench with `--ignored --nocapture`.
+    #[test]
+    fn the_inverse_transform_returns_the_coefficients() {
+        for log_n in [1u32, 4, 10, 16] {
+            let n = 1usize << log_n;
+            let omega = root_of_unity(log_n);
+            let coeffs: Vec<Fp> = (0..n as u64).map(|i| Fp::from_u64(i * 7 + 3)).collect();
+            let back = intt(&ntt(&coeffs, omega), omega);
+            assert_eq!(back, coeffs, "round trip moved at 2^{log_n}");
+        }
+    }
+
+    #[test]
+    #[ignore]
+    #[cfg(feature = "parallel")]
+    fn throughput() {
+        let log_n = 19u32;
+        let n = 1usize << log_n;
+        let omega = root_of_unity(log_n);
+        let coeffs: Vec<Fp> = (0..n as u64).map(|i| Fp::from_u64(i * 7 + 3)).collect();
+        let reps = 8;
+        let t = std::time::Instant::now();
+        let mut acc = Fp::ZERO;
+        for _ in 0..reps {
+            acc = acc + ntt(&coeffs, omega)[1];
+        }
+        let s = t.elapsed().as_secs_f64() / reps as f64;
+        std::println!("NTT 2^{log_n} {:.1} ms (acc {})", s * 1e3, acc.to_u64());
+    }
 }

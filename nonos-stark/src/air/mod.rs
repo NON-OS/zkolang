@@ -77,6 +77,7 @@ mod query_openings;
 mod range_check;
 pub mod replay;
 pub mod replay_ext;
+pub mod replay_pre;
 mod serialize;
 mod serialize_ext;
 mod shield_region;
@@ -145,7 +146,10 @@ pub use prove_ext::{
     stark_prove_ext, stark_prove_ext_blown, stark_prove_ext_blown_bound, stark_prove_ext_zk,
     COSET_SHIFT,
 };
-pub use prove_ext_pre::{stark_prove_ext_preprocessed, stark_prove_ext_preprocessed_watched};
+pub use prove_ext_pre::{
+    stark_prove_ext_preprocessed, stark_prove_ext_preprocessed_tree,
+    stark_prove_ext_preprocessed_watched,
+};
 pub use prove_poseidon_ext::{
     stark_prove_poseidon_ext, stark_prove_poseidon_ext_pub, stark_prove_poseidon_ext_zk,
 };
@@ -168,7 +172,7 @@ pub use types_poseidon_pre::{PeriodicOpeningP, StarkProofExtPPre};
 pub use value_balance::{Leg, ValueBalance, LIMB_SHIFT};
 pub use verify::{stark_verify, stark_verify_bound};
 pub use verify_ext::{stark_verify_ext, stark_verify_ext_blown, stark_verify_ext_blown_bound};
-pub use verify_ext_pre::stark_verify_ext_preprocessed;
+pub use verify_ext_pre::{stark_verify_ext_preprocessed, stark_verify_ext_preprocessed_pub};
 pub use verify_poseidon_ext::{stark_verify_poseidon_ext, stark_verify_poseidon_ext_pub};
 pub use verify_poseidon_pre::stark_verify_poseidon_pre_pub;
 pub use wide_mul::{split, wide_mul, Product, LIMB_BITS, LIMB_MASK, N_LIMBS, N_OUT};

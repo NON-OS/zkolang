@@ -46,6 +46,37 @@ pub(in crate::air) fn over_domain(
         .collect();
     let e = deep_coeffs[d.width * d.window];
 
+    /*
+     * Every quotient family shares a divisor, so the fold distributes:
+     *
+     *   sum_j c_j (v_j(x) - claim_j) / (x - z_k)
+     *     = (sum_j c_j v_j(x) - sum_j c_j claim_j) / (x - z_k)
+     *
+     * The second sum does not depend on x. It is taken once here, one value
+     * per window row for the trace and one for the periodic claims, and every
+     * point then pays one base-scaled product per column instead of an
+     * extension subtraction and two extension products, and one division per
+     * family instead of one per column. Same field elements, since the
+     * identity is exact; the DEEP polynomial and everything committed after
+     * it are unchanged. On the deployed outer this is 4,148 terms a point,
+     * across sixty seven million points.
+     */
+    let claim_sums: Vec<Fp2> = (0..d.window)
+        .map(|k| {
+            let mut s = Fp2::ZERO;
+            for col in 0..d.width {
+                s = s + deep_coeffs[k * d.width + col] * ood_frame[k * d.width + col];
+            }
+            s
+        })
+        .collect();
+    let periodic_coeffs = &deep_coeffs[d.width * d.window + 1..];
+    let mut periodic_claim_sum = Fp2::ZERO;
+    for (pc, claim) in periodic_coeffs.iter().zip(periodic_z.iter()) {
+        periodic_claim_sum = periodic_claim_sum + *pc * *claim;
+    }
+
+    let width = d.width;
     let mut deep_d = alloc::vec![Fp2::ZERO; d.n];
     for c in 0..d.blowup {
         let cols = extend(trace, d, c);
@@ -75,20 +106,20 @@ pub(in crate::air) fn over_domain(
                 let base = (i - lo) * stride;
                 let mut acc = Fp2::ZERO;
                 for k in 0..zks.len() {
-                    let inv_x_zk = invs[base + k];
-                    for (col, column) in cols.iter().enumerate() {
-                        let claimed = ood_frame[k * d.width + col];
-                        acc = acc
-                            + deep_coeffs[k * d.width + col]
-                                * ((Fp2::from_base(column[i]) - claimed) * inv_x_zk);
+                    let mut row = Fp2::ZERO;
+                    let dc = &deep_coeffs[k * width..(k + 1) * width];
+                    for (coeff, column) in dc.iter().zip(cols.iter()) {
+                        row = row + coeff.mul_base(column[i]);
                     }
+                    acc = acc + (row - claim_sums[k]) * invs[base + k];
                 }
                 let inv_x_z = invs[base + zks.len()];
                 acc = acc + e * ((comp_d[j] - comp_z) * inv_x_z);
-                for (pi, pd) in per.iter().enumerate() {
-                    let pc = deep_coeffs[d.width * d.window + 1 + pi];
-                    acc = acc + pc * ((Fp2::from_base(pd[i]) - periodic_z[pi]) * inv_x_z);
+                let mut periodic_row = Fp2::ZERO;
+                for (pc, pd) in periodic_coeffs.iter().zip(per.iter()) {
+                    periodic_row = periodic_row + pc.mul_base(pd[i]);
                 }
+                acc = acc + (periodic_row - periodic_claim_sum) * inv_x_z;
                 out.push(acc);
             }
             out

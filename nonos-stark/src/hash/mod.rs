@@ -28,10 +28,7 @@ pub(crate) use keccak::Keccak;
 pub fn keccak256(data: &[u8]) -> [u8; 32] {
     let mut hasher = Keccak::new(512, 32, 0x01);
     hasher.update(data);
-    let out = hasher.finalize();
-    let mut hash = [0u8; 32];
-    hash.copy_from_slice(&out);
-    hash
+    hasher.finalize32()
 }
 
 /// BLAKE3, the image measurement hash. Matches the bootloader's kernel measure.

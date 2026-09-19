@@ -131,3 +131,40 @@ fn a_wrong_periodic_root_is_rejected() {
         "a proof verified against the wrong periodic root"
     );
 }
+
+/// A proof made under public inputs is a proof about them: it verifies under
+/// the same words, and under any other words, one word changed, one word
+/// dropped, or none at all, it does not. This is the replay property a
+/// settlement needs, that an accepted proof for one batch is not an
+/// accepted proof for another.
+#[test]
+fn the_public_inputs_are_bound_by_the_transcript() {
+    use crate::crypto::stark::air::{
+        stark_prove_ext_preprocessed_tree, stark_verify_ext_preprocessed_pub,
+    };
+    let air = join_split_air();
+    let w = witness(&air);
+    let root = baked_root(&air, 0);
+    let publics: Vec<Fp> = (1..=11u64).map(Fp::from_u64).collect();
+    let (proof, _) = stark_prove_ext_preprocessed_tree(&air, &w, 32, 8, 0, &publics, None, None)
+        .expect("nothing watches this proof, so nothing can cancel it");
+
+    assert!(
+        stark_verify_ext_preprocessed_pub(&air, &proof, 32, 8, 0, &root, &publics),
+        "an honest proof under its own public inputs was rejected"
+    );
+    let mut other = publics.clone();
+    other[4] = other[4] + Fp::ONE;
+    assert!(
+        !stark_verify_ext_preprocessed_pub(&air, &proof, 32, 8, 0, &root, &other),
+        "a proof verified under public inputs it was not made for"
+    );
+    assert!(
+        !stark_verify_ext_preprocessed_pub(&air, &proof, 32, 8, 0, &root, &publics[..10]),
+        "a proof verified with one public input dropped"
+    );
+    assert!(
+        !stark_verify_ext_preprocessed(&air, &proof, 32, 8, 0, &root),
+        "a proof made under public inputs verified as if it had none"
+    );
+}

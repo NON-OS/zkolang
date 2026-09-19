@@ -22,7 +22,7 @@
 //! composition is never held at once.
 
 use super::super::super::field::{Fp, Fp2};
-use super::super::composition::{compose_ext_planned, ComposePlan};
+use super::super::composition::{compose_base_planned, ComposePlan};
 use super::super::spec::AirExt;
 use super::coset::extend;
 use super::setup::Domain;
@@ -38,6 +38,16 @@ pub(in crate::air) const BLOCK: usize = 1024;
 /// residue mod blowup: a window never leaves its coset, it wraps to row
 /// `(i + k) % t` of the same one. That wrap is what makes streaming exact, and
 /// it is the only fact this function rests on.
+///
+/// Every point of the domain is a base field element and so is every trace
+/// and periodic value at it, so the constraints are evaluated in the base
+/// field and only the coefficient products lift. This pass used to lift every
+/// input to the extension first and evaluate there, three base multiplications
+/// for each one needed, and to take the vanishing inverse and a boundary-wide
+/// batch inversion at every point when the first is a per coset constant and
+/// the second has a distinct denominator per row, not per boundary. The
+/// polynomial it produces is the same one; the values are the same field
+/// elements reached by fewer operations.
 pub(in crate::air) fn over_domain<A: AirExt>(
     air: &A,
     d: &Domain,
@@ -57,31 +67,33 @@ pub(in crate::air) fn over_domain<A: AirExt>(
         let cols = extend(trace, d, c);
         let per = extend(periodic, d, c);
         let shift_c = d.coset_shift(c);
+        let z_h_inv = plan.vanishing_inv(shift_c);
         let blocks = d.t.div_ceil(BLOCK);
         let parts = crate::par::map_index(blocks, |b| {
             let (lo, hi) = (b * BLOCK, ((b + 1) * BLOCK).min(d.t));
-            let mut window: Vec<Fp2> = Vec::with_capacity(d.window * d.width);
-            let mut periodic_i: Vec<Fp2> = Vec::with_capacity(per.len());
+            let mut window: Vec<Fp> = Vec::with_capacity(d.window * d.width);
+            let mut periodic_i: Vec<Fp> = Vec::with_capacity(per.len());
             let mut out: Vec<Fp2> = Vec::with_capacity(hi - lo);
             // The denominator set and its prefixes, owned by the block so the
             // per point inversion allocates nothing.
-            let mut den: Vec<Fp2> = Vec::new();
-            let mut prefix: Vec<Fp2> = Vec::new();
+            let mut den: Vec<Fp> = Vec::new();
+            let mut prefix: Vec<Fp> = Vec::new();
             let mut x = shift_c * d.sub.pow(lo as u64);
             for i in lo..hi {
                 window.clear();
                 for k in 0..d.window {
                     let row = (i + k) % d.t;
                     for col in &cols {
-                        window.push(Fp2::from_base(col[row]));
+                        window.push(col[row]);
                     }
                 }
                 periodic_i.clear();
-                periodic_i.extend(per.iter().map(|p| Fp2::from_base(p[i])));
-                out.push(compose_ext_planned(
+                periodic_i.extend(per.iter().map(|p| p[i]));
+                out.push(compose_base_planned(
                     air,
                     &plan,
-                    Fp2::from_base(x),
+                    x,
+                    z_h_inv,
                     &window,
                     &periodic_i,
                     coeffs,

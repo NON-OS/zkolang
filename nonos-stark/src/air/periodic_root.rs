@@ -136,11 +136,23 @@ pub(in crate::air) fn periodic_tree_over(
                 (0..d.t).map(|_| PeriodicLeafHasher::new()).collect();
             for chunk in coeffs.chunks(COLUMN_CHUNK) {
                 let ext = extend(chunk, d, c);
-                for (i, leaf) in leaves.iter_mut().enumerate() {
-                    for col in &ext {
-                        leaf.absorb(col[i]);
+                /*
+                 * Rows are independent too. At rate 1/16 there are sixteen
+                 * cosets, so parallelising across cosets alone put a 56 core
+                 * box on sixteen cores for the phase that is half of a
+                 * settlement proof. Each row's hasher absorbs its own value
+                 * from each column in column order whichever thread runs it,
+                 * so the digest per row is unchanged and only the wall clock
+                 * moves.
+                 */
+                crate::par::for_each_chunk_mut_indexed(&mut leaves, ROW_BLOCK, |base, block| {
+                    for (j, leaf) in block.iter_mut().enumerate() {
+                        let i = base + j;
+                        for col in &ext {
+                            leaf.absorb(col[i]);
+                        }
                     }
-                }
+                });
             }
             leaves.into_iter().map(|leaf| leaf.finalize()).collect()
         });
@@ -161,6 +173,12 @@ pub(in crate::air) fn periodic_tree_over(
     mark("tree built");
     (coeffs, tree)
 }
+
+/// Rows absorbed per task inside a coset. Sized so a task is thousands of
+/// Keccak absorbs rather than one, which is what keeps the scheduler's share
+/// of the phase negligible, and so a coset of 2^18 rows still splits into
+/// enough tasks to fill every core the coset batch leaves idle.
+const ROW_BLOCK: usize = 2048;
 
 /// Columns extended per pass. Sized so a chunk over one coset stays in the
 /// low hundreds of megabytes on the widest outer.

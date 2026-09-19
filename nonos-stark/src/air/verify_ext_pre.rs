@@ -39,7 +39,8 @@ use alloc::vec::Vec;
 const SHIFT: u64 = 7;
 
 /// Verify a preprocessed-periodic `proof` against `air` and the baked
-/// `periodic_root`. Domain sizing matches the prover.
+/// `periodic_root`, for a statement with no public inputs. Domain sizing
+/// matches the prover.
 pub fn stark_verify_ext_preprocessed<A: AirExt>(
     air: &A,
     pre: &StarkProofExtPre,
@@ -47,6 +48,35 @@ pub fn stark_verify_ext_preprocessed<A: AirExt>(
     grind_bits: u32,
     extra_blowup_bits: u32,
     periodic_root: &[u8; 32],
+) -> bool {
+    stark_verify_ext_preprocessed_pub(
+        air,
+        pre,
+        n_queries,
+        grind_bits,
+        extra_blowup_bits,
+        periodic_root,
+        &[],
+    )
+}
+
+/// The same verification for a statement with public inputs. `publics` are
+/// absorbed first of all, before the trace root, one field element each in
+/// order, exactly as the prover absorbed them, so every challenge after
+/// depends on them. A proof presented under other public inputs derives
+/// other challenges and fails at its first query. A chain verifier mirrors
+/// this at the session open: the words are what the checkpoint is taken
+/// over, and the chunks are then checked against a transcript that already
+/// contains them.
+#[allow(clippy::too_many_arguments)]
+pub fn stark_verify_ext_preprocessed_pub<A: AirExt>(
+    air: &A,
+    pre: &StarkProofExtPre,
+    n_queries: usize,
+    grind_bits: u32,
+    extra_blowup_bits: u32,
+    periodic_root: &[u8; 32],
+    publics: &[Fp],
 ) -> bool {
     let proof = &pre.proof;
     let log_t = air.log_trace_len();
@@ -71,6 +101,9 @@ pub fn stark_verify_ext_preprocessed<A: AirExt>(
     let shift = Fp::from_u64(SHIFT);
 
     let mut transcript = Transcript::new(b"NONOS-STARK-EXT");
+    for value in publics {
+        transcript.absorb_fp(*value);
+    }
     transcript.absorb_digest(&proof.trace_root);
     let coeffs: Vec<Fp2> = (0..num_coeffs(air))
         .map(|_| transcript.challenge_fp2())

@@ -19,8 +19,7 @@
 //! single native opcode instead of a costly in-Solidity hash.
 
 use super::super::field::{Fp, Fp2};
-use crate::hash::{keccak256, Keccak};
-use alloc::vec::Vec;
+use crate::hash::Keccak;
 
 const DOM_LEAF: &[u8] = b"NONOS-STARK-MERKLE-LEAF";
 const DOM_LEAF_EXT: &[u8] = b"NONOS-STARK-MERKLE-LEAF-EXT";
@@ -31,21 +30,21 @@ const DOM_NODE: &[u8] = b"NONOS-STARK-MERKLE-NODE";
 /// Hash a field element into a leaf digest, domain-separated from node hashing
 /// so a leaf can never be reinterpreted as an internal node.
 pub(super) fn hash_leaf(leaf: Fp) -> [u8; 32] {
-    let mut buf = Vec::with_capacity(DOM_LEAF.len() + 8);
-    buf.extend_from_slice(DOM_LEAF);
-    buf.extend_from_slice(&leaf.value().to_le_bytes());
-    keccak256(&buf)
+    let mut k = Keccak::new(512, 32, 0x01);
+    k.update(DOM_LEAF);
+    k.update(&leaf.value().to_le_bytes());
+    k.finalize32()
 }
 
 /// Hash an extension-field element into a leaf digest: both lanes under a distinct
 /// domain, so a folded FRI layer commits like a base layer but can never be
 /// confused with one, an internal node, or a differently-shaped leaf.
 pub(super) fn hash_leaf_ext(leaf: Fp2) -> [u8; 32] {
-    let mut buf = Vec::with_capacity(DOM_LEAF_EXT.len() + 16);
-    buf.extend_from_slice(DOM_LEAF_EXT);
-    buf.extend_from_slice(&leaf.c0.value().to_le_bytes());
-    buf.extend_from_slice(&leaf.c1.value().to_le_bytes());
-    keccak256(&buf)
+    let mut k = Keccak::new(512, 32, 0x01);
+    k.update(DOM_LEAF_EXT);
+    k.update(&leaf.c0.value().to_le_bytes());
+    k.update(&leaf.c1.value().to_le_bytes());
+    k.finalize32()
 }
 
 /// Hash a whole trace row into one leaf: every column's canonical value as an
@@ -54,12 +53,12 @@ pub(super) fn hash_leaf_ext(leaf: Fp2) -> [u8; 32] {
 /// base leaf, an extension leaf, or an internal node. This is the commitment shape
 /// the on-chain verifier recomputes once per query instead of one path per column.
 pub fn hash_leaf_wide(row: &[Fp]) -> [u8; 32] {
-    let mut buf = Vec::with_capacity(DOM_LEAF_WIDE.len() + row.len() * 8);
-    buf.extend_from_slice(DOM_LEAF_WIDE);
+    let mut k = Keccak::new(512, 32, 0x01);
+    k.update(DOM_LEAF_WIDE);
     for v in row {
-        buf.extend_from_slice(&v.value().to_le_bytes());
+        k.update(&v.value().to_le_bytes());
     }
-    keccak256(&buf)
+    k.finalize32()
 }
 
 /// Hash a row of preprocessed periodic-column values into one leaf: identical
@@ -67,12 +66,12 @@ pub fn hash_leaf_wide(row: &[Fp]) -> [u8; 32] {
 /// periodic commitment a verifier bakes as a constant can never be read as a
 /// trace leaf.
 pub fn hash_leaf_wide_periodic(row: &[Fp]) -> [u8; 32] {
-    let mut buf = Vec::with_capacity(DOM_LEAF_PERIODIC.len() + row.len() * 8);
-    buf.extend_from_slice(DOM_LEAF_PERIODIC);
+    let mut k = Keccak::new(512, 32, 0x01);
+    k.update(DOM_LEAF_PERIODIC);
     for v in row {
-        buf.extend_from_slice(&v.value().to_le_bytes());
+        k.update(&v.value().to_le_bytes());
     }
-    keccak256(&buf)
+    k.finalize32()
 }
 
 /// The wide periodic leaf hash absorbed one value at a time. `hash_leaf_wide_periodic`
@@ -94,10 +93,7 @@ impl PeriodicLeafHasher {
     }
 
     pub fn finalize(self) -> [u8; 32] {
-        let out = self.0.finalize();
-        let mut h = [0u8; 32];
-        h.copy_from_slice(&out);
-        h
+        self.0.finalize32()
     }
 }
 
@@ -109,11 +105,11 @@ impl Default for PeriodicLeafHasher {
 
 /// Hash two child digests into their parent, with a distinct domain tag.
 pub(super) fn hash_node(left: &[u8; 32], right: &[u8; 32]) -> [u8; 32] {
-    let mut buf = Vec::with_capacity(DOM_NODE.len() + 64);
-    buf.extend_from_slice(DOM_NODE);
-    buf.extend_from_slice(left);
-    buf.extend_from_slice(right);
-    keccak256(&buf)
+    let mut k = Keccak::new(512, 32, 0x01);
+    k.update(DOM_NODE);
+    k.update(left);
+    k.update(right);
+    k.finalize32()
 }
 
 #[cfg(test)]
@@ -128,7 +124,12 @@ mod kat_tests {
     /// node is its own tag followed by the two child digests.
     #[test]
     fn the_periodic_leaf_kat() {
-        let a = [Fp::from_u64(1), Fp::from_u64(2), Fp::from_u64(3), Fp::from_u64(4)];
+        let a = [
+            Fp::from_u64(1),
+            Fp::from_u64(2),
+            Fp::from_u64(3),
+            Fp::from_u64(4),
+        ];
         let b = [
             Fp::from_u64(0xFFFF_FFFF_0000_0000),
             Fp::from_u64(7),
