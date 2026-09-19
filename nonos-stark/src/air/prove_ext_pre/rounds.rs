@@ -38,6 +38,13 @@ use alloc::vec::Vec;
 /// unset; this fills them once the challenges exist. `air` is taken by value
 /// and handed back with the drawn challenges in force, because a verifier has
 /// to evaluate the same constraint set the composition was built from.
+///
+/// `blind` is one polynomial per trace column, or empty for the plain,
+/// non-hiding prover. A proof opens `n_queries` rows of the trace and a frame
+/// of `window_size` more, so a column that is not blinded hands those cells to
+/// anyone who reads the proof. For a pool whose whole claim is that a spend
+/// reveals nothing, that is the difference between a private transfer and a
+/// transfer whose witness is legible at 32 positions.
 #[allow(clippy::too_many_arguments)]
 pub fn stark_prove_ext_rounds<A: AirExt + Permuted>(
     mut air: A,
@@ -47,6 +54,7 @@ pub fn stark_prove_ext_rounds<A: AirExt + Permuted>(
     extra_blowup_bits: u32,
     publics: &[Fp],
     periodic_tree: Option<MerkleTree>,
+    blind: &[Vec<Fp>],
 ) -> Option<(StarkProofExtRounds, MerkleTree, A)> {
     let d = Domain::of(&air, extra_blowup_bits);
     let rw = air.region_width();
@@ -55,6 +63,26 @@ pub fn stark_prove_ext_rounds<A: AirExt + Permuted>(
         "a two round proof needs permutation columns above the regions, got {rw} of {}",
         d.width
     );
+    assert!(
+        blind.is_empty() || blind.len() == d.width,
+        "one blinding polynomial per trace column, or none at all"
+    );
+
+    /*
+     * f + r * (x^t - 1), which is f itself on the trace domain and random off
+     * it, so every constraint still holds where it is checked and no opened
+     * row is the witness. Applied per column as its coefficients are taken,
+     * because the two rounds interpolate their halves at different moments.
+     */
+    let hide = |c: Vec<Vec<Fp>>, lo: usize| -> Vec<Vec<Fp>> {
+        if blind.is_empty() {
+            return c;
+        }
+        c.into_iter()
+            .enumerate()
+            .map(|(j, cf)| crate::poly::blind_coeffs(&cf, d.t, &blind[lo + j]))
+            .collect()
+    };
 
     let mut transcript = Transcript::new(b"NONOS-STARK-EXT");
     for value in publics {
@@ -66,7 +94,7 @@ pub fn stark_prove_ext_rounds<A: AirExt + Permuted>(
      * here depends on a challenge, so they commit first and their root is what
      * the challenges are drawn against.
      */
-    let region_c = trace_coeffs_cols(trace, &d, 0, rw);
+    let region_c = hide(trace_coeffs_cols(trace, &d, 0, rw), 0);
     let region_tree = wide_streamed(&region_c, &d);
     let region_root = region_tree.root();
     transcript.absorb_digest(&region_root);
@@ -81,8 +109,13 @@ pub fn stark_prove_ext_rounds<A: AirExt + Permuted>(
     air.set_challenges(beta, gamma);
     air.fill_products(trace);
 
-    // Round two.
-    let perm_c = trace_coeffs_cols(trace, &d, rw, d.width);
+    /*
+     * Round two. The products are built from the trace's own values rather
+     * than the blinded ones, which is what makes this sound: blinding vanishes
+     * on the trace domain, so the accumulators the constraints see are the
+     * accumulators the wiring implies.
+     */
+    let perm_c = hide(trace_coeffs_cols(trace, &d, rw, d.width), rw);
     let perm_tree = wide_streamed(&perm_c, &d);
     let perm_root = perm_tree.root();
     transcript.absorb_digest(&perm_root);

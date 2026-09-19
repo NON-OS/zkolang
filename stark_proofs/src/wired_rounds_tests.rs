@@ -8,12 +8,13 @@
 // somewhere else, and a proof that claims the row splits somewhere else.
 
 use crate::crypto::stark::air::{
-    stark_prove_ext_rounds, stark_verify_ext_rounds, Air, AirExt, GpGroup, WiredMultiExt,
+    stark_prove_ext_rounds, stark_verify_ext_rounds, Air, AirExt, GpGroup, StarkProofExtRounds,
+    WiredMultiExt,
 };
 use crate::crypto::stark::field::{Felt, Fp, Fp2};
 
 const W: usize = 12;
-const LOG_T: u32 = 3;
+const LOG_T: u32 = 6;
 const QUERIES: usize = 16;
 const GRIND: u32 = 4;
 const BLOWUP: u32 = 0;
@@ -105,7 +106,7 @@ fn a_two_round_proof_verifies() {
     let a = air();
     let mut trace = a.trace(&[region().trace()]);
     let (rounds, p_tree, _) =
-        stark_prove_ext_rounds(air(), &mut trace, QUERIES, GRIND, BLOWUP, &[], None)
+        stark_prove_ext_rounds(air(), &mut trace, QUERIES, GRIND, BLOWUP, &[], None, &[])
             .expect("the two round prover produces a proof");
 
     assert_ne!(
@@ -135,7 +136,7 @@ fn a_two_round_proof_verifies() {
 fn the_challenges_are_not_the_circuit_constants() {
     let mut trace = air().trace(&[region().trace()]);
     let (rounds, p_tree, proved) =
-        stark_prove_ext_rounds(air(), &mut trace, QUERIES, GRIND, BLOWUP, &[], None)
+        stark_prove_ext_rounds(air(), &mut trace, QUERIES, GRIND, BLOWUP, &[], None, &[])
             .expect("the two round prover produces a proof");
 
     let (beta, gamma) = proved.challenges();
@@ -168,7 +169,7 @@ fn a_broken_binding_does_not_verify() {
     // Row 1 of column 0 is wired to row 0 of column 0. Move it.
     trace[stride] = trace[stride] + Fp::ONE;
 
-    let proved = stark_prove_ext_rounds(air(), &mut trace, QUERIES, GRIND, BLOWUP, &[], None);
+    let proved = stark_prove_ext_rounds(air(), &mut trace, QUERIES, GRIND, BLOWUP, &[], None, &[]);
     match proved {
         None => {}
         Some((rounds, p_tree, _)) => assert!(!stark_verify_ext_rounds(
@@ -181,6 +182,76 @@ fn a_broken_binding_does_not_verify() {
             &[],
         )),
     }
+}
+
+/// A blinded proof verifies, and it does not hand over the trace.
+///
+/// A proof opens `QUERIES` rows and a frame of `window_size` more. Unblinded,
+/// those cells are the witness, which for the shield is the spend. Blinded,
+/// `f + r * (x^t - 1)` agrees with `f` on the trace domain and is random off
+/// it, so the constraints still hold where they are checked and the opened
+/// rows are not the trace.
+///
+/// Two proofs of one statement under different blinds are the test. If the
+/// openings match, nothing was hidden. If either fails to verify, the hiding
+/// broke the argument.
+#[test]
+fn a_blinded_proof_verifies_and_does_not_open_the_trace() {
+    use crate::crypto::stark::air::blinding_poly;
+    use crate::recursion_assembly::inner;
+
+    let h = inner::hasher();
+    let deg = QUERIES + 2;
+    // Every committed column, accumulators included: they are opened too.
+    let width = Air::trace_width(&air());
+    let blinds = |tag: u64| -> Vec<Vec<Fp>> {
+        let seed = [
+            Fp::from_u64(tag),
+            Fp::from_u64(2),
+            Fp::from_u64(3),
+            Fp::from_u64(4),
+        ];
+        (0..width)
+            .map(|c| blinding_poly(&h, &seed, c, deg))
+            .collect()
+    };
+
+    let plain = {
+        let mut t = air().trace(&[region().trace()]);
+        stark_prove_ext_rounds(air(), &mut t, QUERIES, GRIND, BLOWUP, &[], None, &[])
+            .expect("the unblinded prover produces a proof")
+    };
+    let one = {
+        let mut t = air().trace(&[region().trace()]);
+        stark_prove_ext_rounds(air(), &mut t, QUERIES, GRIND, BLOWUP, &[], None, &blinds(101))
+            .expect("the blinded prover produces a proof")
+    };
+    let two = {
+        let mut t = air().trace(&[region().trace()]);
+        stark_prove_ext_rounds(air(), &mut t, QUERIES, GRIND, BLOWUP, &[], None, &blinds(202))
+            .expect("the blinded prover produces a proof")
+    };
+
+    for (what, p) in [("blind one", &one), ("blind two", &two)] {
+        assert!(
+            stark_verify_ext_rounds(air(), &p.0, QUERIES, GRIND, BLOWUP, &p.1.root(), &[]),
+            "{what} does not verify, so the hiding broke the argument"
+        );
+    }
+
+    let rows = |p: &StarkProofExtRounds| -> Vec<Vec<Fp>> {
+        p.pre.proof.queries.iter().map(|q| q.trace.clone()).collect()
+    };
+    assert_ne!(
+        rows(&one.0),
+        rows(&plain.0),
+        "a blinded proof opened the same cells as the unblinded one"
+    );
+    assert_ne!(
+        rows(&one.0),
+        rows(&two.0),
+        "two blinds produced the same openings, so the blind is not doing anything"
+    );
 }
 
 /// The real outer, chained and proved in two rounds, verifies.
@@ -208,6 +279,18 @@ fn the_real_outer_proves_and_verifies_in_two_rounds() {
         Air::periodic_columns(&asm.wired).len()
     );
 
+    /*
+     * Blinded, because the point of this circuit is that a spend reveals
+     * nothing and a proof opens 32 rows of the trace plus a two row frame.
+     * One polynomial per column, long enough to cover every cell the proof
+     * hands over.
+     */
+    let deg = deployment::N_QUERIES + Air::window_size(&asm.wired);
+    let seed = [Fp::from_u64(11), Fp::from_u64(22), Fp::from_u64(33), Fp::from_u64(44)];
+    let blind: Vec<Vec<Fp>> = (0..width)
+        .map(|c| crate::crypto::stark::air::blinding_poly(&h, &seed, c, deg))
+        .collect();
+
     let mut witness = core::mem::take(&mut asm.witness);
     let publics = asm.publics.clone();
     let (rounds, p_tree, proved) = stark_prove_ext_rounds(
@@ -218,6 +301,7 @@ fn the_real_outer_proves_and_verifies_in_two_rounds() {
         deployment::EXTRA_BLOWUP_BITS,
         &publics,
         None,
+        &blind,
     )
     .expect("the two round prover produces a proof for the real outer");
 
