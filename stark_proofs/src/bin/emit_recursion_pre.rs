@@ -116,7 +116,17 @@ fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
     let point = Point::from_args(&args);
     let real = args.iter().any(|a| a == "real") || point != Point::Settlement;
-    let deploy = args.iter().any(|a| a == "deployment");
+    /*
+     * Deployment parameters unless someone asks for the development set, and
+     * not the other way round.
+     *
+     * It read `any(== "deployment")`, so a caller that forgot the word got 32
+     * queries at rate one half with 8 bits of grinding, which is about 40 bits
+     * of soundness, written into a file named like a production artifact. A
+     * script of mine did exactly that today and nothing objected. Forgetting a
+     * flag now costs an hour of proving, not a soundness claim.
+     */
+    let dev_params = args.iter().any(|a| a == "dev");
     let supplied = args.iter().find_map(|a| a.strip_prefix("root="));
     /*
      * The output path is the first argument that is not a flag, so every flag
@@ -128,6 +138,7 @@ fn main() {
             !Point::is_flag(a)
                 && a.as_str() != "real"
                 && a.as_str() != "deployment"
+                && a.as_str() != "dev"
                 && !a.starts_with("root=")
         })
         .cloned()
@@ -144,14 +155,15 @@ fn main() {
         None => None,
     };
 
-    let (n_queries, grind_bits, extra_blowup) = if deploy {
+    let (n_queries, grind_bits, extra_blowup) = if dev_params {
+        eprintln!("development parameters: this artifact is not a deployment one");
+        (dev::N_QUERIES, dev::GRIND_BITS, dev::EXTRA_BLOWUP_BITS)
+    } else {
         (
             deployment::N_QUERIES,
             deployment::GRIND_BITS,
             deployment::EXTRA_BLOWUP_BITS,
         )
-    } else {
-        (dev::N_QUERIES, dev::GRIND_BITS, dev::EXTRA_BLOWUP_BITS)
     };
     println!(
         "point     {} over an inner at {} queries, extra blowup {}",

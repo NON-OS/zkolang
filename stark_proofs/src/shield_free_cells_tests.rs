@@ -17,6 +17,82 @@ use crate::shield::key::Break;
 use alloc::collections::BTreeSet;
 use alloc::vec::Vec;
 
+/// The join-split leaves nothing a compensated forgery can spend.
+///
+/// Not ignored, and not a report. The circuit is argued at constants a prover
+/// reads off the layout, and the only reason that is survivable is that every
+/// cell its permutation binds is also held by a region's own rules. That is a
+/// measured property of the wiring today, not a design invariant, and one new
+/// region carrying witness cells would end it silently.
+///
+/// So it is a gate. If this ever fails, the pool's spend statement has become
+/// forgeable and the two round Poseidon prover is no longer optional.
+#[test]
+fn the_join_split_leaves_no_cell_a_forgery_could_spend() {
+    let (per_group, total_bound) = free_bound_cells();
+    assert!(
+        !per_group.iter().any(|&n| n >= 2),
+        "a group holds two cells nothing but the wiring binds, out of {total_bound} bound: \
+         the spend statement is now forgeable at its fixed challenges, per group {per_group:?}"
+    );
+}
+
+/// Per group, how many of its bound cells no region constrains, and how many
+/// cells the permutation binds at all.
+fn free_bound_cells() -> (Vec<usize>, usize) {
+    let js = crate::shield::test::scenario::balanced_deployed(Break::None);
+    let stride = Air::trace_width(&js.wired);
+    let total = js.witness.len() / stride;
+    let periodic = Air::periodic_columns(&js.wired);
+    let groups = js.wired.group_params();
+    let n_groups = groups.len();
+    let width = stride - n_groups;
+
+    let at = |trace: &[Fp], r: usize| -> Vec<Fp> {
+        let w = &trace[r * stride..(r + 2) * stride];
+        let p: Vec<Fp> = periodic.iter().map(|col| col[r]).collect();
+        Air::transition(&js.wired, w, &p)
+    };
+    let regions_quiet = |v: &[Fp]| v[..v.len() - n_groups].iter().all(|x| *x == Fp::ZERO);
+    let pinned: BTreeSet<usize> = Air::boundary(&js.wired)
+        .into_iter()
+        .filter(|&(col, _, _)| col < width)
+        .map(|(col, row, _)| row * width + col)
+        .collect();
+
+    let sigmas = js.wired.group_sigmas();
+    let mut bound: Vec<(usize, usize, usize)> = Vec::new();
+    for (gi, (cols, _, _)) in groups.iter().enumerate() {
+        let k = cols.len();
+        let sigma = sigmas[gi];
+        for r in 0..total {
+            for (j, &c) in cols.iter().enumerate() {
+                let slot = r * k + j;
+                if slot < sigma.len() && sigma[slot] != slot {
+                    bound.push((r, c, gi));
+                }
+            }
+        }
+    }
+
+    let mut trace = js.witness.clone();
+    let mut per_group = alloc::vec![0usize; n_groups];
+    for &(r, c, gi) in &bound {
+        if r + 1 >= total || pinned.contains(&(r * width + c)) {
+            continue;
+        }
+        let idx = r * stride + c;
+        let saved = trace[idx];
+        trace[idx] = saved + Fp::ONE;
+        let quiet = regions_quiet(&at(&trace, r)) && (r == 0 || regions_quiet(&at(&trace, r - 1)));
+        trace[idx] = saved;
+        if quiet {
+            per_group[gi] += 1;
+        }
+    }
+    (per_group, bound.len())
+}
+
 #[test]
 #[ignore]
 fn how_many_cells_the_join_split_leaves_spendable() {
