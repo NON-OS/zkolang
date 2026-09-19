@@ -245,6 +245,17 @@ fn main() {
     let publics_out = format!("{out}.publics.json");
 
     let t2 = Instant::now();
+    /*
+     * The same value the structure emit writes into
+     * `permutation_challenges`. Read here rather than assumed, so a layout
+     * saying "transcript" and a prover taking the one round path cannot both
+     * be true at once: if this is ever turned off, the emit stops instead of
+     * writing an artifact whose layout describes an argument it was not given.
+     */
+    assert!(
+        Point::emit_rounds(),
+        "the one round prover would contradict the layout this emit publishes"
+    );
     let mut witness = core::mem::take(&mut asm.witness);
     let Some((rounds, tree, proved)) = stark_prove_ext_rounds(
         asm.wired,

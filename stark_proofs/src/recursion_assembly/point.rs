@@ -148,6 +148,28 @@ impl Point {
         Wiring::Chained
     }
 
+    /// Whether an emitted proof commits its trace in two rounds, drawing the
+    /// permutation challenges from the first.
+    ///
+    /// The prover binary branches on this to pick its prover and the structure
+    /// binary writes it into `permutation_challenges`. One value with two
+    /// readers, because the alternative is a file that declares what a
+    /// different file decides, and the day those disagree the layout says an
+    /// artifact is argued at a transcript point when it is not. That is the
+    /// exact shape of the bug this whole line of work exists to remove.
+    pub fn emit_rounds() -> bool {
+        true
+    }
+
+    /// What `permutation_challenges` says, derived from the choice above.
+    pub fn emit_challenge_source() -> (&'static str, &'static str) {
+        if Self::emit_rounds() {
+            ("transcript", "\"trace_root\"")
+        } else {
+            ("constant", "null")
+        }
+    }
+
     /// Assemble the outer with its witness, refusing a transfer point whose
     /// environment would authenticate the inner at the wrong rate.
     pub fn assemble(self) -> Result<Assembly, String> {

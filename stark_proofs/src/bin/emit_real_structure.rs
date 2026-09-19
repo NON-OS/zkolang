@@ -189,15 +189,16 @@ fn main() {
         .join("");
 
     /*
-     * The emit proves through the two round prover, so the challenges come out
-     * of the transcript after the region columns are committed, and the root
-     * they are drawn against travels in the proof as `trace_root`.
+     * Read off the same value the prover binary branches on, not written here
+     * a second time. A layout that declared what another file decides is a
+     * layout that can say an artifact is argued at a transcript point when it
+     * is not, which is the shape of the bug this whole line of work removes.
      *
-     * Named rather than defaulted. A verifier generated from a layout that did
-     * not carry this could be deployed against a fixed point argument by
+     * Named rather than defaulted, too: a verifier generated from a layout
+     * without this could be deployed against a fixed point argument by
      * omission, which is what the outer shipped with until today.
      */
-    let (permutation_challenges, permutation_challenge_root) = ("transcript", "\"trace_root\"");
+    let (permutation_challenges, permutation_challenge_root) = Point::emit_challenge_source();
     let wiring = Point::emit_wiring().name();
 
     let json = format!(
