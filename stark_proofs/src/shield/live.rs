@@ -789,6 +789,103 @@ mod tests {
         );
     }
 
+    /// What a transfer publishes, word for word.
+    ///
+    /// Hiding the amount is not privacy on its own. The intent is 32 public
+    /// words and every one of them lands on chain, so the question is which of
+    /// them a transfer has any business setting. The anchors, the two
+    /// nullifiers and the two output commitments have to be there. A payout
+    /// address and a clearing price belong to a settlement, and a transfer
+    /// settles nothing, so a non-zero value in either is either a field the
+    /// sender can be identified by or a channel it can be tagged through.
+    ///
+    /// Built asking for both, so this is a property of the circuit rather than
+    /// an observation that the caller passed zeros.
+    #[test]
+    fn a_transfer_reveals_only_its_anchors_and_its_notes() {
+        use crate::shield::join::publics::{
+            ASSET_ID, CLEARING_PRICE, FEE, PUBLIC_AMOUNT, RECIPIENT, WORDS,
+        };
+
+        let a = note_of(A_SK, A_BLINDING, NOTE_VALUE);
+        let b = note_of(B_SK, B_BLINDING, NOTE_VALUE);
+        let out_a = Note {
+            value: NOTE_VALUE + NOTE_VALUE / 4,
+            asset_id: 0,
+            spend_pk: [0xA1, 0xA2, 0xA3, 0xA4],
+            blinding: [0xB1, 0xB2, 0xB3, 0xB4],
+        };
+        let out_b = Note {
+            value: NOTE_VALUE - NOTE_VALUE / 4,
+            asset_id: 0,
+            spend_pk: [0xC1, 0xC2, 0xC3, 0xC4],
+            blinding: [0xD1, 0xD2, 0xD3, 0xD4],
+        };
+        let t = tree();
+        let open_a = crate::shield::join::Witnessed {
+            leaf_index: 1,
+            siblings: t.path(1).0,
+        };
+        let open_b = crate::shield::join::Witnessed {
+            leaf_index: 2,
+            siblings: t.path(2).0,
+        };
+        let js = join_split_with_paths(
+            DEPTH,
+            [
+                Spend {
+                    note: &a,
+                    sk: limbs(A_SK),
+                },
+                Spend {
+                    note: &b,
+                    sk: limbs(B_SK),
+                },
+            ],
+            [&open_a, &open_b],
+            limbs(ROOT),
+            [&out_a, &out_b],
+            0,
+            0,
+            Break::None,
+            Settle {
+                clearing_price: 1_000_000,
+                recipient: address_from_u64(0x7408_ae4c),
+            },
+            None,
+        );
+
+        assert!(
+            witness_satisfies_public(&js.wired, &js.witness),
+            "the transfer does not satisfy, so what it publishes is not the question yet"
+        );
+        assert_eq!(js.intent.len(), WORDS);
+        assert_eq!(
+            js.intent[PUBLIC_AMOUNT],
+            Fp::ZERO,
+            "a transfer moves nothing publicly"
+        );
+
+        let leaked: alloc::vec::Vec<(&str, usize, u64)> = [
+            ("recipient", RECIPIENT),
+            ("recipient", RECIPIENT + 1),
+            ("recipient", RECIPIENT + 2),
+            ("recipient", RECIPIENT + 3),
+            ("clearing_price", CLEARING_PRICE),
+            ("asset_id", ASSET_ID),
+            ("fee", FEE),
+        ]
+        .into_iter()
+        .filter(|&(_, i)| js.intent[i] != Fp::ZERO)
+        .map(|(n, i)| (n, i, js.intent[i].to_u64()))
+        .collect();
+
+        assert!(
+            leaked.is_empty(),
+            "a transfer published settlement fields it has no use for: {leaked:?}"
+        );
+    }
+
     /// A transfer that creates more value than it spends must fail, which is
     /// the minting case conservation exists to stop.
     #[test]
