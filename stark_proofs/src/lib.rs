@@ -45,6 +45,12 @@ pub fn shield_deployed_wired() -> crypto::stark::air::WiredMultiGen {
 mod fri_tests;
 #[cfg(test)]
 mod merkle_tests;
+#[cfg(test)]
+mod wired_chained_tests;
+#[cfg(test)]
+mod wired_challenge_tests;
+#[cfg(test)]
+mod wired_forgery_tests;
 // ntt_tests disabled: file lost to a /tmp wipe (LOCAL only).
 #[cfg(test)]
 mod parallel_bytes_tests;

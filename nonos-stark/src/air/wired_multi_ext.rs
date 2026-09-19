@@ -24,6 +24,7 @@
 //! region transitions, and each group's product come from `fusion`.
 
 use super::super::field::{Felt, Fp, Fp2};
+use super::chained_product;
 use super::fusion::{self, Stack};
 use super::spec::{Air, AirExt};
 use alloc::boxed::Box;
@@ -42,6 +43,15 @@ pub struct WiredMultiExt {
     regions: Vec<Box<dyn AirExt>>,
     stack: Stack,
     groups: Vec<GpGroup>,
+    /*
+     * Argue the single group in `groups` as one product chained through
+     * intermediate accumulators, instead of one product per group. Packed
+     * spends a sigma column per column per group, chained one per column: on
+     * the settlement outer, 2,025 against 368. Same permutation either way, so
+     * this is cost only, and the packed path is left alone so a circuit that
+     * has not moved emits what it emitted.
+     */
+    chained: bool,
     /// The identity column `r * k + j` depends only on a group's width, and the
     /// product selector is the same column for every group, so both are emitted
     /// once and shared. Only sigma is per group.
@@ -77,6 +87,35 @@ impl WiredMultiExt {
 
     pub fn group_widths(&self) -> Vec<usize> {
         self.groups.iter().map(|g| g.wired_cols.len()).collect()
+    }
+
+    /// Set the point the copy constraint is argued at.
+    ///
+    /// These belong to the proof, not the circuit: a grand product only argues
+    /// anything when the prover could not have built its trace against the
+    /// point. They are circuit constants today, which is what this is for. The
+    /// prover calls it between committing the region columns and building the
+    /// permutation columns, and until it does, the assembled default is a
+    /// value the prover knows in advance.
+    pub fn set_challenges(&mut self, beta: Fp, gamma: Fp) {
+        for group in self.groups.iter_mut() {
+            group.beta = beta;
+            group.gamma = gamma;
+        }
+    }
+
+    /// The challenges in force, for a verifier that has to agree about them.
+    pub fn challenges(&self) -> (Fp, Fp) {
+        self.groups
+            .first()
+            .map(|g| (g.beta, g.gamma))
+            .unwrap_or((Fp::ZERO, Fp::ZERO))
+    }
+
+    /// Where the permutation columns begin, which is where the two commitment
+    /// rounds split: regions below, whatever the challenges produce above.
+    pub fn region_width(&self) -> usize {
+        self.stack.width
     }
 
     /// Per region degree. The AIR takes the larger of this and the widest product,
@@ -137,6 +176,38 @@ impl WiredMultiExt {
         groups: Vec<GpGroup>,
         extra_boundary: Vec<(usize, usize, Fp)>,
     ) -> WiredMultiExt {
+        WiredMultiExt::build(regions, kinds, groups, extra_boundary, false)
+    }
+
+    /// The same assembly with the wiring argued as one chained permutation.
+    ///
+    /// `perm` comes from `recursion_assembly::groups::single`, which has
+    /// already been checked to have the declared classes as its cycles. It
+    /// rides in the group carrier because that is what it is: one product, one
+    /// sigma run, one pair of challenges. Only the accumulator count and the
+    /// way the lanes chain differ.
+    pub fn new_kinds_chained(
+        regions: Vec<Box<dyn AirExt>>,
+        kinds: &[usize],
+        perm: GpGroup,
+        extra_boundary: Vec<(usize, usize, Fp)>,
+    ) -> WiredMultiExt {
+        WiredMultiExt::build(regions, kinds, alloc::vec![perm], extra_boundary, true)
+    }
+
+    fn build(
+        regions: Vec<Box<dyn AirExt>>,
+        kinds: &[usize],
+        groups: Vec<GpGroup>,
+        extra_boundary: Vec<(usize, usize, Fp)>,
+        chained: bool,
+    ) -> WiredMultiExt {
+        assert!(
+            !chained || groups.len() == 1,
+            "the chained argument is one permutation over every wired column, \
+             so it takes exactly one group and was given {}",
+            groups.len()
+        );
         let stack = Stack::of_kinds(&regions, kinds);
         // A kind runs one instance's constraints over every instance's rows, so
         // instances that are not the same AIR swap one region's rules for
@@ -189,11 +260,23 @@ impl WiredMultiExt {
             sel_idx,
             region_transitions,
             extra_boundary,
+            chained,
+        }
+    }
+
+    /// How many running-product columns the argument needs. The packed form
+    /// keeps one per group; the chained form keeps one per accumulator step,
+    /// with the last holding the running product itself.
+    fn product_columns(&self) -> usize {
+        if self.chained {
+            chained_product::blocks(self.groups[0].wired_cols.len())
+        } else {
+            self.groups.len()
         }
     }
 
     fn stride(&self) -> usize {
-        self.stack.width + self.groups.len()
+        self.stack.width + self.product_columns()
     }
 
     fn closes_at(&self) -> usize {
@@ -221,6 +304,10 @@ impl WiredMultiExt {
         let total = 1usize << self.log_trace_len();
         let mut trace = fusion::place_traces(&self.stack, &self.regions, stride, total, traces);
         let span = self.closes_at();
+        if self.chained {
+            self.fill_chained(&mut trace, stride, total, span);
+            return trace;
+        }
         for (g, group) in self.groups.iter().enumerate() {
             let z_col = self.stack.width + g;
             let mut z = Fp::ONE;
@@ -233,6 +320,82 @@ impl WiredMultiExt {
             }
         }
         trace
+    }
+
+    /// The accumulator columns of the chained argument. The last is the
+    /// running product, which the boundary pins and the previous row hands on;
+    /// the rest are this row's partials, so no lane sees more than `BLOCK`
+    /// factors. Off the argument's rows the product holds and the partials are
+    /// left where they lie, which nothing reads.
+    fn fill_chained(&self, trace: &mut [Fp], stride: usize, total: usize, span: usize) {
+        let group = &self.groups[0];
+        let k = group.wired_cols.len();
+        let blocks = chained_product::blocks(k);
+        let (b, gm) = (group.beta, group.gamma);
+        let zcol = self.stack.width + blocks - 1;
+        let mut z = Fp::ONE;
+        for r in 0..total {
+            trace[r * stride + zcol] = z;
+            if r >= span {
+                continue;
+            }
+            let base = r * stride;
+            let mut running = z;
+            for m in 0..blocks {
+                let lo = m * chained_product::BLOCK;
+                let hi = core::cmp::min(lo + chained_product::BLOCK, k);
+                let mut num = Fp::ONE;
+                let mut den = Fp::ONE;
+                for j in lo..hi {
+                    let v = trace[base + group.wired_cols[j]];
+                    let id = r * k + j;
+                    num = num * (v + b * Fp::from_u64(id as u64) + gm);
+                    den = den * (v + b * Fp::from_u64(group.sigma[id] as u64) + gm);
+                }
+                running = running * num * den.inv();
+                if m + 1 < blocks {
+                    trace[base + self.stack.width + m] = running;
+                }
+            }
+            z = running;
+        }
+    }
+
+    /// Recompute the running products over a witness whose cells have moved,
+    /// leaving the regions' columns alone. What a prover does once it has
+    /// decided what its trace says.
+    pub fn refill_products(&self, trace: &mut [Fp]) {
+        let stride = self.stride();
+        let total = trace.len() / stride;
+        let span = self.closes_at();
+        if self.chained {
+            self.fill_chained(trace, stride, total, span);
+            return;
+        }
+        for (g, group) in self.groups.iter().enumerate() {
+            let z_col = self.stack.width + g;
+            let mut z = Fp::ONE;
+            for r in 0..total {
+                trace[r * stride + z_col] = z;
+                if r < span {
+                    let base = r * stride;
+                    z = z * self.ratio(group, &trace[base..base + stride], r);
+                }
+            }
+        }
+    }
+
+    /// The columns the wiring touches, for a caller asking what the copy
+    /// constraint is responsible for holding.
+    pub fn wired_columns(&self) -> Vec<usize> {
+        let mut c: Vec<usize> = self
+            .groups
+            .iter()
+            .flat_map(|g| g.wired_cols.iter().copied())
+            .collect();
+        c.sort_unstable();
+        c.dedup();
+        c
     }
 
     fn group_product<F: Felt>(&self, g: usize, group: &GpGroup, window: &[F], periodic: &[F]) -> F {
@@ -285,9 +448,51 @@ impl WiredMultiExt {
     }
 
     fn append_groups<F: Felt>(&self, out: &mut [F], window: &[F], periodic: &[F]) {
+        if self.chained {
+            for (m, lane) in self.chained_lanes(window, periodic).into_iter().enumerate() {
+                out[self.region_transitions + m] = lane;
+            }
+            return;
+        }
         for (g, group) in self.groups.iter().enumerate() {
             out[self.region_transitions + g] = self.group_product(g, group, window, periodic);
         }
+    }
+
+    /// The chained lanes at one window. Slots are numbered `row * k + j` over
+    /// the whole permutation rather than per block, so the row column serves
+    /// every block just as it serves every group.
+    fn chained_lanes<F: Felt>(&self, window: &[F], periodic: &[F]) -> Vec<F> {
+        let group = &self.groups[0];
+        let k = group.wired_cols.len();
+        let blocks = chained_product::blocks(k);
+        let stride = self.stride();
+        let width = self.stack.width;
+        let sgb = self.sig_base[0];
+        let kf = F::from_base(Fp::from_u64(k as u64));
+        let row = periodic[self.row_idx];
+
+        let mut steps = Vec::with_capacity(blocks);
+        for m in 0..blocks {
+            let lo = m * chained_product::BLOCK;
+            let hi = core::cmp::min(lo + chained_product::BLOCK, k);
+            let values: Vec<F> = (lo..hi).map(|j| window[group.wired_cols[j]]).collect();
+            let identity: Vec<F> = (lo..hi)
+                .map(|j| row * kf + F::from_base(Fp::from_u64(j as u64)))
+                .collect();
+            let sigma: Vec<F> = (lo..hi).map(|j| periodic[sgb + j]).collect();
+            steps.push(chained_product::step(
+                &values,
+                &identity,
+                &sigma,
+                group.beta,
+                group.gamma,
+            ));
+        }
+
+        let acc: Vec<F> = (0..blocks).map(|m| window[width + m]).collect();
+        let acc_next: Vec<F> = (0..blocks).map(|m| window[stride + width + m]).collect();
+        chained_product::lanes(&steps, &acc, &acc_next, periodic[self.sel_idx])
     }
 }
 
@@ -325,17 +530,25 @@ impl Air for WiredMultiExt {
         for region in &self.regions {
             d = d.max(region.constraint_degree());
         }
-        let max_group = self
-            .groups
-            .iter()
-            .map(|g| g.wired_cols.len())
-            .max()
-            .unwrap_or(0);
-        (d + 2).max(max_group + 2)
+        /*
+         * A lane costs its factors plus the selector, so width plus two. The
+         * chained form caps the width at BLOCK however wide the permutation
+         * gets, which is why the groups could go.
+         */
+        let lane_width = if self.chained {
+            core::cmp::min(chained_product::BLOCK, self.groups[0].wired_cols.len())
+        } else {
+            self.groups
+                .iter()
+                .map(|g| g.wired_cols.len())
+                .max()
+                .unwrap_or(0)
+        };
+        (d + 2).max(lane_width + 2)
     }
 
     fn num_transition(&self) -> usize {
-        self.region_transitions + self.groups.len()
+        self.region_transitions + self.product_columns()
     }
 
     fn periodic_columns(&self) -> Vec<Vec<Fp>> {
@@ -383,7 +596,18 @@ impl Air for WiredMultiExt {
         let mut b = fusion::base_boundary(&self.stack, &self.regions);
         b.extend(self.extra_boundary.iter().copied());
         let span = self.closes_at();
-        for g in 0..self.groups.len() {
+        /*
+         * A boundary only says something about a column that crosses rows.
+         * Every packed product column does; of the chained ones only the last.
+         * The partials are computed by their own lanes from that row's cells,
+         * so pinning them would pin a result rather than a claim.
+         */
+        let pinned = if self.chained {
+            self.product_columns() - 1..self.product_columns()
+        } else {
+            0..self.groups.len()
+        };
+        for g in pinned {
             b.push((self.stack.width + g, 0, Fp::ONE));
             b.push((self.stack.width + g, span, Fp::ONE));
         }
