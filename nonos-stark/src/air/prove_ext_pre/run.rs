@@ -27,16 +27,16 @@ use super::super::super::merkle::MerkleTree;
 use super::super::super::transcript::Transcript;
 use super::super::composition::num_coeffs;
 use super::super::periodic_root::periodic_tree_over;
+use super::super::progress::{Phase, Progress};
 use super::super::prove_ext::{
-    comp_at_z, draw_ood_point_ext, ood_frame, over_domain, trace_coeffs, wide_streamed,
-    Domain,
+    comp_at_z, draw_ood_point_ext, ood_frame, over_domain, trace_coeffs, wide_streamed, Domain,
 };
-use crate::poly::eval_coeff_cols_at_ext;
 use super::super::spec::AirExt;
 use super::super::types_ext::StarkProofExt;
 use super::super::types_ext_pre::StarkProofExtPre;
 use super::{deep, queries};
 use crate::field::Fp;
+use crate::poly::eval_coeff_cols_at_ext;
 use alloc::vec::Vec;
 
 /*
@@ -46,33 +46,19 @@ use alloc::vec::Vec;
  * difference between waiting and being blind. Present only under the parallel
  * feature, which is the build that has a standard library to print with.
  */
-struct Phase {
-    #[cfg(feature = "parallel")]
-    at: std::time::Instant,
+/*
+ * The reporter is shared with the client's prover, in `progress`, because both
+ * walk the same six phases. What is local here is the resident-memory line: a
+ * settlement proof is the run that gets killed for memory, and a phase that
+ * says what it is holding is what turned three nights of guessing into one line.
+ */
+#[cfg(feature = "parallel")]
+fn note_memory(what: &str) {
+    std::eprintln!("[prove] {what} holding {}", resident());
 }
 
-impl Phase {
-    fn start() -> Phase {
-        Phase {
-            #[cfg(feature = "parallel")]
-            at: std::time::Instant::now(),
-        }
-    }
-
-    #[allow(unused_variables)]
-    fn done(&mut self, what: &str) {
-        #[cfg(feature = "parallel")]
-        {
-            let now = std::time::Instant::now();
-            std::eprintln!(
-                "[prove] {what} in {:?}, resident {}",
-                now.duration_since(self.at),
-                resident()
-            );
-            self.at = now;
-        }
-    }
-}
+#[cfg(not(feature = "parallel"))]
+fn note_memory(_what: &str) {}
 
 /*
  * What the process is holding, read from the kernel rather than estimated.
@@ -85,7 +71,11 @@ fn resident() -> alloc::string::String {
     use alloc::string::ToString;
     match std::fs::read_to_string("/proc/self/statm") {
         Ok(s) => {
-            let pages: u64 = s.split_whitespace().nth(1).and_then(|v| v.parse().ok()).unwrap_or(0);
+            let pages: u64 = s
+                .split_whitespace()
+                .nth(1)
+                .and_then(|v| v.parse().ok())
+                .unwrap_or(0);
             alloc::format!("{:.1} GB", pages as f64 * 4096.0 / 1e9)
         }
         Err(_) => "unknown".to_string(),
@@ -99,15 +89,39 @@ fn resident() -> alloc::string::String {
 /// prover this replaced; the periodic tree comes through the same helper a
 /// registered root does, so the two are one object by construction. Nothing is
 /// held over the full domain but the two Fp2 codewords and the leaf digests.
+/// Returns `None` only when a watcher asked the prover to stop. This entry
+/// point passes no watcher, so it returns `Some` for every input it accepts;
+/// the option is still in the signature rather than unwrapped here, because
+/// unwrapping would put a panic on the one path a caller cannot influence.
 pub fn stark_prove_ext_preprocessed<A: AirExt>(
     air: &A,
     trace: &[Fp],
     n_queries: usize,
     grind_bits: u32,
     extra_blowup_bits: u32,
-) -> StarkProofExtPre {
+) -> Option<StarkProofExtPre> {
+    stark_prove_ext_preprocessed_watched(air, trace, n_queries, grind_bits, extra_blowup_bits, None)
+}
+
+/// The same proof, with somebody watching.
+///
+/// `watch` carries the phase the prover is in, the timing of each phase as it
+/// completes, and the caller's request to stop. A shell polls it; the prover
+/// never calls back, because a callback out of a worker thread is a contract
+/// about threads and lifetimes and a poll is an atomic load.
+///
+/// Returns `None` when the caller cancelled, so a cancelled proof cannot be
+/// mistaken for a finished one by a reader who ignores the watch.
+pub fn stark_prove_ext_preprocessed_watched<A: AirExt>(
+    air: &A,
+    trace: &[Fp],
+    n_queries: usize,
+    grind_bits: u32,
+    extra_blowup_bits: u32,
+    watch: Option<&Progress>,
+) -> Option<StarkProofExtPre> {
     let d = Domain::of(air, extra_blowup_bits);
-    let mut phase = Phase::start();
+    let mut phase = Phase::start(watch);
 
     let mut transcript = Transcript::new(b"NONOS-STARK-EXT");
     let tc = trace_coeffs(trace, &d);
@@ -115,6 +129,9 @@ pub fn stark_prove_ext_preprocessed<A: AirExt>(
     let trace_root = trace_tree.root();
     transcript.absorb_digest(&trace_root);
     phase.done("trace commitment");
+    if phase.cancelled() {
+        return None;
+    }
 
     let coeffs: Vec<Fp2> = (0..num_coeffs(air))
         .map(|_| transcript.challenge_fp2())
@@ -133,10 +150,16 @@ pub fn stark_prove_ext_preprocessed<A: AirExt>(
     let (pc, p_tree) = periodic_tree_over(air.periodic_columns(), &d);
     let n_periodic = pc.len();
     phase.done("periodic commitment");
+    if phase.cancelled() {
+        return None;
+    }
     let comp_d = over_domain(air, &d, &tc, &pc, &coeffs);
     let comp_tree = MerkleTree::commit_ext(&comp_d);
     transcript.absorb_digest(&comp_tree.root());
     phase.done("composition");
+    if phase.cancelled() {
+        return None;
+    }
 
     let z = draw_ood_point_ext(&mut transcript, d.shift, d.n, d.t);
     let frame = ood_frame(&tc, &d, z);
@@ -151,6 +174,9 @@ pub fn stark_prove_ext_preprocessed<A: AirExt>(
     }
     let comp_z = comp_at_z(air, &d, &frame, &periodic_z, z, &coeffs);
     phase.done("out of domain");
+    if phase.cancelled() {
+        return None;
+    }
 
     let deep_coeffs: Vec<Fp2> = (0..d.width * d.window + 1 + n_periodic)
         .map(|_| transcript.challenge_fp2())
@@ -169,6 +195,9 @@ pub fn stark_prove_ext_preprocessed<A: AirExt>(
 
     let fri = fri_prove_ext(&deep_d, d.shift, d.fri_log_blowup, n_queries, grind_bits);
     phase.done("deep and fri");
+    if phase.cancelled() {
+        return None;
+    }
     let deep_tree = MerkleTree::commit_ext(&deep_d);
     transcript.absorb_digest(&fri.roots[0]);
 
@@ -186,7 +215,10 @@ pub fn stark_prove_ext_preprocessed<A: AirExt>(
         &deep_tree,
     );
     phase.done("query openings");
-    StarkProofExtPre {
+    if let Some(w) = watch {
+        w.finish();
+    }
+    Some(StarkProofExtPre {
         proof: StarkProofExt {
             trace_root,
             comp_root: comp_tree.root(),
@@ -196,5 +228,5 @@ pub fn stark_prove_ext_preprocessed<A: AirExt>(
         },
         periodic_z,
         openings,
-    }
+    })
 }

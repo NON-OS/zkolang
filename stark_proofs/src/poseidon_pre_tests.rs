@@ -29,7 +29,8 @@ fn setup() -> (
 #[test]
 fn the_sidecar_proof_verifies_against_the_baked_root() {
     let (air, witness, h, root) = setup();
-    let pre = stark_prove_poseidon_pre_pub(&air, &witness, NQ, GRIND, EXTRA, &h, &[], &[]);
+    let pre = stark_prove_poseidon_pre_pub(&air, &witness, NQ, GRIND, EXTRA, &h, &[], &[])
+        .expect("nothing watches this proof, so nothing can cancel it");
     assert!(
         stark_verify_poseidon_pre_pub(&air, &pre, NQ, GRIND, EXTRA, &h, &[], &root),
         "an honest sidecar proof must verify against the registered root"
@@ -39,7 +40,8 @@ fn the_sidecar_proof_verifies_against_the_baked_root() {
 #[test]
 fn a_wrong_periodic_root_rejects() {
     let (air, witness, h, mut root) = setup();
-    let pre = stark_prove_poseidon_pre_pub(&air, &witness, NQ, GRIND, EXTRA, &h, &[], &[]);
+    let pre = stark_prove_poseidon_pre_pub(&air, &witness, NQ, GRIND, EXTRA, &h, &[], &[])
+        .expect("nothing watches this proof, so nothing can cancel it");
     root[0] = root[0] + Fp::ONE;
     assert!(
         !stark_verify_poseidon_pre_pub(&air, &pre, NQ, GRIND, EXTRA, &h, &[], &root),
@@ -50,7 +52,8 @@ fn a_wrong_periodic_root_rejects() {
 #[test]
 fn a_tampered_periodic_claim_rejects() {
     let (air, witness, h, root) = setup();
-    let mut pre = stark_prove_poseidon_pre_pub(&air, &witness, NQ, GRIND, EXTRA, &h, &[], &[]);
+    let mut pre = stark_prove_poseidon_pre_pub(&air, &witness, NQ, GRIND, EXTRA, &h, &[], &[])
+        .expect("nothing watches this proof, so nothing can cancel it");
     pre.periodic_z[0] = pre.periodic_z[0] + crate::crypto::stark::field::Fp2::ONE;
     assert!(
         !stark_verify_poseidon_pre_pub(&air, &pre, NQ, GRIND, EXTRA, &h, &[], &root),
@@ -61,7 +64,8 @@ fn a_tampered_periodic_claim_rejects() {
 #[test]
 fn a_tampered_periodic_opening_rejects() {
     let (air, witness, h, root) = setup();
-    let mut pre = stark_prove_poseidon_pre_pub(&air, &witness, NQ, GRIND, EXTRA, &h, &[], &[]);
+    let mut pre = stark_prove_poseidon_pre_pub(&air, &witness, NQ, GRIND, EXTRA, &h, &[], &[])
+        .expect("nothing watches this proof, so nothing can cancel it");
     pre.openings[0].row[0] = pre.openings[0].row[0] + Fp::ONE;
     assert!(
         !stark_verify_poseidon_pre_pub(&air, &pre, NQ, GRIND, EXTRA, &h, &[], &root),
@@ -81,7 +85,8 @@ fn a_blinded_sidecar_proof_verifies_and_moves_the_frame() {
     use crate::crypto::stark::air::{blinding_poly, Air};
     let (air, witness, h, root) = setup();
 
-    let plain = stark_prove_poseidon_pre_pub(&air, &witness, NQ, GRIND, EXTRA, &h, &[], &[]);
+    let plain = stark_prove_poseidon_pre_pub(&air, &witness, NQ, GRIND, EXTRA, &h, &[], &[])
+        .expect("nothing watches this proof, so nothing can cancel it");
     assert!(
         stark_verify_poseidon_pre_pub(&air, &plain, NQ, GRIND, EXTRA, &h, &[], &root),
         "the plain sidecar proof must verify"
@@ -98,13 +103,23 @@ fn a_blinded_sidecar_proof_verifies_and_moves_the_frame() {
     let bound = (degree * t).next_power_of_two();
     let fit = (bound + t).saturating_sub(degree * t + air.window_size()) / degree;
     let deg = (NQ + air.window_size()).min(fit);
-    assert!(deg >= 1, "the fixture must admit at least a degree-one blind");
+    assert!(
+        deg >= 1,
+        "the fixture must admit at least a degree-one blind"
+    );
 
-    let seed = [Fp::from_u64(5), Fp::from_u64(6), Fp::from_u64(7), Fp::from_u64(8)];
-    let blind: alloc::vec::Vec<alloc::vec::Vec<Fp>> =
-        (0..air.trace_width()).map(|c| blinding_poly(&h, &seed, c, deg)).collect();
+    let seed = [
+        Fp::from_u64(5),
+        Fp::from_u64(6),
+        Fp::from_u64(7),
+        Fp::from_u64(8),
+    ];
+    let blind: alloc::vec::Vec<alloc::vec::Vec<Fp>> = (0..air.trace_width())
+        .map(|c| blinding_poly(&h, &seed, c, deg))
+        .collect();
 
-    let zk = stark_prove_poseidon_pre_pub(&air, &witness, NQ, GRIND, EXTRA, &h, &[], &blind);
+    let zk = stark_prove_poseidon_pre_pub(&air, &witness, NQ, GRIND, EXTRA, &h, &[], &blind)
+        .expect("nothing watches this proof, so nothing can cancel it");
     assert!(
         stark_verify_poseidon_pre_pub(&air, &zk, NQ, GRIND, EXTRA, &h, &[], &root),
         "a blinded sidecar proof must still verify against the baked root"

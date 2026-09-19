@@ -151,8 +151,8 @@ pub fn eval_cols_on_subgroup_ext(g: Fp, t: usize, cols: &[Vec<Fp>], z: Fp2) -> V
 #[cfg(test)]
 mod coeff_eval_tests {
     use super::*;
-    use crate::poly::ntt::intt;
     use crate::fri::root_of_unity;
+    use crate::poly::ntt::intt;
 
     /*
      * The coefficient evaluator against the barycentric one. They are the same
@@ -168,11 +168,16 @@ mod coeff_eval_tests {
             let g = root_of_unity(log_t);
             let cols: Vec<Vec<Fp>> = (0..5)
                 .map(|c| {
-                    (0..t).map(|i| Fp::from_u64((7 * i as u64 + 3) * (c as u64 + 1) + 11)).collect()
+                    (0..t)
+                        .map(|i| Fp::from_u64((7 * i as u64 + 3) * (c as u64 + 1) + 11))
+                        .collect()
                 })
                 .collect();
             let coeffs: Vec<Vec<Fp>> = cols.iter().map(|col| intt(col, g)).collect();
-            let z = Fp2 { c0: Fp::from_u64(0x1234_5678_9abc_def0), c1: Fp::from_u64(42) };
+            let z = Fp2 {
+                c0: Fp::from_u64(0x1234_5678_9abc_def0),
+                c1: Fp::from_u64(42),
+            };
             let bary = eval_cols_on_subgroup_ext(g, t, &cols, z);
             let horner = eval_coeff_cols_at_ext(&coeffs, z);
             assert_eq!(bary, horner, "the two evaluators disagree at log_t {log_t}");

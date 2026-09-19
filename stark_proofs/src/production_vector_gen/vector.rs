@@ -3,8 +3,8 @@
 //! assembled verifier, with the batch publics' positions in the transcript
 //! inject column.
 
-use crate::proof_wire::serialize_pre;
 use crate::crypto::stark::air::{Air, StarkProofExtPre, WIDTH};
+use crate::proof_wire::serialize_pre;
 use crate::recursion_assembly::build::Assembly;
 use alloc::string::String;
 
@@ -33,7 +33,13 @@ pub(super) fn emit(asm: &Assembly, wproof: &StarkProofExtPre, fri_log_blowup: u3
             pubs.push(',');
         }
         let (i, j) = (idx / words, idx % words);
-        pubs.push_str(&alloc::format!("[{},{},{},\"{}\"]", i, j, (i * words + j) * l, p.value()));
+        pubs.push_str(&alloc::format!(
+            "[{},{},{},\"{}\"]",
+            i,
+            j,
+            (i * words + j) * l,
+            p.value()
+        ));
     }
     pubs.push(']');
 

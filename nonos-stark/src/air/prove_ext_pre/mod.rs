@@ -25,4 +25,4 @@ mod queries;
 mod run;
 
 pub(in crate::air) use deep::over_domain as pre_deep_over_domain;
-pub use run::stark_prove_ext_preprocessed;
+pub use run::{stark_prove_ext_preprocessed, stark_prove_ext_preprocessed_watched};

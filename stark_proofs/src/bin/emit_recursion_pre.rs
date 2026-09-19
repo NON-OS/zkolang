@@ -28,11 +28,17 @@ use stark_proofs::shield_params::{deployment, dev};
 use std::time::Instant;
 
 fn main() {
-    let out = std::env::args().nth(1).unwrap_or_else(|| "recursion-pre.proof".into());
+    let out = std::env::args()
+        .nth(1)
+        .unwrap_or_else(|| "recursion-pre.proof".into());
     let real = std::env::args().nth(2).as_deref() == Some("real");
     let deploy = std::env::args().nth(3).as_deref() == Some("deployment");
     let (n_queries, grind_bits, extra_blowup) = if deploy {
-        (deployment::N_QUERIES, deployment::GRIND_BITS, deployment::EXTRA_BLOWUP_BITS)
+        (
+            deployment::N_QUERIES,
+            deployment::GRIND_BITS,
+            deployment::EXTRA_BLOWUP_BITS,
+        )
     } else {
         (dev::N_QUERIES, dev::GRIND_BITS, dev::EXTRA_BLOWUP_BITS)
     };
@@ -45,7 +51,11 @@ fn main() {
     );
 
     let t0 = Instant::now();
-    let mut asm = if real { assemble_real(Tamper::None) } else { assemble(Tamper::None) };
+    let mut asm = if real {
+        assemble_real(Tamper::None)
+    } else {
+        assemble(Tamper::None)
+    };
     println!(
         "assembly  width={} log_trace_len={} degree={} transitions={} groups={}",
         asm.wired.trace_width(),
@@ -66,13 +76,21 @@ fn main() {
      * gives the process one peak instead of a peak on top of a high water mark.
      */
     let t2 = Instant::now();
-    let pre = stark_prove_ext_preprocessed(
+    let Some(pre) = stark_prove_ext_preprocessed(
         &asm.wired,
         &asm.witness,
         n_queries,
         grind_bits,
         extra_blowup,
-    );
+    ) else {
+        /*
+         * Only a watcher can cancel, and this binary passes none, so reaching
+         * here means the prover's own contract changed underneath it. Say so
+         * and leave nothing on disk rather than carrying on with a hole.
+         */
+        eprintln!("the prover returned no proof without being asked to stop");
+        std::process::exit(1);
+    };
     println!("proved in {:?}", t2.elapsed());
     println!(
         "sidecar   {} periodic claims at z, {} openings",
@@ -98,15 +116,13 @@ fn main() {
     println!("periodic root {root_hex} in {:?}", t1.elapsed());
 
     let t3 = Instant::now();
-    let ok = stark_verify_ext_preprocessed(
-        &asm.wired,
-        &pre,
-        n_queries,
-        grind_bits,
-        extra_blowup,
-        &root,
+    let ok =
+        stark_verify_ext_preprocessed(&asm.wired, &pre, n_queries, grind_bits, extra_blowup, &root);
+    println!(
+        "verified against the baked root in {:?}: {}",
+        t3.elapsed(),
+        ok
     );
-    println!("verified against the baked root in {:?}: {}", t3.elapsed(), ok);
 
     if !ok {
         eprintln!("the emitted proof did not verify; not leaving it on disk as if it had");

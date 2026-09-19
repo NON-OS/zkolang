@@ -26,12 +26,26 @@ fn join_split_air() -> WiredExt {
     ];
     let mut sigma: Vec<usize> = (0..32).collect();
     sigma.swap(1, 8);
-    WiredExt::new(regions, alloc::vec![0], sigma, Fp::from_u64(5), Fp::from_u64(7))
+    WiredExt::new(
+        regions,
+        alloc::vec![0],
+        sigma,
+        Fp::from_u64(5),
+        Fp::from_u64(7),
+    )
 }
 
 fn witness(air: &WiredExt) -> Vec<Fp> {
-    let addends =
-        [Fp::from_u64(7), Fp::from_u64(3), neg(8), neg(1), neg(1), Fp::ZERO, Fp::ZERO, Fp::ZERO];
+    let addends = [
+        Fp::from_u64(7),
+        Fp::from_u64(3),
+        neg(8),
+        neg(1),
+        neg(1),
+        Fp::ZERO,
+        Fp::ZERO,
+        Fp::ZERO,
+    ];
     let mut cons = Vec::with_capacity(addends.len() * 2);
     let mut acc = Fp::ZERO;
     for &a in &addends {
@@ -62,15 +76,19 @@ fn baked_root(air: &WiredExt, extra_blowup_bits: u32) -> [u8; 32] {
     let g = root_of_unity(log_t);
     let omega = root_of_unity(n.trailing_zeros());
     let shift = Fp::from_u64(7);
-    let extended: Vec<Vec<Fp>> =
-        air.periodic_columns().iter().map(|c| lde(c, g, shift, omega, n)).collect();
+    let extended: Vec<Vec<Fp>> = air
+        .periodic_columns()
+        .iter()
+        .map(|c| lde(c, g, shift, omega, n))
+        .collect();
     MerkleTree::commit_wide_periodic(&extended).root()
 }
 
 pub(crate) fn setup() -> (WiredExt, StarkProofExtPre, [u8; 32]) {
     let air = join_split_air();
     let w = witness(&air);
-    let proof = stark_prove_ext_preprocessed(&air, &w, 32, 8, 0);
+    let proof = stark_prove_ext_preprocessed(&air, &w, 32, 8, 0)
+        .expect("nothing watches this proof, so nothing can cancel it");
     let root = baked_root(&air, 0);
     (air, proof, root)
 }

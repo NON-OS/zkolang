@@ -69,7 +69,10 @@ impl WiredMultiExt {
     /// Each group's wired columns and challenges, the constraint-side half of
     /// what `permutation_columns` locates.
     pub fn group_params(&self) -> Vec<(Vec<usize>, Fp, Fp)> {
-        self.groups.iter().map(|g| (g.wired_cols.clone(), g.beta, g.gamma)).collect()
+        self.groups
+            .iter()
+            .map(|g| (g.wired_cols.clone(), g.beta, g.gamma))
+            .collect()
     }
 
     pub fn group_widths(&self) -> Vec<usize> {
@@ -84,14 +87,16 @@ impl WiredMultiExt {
 
     /*
      * Per kind, in kind order: where the kind's periodic values begin, how many
-     * it owns, how many constraint indices its body writes, and how many
-     * regions run it. A verifier evaluating the transition at z needs the first
+     * it owns, how many constraint indices its body writes, how many regions
+     * run it, and how wide one of those regions is. A verifier evaluating the transition at z needs the first
      * two to slice the periodic vector and the third to know how far into the
      * shared constraint vector that kind reaches; none of the three is
      * recoverable from the trace, and the widest arity here is the overlap
      * width, so a reader that has this does not have to be told it separately.
+     * The width is here because a consumer recomputing a kind's transition has
+     * to slice the window before it can evaluate anything.
      */
-    pub fn kind_map(&self) -> Vec<(usize, usize, usize, usize)> {
+    pub fn kind_map(&self) -> Vec<(usize, usize, usize, usize, usize)> {
         let sel = self.stack.n_kinds;
         (0..self.stack.n_kinds)
             .map(|k| {
@@ -102,6 +107,7 @@ impl WiredMultiExt {
                     self.stack.kind_slots[k],
                     self.regions[first].num_transition(),
                     instances,
+                    self.regions[first].trace_width(),
                 )
             })
             .collect()

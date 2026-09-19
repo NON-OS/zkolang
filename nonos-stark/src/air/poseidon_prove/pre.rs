@@ -30,6 +30,7 @@ use super::super::composition::num_coeffs;
 use super::super::draw_ood_poseidon::draw_ood_point_poseidon;
 use super::super::periodic_poseidon::periodic_tree_poseidon;
 use super::super::poseidon::{Poseidon, RATE};
+use super::super::progress::{Phase, Progress};
 use super::super::prove_ext::{comp_at_z, ood_frame, over_domain, periodic_at_z, Domain};
 use super::super::prove_ext_pre::pre_deep_over_domain;
 use super::super::spec::AirExt;
@@ -55,8 +56,49 @@ pub fn stark_prove_poseidon_pre_pub<A: AirExt>(
     h: &Poseidon,
     publics: &[Fp],
     blind: &[Vec<Fp>],
-) -> StarkProofExtPPre {
+) -> Option<StarkProofExtPPre> {
+    stark_prove_poseidon_pre_pub_watched(
+        air,
+        witness,
+        n_queries,
+        grind_bits,
+        extra_blowup_bits,
+        h,
+        publics,
+        blind,
+        None,
+    )
+}
+
+/// The client's proof, with somebody watching.
+///
+/// This is the entry point a wallet proves a transfer through, so it is the one
+/// whose phases a person is waiting on. The watch carries the phase now
+/// running, each phase's duration as it completes, and the caller's request to
+/// stop; the caller polls it and the prover never calls back, because a
+/// callback out of a worker thread into a phone's UI layer is a contract about
+/// threads and lifetimes, and a poll is an atomic load.
+///
+/// The phases are [`Progress::PHASE_NAMES`], the same six the settlement prover
+/// reports, because the two provers differ in their hash and their blinding
+/// rather than in their shape.
+///
+/// Returns `None` only when the caller cancelled, so a cancelled proof cannot
+/// reach an encoder as if it were finished.
+#[allow(clippy::too_many_arguments)]
+pub fn stark_prove_poseidon_pre_pub_watched<A: AirExt>(
+    air: &A,
+    witness: &[Fp],
+    n_queries: usize,
+    grind_bits: u32,
+    extra_blowup_bits: u32,
+    h: &Poseidon,
+    publics: &[Fp],
+    blind: &[Vec<Fp>],
+    watch: Option<&Progress>,
+) -> Option<StarkProofExtPPre> {
     let d = Domain::of(air, extra_blowup_bits);
+    let mut phase = Phase::start(watch);
 
     let mut transcript = PoseidonTranscript::new(h.clone());
     for &p in publics {
@@ -69,6 +111,10 @@ pub fn stark_prove_poseidon_pre_pub<A: AirExt>(
     // makes a real transfer's proof, not only its commitments, reveal nothing.
     let tr = trace::commit_wide(h, &d, witness, blind);
     transcript.absorb_digest(&tr.tree.root());
+    phase.done("trace commitment");
+    if phase.cancelled() {
+        return None;
+    }
 
     let coeffs: Vec<Fp2> = (0..num_coeffs(air))
         .map(|_| transcript.challenge_fp2())
@@ -76,10 +122,19 @@ pub fn stark_prove_poseidon_pre_pub<A: AirExt>(
 
     let periodic_cols = air.periodic_columns();
     let (pc, p_tree) = periodic_tree_poseidon(air, extra_blowup_bits, h);
+    phase.done("periodic commitment");
+    if phase.cancelled() {
+        return None;
+    }
+
     let comp_d = over_domain(air, &d, &tr.coeffs, &pc, &coeffs);
     let comp_leaves: Vec<[Fp; RATE]> = comp_d.iter().map(|v| pack_ext(*v)).collect();
     let comp_tree = PoseidonMerkleTree::commit(h, &comp_leaves);
     transcript.absorb_digest(&comp_tree.root());
+    phase.done("composition");
+    if phase.cancelled() {
+        return None;
+    }
 
     let z = draw_ood_point_poseidon(&mut transcript, d.shift, d.n, d.t);
     let frame = ood_frame(&tr.coeffs, &d, z);
@@ -93,6 +148,10 @@ pub fn stark_prove_poseidon_pre_pub<A: AirExt>(
         transcript.absorb(value.c1);
     }
     let comp_z = comp_at_z(air, &d, &frame, &periodic_z, z, &coeffs);
+    phase.done("out of domain");
+    if phase.cancelled() {
+        return None;
+    }
 
     let deep_coeffs: Vec<Fp2> = (0..d.width * d.window + 1 + periodic_cols.len())
         .map(|_| transcript.challenge_fp2())
@@ -110,6 +169,11 @@ pub fn stark_prove_poseidon_pre_pub<A: AirExt>(
     );
 
     let fri = fri_prove_poseidon_ext(&deep_d, d.shift, d.fri_log_blowup, n_queries, grind_bits, h);
+    phase.done("deep and fri");
+    if phase.cancelled() {
+        return None;
+    }
+
     let deep_leaves: Vec<[Fp; RATE]> = deep_d.iter().map(|v| pack_ext(*v)).collect();
     let deep_tree = PoseidonMerkleTree::commit(h, &deep_leaves);
     transcript.absorb_digest(&fri.roots[0]);
@@ -124,7 +188,10 @@ pub fn stark_prove_poseidon_pre_pub<A: AirExt>(
         openings.push(sidecar::open(h, &d, &pc, &p_tree, p));
     }
 
-    StarkProofExtPPre {
+    phase.done("query openings");
+    phase.finish();
+
+    Some(StarkProofExtPPre {
         proof: StarkProofExtP {
             trace_root: tr.tree.root(),
             comp_root: comp_tree.root(),
@@ -134,5 +201,5 @@ pub fn stark_prove_poseidon_pre_pub<A: AirExt>(
         },
         periodic_z,
         openings,
-    }
+    })
 }

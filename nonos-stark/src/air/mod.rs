@@ -53,8 +53,6 @@ mod zk;
 pub use fusion::region_offsets;
 pub use zk::{blinding_poly, seed_from_entropy};
 mod deep_terms_pre;
-pub mod replay;
-pub mod replay_ext;
 mod index_point;
 mod index_scalar;
 mod measure;
@@ -69,12 +67,15 @@ mod permutation_arg;
 mod poseidon;
 mod poseidon_prove;
 mod power_chain;
+mod progress;
 mod prove;
 mod prove_ext;
 mod prove_ext_pre;
 mod prove_poseidon_ext;
 mod query_openings;
 mod range_check;
+pub mod replay;
+pub mod replay_ext;
 mod serialize;
 mod serialize_ext;
 mod shield_region;
@@ -135,15 +136,18 @@ pub use permutation_arg::{
     classes_are_disjoint, classes_are_layable, Cell, WirePermutation, WiredPermutationArg,
 };
 pub use poseidon::{Poseidon, NOTE_DOMAIN, NOTE_LIMBS, RATE, WIDTH};
-pub use poseidon_prove::stark_prove_poseidon_pre_pub;
+pub use poseidon_prove::{stark_prove_poseidon_pre_pub, stark_prove_poseidon_pre_pub_watched};
 pub use power_chain::PowerChain;
+pub use progress::{Progress, PHASE_COUNT, PHASE_NAMES};
 pub use prove::{stark_prove, stark_prove_bound};
 pub use prove_ext::{
     stark_prove_ext, stark_prove_ext_blown, stark_prove_ext_blown_bound, stark_prove_ext_zk,
     COSET_SHIFT,
 };
-pub use prove_ext_pre::stark_prove_ext_preprocessed;
-pub use prove_poseidon_ext::{stark_prove_poseidon_ext, stark_prove_poseidon_ext_pub, stark_prove_poseidon_ext_zk};
+pub use prove_ext_pre::{stark_prove_ext_preprocessed, stark_prove_ext_preprocessed_watched};
+pub use prove_poseidon_ext::{
+    stark_prove_poseidon_ext, stark_prove_poseidon_ext_pub, stark_prove_poseidon_ext_zk,
+};
 pub use publics::Publics;
 pub use query_openings::{query_openings_pre_queryk, query_openings_query0, query_openings_queryk};
 pub use range_check::RangeCheck;
