@@ -34,9 +34,9 @@
 //! has not been shown to travel.
 
 use stark_proofs::crypto::stark::air::{
-    stark_prove_ext_preprocessed_tree, stark_verify_ext_preprocessed_pub, Air,
+    stark_prove_ext_rounds, stark_verify_ext_rounds, Air,
 };
-use stark_proofs::proof_wire::serialize_pre;
+use stark_proofs::proof_wire::serialize_rounds;
 use stark_proofs::recursion_assembly::point::Point;
 use stark_proofs::recursion_assembly::{assemble, Tamper};
 use stark_proofs::shield_params::{deployment, dev};
@@ -105,6 +105,11 @@ fn pool_intents(publics: &[stark_proofs::crypto::stark::field::Fp]) -> Vec<Strin
             )
         })
         .collect()
+}
+
+/// A 32 byte digest as the hex a reader compares against a layout file.
+fn hex32(d: &[u8; 32]) -> String {
+    d.iter().map(|b| format!("{b:02x}")).collect()
 }
 
 fn main() {
@@ -240,15 +245,26 @@ fn main() {
     let publics_out = format!("{out}.publics.json");
 
     let t2 = Instant::now();
-    let Some((pre, tree)) = stark_prove_ext_preprocessed_tree(
-        &asm.wired,
-        &asm.witness,
+    /*
+     * The same value the structure emit writes into
+     * `permutation_challenges`. Read here rather than assumed, so a layout
+     * saying "transcript" and a prover taking the one round path cannot both
+     * be true at once: if this is ever turned off, the emit stops instead of
+     * writing an artifact whose layout describes an argument it was not given.
+     */
+    assert!(
+        Point::emit_rounds(),
+        "the one round prover would contradict the layout this emit publishes"
+    );
+    let mut witness = core::mem::take(&mut asm.witness);
+    let Some((rounds, tree, proved)) = stark_prove_ext_rounds(
+        asm.wired,
+        &mut witness,
         n_queries,
         grind_bits,
         extra_blowup,
         &asm.publics,
         cached,
-        None,
     ) else {
         /*
          * Only a watcher can cancel, and this binary passes none, so reaching
@@ -261,9 +277,17 @@ fn main() {
     println!("proved in {:?}", t2.elapsed());
     println!(
         "sidecar   {} periodic claims at z, {} openings",
-        pre.periodic_z.len(),
-        pre.openings.len()
+        rounds.pre.periodic_z.len(),
+        rounds.pre.openings.len()
     );
+    let (beta, gamma) = proved.challenges();
+    println!(
+        "rounds    region root {}, permutation root {}, split at column {}",
+        hex32(&rounds.pre.proof.trace_root),
+        hex32(&rounds.perm_root),
+        rounds.region_width
+    );
+    println!("challenge beta {} gamma {} drawn from the region root", beta.to_u64(), gamma.to_u64());
 
     /*
      * The witness is read by the prover and by nothing after it. Off the heap
@@ -300,9 +324,9 @@ fn main() {
     drop(tree);
 
     let t3 = Instant::now();
-    let ok = stark_verify_ext_preprocessed_pub(
-        &asm.wired,
-        &pre,
+    let ok = stark_verify_ext_rounds(
+        proved,
+        &rounds,
         n_queries,
         grind_bits,
         extra_blowup,
@@ -319,7 +343,7 @@ fn main() {
         std::process::exit(1);
     }
 
-    let bytes = serialize_pre(&pre);
+    let bytes = serialize_rounds(&rounds);
     std::fs::write(&out, &bytes).expect("write proof");
     println!("wrote {} bytes to {out}", bytes.len());
     std::fs::write(&publics_out, &publics_json).expect("write publics");
