@@ -256,6 +256,41 @@ fn main() {
         Point::emit_rounds(),
         "the one round prover would contradict the layout this emit publishes"
     );
+    /*
+     * Blinding, one polynomial per trace column. A proof opens n_queries rows
+     * and a frame of window_size more, so an unblinded column hands those
+     * cells to whoever reads the artifact, and for this circuit those cells
+     * are the spend. The seed is drawn from the machine's entropy: two proofs
+     * of one statement must not share blinds, or the difference of their
+     * openings is the witness.
+     */
+    let deg = n_queries + Air::window_size(&asm.wired);
+    let h = stark_proofs::recursion_assembly::inner::hasher();
+    /*
+     * Straight from the operating system rather than from a crate or a clock.
+     * Two proofs of one statement that share a blind hand back the witness in
+     * the difference of their openings, so this is the one input here that
+     * must not be reproducible.
+     */
+    let entropy = {
+        use std::io::Read;
+        let mut buf = [0u8; 256];
+        match std::fs::File::open("/dev/urandom").and_then(|mut f| f.read_exact(&mut buf)) {
+            Ok(()) => buf.to_vec(),
+            Err(e) => {
+                eprintln!("no entropy source: {e}");
+                Vec::new()
+            }
+        }
+    };
+    let Some(seed) = stark_proofs::crypto::stark::air::seed_from_entropy(&entropy) else {
+        eprintln!("could not draw a blinding seed; refusing to emit a proof that hides nothing");
+        std::process::exit(1);
+    };
+    let blind: Vec<Vec<stark_proofs::crypto::stark::field::Fp>> = (0..Air::trace_width(&asm.wired))
+        .map(|c| stark_proofs::crypto::stark::air::blinding_poly(&h, &seed, c, deg))
+        .collect();
+
     let mut witness = core::mem::take(&mut asm.witness);
     let Some((rounds, tree, proved)) = stark_prove_ext_rounds(
         asm.wired,
@@ -265,6 +300,7 @@ fn main() {
         extra_blowup,
         &asm.publics,
         cached,
+        &blind,
     ) else {
         /*
          * Only a watcher can cancel, and this binary passes none, so reaching
