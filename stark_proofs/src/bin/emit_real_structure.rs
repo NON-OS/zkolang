@@ -189,12 +189,15 @@ fn main() {
         .join("");
 
     /*
-     * Derived from the emit's own choice, never typed. The challenges are
-     * still circuit constants because the emit proves through the one round
-     * prover; that field becomes "transcript" when the emit moves, and it has
-     * to move with it rather than being edited ahead of it.
+     * The emit proves through the two round prover, so the challenges come out
+     * of the transcript after the region columns are committed, and the root
+     * they are drawn against travels in the proof as `trace_root`.
+     *
+     * Named rather than defaulted. A verifier generated from a layout that did
+     * not carry this could be deployed against a fixed point argument by
+     * omission, which is what the outer shipped with until today.
      */
-    let (permutation_challenges, permutation_challenge_root) = ("constant", "null");
+    let (permutation_challenges, permutation_challenge_root) = ("transcript", "\"trace_root\"");
     let wiring = Point::emit_wiring().name();
 
     let json = format!(

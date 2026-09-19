@@ -182,3 +182,67 @@ fn a_broken_binding_does_not_verify() {
         )),
     }
 }
+
+/// The real outer, chained and proved in two rounds, verifies.
+///
+/// Capped to a couple of inner queries so it runs in minutes rather than
+/// hours, which changes the trace length and nothing about the shape: the same
+/// regions, the same wiring families, the same two commitments. This is the
+/// gate the settlement emit sits behind, because everything above it is a toy
+/// twelve columns wide and the thing that ships is five hundred and fifty six.
+#[test]
+#[ignore]
+fn the_real_outer_proves_and_verifies_in_two_rounds() {
+    use crate::recursion_assembly::build::{assemble_over_wired, Wiring};
+    use crate::recursion_assembly::{inner, Tamper};
+    use crate::shield_params::deployment;
+
+    let h = inner::hasher();
+    let inner_js = inner::shield_join_split(&h);
+    let mut asm = assemble_over_wired(&h, inner_js, Tamper::None, 2, Wiring::Chained);
+    let width = Air::trace_width(&asm.wired);
+    let split = asm.wired.region_width();
+    std::println!(
+        "chained outer: width {width}, split at {split}, degree {}, periodic {}",
+        Air::constraint_degree(&asm.wired),
+        Air::periodic_columns(&asm.wired).len()
+    );
+
+    let mut witness = core::mem::take(&mut asm.witness);
+    let publics = asm.publics.clone();
+    let (rounds, p_tree, proved) = stark_prove_ext_rounds(
+        asm.wired,
+        &mut witness,
+        deployment::N_QUERIES,
+        deployment::GRIND_BITS,
+        deployment::EXTRA_BLOWUP_BITS,
+        &publics,
+        None,
+    )
+    .expect("the two round prover produces a proof for the real outer");
+
+    let (beta, gamma) = proved.challenges();
+    std::println!(
+        "beta {} gamma {} drawn from the region root",
+        beta.to_u64(),
+        gamma.to_u64()
+    );
+    assert!(
+        beta != Fp::from_u64(5) || gamma != Fp::from_u64(7),
+        "the drawn challenges are the circuit constants"
+    );
+    assert_eq!(rounds.region_width, split);
+
+    assert!(
+        stark_verify_ext_rounds(
+            proved,
+            &rounds,
+            deployment::N_QUERIES,
+            deployment::GRIND_BITS,
+            deployment::EXTRA_BLOWUP_BITS,
+            &p_tree.root(),
+            &publics,
+        ),
+        "the real outer's two round proof does not verify"
+    );
+}

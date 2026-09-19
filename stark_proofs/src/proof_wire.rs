@@ -4,7 +4,7 @@
 //! claims at z, and per consistency query the wide periodic row with its
 //! path against the baked root.
 
-use crate::crypto::stark::air::{serialize_proof_ext, StarkProofExtPre};
+use crate::crypto::stark::air::{serialize_proof_ext, StarkProofExtPre, StarkProofExtRounds};
 use alloc::vec::Vec;
 
 /// The wire form a chain verifier decodes. Public because the settlement
@@ -31,6 +31,27 @@ pub fn serialize_pre(pre: &StarkProofExtPre) -> Vec<u8> {
         }
         b.extend_from_slice(&(op.path.len() as u32).to_le_bytes());
         for d in &op.path {
+            b.extend_from_slice(d);
+        }
+    }
+    b
+}
+
+/// The wire form when the trace was committed in two rounds: the one round
+/// encoding, then the second round's root, where the row splits, and one path
+/// per query authenticating the permutation half.
+///
+/// Appended rather than interleaved, so a decoder that knows the one round
+/// format reads all of it and then finds there is more. The split travels
+/// because a decoder that guessed it would check two roots against halves of
+/// its own choosing and still see two valid walks.
+pub fn serialize_rounds(rounds: &StarkProofExtRounds) -> Vec<u8> {
+    let mut b = serialize_pre(&rounds.pre);
+    b.extend_from_slice(&rounds.perm_root);
+    b.extend_from_slice(&(rounds.region_width as u32).to_le_bytes());
+    for path in &rounds.perm_paths {
+        b.extend_from_slice(&(path.len() as u32).to_le_bytes());
+        for d in path {
             b.extend_from_slice(d);
         }
     }
