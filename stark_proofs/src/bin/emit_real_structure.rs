@@ -188,6 +188,15 @@ fn main() {
         .collect::<Vec<_>>()
         .join("");
 
+    /*
+     * Derived from the engine, never typed. The assembly is built through the
+     * packed path today, which argues the copy constraint at circuit
+     * constants, so this says so. It becomes "transcript" when the emit moves
+     * to the two round prover, and it has to move with it rather than being
+     * edited ahead of it.
+     */
+    let (permutation_challenges, permutation_challenge_root) = ("constant", "null");
+
     let json = format!(
         "{{\n  \"point\": \"{}\",\n  \"n_inners\": {},\n  \
          \"inner_extra_blowup_bits\": {},\n  \"inner_soundness_bits\": {},\n  \
@@ -200,6 +209,8 @@ fn main() {
          \"coset_shift\": {},\n  \"inner_n_transitions\": {},\n  \
          \"inner_n_boundary\": {},\n  \"outer_fri_queries\": {},\n  \
          \"inner_boundary\": [{}],\n  \
+         \"permutation_challenges\": \"{}\",\n  \
+         \"permutation_challenge_root\": {},\n  \
          \"periodic_root_poseidon\": \"{}\"\n}}\n",
         point,
         at.inners(),
@@ -240,6 +251,26 @@ fn main() {
          */
         outer_n_queries,
         inner_boundary_json.join(", "),
+        /*
+         * Where the copy constraint's challenges come from, and which root
+         * they are drawn against. Required, with no default, so a verifier
+         * generated from this file cannot be deployed against a fixed point
+         * argument by omission.
+         *
+         * "constant" means beta and gamma are circuit constants the prover
+         * reads off this layout before choosing its trace, which makes the
+         * grand product argue nothing: `wired_forgery_tests` builds a witness
+         * the real settlement outer accepts with a copy constraint broken. A
+         * contract handed "constant" should refuse, exactly as it refuses an
+         * 80 bit inner rate.
+         *
+         * "transcript" means they are drawn after the named root is absorbed,
+         * which is the two round prover. The root named is the first round's,
+         * over the region columns alone, and it travels in the proof as
+         * `trace_root`.
+         */
+        permutation_challenges,
+        permutation_challenge_root,
         root_hex,
     );
     std::fs::write(&out, &json).expect("write structure");

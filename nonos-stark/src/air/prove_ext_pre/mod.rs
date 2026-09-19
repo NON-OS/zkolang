@@ -22,9 +22,11 @@
 
 mod deep;
 mod queries;
+mod rounds;
 mod run;
 
 pub(in crate::air) use deep::over_domain as pre_deep_over_domain;
+pub use rounds::stark_prove_ext_rounds;
 pub use run::{
     stark_prove_ext_preprocessed, stark_prove_ext_preprocessed_tree,
     stark_prove_ext_preprocessed_watched,
