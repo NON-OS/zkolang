@@ -14,6 +14,7 @@ use super::fixture::{hasher, owned, plain, secret};
 use super::satisfies::satisfies;
 use crate::crypto::stark::air::RATE;
 use crate::crypto::stark::field::Fp;
+use crate::shield::join::address_from_u64;
 use crate::shield::join::{join_split_with_paths, Settle, Spend, Witnessed};
 use crate::shield::key::Break;
 use crate::shield::member::PoolTree;
@@ -41,7 +42,10 @@ fn pool_with(ins: &[Note; 2]) -> (PoolTree, [usize; 2], [Fp; RATE]) {
 }
 
 fn opening(t: &PoolTree, i: usize) -> Witnessed {
-    Witnessed { leaf_index: i, siblings: t.path(i).0 }
+    Witnessed {
+        leaf_index: i,
+        siblings: t.path(i).0,
+    }
 }
 
 #[test]
@@ -54,17 +58,32 @@ fn a_spend_proves_against_a_root_the_pool_published() {
 
     let js = join_split_with_paths(
         MINIMAL,
-        [Spend { note: &ins[0], sk: sks[0] }, Spend { note: &ins[1], sk: sks[1] }],
+        [
+            Spend {
+                note: &ins[0],
+                sk: sks[0],
+            },
+            Spend {
+                note: &ins[1],
+                sk: sks[1],
+            },
+        ],
         [&o0, &o1],
         root,
         [&outs[0], &outs[1]],
         200,
         100,
         Break::None,
-        Settle { clearing_price: 1_000_000, recipient: 0xBEEF },
+        Settle {
+            clearing_price: 1_000_000,
+            recipient: address_from_u64(0xBEEF),
+        },
         None,
     );
-    assert!(satisfies(&js.wired, &js.witness), "an honest spend against a published root failed");
+    assert!(
+        satisfies(&js.wired, &js.witness),
+        "an honest spend against a published root failed"
+    );
 }
 
 #[test]
@@ -83,8 +102,15 @@ fn the_published_root_is_not_one_the_builder_could_have_invented() {
     let mut alone = PoolTree::with_depth(h, MINIMAL);
     alone.insert(note_parts(&ins[0]).cm);
     alone.insert(note_parts(&ins[1]).cm);
-    assert_ne!(alone.root(), root, "the published root must not be the planted one");
-    assert!(at[0] != 0 || at[1] != 1, "the spent notes must not sit where a planted tree puts them");
+    assert_ne!(
+        alone.root(),
+        root,
+        "the published root must not be the planted one"
+    );
+    assert!(
+        at[0] != 0 || at[1] != 1,
+        "the spent notes must not sit where a planted tree puts them"
+    );
     let _ = t;
 }
 
@@ -100,18 +126,33 @@ fn a_path_from_the_wrong_position_does_not_reach_the_root() {
      * cannot catch it: membership is the walked root equalling the published
      * one, so this must fail as a root mismatch rather than as a bad trace.
      */
-    let wrong = Witnessed { leaf_index: at[0] ^ 1, siblings: t.path(at[0]).0 };
+    let wrong = Witnessed {
+        leaf_index: at[0] ^ 1,
+        siblings: t.path(at[0]).0,
+    };
     let o1 = opening(&t, at[1]);
     let js = join_split_with_paths(
         MINIMAL,
-        [Spend { note: &ins[0], sk: sks[0] }, Spend { note: &ins[1], sk: sks[1] }],
+        [
+            Spend {
+                note: &ins[0],
+                sk: sks[0],
+            },
+            Spend {
+                note: &ins[1],
+                sk: sks[1],
+            },
+        ],
         [&wrong, &o1],
         root,
         [&outs[0], &outs[1]],
         200,
         100,
         Break::None,
-        Settle { clearing_price: 1_000_000, recipient: 0xBEEF },
+        Settle {
+            clearing_price: 1_000_000,
+            recipient: address_from_u64(0xBEEF),
+        },
         None,
     );
     assert!(
@@ -126,5 +167,9 @@ fn every_opening_walks_the_full_depth() {
     let ins = [owned(sks[0], 0, 1000), owned(sks[1], 10, 2000)];
     let (t, at, _root) = pool_with(&ins);
     let o: Vec<[Fp; RATE]> = t.path(at[0]).0;
-    assert_eq!(o.len(), MINIMAL, "an opening must carry one sibling per level");
+    assert_eq!(
+        o.len(),
+        MINIMAL,
+        "an opening must carry one sibling per level"
+    );
 }

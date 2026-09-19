@@ -8,6 +8,8 @@ pub mod crypto;
 
 pub mod compose_pipeline;
 
+pub mod root_cache;
+
 #[cfg(test)]
 mod air_tests;
 #[cfg(test)]

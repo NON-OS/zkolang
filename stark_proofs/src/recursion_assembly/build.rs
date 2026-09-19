@@ -9,7 +9,9 @@
 use super::inner::{Inner, LOG_ROUNDS};
 use super::layout::{offsets, Layout};
 use super::tamper::Tamper;
-use super::{auth, compose, compose_step, deep, fri, groups, inner, periodic, points, strip, transcript};
+use super::{
+    auth, compose, compose_step, deep, fri, groups, inner, periodic, points, strip, transcript,
+};
 use crate::crypto::stark::air::{Air, AirExt, GenericTransition, GpGroup, Poseidon, WiredMultiExt};
 use crate::crypto::stark::field::{Fp, Fp2};
 use alloc::boxed::Box;
@@ -231,6 +233,7 @@ pub fn assemble_capped(tamper: Tamper, tamper_q: usize, cap: usize) -> Assembly 
         strip_echo_width: 0,
         strip_n_out: 0,
         strip_rows: 0,
+        compose_acc_base_col: 0,
         z_op,
         deep_coeff_op,
         pub_len,
@@ -253,7 +256,7 @@ pub fn assemble_capped(tamper: Tamper, tamper_q: usize, cap: usize) -> Assembly 
         pa_off,
         pchunk_cells: Vec::new(),
         pa_depth: 0,
-        n_chunks: 0,
+        n_pz_absorb_chunks: 0,
         frame_len: 6,
         n_coeff: 8,
         c_periodic_col: 12,
@@ -452,7 +455,9 @@ fn parts_over<A: AirExt + GenericTransition + 'static>(
     let c_z_col = cregion.z_col();
     let c_coeff_col = cregion.coeff_col(0);
     let c_comp_z_col = cregion.comp_z_col();
-    let flat_acc: Vec<usize> = (0..ss.acc_cols.len() / 2).map(|i| cregion.acc_col(i)).collect();
+    let flat_acc: Vec<usize> = (0..ss.acc_cols.len() / 2)
+        .map(|i| cregion.acc_col(i))
+        .collect();
 
     let mut regions: Vec<Box<dyn AirExt>> = alloc::vec![
         Box::new(ts.region) as Box<dyn AirExt>,
@@ -577,14 +582,6 @@ pub struct Aggregate {
     pub kind_bodies: Vec<(&'static str, &'static str)>,
 }
 
-/// Lay the parts end to end and bind them into one engine. Every inner keeps its
-/// own layout over the shared trace, so its regions are bound only to its own
-/// openings; the kinds repeat, so the constraint set does not grow with the
-/// number of inners and only the row count does.
-fn combine(parts: Vec<Parts>) -> Aggregate {
-    combine_wired(parts, Wiring::Packed)
-}
-
 /// How the copy constraint is argued. Same permutation, same classes, either
 /// way; what differs is what the verifier carries.
 ///
@@ -612,10 +609,12 @@ impl Wiring {
     }
 }
 
-/// The binds a layout declares, for a caller that wants the wiring itself
-/// rather than the groups packed over it.
-pub fn binds_for(lay: &Layout) -> Vec<groups::Bind> {
-    build_groups(lay)
+/// Lay the parts end to end and bind them into one engine. Every inner keeps its
+/// own layout over the shared trace, so its regions are bound only to its own
+/// openings; the kinds repeat, so the constraint set does not grow with the
+/// number of inners and only the row count does.
+fn combine(parts: Vec<Parts>) -> Aggregate {
+    combine_wired(parts, Wiring::Packed)
 }
 
 fn combine_wired(parts: Vec<Parts>, wiring: Wiring) -> Aggregate {
@@ -704,6 +703,7 @@ fn combine_wired(parts: Vec<Parts>, wiring: Wiring) -> Aggregate {
             strip_echo_width: p.strip_echo_width,
             strip_n_out: p.strip_n_out,
             strip_rows: p.strip_rows,
+            compose_acc_base_col: p.flat_acc.first().copied().unwrap_or(0),
             z_op: p.z_op,
             deep_coeff_op: p.deep_coeff_op,
             pub_len: p.pub_len,
@@ -739,7 +739,7 @@ fn combine_wired(parts: Vec<Parts>, wiring: Wiring) -> Aggregate {
             pa_off,
             pchunk_cells: p.pchunk_cells.clone(),
             pa_depth: p.pa_depth,
-            n_chunks: p.n_pz.div_ceil(crate::crypto::stark::air::RATE),
+            n_pz_absorb_chunks: p.n_pz.div_ceil(crate::crypto::stark::air::RATE),
             frame_len: p.frame_len,
             n_coeff: p.n_coeff,
             c_periodic_col: p.c_periodic_col,
@@ -892,6 +892,12 @@ pub fn build_groups_for(cap: usize) -> (Assembly, Vec<groups::Bind>) {
     (asm, binds)
 }
 
+/// The binds a layout declares, for a caller that wants the wiring itself
+/// rather than the groups packed over it.
+pub fn binds_for(lay: &Layout) -> Vec<groups::Bind> {
+    build_groups(lay)
+}
+
 fn build_groups(lay: &Layout) -> Vec<groups::Bind> {
     let mut gps: Vec<groups::Bind> = Vec::new();
     groups::statement(lay, &mut gps);
@@ -982,6 +988,7 @@ pub fn assemble_step(tamper: Tamper) -> Assembly {
         strip_echo_width: 0,
         strip_n_out: 0,
         strip_rows: 0,
+        compose_acc_base_col: 0,
         z_op,
         deep_coeff_op,
         pub_len,
@@ -1004,7 +1011,7 @@ pub fn assemble_step(tamper: Tamper) -> Assembly {
         pa_off: Vec::new(),
         pchunk_cells: Vec::new(),
         pa_depth: 0,
-        n_chunks: 0,
+        n_pz_absorb_chunks: 0,
         frame_len,
         n_coeff,
         c_periodic_col,

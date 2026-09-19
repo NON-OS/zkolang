@@ -200,7 +200,6 @@ fn diagnose_real_accept() {
     assert!(fails == 0, "{fails} boundary violations");
 }
 
-
 /// Every pre-collapse bind checked directly: for each swap, the two cells
 /// must hold equal honest values. Fails by builder label and coordinates, so
 /// a wrong tie names itself instead of surfacing as a grand product off one.
@@ -215,9 +214,9 @@ fn probe_bind_truth() {
     }
     std::println!("span={} width={}", asm.lay.span, w);
     std::println!(
-        "width_inner={} window_inner={} n_open={} depth={} n_terms={} pa_depth={} n_chunks={}",
+        "width_inner={} window_inner={} n_open={} depth={} n_terms={} pa_depth={} n_pz_absorb_chunks={}",
         asm.lay.width_inner, asm.lay.window_inner, asm.lay.n_open, asm.lay.depth,
-        asm.lay.n_terms, asm.lay.pa_depth, asm.lay.n_chunks
+        asm.lay.n_terms, asm.lay.pa_depth, asm.lay.n_pz_absorb_chunks
     );
     let witness = &asm.witness;
     let mut fails = 0usize;
@@ -227,11 +226,22 @@ fn probe_bind_truth() {
             let (va, vb) = (witness[ra * w + ca], witness[rb * w + cb]);
             if va != vb {
                 let reg = |r: usize| {
-                    asm.region_offsets.iter().rposition(|&o| r >= o).unwrap_or(0)
+                    asm.region_offsets
+                        .iter()
+                        .rposition(|&o| r >= o)
+                        .unwrap_or(0)
                 };
                 std::println!(
                     "BIND '{}' r{}(reg{}) c{} = {:?}  !=  r{}(reg{}) c{} = {:?}",
-                    b.label, ra, reg(ra), ca, va, rb, reg(rb), cb, vb
+                    b.label,
+                    ra,
+                    reg(ra),
+                    ca,
+                    va,
+                    rb,
+                    reg(rb),
+                    cb,
+                    vb
                 );
                 fails += 1;
                 if fails >= 10 {
@@ -278,7 +288,10 @@ fn two_inners_ride_one_outer() {
         agg.wired.num_transition(),
         agg.n_groups
     );
-    assert!(agg.lays.len() == 2, "a two-inner outer must carry two layouts");
+    assert!(
+        agg.lays.len() == 2,
+        "a two-inner outer must carry two layouts"
+    );
     assert!(
         agg.lays[0].span == 2 * one.lay.span,
         "two inners must occupy twice the rows: {} against {}",

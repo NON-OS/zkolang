@@ -30,7 +30,7 @@ fn intent() -> Intent {
         fee: 3,
         asset_id: 7,
         clearing_price: 0,
-        recipient: 0x1234,
+        recipient: d(30),
     }
 }
 

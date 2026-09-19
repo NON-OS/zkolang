@@ -27,7 +27,16 @@ pub fn join_split(
     st: Settle,
     flip: Option<usize>,
 ) -> JoinSplit {
-    join_split_at(TREE_DEPTH, inputs, outputs, public_amount, fee, brk, st, flip)
+    join_split_at(
+        TREE_DEPTH,
+        inputs,
+        outputs,
+        public_amount,
+        fee,
+        brk,
+        st,
+        flip,
+    )
 }
 
 /// One intent is a batch of one, so the layout lives in a single place. Depth is
@@ -44,7 +53,11 @@ pub fn join_split_at(
 ) -> JoinSplit {
     let p = intent_parts(inputs, outputs, public_amount, fee, brk, st, flip, depth);
     let mut b = assemble(alloc::vec![p]);
-    JoinSplit { wired: b.wired, witness: b.witness, intent: b.intents.remove(0) }
+    JoinSplit {
+        wired: b.wired,
+        witness: b.witness,
+        intent: b.intents.remove(0),
+    }
 }
 
 /// A spend against a pool that already exists.
@@ -60,6 +73,47 @@ pub fn join_split_at(
 /// which is the pair that retires a note under a position the pool never
 /// authenticated.
 #[allow(clippy::too_many_arguments)]
+/// The production spend: notes opened against the pool's published root and
+/// the association set opened against the registry's. Everything a
+/// `settleBatch` checks before it looks at the proof comes from the caller
+/// here, so a spend cannot be built against a root no one issued.
+#[allow(clippy::too_many_arguments)]
+pub fn join_split_published(
+    depth: usize,
+    inputs: [Spend; 2],
+    openings: [&Witnessed; 2],
+    root: [Fp; RATE],
+    assoc: super::stack::AssocAnchor<'_>,
+    outputs: [&Note; 2],
+    public_amount: u64,
+    fee: u64,
+    brk: Break,
+    st: Settle,
+    flip: Option<usize>,
+) -> JoinSplit {
+    let p = intent_parts_anchored(
+        inputs,
+        outputs,
+        public_amount,
+        fee,
+        brk,
+        st,
+        flip,
+        depth,
+        Anchor::Published {
+            openings,
+            root,
+            assoc: Some(assoc),
+        },
+    );
+    let mut b = assemble(alloc::vec![p]);
+    JoinSplit {
+        wired: b.wired,
+        witness: b.witness,
+        intent: b.intents.remove(0),
+    }
+}
+
 pub fn join_split_with_paths(
     depth: usize,
     inputs: [Spend; 2],
@@ -81,8 +135,16 @@ pub fn join_split_with_paths(
         st,
         flip,
         depth,
-        Anchor::Published { openings, root },
+        Anchor::Published {
+            openings,
+            root,
+            assoc: None,
+        },
     );
     let mut b = assemble(alloc::vec![p]);
-    JoinSplit { wired: b.wired, witness: b.witness, intent: b.intents.remove(0) }
+    JoinSplit {
+        wired: b.wired,
+        witness: b.witness,
+        intent: b.intents.remove(0),
+    }
 }

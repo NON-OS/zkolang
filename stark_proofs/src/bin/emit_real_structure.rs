@@ -22,72 +22,48 @@
 //! match the proof it was built over.
 
 use stark_proofs::crypto::stark::air::{Air, COSET_SHIFT};
-use stark_proofs::recursion_assembly::build::assemble_over;
-use stark_proofs::recursion_assembly::{assemble_real, inner, Tamper};
-use stark_proofs::shield_params::{deployment, transfer};
+use stark_proofs::recursion_assembly::inner;
+use stark_proofs::recursion_assembly::point::Point;
+use stark_proofs::shield_params::deployment;
 use std::time::Instant;
 
 fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
-    let at_transfer = args.iter().any(|a| a == "transfer");
     /*
-     * The query count for a transfer assembly. The transfer point's own count is
-     * the default; `queries=N` overrides it so the outer can be assembled at more
-     * than one count on the same rate and grind, which is how "does 64 still fit
-     * the 2^21 budget" becomes a measurement instead of a model.
+     * Which outer, and at what inner query count, is the point selector's to
+     * decide: `transfer` and `queries=N` are read there, and so is the check
+     * that the environment authenticates a transfer inner at its own rate.
+     * Running at 56 and at 64 and reading the emitted layout is how "does 64
+     * still fit the 2^21 budget" becomes a measurement instead of a model.
      */
-    let queries = args
-        .iter()
-        .find_map(|a| {
-            a.strip_prefix("queries=")
-                .and_then(|v| v.parse::<usize>().ok())
-        })
-        .unwrap_or(transfer::N_QUERIES);
+    let at = Point::from_args(&args);
+    let point = at.name();
+    /*
+     * The output path is the first argument that is not a flag, so every flag
+     * has to be named here. Adding `root=` without adding it to this list made
+     * the root itself the output filename: the run wrote a structure file
+     * called `root=f1b9a630...` into the working directory and put the cache
+     * beside it rather than beside the emissions, and reported success.
+     */
     let out = args
         .iter()
-        .find(|a| a.as_str() != "transfer" && !a.starts_with("queries="))
+        .find(|a| !Point::is_flag(a) && a.as_str() != "force-root" && !a.starts_with("root="))
         .cloned()
-        .unwrap_or_else(|| {
-            if at_transfer {
-                format!("transfer-{queries}-structure.json")
-            } else {
-                "real-structure.json".into()
-            }
+        .unwrap_or_else(|| match at {
+            Point::Transfer { queries } => format!("transfer-{queries}-structure.json"),
+            Point::Batch { inners } => format!("batch-{inners}-structure.json"),
+            Point::Spend { .. } => "spend-structure.json".into(),
+            Point::Settlement => "real-structure.json".into(),
         });
-    let point = if at_transfer {
-        "transfer"
-    } else {
-        "settlement"
-    };
-
-    /*
-     * The blowup the outer's authentication assumes for the inner comes from the
-     * environment. A transfer inner is proved at rate 1/4, so the environment
-     * must say so, or the outer would authenticate a 4x domain as a 16x one and
-     * the shape emitted would not be the shape of any proof that verifies.
-     */
-    if at_transfer && inner::extra() != transfer::EXTRA_BLOWUP_BITS {
-        eprintln!(
-            "the transfer assembly needs NONOS_INNER_EXTRA={} (found {}); refusing to emit \
-             a shape that does not match its inner",
-            transfer::EXTRA_BLOWUP_BITS,
-            inner::extra()
-        );
-        std::process::exit(2);
-    }
 
     let h = inner::hasher();
     let t0 = Instant::now();
-    let mut asm = if at_transfer {
-        let inner_at = inner::shield_join_split_at(
-            &h,
-            queries,
-            transfer::GRIND_BITS,
-            transfer::EXTRA_BLOWUP_BITS,
-        );
-        assemble_over(&h, inner_at, Tamper::None, usize::MAX)
-    } else {
-        assemble_real(Tamper::None)
+    let mut asm = match at.assemble() {
+        Ok(asm) => asm,
+        Err(why) => {
+            eprintln!("{why}");
+            std::process::exit(2);
+        }
     };
     eprintln!("assembled {point} in {:?}", t0.elapsed());
 
@@ -205,12 +181,7 @@ fn main() {
     );
 
     let js = stark_proofs::shield_deployed_wired();
-    let root_extra = if at_transfer {
-        transfer::EXTRA_BLOWUP_BITS
-    } else {
-        inner::extra()
-    };
-    let root = stark_proofs::crypto::stark::air::periodic_root_poseidon(&js, root_extra, &h);
+    let root = stark_proofs::crypto::stark::air::periodic_root_poseidon(&js, at.inner_extra(), &h);
     let root_hex: String = root
         .iter()
         .map(|l| format!("{:016x}", l.to_u64()))
@@ -218,7 +189,9 @@ fn main() {
         .join("");
 
     let json = format!(
-        "{{\n  \"point\": \"{}\",\n  \"log_trace_len\": {},\n  \"trace_width\": {},\n  \
+        "{{\n  \"point\": \"{}\",\n  \"n_inners\": {},\n  \
+         \"inner_extra_blowup_bits\": {},\n  \"inner_soundness_bits\": {},\n  \
+         \"log_trace_len\": {},\n  \"trace_width\": {},\n  \
          \"num_transition\": {},\n  \"num_boundary\": {},\n  \"n_coeffs\": {},\n  \
          \"num_groups\": {},\n  \"constraint_degree\": {},\n  \
          \"inner_log_trace_len\": {},\n  \"inner_trace_width\": {},\n  \"n_queries\": {},\n  \
@@ -229,6 +202,16 @@ fn main() {
          \"inner_boundary\": [{}],\n  \
          \"periodic_root_poseidon\": \"{}\"\n}}\n",
         point,
+        at.inners(),
+        /*
+         * The inner's rate and the soundness it buys, emitted rather than
+         * left to be inferred from a Poseidon root nobody can read. The
+         * other `extra_blowup_bits` in this file is the outer's and says 3
+         * whatever the inner did, which is exactly why an 80 bit artifact
+         * could look like a 144 bit one.
+         */
+        at.inner_extra(),
+        at.inner_queries() * (1 + at.inner_extra() as usize) + deployment::GRIND_BITS as usize,
         asm.wired.log_trace_len(),
         asm.wired.trace_width(),
         num_transition,
@@ -277,7 +260,6 @@ fn main() {
      * so if the machine cannot hold it the run says where it died, rather than
      * ending after the shape with no layout and no message.
      */
-    eprintln!("computing the outer periodic root at extra blowup {extra_blowup_bits}");
     /*
      * At the point's own rate, not at rate one half.
      *
@@ -292,10 +274,55 @@ fn main() {
      * The rate is in the field name now as well, because this is one more
      * value whose name did not say which instance of a quantity it was.
      */
-    let outer_root_hex: String = {
-        let r = stark_proofs::crypto::stark::air::periodic_root(&asm.wired, extra_blowup_bits);
-        r.iter().map(|b| format!("{b:02x}")).collect()
+    /*
+     * Content addressed against the structure file just written, which is the
+     * complete statement of everything this root depends on: it carries
+     * `periodic_root_poseidon`, a commitment to the periodic columns
+     * themselves, alongside the domain, the rate and the coset shift. So the
+     * key moves exactly when the tree would, and a miss is what says the root
+     * is stale rather than somebody remembering that it might be.
+     *
+     * This matters because the commitment is 97 to 99 per cent of the run,
+     * 3 h 35 m at settlement and 9 h 21 m at e64, against about three minutes
+     * for every other field in both files together. Republishing a metadata
+     * field used to cost most of a day of Keccak to reprint a number that had
+     * not moved.
+     *
+     * `root=<hex>` supplies a root already computed elsewhere and stores it
+     * under this key, which is how the two roots that already exist are seeded
+     * without paying for them twice. `force-root` recomputes and overwrites.
+     */
+    let cache_dir = stark_proofs::root_cache::cache_dir(&out);
+    let key = stark_proofs::root_cache::digest(json.as_bytes());
+    let supplied = args.iter().find_map(|a| a.strip_prefix("root="));
+    let forced = args.iter().any(|a| a == "force-root");
+
+    let cached = if forced {
+        None
+    } else {
+        stark_proofs::root_cache::get(&cache_dir, &key)
     };
+
+    let outer_root_hex: String = match (supplied, cached) {
+        (Some(hex), _) => {
+            eprintln!("periodic root supplied, storing under {key}");
+            hex.trim().to_ascii_lowercase()
+        }
+        (None, Some(hit)) => {
+            eprintln!("periodic root from cache, key {key}");
+            hit
+        }
+        (None, None) => {
+            eprintln!("computing the outer periodic root at extra blowup {extra_blowup_bits}");
+            let t = Instant::now();
+            let r = stark_proofs::crypto::stark::air::periodic_root(&asm.wired, extra_blowup_bits);
+            eprintln!("outer periodic root computed in {:?}", t.elapsed());
+            r.iter().map(|b| format!("{b:02x}")).collect()
+        }
+    };
+    if let Err(e) = stark_proofs::root_cache::put(&cache_dir, &key, &outer_root_hex) {
+        eprintln!("could not store the periodic root: {e}");
+    }
     /*
      * The outer's own periodic columns: what a query's periodic row carries,
      * and what the chain opens against the keccak root above. This is not
@@ -390,24 +417,32 @@ fn main() {
         })
         .collect();
     let layout = format!(
-        "{{\n  \"span\": {},\n  \"l\": {},\n  \"n_q\": {},\n  \"region_offsets\": {:?},\n  \
+        "{{\n  \"n_inners\": {},\n  \"inner_extra_blowup_bits\": {},\n  \
+         \"inner_soundness_bits\": {},\n  \"span\": {},\n  \"l\": {},\n  \"n_q\": {},\n  \
+         \"region_offsets\": {:?},\n  \
          \"z_op\": {},\n  \"claim_op\": {},\n  \"deep_coeff_op\": {},\n  \"pub_len\": {},\n  \
          \"ntr\": {},\n  \"ncoeff2\": {},\n  \"n_terms\": {},\n  \"width_inner\": {},\n  \
          \"window_inner\": {},\n  \"depth\": {},\n  \"n_open\": {},\n  \"n_folds\": {},\n  \
          \"log_n_inner\": {},\n  \"inner_log_fri_domain\": {},\n  \
          \"inner_fold_layers\": {},\n  \
          \"pbits\": {},\n  \"fbits\": {},\n  \"t_inner\": {},\n  \
-         \"n_pz\": {},\n  \"pa_depth\": {},\n  \"n_chunks\": {},\n  \"frame_len\": {},\n  \
+         \"n_pz\": {},\n  \"pa_depth\": {},\n  \"n_pz_absorb_chunks\": {},\n  \"frame_len\": {},\n  \
          \"n_coeff\": {},\n  \"c_periodic_col\": {},\n  \"c_z_col\": {},\n  \"c_coeff_col\": {},\n  \
          \"c_comp_z_col\": {},\n  \"sel_col\": {},\n  \"row_col\": {},\n  \
          \"strip_off\": {},\n  \"strip_k\": {},\n  \"strip_echo_width\": {},\n  \
-         \"strip_n_out\": {},\n  \"strip_rows\": {},\n  \"outer_n_periodic\": {},\n  \
+         \"strip_n_out_lanes\": {},\n  \"strip_rows\": {},\n  \
+         \"compose_mode\": \"{}\",\n  \"compose_out_pin\": \"{}\",\n  \
+         \"compose_acc_base_col\": {},\n  \"compose_acc_base_slot\": {},\n  \
+         \"outer_n_periodic\": {},\n  \
          \"outer_periodic_root_keccak_at_deployment_rate\": \"{}\",\n  \
          \"max_noncompose_arity\": {},\n  \"periodic_base_collisions\": {},\n  \
          \"group_column_base\": {},\n  \
          \"group_constraint_base\": {},\n  \
          \"kinds\": [\n    {}\n  ],\n  \
          \"groups\": [\n    {}\n  ]\n}}\n",
+        at.inners(),
+        at.inner_extra(),
+        at.inner_queries() * (1 + at.inner_extra() as usize) + deployment::GRIND_BITS as usize,
         lay.span,
         lay.l,
         lay.n_q,
@@ -441,7 +476,7 @@ fn main() {
         lay.t_inner,
         lay.n_pz,
         lay.pa_depth,
-        lay.n_chunks,
+        lay.n_pz_absorb_chunks,
         lay.frame_len,
         lay.n_coeff,
         lay.c_periodic_col,
@@ -455,6 +490,23 @@ fn main() {
         lay.strip_echo_width,
         lay.strip_n_out,
         lay.strip_rows,
+        /*
+         * The branch the compose region takes, published rather than left to be
+         * inferred. Everything needed to infer it wrongly was already emitted:
+         * `strip_n_out_lanes` is present on both paths and reads as a count of
+         * inner transitions, so a consumer can implement the in-region
+         * recompute, get plausible values, and disagree only on the out pins.
+         * The pin itself is carried as a string because the arithmetic, not the
+         * mode name, is what a consumer has to reproduce.
+         */
+        if lay.strip_n_out == 0 { "flat" } else { "strip" },
+        if lay.strip_n_out == 0 {
+            "out[i] - transition_gen(frame, periodic)[i]"
+        } else {
+            "out[i] - acc[i] - stmt[i]"
+        },
+        lay.compose_acc_base_col,
+        lay.compose_acc_base_col / 2,
         outer_n_periodic,
         outer_root_hex,
         max_noncompose_arity,

@@ -1,6 +1,7 @@
 // NONOS Operating System (AGPL-3.0-or-later)
 
 use super::fixture::{owned, plain, secret};
+use crate::shield::join::{address_from_u64, address_limbs};
 use crate::shield::join::{join_split, JoinSplit, Settle, Spend};
 use crate::shield::key::Break;
 use crate::shield::note::Note;
@@ -23,10 +24,22 @@ pub fn balanced_deployed(brk: Break) -> JoinSplit {
     let sks = [secret(1), secret(2)];
     let ins = [owned(sks[0], 0, 1000), owned(sks[1], 10, 2000)];
     let outs = [plain(20, 1500), plain(30, 1200)];
-    let st = Settle { clearing_price: 1_000_000, recipient: 0xBEEF };
+    let st = Settle {
+        clearing_price: 1_000_000,
+        recipient: address_from_u64(0xBEEF),
+    };
     crate::shield::join::join_split_at(
         super::depth::DEPLOYED,
-        [Spend { note: &ins[0], sk: sks[0] }, Spend { note: &ins[1], sk: sks[1] }],
+        [
+            Spend {
+                note: &ins[0],
+                sk: sks[0],
+            },
+            Spend {
+                note: &ins[1],
+                sk: sks[1],
+            },
+        ],
         [&outs[0], &outs[1]],
         200,
         100,
@@ -45,10 +58,22 @@ pub fn build(
     brk: Break,
     flip: Option<usize>,
 ) -> JoinSplit {
-    let st = Settle { clearing_price: 1_000_000, recipient: 0xBEEF };
+    let st = Settle {
+        clearing_price: 1_000_000,
+        recipient: address_from_u64(0xBEEF),
+    };
     crate::shield::join::join_split_at(
         super::depth::MINIMAL,
-        [Spend { note: &ins[0], sk: sks[0] }, Spend { note: &ins[1], sk: sks[1] }],
+        [
+            Spend {
+                note: &ins[0],
+                sk: sks[0],
+            },
+            Spend {
+                note: &ins[1],
+                sk: sks[1],
+            },
+        ],
         [&outs[0], &outs[1]],
         public_amount,
         fee,
@@ -71,7 +96,7 @@ pub(super) fn intent_at_price(price: u64) -> alloc::vec::Vec<crate::crypto::star
         fee: 100,
         asset_id: 0,
         clearing_price: price,
-        recipient: 0xBEEF,
+        recipient: address_limbs(&address_from_u64(0xBEEF)),
     }
     .words()
 }

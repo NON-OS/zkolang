@@ -26,7 +26,12 @@ pub struct Layout {
     pub pa_off: Vec<usize>,
     pub pchunk_cells: Vec<Vec<(usize, usize)>>,
     pub pa_depth: usize,
-    pub n_chunks: usize,
+    /// Poseidon absorb chunks over the inner's periodic claims at z: `n_pz`
+    /// values at the sponge rate, rounded up. This is not a count of anything in
+    /// the on chain walk. It was named `n_chunks`, and a reader who had the walk
+    /// in mind took it for the walk's chunk count, which it never was: the walk
+    /// carried the claims on every chunk and paid 32 where this said 18.
+    pub n_pz_absorb_chunks: usize,
     /// Per-query region offsets: DEEP, fold, auth, consistency point, FRI point.
     pub d_off: Vec<usize>,
     pub f_off: Vec<usize>,
@@ -48,8 +53,19 @@ pub struct Layout {
     pub strip_off: usize,
     pub strip_k: usize,
     pub strip_echo_width: usize,
+    /// Base lanes the strip produces, two per inner transition cell. Named for
+    /// its unit because the count that reads naturally beside it,
+    /// `inner_n_transitions`, is in cells: 32 lanes against 16 cells. A reader
+    /// holding both and no unit on either can implement the wrong branch of
+    /// the compose region and disagree on exactly those lanes.
     pub strip_n_out: usize,
     pub strip_rows: usize,
+    /// Base column of the compose region's first accumulator cell, and zero on
+    /// the flat path. The strip out pin is `out[i] - acc[i] - stmt[i]`, so a
+    /// consumer cannot form it without this, and it sits past the vanishing
+    /// tower where a slot map derived from the published `c_*_col` fields does
+    /// not reach.
+    pub compose_acc_base_col: usize,
     pub z_op: usize,
     pub deep_coeff_op: usize,
     pub pub_len: usize,
