@@ -27,6 +27,7 @@ mod attest;
 mod attest_build;
 mod attest_trailer;
 mod attest_verify;
+pub mod chained_product;
 mod compose_check;
 mod compose_check_gen;
 mod compose_strip;

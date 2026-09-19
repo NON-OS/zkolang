@@ -582,6 +582,43 @@ pub struct Aggregate {
 /// openings; the kinds repeat, so the constraint set does not grow with the
 /// number of inners and only the row count does.
 fn combine(parts: Vec<Parts>) -> Aggregate {
+    combine_wired(parts, Wiring::Packed)
+}
+
+/// How the copy constraint is argued. Same permutation, same classes, either
+/// way; what differs is what the verifier carries.
+///
+/// A parameter rather than a setting, because an artifact has to say what it
+/// is. A switch that could be set out of band is how an inner got emitted at
+/// eighty bits under a name claiming a hundred and forty four.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Wiring {
+    /// Classes bin-packed into groups of at most eight columns, one grand
+    /// product each. A column wired in many classes carries a sigma column in
+    /// every group that holds one of them.
+    Packed,
+    /// One permutation over every wired column, its product chained through
+    /// accumulators so each lane still multiplies at most eight factors. One
+    /// sigma column per wired column, whatever the classes look like.
+    Chained,
+}
+
+impl Wiring {
+    pub fn name(self) -> &'static str {
+        match self {
+            Wiring::Packed => "packed",
+            Wiring::Chained => "chained",
+        }
+    }
+}
+
+/// The binds a layout declares, for a caller that wants the wiring itself
+/// rather than the groups packed over it.
+pub fn binds_for(lay: &Layout) -> Vec<groups::Bind> {
+    build_groups(lay)
+}
+
+fn combine_wired(parts: Vec<Parts>, wiring: Wiring) -> Aggregate {
     assert!(!parts.is_empty(), "an outer needs at least one inner");
     let with_sidecar = parts[0].with_sidecar;
     let n_q = parts[0].n_q;
@@ -723,8 +760,20 @@ fn combine(parts: Vec<Parts>) -> Aggregate {
         binds.extend(build_groups(lay));
     }
     let width = regions.iter().map(|r| r.trace_width()).max().unwrap_or(1);
-    let gps = groups::collapse(&binds, span, width);
-    std::eprintln!("[asm] groups fused");
+    /*
+     * Both forms start from the same classes: the packer cuts them into
+     * groups, the single permutation lays them into one slot space. Changing
+     * the classes changes the statement, so they are gated by digest and
+     * neither form derives them its own way.
+     */
+    let gps = match wiring {
+        Wiring::Packed => groups::collapse(&binds, span, width),
+        Wiring::Chained => {
+            let classes = groups::wiring_classes(&binds, span, width);
+            alloc::vec![groups::single_group(&classes, span, width)]
+        }
+    };
+    std::eprintln!("[asm] groups fused ({})", wiring.name());
     let n_groups = gps.len();
     let shared = if with_sidecar { 4 } else { 5 };
     let per_q = if with_sidecar { 7 } else { 6 };
@@ -762,7 +811,17 @@ fn combine(parts: Vec<Parts>) -> Aggregate {
             }
         }
     }
-    let wired = WiredMultiExt::new_kinds_bounded(regions, &kinds, gps, pins);
+    let wired = match wiring {
+        Wiring::Packed => WiredMultiExt::new_kinds_bounded(regions, &kinds, gps, pins),
+        Wiring::Chained => WiredMultiExt::new_kinds_chained(
+            regions,
+            &kinds,
+            gps.into_iter()
+                .next()
+                .expect("the chained form builds one permutation"),
+            pins,
+        ),
+    };
     std::eprintln!("[asm] engine built");
     let witness = wired.trace(&traces);
     std::eprintln!("[asm] witness placed");
