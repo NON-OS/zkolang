@@ -8,15 +8,16 @@ pub mod auth;
 pub mod build;
 pub mod compose;
 pub mod compose_step;
-mod strip;
 pub mod deep;
 pub mod fri;
 pub mod groups;
 pub mod inner;
 pub mod layout;
 pub mod periodic;
+pub mod point;
 pub mod points;
 pub mod sponge;
+pub mod strip;
 pub mod tamper;
 pub mod transcript;
 

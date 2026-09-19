@@ -12,23 +12,27 @@
 //!
 //!   cargo test --release -p stark_proofs shield::test -- --ignored
 
-pub mod depth;
 #[cfg(test)]
 mod cross_asset;
 #[cfg(test)]
-mod double_spend;
-#[cfg(test)]
 mod deployed_depth;
+pub mod depth;
+#[cfg(test)]
+mod double_spend;
 pub mod fixture;
 #[cfg(test)]
 mod intents;
 #[cfg(test)]
 mod inventory;
 #[cfg(test)]
+mod live_pool;
+#[cfg(test)]
 mod roundtrip;
 #[cfg(test)]
 mod satisfies;
 pub mod scenario;
+#[cfg(test)]
+mod unshield;
 
 #[cfg(test)]
 mod commitment;
@@ -64,10 +68,10 @@ mod note_edge;
 #[cfg(test)]
 mod owns;
 #[cfg(test)]
-mod published_root;
-#[cfg(test)]
 mod publics;
 #[cfg(test)]
 mod publics_scope;
+#[cfg(test)]
+mod published_root;
 #[cfg(test)]
 mod unlisted;

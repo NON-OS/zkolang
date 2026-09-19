@@ -5,7 +5,12 @@ use crate::crypto::stark::field::Fp;
 use alloc::vec::Vec;
 
 /// The frozen intent tuple in the order settleBatch decodes it. Digests occupy
-/// four rows each, scalars one.
+/// four rows each, scalars one, and the recipient four: it is a 160 bit
+/// address and a Goldilocks word holds 64, so it is carried the way a digest
+/// is, limb 0 the low 64 bits, limb 1 the next 64, limb 2 the top 32 and limb
+/// 3 zero. Carrying it as one word bound the low 64 bits of the address and
+/// nothing above them, which is a payout an attacker redirects by grinding an
+/// address that agrees on those bits.
 pub struct Intent {
     pub note_root: [Fp; RATE],
     pub assoc_root: [Fp; RATE],
@@ -15,7 +20,7 @@ pub struct Intent {
     pub fee: u64,
     pub asset_id: u64,
     pub clearing_price: u64,
-    pub recipient: u64,
+    pub recipient: [Fp; RATE],
 }
 
 pub const NOTE_ROOT: usize = 0;
@@ -29,7 +34,7 @@ pub const FEE: usize = 25;
 pub const ASSET_ID: usize = 26;
 pub const CLEARING_PRICE: usize = 27;
 pub const RECIPIENT: usize = 28;
-pub const WORDS: usize = 29;
+pub const WORDS: usize = 32;
 
 impl Intent {
     pub fn words(&self) -> Vec<Fp> {
@@ -40,10 +45,15 @@ impl Intent {
         w.extend_from_slice(&self.nf[1]);
         w.extend_from_slice(&self.out_cm[0]);
         w.extend_from_slice(&self.out_cm[1]);
-        for v in [self.public_amount, self.fee, self.asset_id, self.clearing_price, self.recipient]
-        {
+        for v in [
+            self.public_amount,
+            self.fee,
+            self.asset_id,
+            self.clearing_price,
+        ] {
             w.push(Fp::from_u64(v));
         }
+        w.extend_from_slice(&self.recipient);
         w
     }
 }

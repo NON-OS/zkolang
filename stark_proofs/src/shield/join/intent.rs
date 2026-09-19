@@ -1,7 +1,7 @@
 // NONOS Operating System (AGPL-3.0-or-later)
 
 use super::publics::Intent;
-use super::settle::Settle;
+use super::settle::{address_limbs, Settle};
 use super::stack::Stack;
 use crate::crypto::stark::air::Publics;
 use crate::crypto::stark::field::Fp;
@@ -26,12 +26,18 @@ pub fn publics_region(
         fee,
         asset_id,
         clearing_price: st.clearing_price,
-        recipient: st.recipient,
+        recipient: address_limbs(&st.recipient),
     }
     .words();
     let mut claimed = intent.clone();
     if let Some(i) = flip {
         claimed[i] = claimed[i] + Fp::ONE;
     }
-    (intent, Publics { log_t: 5, words: claimed })
+    (
+        intent,
+        Publics {
+            log_t: 5,
+            words: claimed,
+        },
+    )
 }

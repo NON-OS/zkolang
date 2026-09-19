@@ -217,6 +217,80 @@ pub fn shield_join_split(h: &Poseidon) -> Inner<WiredMultiGen> {
     }
 }
 
+/// The recursion over a join-split the caller supplies, rather than the
+/// deployed fixture.
+///
+/// `shield_join_split` builds its own statement from a scenario, which is
+/// what a change gate wants and is not what a real spend is. Spending notes
+/// that exist in a deployed pool means assembling from those notes, their
+/// openings against that pool's published root, and the intent naming where
+/// the value goes. This takes such a join-split whole and wraps it the same
+/// way, so the recursion above is identical and only the statement below it
+/// differs.
+///
+/// Not memoized, unlike the fixture. There is one of these per spend by
+/// definition, and a cache across spends would serve the wrong proof.
+pub fn shield_join_split_of(
+    h: &Poseidon,
+    js: crate::shield::join::JoinSplit,
+    seed: Option<&[Fp; RATE]>,
+) -> Inner<WiredMultiGen> {
+    let publics = js.intent.clone();
+    let root = periodic_root_poseidon(&js.wired, extra(), h);
+    /*
+     * Hiding when a seed is given, and a real spend always gives one.
+     *
+     * Without a blind the proof opens trace columns at the query points, and
+     * those columns carry the spending secrets, the note values and the
+     * openings. Every property the circuit proves would still hold and the
+     * privacy the pool exists for would not: a verifier learns the witness at
+     * thirty two positions. `f + r * Z_H` is invisible on the trace domain,
+     * so the statement is unchanged, and random off it, so the openings carry
+     * nothing.
+     *
+     * The seed must be fresh per proof. Two spends under one seed share a
+     * blind, and the difference of their openings cancels it back to the
+     * witness. The degree is the number of points a column is opened at.
+     */
+    let blind: Vec<Vec<Fp>> = match seed {
+        Some(s) => {
+            let deg = NQ + js.wired.window_size();
+            (0..js.wired.trace_width())
+                .map(|c| blinding_poly(h, s, c, deg))
+                .collect()
+        }
+        None => alloc::vec::Vec::new(),
+    };
+    let pre = stark_prove_poseidon_pre_pub(
+        &js.wired,
+        &js.witness,
+        NQ,
+        GRIND,
+        extra(),
+        h,
+        &publics,
+        &blind,
+    )
+    .expect("nothing watches this proof, so nothing can cancel it");
+    let ci = compose_inputs_pre(&js.wired, &pre, extra(), h, &publics);
+    let t = 1u64 << js.wired.log_trace_len();
+    let g = root_of_unity(js.wired.log_trace_len());
+    let sidecar = Some(Sidecar {
+        periodic_z: pre.periodic_z,
+        openings: pre.openings,
+        root,
+    });
+    Inner {
+        air: js.wired,
+        publics,
+        proof: pre.proof,
+        ci,
+        t,
+        g,
+        sidecar,
+    }
+}
+
 /// The deployed transfer, proved hiding. The same circuit, witness and statement as
 /// `shield_join_split`, with each trace column blinded by `r * Z_H` where `r` is
 /// expanded from `seed`, so the proof reveals nothing beyond the intent it binds.

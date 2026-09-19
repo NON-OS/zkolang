@@ -1,12 +1,12 @@
 // NONOS Operating System (AGPL-3.0-or-later)
 
+use super::assoc::{assoc_membership, assoc_membership_against};
+use super::keys::key_hierarchies;
+use super::notes::note_regions;
+use super::pool::{pool_membership, pool_membership_against, Witnessed};
 use crate::crypto::stark::air::{Poseidon, ShieldRegion, RATE};
 use crate::crypto::stark::field::Fp;
-use super::assoc::assoc_membership;
-use super::keys::key_hierarchies;
 use crate::shield::key::Break;
-use super::pool::{pool_membership, pool_membership_against, Witnessed};
-use super::notes::note_regions;
 use crate::shield::note::Note;
 use alloc::vec::Vec;
 
@@ -32,7 +32,23 @@ pub struct Stack {
 /// openings supplied by whoever read the tree.
 pub enum Anchor<'a> {
     Planted,
-    Published { openings: [&'a Witnessed; 2], root: [Fp; RATE] },
+    Published {
+        openings: [&'a Witnessed; 2],
+        root: [Fp; RATE],
+        /// The association set, when the registry supplies it. `None` keeps
+        /// the planted set, which is what the fixtures use and what no
+        /// settlement can accept: `settleBatch` refuses an association root
+        /// its registry never issued, and a prover-planted root is never one
+        /// of those.
+        assoc: Option<AssocAnchor<'a>>,
+    },
+}
+
+/// A published association set: the openings of the two spent notes and the
+/// root the registry holds.
+pub struct AssocAnchor<'a> {
+    pub openings: [&'a Witnessed; 2],
+    pub root: [Fp; RATE],
 }
 
 /// Region order: balance, four notes, two memberships, two key hierarchies. The
@@ -57,7 +73,7 @@ pub fn stack_anchored(
 
     let p = match anchor {
         Anchor::Planted => pool_membership(h, &[cms[0], cms[1]], depth),
-        Anchor::Published { openings, root } => {
+        Anchor::Published { openings, root, .. } => {
             /*
              * A path shorter or longer than the tree walks to a root at the
              * wrong height, and the walk would still be honest arithmetic, so
@@ -93,7 +109,24 @@ pub fn stack_anchored(
     regions.extend(k.regions);
     traces.extend(k.traces);
 
-    let a = assoc_membership(h, &[cms[0], cms[1]], &[900, 901, 902], brk == Break::Unlisted, depth);
+    /*
+     * The association set, published when the caller has one. The planted
+     * form builds its own three-pad set and returns the root it computed,
+     * which is a root no registry has issued, so a spend proved against it
+     * is refused on chain before anything else about it is examined.
+     */
+    let a = match &anchor {
+        Anchor::Published {
+            assoc: Some(aa), ..
+        } => assoc_membership_against(h, &[cms[0], cms[1]], aa.openings, aa.root),
+        _ => assoc_membership(
+            h,
+            &[cms[0], cms[1]],
+            &[900, 901, 902],
+            brk == Break::Unlisted,
+            depth,
+        ),
+    };
     regions.extend(a.regions);
     traces.extend(a.traces);
 

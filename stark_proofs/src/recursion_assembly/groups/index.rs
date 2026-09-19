@@ -53,7 +53,7 @@ pub fn index(lay: &Layout, out: &mut Vec<Bind>) {
         if lay.sidecar {
             let pa = lay.pa_off[q];
             for lv in 0..lay.depth {
-                let m = lay.n_chunks + lv;
+                let m = lay.n_pz_absorb_chunks + lv;
                 let mut cells: Vec<(usize, usize)> = alloc::vec![(i_off + lv, 0)];
                 cells.push((pa + m * l - 1, 8));
                 chain(&cells, &mut sw);

@@ -182,11 +182,33 @@ pub fn auth_side_k<A: AirExt>(
     let depth = honest[0].siblings.len();
     let n_open = honest.len();
     let cons_dirs = honest[1].directions.clone();
-    let region = MultiMembership::new_witness(h.clone(), LOG_ROUNDS, honest);
+    /*
+     * Pinned bottom bit, so the opened cell sits at a fixed column instead of
+     * the half the direction happens to select.
+     *
+     * Unpinned, `opened_cells` returns column RATE or column 0 per opening
+     * according to `directions[0]`, and the assembly wires the fold to that
+     * column. The direction comes from the inner proof's query position,
+     * which comes from the inner transcript, which is a hash of the inner
+     * witness. So the outer's copy constraints moved with the proof being
+     * verified, and the outer was a different circuit for every inner proof:
+     * ten spends measured ten distinct periodic roots, which is a verifier
+     * per proof and no deployment at all.
+     *
+     * The shield's own note membership has always pinned, for the same
+     * reason. This is the outer adopting what the inner already does.
+     */
+    let region = MultiMembership::new_witness_pin0(h.clone(), LOG_ROUNDS, honest);
     let trace = if tamper == Tamper::SwappedRoot {
+        /*
+         * Same constructor as the region above. A tamper is meant to change
+         * the openings and nothing else; built unpinned against a pinned
+         * region it changes the shape too, and the assembly then dies on a
+         * length instead of rejecting the binding the test is about.
+         */
         let mut swapped = openings(h, inner, ik, query);
         swapped.swap(1, 2);
-        MultiMembership::new_witness(h.clone(), LOG_ROUNDS, swapped).trace()
+        MultiMembership::new_witness_pin0(h.clone(), LOG_ROUNDS, swapped).trace()
     } else {
         region.trace()
     };
