@@ -99,9 +99,11 @@ fn boolean_operators_bind_looser_than_comparison() {
 
 #[test]
 fn the_cypherpunk_keyword_spelling_is_the_same_language() {
-    // public/witness/reveal/prove are aliases of input/secret/output/assert. A program
-    // written in either spelling compiles to the same proof. The secret goes in as a
-    // witness: passed as a second public input it would sit in the public statement.
+    /*
+     * public/witness/reveal/prove are aliases of input/secret/output/assert. A program
+     * written in either spelling compiles to the same proof. The secret goes in as a
+     * witness: passed as a second public input it would sit in the public statement.
+     */
     let plain =
         prove_source_with_witness("input a; secret b; output a + b; assert a - a;", &[3], &[4])
             .expect("run");

@@ -24,6 +24,8 @@ mod commit_tests;
 #[cfg(test)]
 mod comparison_tests;
 #[cfg(test)]
+mod const_index_tests;
+#[cfg(test)]
 mod const_table_tests;
 #[cfg(test)]
 mod corpus_extra_tests;
@@ -31,6 +33,8 @@ mod corpus_extra_tests;
 mod corpus_tests;
 #[cfg(test)]
 mod curve_tests;
+#[cfg(test)]
+mod desugar_budget_tests;
 #[cfg(test)]
 mod diagnostic_tests;
 #[cfg(test)]
@@ -44,11 +48,19 @@ mod field_tests;
 #[cfg(test)]
 mod fn_tests;
 #[cfg(test)]
+mod fold_constraint_tests;
+#[cfg(test)]
+mod fold_meaning_tests;
+#[cfg(test)]
 mod fuzz_tests;
+#[cfg(test)]
+mod golden_corpus;
 #[cfg(test)]
 mod hash_tests;
 #[cfg(test)]
 mod include_tests;
+#[cfg(test)]
+mod input_count_tests;
 #[cfg(test)]
 mod io_tests;
 #[cfg(test)]
@@ -62,7 +74,11 @@ mod library_tests;
 #[cfg(test)]
 mod logic_tests;
 #[cfg(test)]
+mod loop_io_tests;
+#[cfg(test)]
 mod loop_tests;
+#[cfg(test)]
+mod nesting_tests;
 #[cfg(test)]
 mod note_commit_gen;
 #[cfg(test)]
@@ -86,6 +102,8 @@ mod shield_membership_tests;
 #[cfg(test)]
 mod shield_tests;
 #[cfg(test)]
+mod small_stack;
+#[cfg(test)]
 mod stdlib_tests;
 #[cfg(test)]
 mod step_tests;
@@ -95,5 +113,7 @@ mod tuple_tests;
 mod vkey_tests;
 #[cfg(test)]
 mod vm_tests;
+#[cfg(test)]
+mod wildcard_tests;
 #[cfg(test)]
 mod witness_tests;
