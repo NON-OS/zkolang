@@ -35,10 +35,9 @@ impl Compiler {
                 })
             }
         };
-        let i = self.const_eval(index)?;
-        if i < 0 || i as usize >= table.len() {
-            return Err(CompileError::IndexOutOfBounds { at });
-        }
-        Ok(table[i as usize])
+        let i = self
+            .const_position(index, table.len())?
+            .ok_or(CompileError::IndexOutOfBounds { at })?;
+        Ok(table[i])
     }
 }
