@@ -13,7 +13,10 @@ use super::prelude::PRELUDE;
 use crate::backend::{n_inputs, n_outputs};
 use crate::isa::{Op, REGS};
 
-/// Emit a program as a Python module exposing `run(inputs)`.
+/**
+ * Emit a program as a Python module exposing `run(inputs)`. It takes exactly one
+ * integer per input, each below the field modulus, and raises `ValueError` otherwise.
+ */
 pub fn to_python(program: &[Op]) -> String {
     let n_in = n_inputs(program);
     let n_out = n_outputs(program);
@@ -21,10 +24,12 @@ pub fn to_python(program: &[Op]) -> String {
     let mut s = String::from(PRELUDE);
     s.push_str("\n\ndef run(inputs):\n");
     s.push_str(&format!("    r = [0] * {REGS}\n"));
+    s.push_str(&format!("    if len(inputs) != {n_in}:\n"));
+    s.push_str(&format!(
+        "        raise ValueError(\"expected {n_in} inputs\")\n"
+    ));
     if n_in > 0 {
-        s.push_str(&format!(
-            "    inp = [(inputs[i] % P) if i < len(inputs) else 0 for i in range({n_in})]\n"
-        ));
+        s.push_str("    inp = [_input(i, v) for i, v in enumerate(inputs)]\n");
     }
     if n_out > 0 {
         s.push_str(&format!("    out = [0] * {n_out}\n"));

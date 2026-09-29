@@ -114,6 +114,8 @@ mod operator_tests;
 #[cfg(test)]
 mod optimize_tests;
 #[cfg(test)]
+mod python_guard_tests;
+#[cfg(test)]
 mod recipes_tests;
 #[cfg(test)]
 mod recursion_tests;
