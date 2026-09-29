@@ -15,16 +15,19 @@ use alloc::string::String;
 use alloc::vec::Vec;
 
 use super::block_binds::{block_binds, conflicting};
+use super::same_expr::same;
 use crate::lang::parse::{Ast, Stmt};
 use crate::lang::{CompileError, NameError};
 
 /** Check a program's names, on the tree as written, before the optimizer rewrites it. */
 pub(crate) fn check_names(ast: &Ast) -> Result<(), CompileError> {
     let dup = |n: &String| CompileError::Name(NameError::Duplicate { name: n.clone() });
-    if let Some(n) = conflicting(ast.fns.iter().map(|f| (&f.name, (&f.params, &f.body)))) {
+    let fn_defs = ast.fns.iter().map(|f| (&f.name, (&f.params, &f.body)));
+    if let Some(n) = conflicting(fn_defs, |a, b| a.0 == b.0 && same(a.1, b.1)) {
         return Err(dup(n));
     }
-    if let Some(n) = conflicting(ast.consts.iter().map(|c| (&c.name, (&c.values, c.scalar)))) {
+    let const_defs = ast.consts.iter().map(|c| (&c.name, (&c.values, c.scalar)));
+    if let Some(n) = conflicting(const_defs, |a, b| a == b) {
         return Err(dup(n));
     }
     let consts: Vec<&str> = ast.consts.iter().map(|c| c.name.as_str()).collect();

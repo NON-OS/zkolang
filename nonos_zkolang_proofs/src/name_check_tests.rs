@@ -52,6 +52,11 @@ fn ambiguous_names_are_refused() {
     assert_eq!(error(nested), named(loop_var, "i"));
     /* A repeat identical to the first, as two includes of one library give, is harmless. */
     assert!(error("fn f(x) = x + 1;\nfn f(x) = x + 1;\ninput x;\noutput f(x);").is_none());
+    /* Wherever each copy was written, even when the code indexes. */
+    let copies = "fn first(v) = v[0];\nfn first(v) = v[0];\nlet a = [3, 4];\noutput first(a);";
+    assert!(error(copies).is_none());
+    let differ = "fn first(v) = v[0];\nfn first(v) = v[1];\nlet a = [3, 4];\noutput first(a);";
+    assert_eq!(error(differ), named(dup, "first"));
     /* Names that do not collide still compile, and a loop variable may reuse an outer name. */
     assert!(
         error("const N = 5;\nlet i = 7;\nfor i in 0..2 { output i + N; }\noutput i;").is_none()

@@ -5,8 +5,8 @@
 
 /*! Every name a block inside an expression binds, however deep the block sits. */
 
+use alloc::collections::BTreeMap;
 use alloc::string::String;
-use alloc::vec::Vec;
 
 use crate::lang::parse::Expr;
 
@@ -45,18 +45,22 @@ pub(super) fn block_binds<E>(e: &Expr, f: &mut impl FnMut(&str) -> Result<(), E>
 }
 
 /**
- * The first name defined twice with different definitions. Including one library through
- * two paths repeats its items word for word, and an identical repeat is harmless.
+ * The first name defined twice with definitions `same` tells apart. Including one library
+ * through two paths repeats its items word for word, and an identical repeat is harmless.
  */
-pub(super) fn conflicting<'a, D: PartialEq>(
+pub(super) fn conflicting<'a, D>(
     defs: impl Iterator<Item = (&'a String, D)>,
+    same: impl Fn(&D, &D) -> bool,
 ) -> Option<&'a String> {
-    let mut seen: Vec<(&String, D)> = Vec::new();
+    let mut seen: BTreeMap<&String, D> = BTreeMap::new();
     for (n, d) in defs {
-        if seen.iter().any(|(m, e)| *m == n && *e != d) {
-            return Some(n);
+        match seen.get(n) {
+            Some(e) if !same(e, &d) => return Some(n),
+            Some(_) => {}
+            None => {
+                seen.insert(n, d);
+            }
         }
-        seen.push((n, d));
     }
     None
 }

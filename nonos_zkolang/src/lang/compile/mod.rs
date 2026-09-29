@@ -21,6 +21,7 @@ mod expr;
 mod live;
 mod lower;
 mod name_check;
+mod same_expr;
 mod stmt;
 
 pub use compiled::Compiled;
