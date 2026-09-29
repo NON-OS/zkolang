@@ -63,6 +63,37 @@ fn norm(e: &Expr, env: &Env) -> Expr {
     fold(&subst(e, env))
 }
 
+/*
+ * An assertion's own meaning depends on its top node: `assert a == b` and `assert a != b`
+ * state the relation, any other expression is required to be zero. Folding the relation to
+ * its bit would turn it into a claim that the bit is zero, the opposite statement, so the
+ * top relation is kept and only its sides are normalised. Between two constants the
+ * relation is decided here: a true one needs no row, a false one keeps an assertion that
+ * can never hold.
+ */
+fn norm_assert(e: &Expr, env: &Env) -> Option<Stmt> {
+    let (l, r, equal) = match e {
+        Expr::Eq(l, r) => (l, r, true),
+        Expr::Ne(l, r) => (l, r, false),
+        _ => return Some(Stmt::Assert(norm(e, env))),
+    };
+    let (l, r) = (norm(l, env), norm(r, env));
+    if let (Expr::Num(a), Expr::Num(b)) = (&l, &r) {
+        let same = nonos_stark::field::Fp::from_u64(*a) == nonos_stark::field::Fp::from_u64(*b);
+        return if same == equal {
+            None
+        } else {
+            Some(Stmt::Assert(Expr::Num(1)))
+        };
+    }
+    let (l, r) = (bx(l), bx(r));
+    Some(Stmt::Assert(if equal {
+        Expr::Eq(l, r)
+    } else {
+        Expr::Ne(l, r)
+    }))
+}
+
 // Names bound anywhere inside a loop body. Such a name's value evolves across the loop's
 // unrolled iterations, so its binding is not a constant even when one iteration folds to a
 // literal, and it must never be propagated.
@@ -132,7 +163,7 @@ fn go(stmts: &[Stmt], env: &mut Env, depth: usize, varying: &[String]) -> Vec<St
                 out.push(Stmt::Secret(n.clone()));
             }
             Stmt::Output(e) => out.push(Stmt::Output(norm(e, env))),
-            Stmt::Assert(e) => out.push(Stmt::Assert(norm(e, env))),
+            Stmt::Assert(e) => out.extend(norm_assert(e, env)),
             Stmt::For { var, lo, hi, body } => {
                 let mark = env.len();
                 env.push((var.clone(), None));
