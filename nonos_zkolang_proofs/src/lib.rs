@@ -106,6 +106,8 @@ mod recipes_tests;
 #[cfg(test)]
 mod register_file_tests;
 #[cfg(test)]
+mod render_tests;
+#[cfg(test)]
 mod robustness_tests;
 #[cfg(test)]
 mod shield_key_kat;

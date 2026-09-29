@@ -12,6 +12,7 @@
 
 mod locate;
 mod message;
+mod place;
 mod render;
 mod span_of;
 
