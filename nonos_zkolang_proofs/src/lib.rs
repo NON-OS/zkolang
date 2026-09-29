@@ -70,6 +70,8 @@ mod golden_corpus;
 #[cfg(test)]
 mod hash_tests;
 #[cfg(test)]
+mod include_key_tests;
+#[cfg(test)]
 mod include_tests;
 #[cfg(test)]
 mod input_count_tests;
