@@ -32,6 +32,7 @@ impl Compiler {
         if self.inline_depth >= MAX_INLINE {
             return Err(CompileError::RecursionTooDeep);
         }
+        self.spend_inline()?;
         let argv = self.eval_args(args)?;
         self.inline_body(&def, argv)
     }

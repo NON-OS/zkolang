@@ -12,13 +12,18 @@ use super::Parser;
 use crate::lang::parse::ast::Expr;
 use crate::lang::CompileError;
 
-/** The most nodes a copying desugaring may produce. */
+/** The most nodes a copying desugaring may produce in one expression. */
 pub(crate) const MAX_EXPR_NODES: usize = 1 << 16;
+
+/** The most nodes the copying desugarings may produce across a whole program. */
+pub(crate) const MAX_PROGRAM_NODES: usize = 1 << 20;
 
 impl<'a> Parser<'a> {
     /** Refuse an expression past the node budget, pointing at `at`. */
-    pub(crate) fn within_budget(&self, e: &Expr, at: usize) -> Result<(), CompileError> {
-        if nodes_up_to(e, MAX_EXPR_NODES + 1) > MAX_EXPR_NODES {
+    pub(crate) fn within_budget(&mut self, e: &Expr, at: usize) -> Result<(), CompileError> {
+        let n = nodes_up_to(e, MAX_EXPR_NODES + 1);
+        self.copied = self.copied.saturating_add(n);
+        if n > MAX_EXPR_NODES || self.copied > MAX_PROGRAM_NODES {
             return Err(CompileError::ExpressionTooLarge { at });
         }
         Ok(())

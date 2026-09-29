@@ -15,15 +15,12 @@ use alloc::boxed::Box;
 impl<'a> Parser<'a> {
     pub(crate) fn logic_and(&mut self) -> Result<Expr, CompileError> {
         let mut lhs = self.equality()?;
-        let mut links = 0;
         while matches!(self.peek(), Some(Tok::AmpAmp)) {
             self.pos += 1;
             self.enter()?;
-            links += 1;
             let rhs = self.equality()?;
             lhs = Expr::Mul(Box::new(lhs), Box::new(rhs));
         }
-        self.leave(links);
         Ok(lhs)
     }
 }

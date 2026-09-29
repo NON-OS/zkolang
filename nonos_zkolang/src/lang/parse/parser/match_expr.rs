@@ -53,6 +53,7 @@ impl<'a> Parser<'a> {
         for (v, body) in specific.into_iter().rev() {
             let cond = Expr::Eq(Box::new(scrut.clone()), Box::new(Expr::Num(v)));
             acc = Expr::Sel(Box::new(cond), Box::new(body), Box::new(acc));
+            self.enter()?;
             self.within_budget(&acc, start)?;
         }
         Ok(acc)

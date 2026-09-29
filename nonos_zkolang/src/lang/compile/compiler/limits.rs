@@ -26,6 +26,12 @@ pub(crate) const MAX_OPS: usize = 1 << 20;
  */
 pub(crate) const MAX_INLINE: usize = 256;
 
+/** The most calls a program may inline in all, since a call that emits nothing still costs work. */
+pub(crate) const MAX_INLINES: usize = 1 << 20;
+
+/** The most loop iterations a program may unroll in all, counting loops whose bodies emit nothing. */
+pub(crate) const MAX_ITERATIONS: usize = 1 << 20;
+
 /**
  * The deepest expression lowering may recurse. The parser bounds how deep one expression
  * nests, but inlining stacks function bodies on top of each other, so lowering keeps its

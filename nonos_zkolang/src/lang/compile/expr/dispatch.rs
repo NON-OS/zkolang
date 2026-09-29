@@ -16,6 +16,7 @@ impl Compiler {
         if self.expr_depth >= MAX_EXPR_DEPTH {
             return Err(CompileError::RecursionTooDeep);
         }
+        self.check_emitted()?;
         self.expr_depth += 1;
         let v = self.expr_node(e);
         self.expr_depth -= 1;

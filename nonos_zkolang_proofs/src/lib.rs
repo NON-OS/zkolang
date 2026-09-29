@@ -129,3 +129,5 @@ mod vm_tests;
 mod wildcard_tests;
 #[cfg(test)]
 mod witness_tests;
+#[cfg(test)]
+mod work_budget_tests;

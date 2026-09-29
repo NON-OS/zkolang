@@ -19,6 +19,9 @@ pub(crate) struct Compiler {
     pub(crate) consts: Vec<ConstDef>,
     pub(crate) fns: Vec<FnDef>,
     pub(crate) inline_depth: usize,
+    /** Calls inlined and loop iterations unrolled so far, against their budgets. */
+    pub(crate) inlines: usize,
+    pub(crate) iterations: usize,
     /** Open expression lowerings, bounded by `MAX_EXPR_DEPTH`. */
     pub(crate) expr_depth: usize,
     pub(crate) syms: Vec<(String, u8)>,

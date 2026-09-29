@@ -21,6 +21,7 @@ pub fn parse(toks: &[Tok], spans: &[usize], eof: usize) -> Result<Ast, CompileEr
         eof,
         pos: 0,
         depth: 0,
+        copied: 0,
     };
     p.program()
 }

@@ -25,7 +25,8 @@ mod release;
 mod state;
 mod take_scalar;
 mod val;
+mod work;
 
-pub(crate) use limits::{MAX_EXPR_DEPTH, MAX_INLINE, MAX_OPS, MAX_UNROLL};
+pub(crate) use limits::{MAX_EXPR_DEPTH, MAX_INLINE, MAX_UNROLL};
 pub(crate) use state::Compiler;
 pub(crate) use val::Val;

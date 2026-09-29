@@ -14,4 +14,6 @@ pub(crate) struct Parser<'a> {
     pub(crate) pos: usize,
     /** Open nesting levels, spent and returned by `enter` and `leave`. */
     pub(crate) depth: usize,
+    /** Nodes the copying desugarings have produced so far, across the whole program. */
+    pub(crate) copied: usize,
 }
