@@ -9,6 +9,7 @@
 //! depth. The two bounds guard against a runaway unroll or a recursive inline.
 
 mod alloc;
+mod bind_fresh;
 mod finish;
 mod free_dead;
 mod io_index;
