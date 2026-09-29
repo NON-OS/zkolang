@@ -23,7 +23,12 @@ pub(super) fn fill_advice(
     n_public: usize,
 ) -> Result<(), RunError> {
     let base = inputs.len() - compiled.n_advice as usize;
-    for _ in 0..8 {
+    /*
+     * A pass settles every decomposition no unsettled comparison feeds, so after as many
+     * passes as there are decompositions every one is settled, and one more sees nothing
+     * change. The proving run enforces every constraint, so this bounds work, not trust.
+     */
+    for _ in 0..=compiled.advice.len() {
         let trace = Vm::evaluator()
             .run(&compiled.ops, inputs, n_public)
             .map_err(RunError::Execute)?;
@@ -40,7 +45,7 @@ pub(super) fn fill_advice(
             }
         }
         if !changed {
-            break;
+            return Ok(());
         }
     }
     Ok(())

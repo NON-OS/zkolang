@@ -10,6 +10,8 @@
 pub mod mimc;
 
 #[cfg(test)]
+mod advice_fill_tests;
+#[cfg(test)]
 mod array_param_tests;
 #[cfg(test)]
 mod array_return_tests;

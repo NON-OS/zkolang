@@ -5,8 +5,6 @@
 
 //! The branchless select.
 
-use nonos_stark::field::Fp;
-
 use super::super::{ProveError, Vm};
 use super::is_bool::is_bool;
 use crate::trace::{OpTag, Row};
@@ -28,10 +26,15 @@ impl Vm {
         row.rc = vc;
         row.ra = va;
         row.rb = vb;
-        if !is_bool(vc) {
+        if !is_bool(vc) && self.check {
             return Err(ProveError::Unprovable { step: clk });
         }
-        let out = if vc == Fp::ONE { va } else { vb };
+        /*
+         * The arms blend as the constraint states them. For a boolean condition that picks
+         * one arm; an unchecked evaluation, as the advice fill runs before its bits settle,
+         * may meet any condition and must carry on.
+         */
+        let out = vc * (va - vb) + vb;
         row.rd = out;
         self.wset(d, out)
     }
