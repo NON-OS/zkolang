@@ -9,9 +9,14 @@
 //! Function bodies are folded before they inline. The proof a program produces is
 //! unchanged; the trace it needs is smaller and its register pressure lower.
 
+mod assert_form;
 mod cse;
+mod env;
 mod expr;
+mod let_binding;
 mod propagate;
+mod subst;
+mod varying;
 
 use alloc::vec::Vec;
 
