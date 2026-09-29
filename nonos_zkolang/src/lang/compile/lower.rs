@@ -13,6 +13,7 @@ use alloc::vec::Vec;
 
 use super::compiled::Compiled;
 use super::compiler::Compiler;
+use super::name_check::check_names;
 use super::{count_inputs, count_secrets, live};
 use crate::isa::Op;
 use crate::lang::parse::Ast;
@@ -53,6 +54,7 @@ fn lower(ast: &Ast) -> Result<Compiled, CompileError> {
 
 /** Lower an AST into a VM program with its advice plan, optimizing first. */
 pub fn compile_full(ast: &Ast) -> Result<Compiled, CompileError> {
+    check_names(ast)?;
     lower(&crate::lang::optimize::optimize(ast))
 }
 
@@ -63,5 +65,6 @@ pub fn compile(ast: &Ast) -> Result<Vec<Op>, CompileError> {
 
 /** Lower an AST without the optimizer, to check that optimization preserves behavior. */
 pub fn compile_unoptimized(ast: &Ast) -> Result<Vec<Op>, CompileError> {
+    check_names(ast)?;
     lower(ast).map(|c| c.ops)
 }

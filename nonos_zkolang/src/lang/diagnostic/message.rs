@@ -8,7 +8,7 @@
 use alloc::format;
 use alloc::string::String;
 
-use crate::lang::CompileError;
+use crate::lang::{CompileError, NameError};
 
 /** A one-line human description of an error. */
 pub fn message(err: &CompileError) -> String {
@@ -48,5 +48,12 @@ pub fn message(err: &CompileError) -> String {
         }
         CompileError::NestingTooDeep { .. } => "nested too deep".into(),
         CompileError::ExpressionTooLarge { .. } => "expression grows too large".into(),
+        CompileError::Name(NameError::Duplicate { name }) => format!("`{name}` is defined twice"),
+        CompileError::Name(NameError::ShadowsConstant { name }) => {
+            format!("`{name}` is a constant and cannot be rebound")
+        }
+        CompileError::Name(NameError::ShadowsLoopVariable { name }) => {
+            format!("`{name}` is the loop's variable and cannot be rebound in its body")
+        }
     }
 }

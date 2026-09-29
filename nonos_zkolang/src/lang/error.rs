@@ -9,6 +9,8 @@
 
 use alloc::string::String;
 
+use super::NameError;
+
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum CompileError {
     /// A character that starts no token, at this byte offset.
@@ -57,19 +59,12 @@ pub enum CompileError {
     IncludeNotFound,
     /// An include chain nested past the depth bound, which a cycle would cause.
     IncludeTooDeep,
-    /**
-     * More public inputs, secrets, outputs or comparison advice bits than the machine's
-     * sixteen-bit input and output indices can name.
-     */
+    /** More inputs, outputs or advice bits than the machine's 16-bit indices name. */
     IoLimit,
-    /**
-     * Source nested deeper than the parser's budget, at this byte offset. Deeper input
-     * would build a tree the compiler cannot walk without exhausting its stack.
-     */
+    /** Source nested deeper than the parser's budget, at this byte offset. */
     NestingTooDeep { at: usize },
-    /**
-     * An operator whose meaning copies its operands, `||` or `match`, would build an
-     * expression past the size budget, at this byte offset.
-     */
+    /** A copying desugaring, `||` or `match`, past the size budget, at this offset. */
     ExpressionTooLarge { at: usize },
+    /** A name the edition leaves ambiguous. */
+    Name(NameError),
 }

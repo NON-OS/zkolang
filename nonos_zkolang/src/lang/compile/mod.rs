@@ -11,6 +11,7 @@
 //! expression lowering, the constant tables, and the arrays.
 
 mod array;
+mod block_binds;
 mod compiled;
 mod compiler;
 mod const_table;
@@ -19,6 +20,7 @@ mod count_secrets;
 mod expr;
 mod live;
 mod lower;
+mod name_check;
 mod stmt;
 
 pub use compiled::Compiled;

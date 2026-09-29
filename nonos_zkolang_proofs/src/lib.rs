@@ -84,6 +84,8 @@ mod loop_io_tests;
 #[cfg(test)]
 mod loop_tests;
 #[cfg(test)]
+mod name_check_tests;
+#[cfg(test)]
 mod nesting_tests;
 #[cfg(test)]
 mod note_commit_gen;

@@ -13,6 +13,7 @@ mod diagnostic;
 mod error;
 mod include;
 mod lex;
+mod name_error;
 mod optimize;
 mod parse;
 
@@ -20,6 +21,7 @@ pub use compile::{compile, compile_full, compile_unoptimized, Compiled};
 pub use diagnostic::render as render_error;
 pub use error::CompileError;
 pub use include::expand_includes;
+pub use name_error::NameError;
 
 use crate::isa::Op;
 use alloc::vec::Vec;
