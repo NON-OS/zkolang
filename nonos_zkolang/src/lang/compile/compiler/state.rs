@@ -24,6 +24,8 @@ pub(crate) struct Compiler {
     pub(crate) syms: Vec<(String, u8)>,
     pub(crate) loop_consts: Vec<(String, u64)>,
     pub(crate) arrays: Vec<(String, Vec<u8>)>,
+    /** Arrays out of scope in a call or behind a block local, held until restored. */
+    pub(crate) hidden_arrays: Vec<(String, Vec<u8>)>,
     pub(crate) next: u8,
     pub(crate) free: Vec<u8>,
     pub(crate) n_public: u16,

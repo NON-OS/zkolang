@@ -14,6 +14,8 @@ mod array_param_tests;
 #[cfg(test)]
 mod array_return_tests;
 #[cfg(test)]
+mod array_scope_tests;
+#[cfg(test)]
 mod array_tests;
 #[cfg(test)]
 mod assert_top_tests;

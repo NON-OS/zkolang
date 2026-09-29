@@ -27,7 +27,7 @@ pub(crate) enum Arg {
 pub(crate) struct SavedScope {
     syms: Vec<(String, u8)>,
     loops: Vec<(String, u64)>,
-    arrays_len: usize,
+    hidden: usize,
 }
 
 impl Compiler {
@@ -54,7 +54,8 @@ impl Compiler {
     /// array parameter to its argument's registers, then swap the scope in. The handle returned
     /// restores the caller's scope.
     pub(crate) fn open_params(&mut self, params: &[String], args: &[Arg]) -> SavedScope {
-        let arrays_len = self.arrays.len();
+        let hidden = self.hidden_arrays.len();
+        self.hide_all_arrays();
         let mut scope: Vec<(String, u8)> = Vec::new();
         for (p, a) in params.iter().zip(args) {
             match a {
@@ -67,7 +68,7 @@ impl Compiler {
         SavedScope {
             syms,
             loops,
-            arrays_len,
+            hidden,
         }
     }
 
@@ -78,7 +79,8 @@ impl Compiler {
     pub(crate) fn close_params(&mut self, saved: SavedScope, args: &[Arg], result_regs: &[u8]) {
         self.syms = saved.syms;
         self.loop_consts = saved.loops;
-        self.arrays.truncate(saved.arrays_len);
+        self.arrays.clear();
+        self.restore_hidden(saved.hidden);
         for a in args {
             match a {
                 Arg::Scalar(v) => {

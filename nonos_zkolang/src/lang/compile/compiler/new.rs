@@ -29,6 +29,7 @@ impl Compiler {
             syms: Vec::new(),
             loop_consts: Vec::new(),
             arrays: Vec::new(),
+            hidden_arrays: Vec::new(),
             next: 0,
             free: Vec::new(),
             n_public,

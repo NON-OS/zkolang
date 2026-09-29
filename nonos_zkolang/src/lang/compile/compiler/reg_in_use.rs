@@ -13,5 +13,9 @@ impl Compiler {
     pub(crate) fn reg_in_use(&self, reg: u8) -> bool {
         self.syms.iter().any(|(_, r)| *r == reg)
             || self.arrays.iter().any(|(_, regs)| regs.contains(&reg))
+            || self
+                .hidden_arrays
+                .iter()
+                .any(|(_, regs)| regs.contains(&reg))
     }
 }

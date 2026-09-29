@@ -9,6 +9,8 @@ mod args;
 mod array_return;
 mod binary;
 mod block;
+mod block_close;
+mod block_open;
 mod call;
 mod compare;
 mod decompose;
