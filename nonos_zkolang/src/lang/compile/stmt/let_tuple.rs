@@ -26,11 +26,16 @@ impl Compiler {
                 values: vals.len(),
             });
         }
-        for (name, v) in names.iter().zip(&vals) {
+        for (i, (name, v)) in names.iter().zip(&vals).enumerate() {
             if name == "_" {
                 // A wildcard ignores its value: bind nothing, and return the register to the
-                // pool when no live name holds it.
-                if !self.reg_in_use(v.reg) && !self.free.contains(&v.reg) {
+                // pool when no live name holds it and no later name of this destructure is
+                // about to, since one register can carry several of the values.
+                let later = names[i + 1..]
+                    .iter()
+                    .zip(&vals[i + 1..])
+                    .any(|(n, w)| n != "_" && w.reg == v.reg);
+                if !later && !self.reg_in_use(v.reg) && !self.free.contains(&v.reg) {
                     self.free.push(v.reg);
                 }
                 continue;

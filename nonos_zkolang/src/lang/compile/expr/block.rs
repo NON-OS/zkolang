@@ -34,10 +34,15 @@ impl Compiler {
                         values: vals.len(),
                     });
                 }
-                for (n, v) in names.iter().zip(&vals) {
+                for (i, (n, v)) in names.iter().zip(&vals).enumerate() {
                     if n == "_" {
-                        // A wildcard binds nothing; free its register if no live name holds it.
-                        if !self.reg_in_use(v.reg) && !self.free.contains(&v.reg) {
+                        // A wildcard binds nothing; free its register if no live name holds
+                        // it and no later name of this destructure is about to.
+                        let later = names[i + 1..]
+                            .iter()
+                            .zip(&vals[i + 1..])
+                            .any(|(m, w)| m != "_" && w.reg == v.reg);
+                        if !later && !self.reg_in_use(v.reg) && !self.free.contains(&v.reg) {
                             self.free.push(v.reg);
                         }
                         continue;
