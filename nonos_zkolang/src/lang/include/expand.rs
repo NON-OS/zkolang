@@ -10,6 +10,7 @@ use alloc::vec::Vec;
 
 use super::directive::include_path;
 use super::MAX_INCLUDE_DEPTH;
+use crate::lang::lex::BOM;
 use crate::lang::CompileError;
 
 pub(super) fn expand<F>(
@@ -25,7 +26,12 @@ where
     if depth > MAX_INCLUDE_DEPTH {
         return Err(CompileError::IncludeTooDeep);
     }
-    for line in src.lines() {
+    /*
+     * Each file may start with a byte-order mark, and a lone carriage return ends a line
+     * as `\n` and `\r\n` do, so an include on such a line is still recognized.
+     */
+    let src = src.strip_prefix(BOM).unwrap_or(src);
+    for line in src.lines().flat_map(|l| l.split('\r')) {
         match include_path(line) {
             Some(path) => {
                 if seen.iter().any(|s| s == path) {

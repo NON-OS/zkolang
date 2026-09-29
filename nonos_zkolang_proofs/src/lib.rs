@@ -80,6 +80,8 @@ mod legacy_golden_tests;
 #[cfg(test)]
 mod library_tests;
 #[cfg(test)]
+mod line_ending_tests;
+#[cfg(test)]
 mod logic_tests;
 #[cfg(test)]
 mod loop_io_tests;

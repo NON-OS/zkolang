@@ -15,4 +15,5 @@ mod token;
 mod word;
 
 pub use scan::lex;
+pub(crate) use scan::BOM;
 pub use token::Tok;

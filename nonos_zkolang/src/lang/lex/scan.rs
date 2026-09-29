@@ -12,6 +12,9 @@ use super::{
 };
 use crate::lang::CompileError;
 
+/** The byte-order mark, skipped where a file starts with one. */
+pub(crate) const BOM: char = '\u{feff}';
+
 /// Tokenize `src`, returning each token with the byte offset it starts at, or report
 /// the first byte that begins no valid token. The offsets let the parser point a
 /// diagnostic at the exact place a token sits in the source.
@@ -19,13 +22,19 @@ pub fn lex(src: &str) -> Result<(Vec<Tok>, Vec<usize>), CompileError> {
     let b = src.as_bytes();
     let mut toks: Vec<Tok> = Vec::new();
     let mut spans: Vec<usize> = Vec::new();
-    let mut i = 0usize;
+    /* A byte-order mark some editors write before the first character is not source. */
+    let mut i = if src.starts_with(BOM) {
+        BOM.len_utf8()
+    } else {
+        0
+    };
     while i < b.len() {
         let ch = b[i];
         if ch.is_ascii_whitespace() {
             i += 1;
         } else if ch == b'/' && b.get(i + 1) == Some(&b'/') {
-            while i < b.len() && b[i] != b'\n' {
+            /* A lone carriage return ends a line too, as editors display it. */
+            while i < b.len() && b[i] != b'\n' && b[i] != b'\r' {
                 i += 1;
             }
         } else if is_ident_start(ch) {
