@@ -94,9 +94,35 @@ fn file_arg(a: &[String]) -> Option<&str> {
     a.iter().find(|x| !x.starts_with('-')).map(String::as_str)
 }
 
-fn nums(s: Option<&str>) -> Vec<u64> {
-    s.map(|v| v.split(',').filter_map(|t| t.trim().parse().ok()).collect())
-        .unwrap_or_default()
+/// The Goldilocks modulus. An input at or above it is not a field element; reducing it
+/// silently would prove a statement about a different number than the one typed.
+const MODULUS: u64 = 0xFFFF_FFFF_0000_0001;
+
+/// Read a comma-separated list of field elements for `flag`. A flag given without a value,
+/// a token that is not a decimal number, or a number that is not below the modulus is an
+/// error naming it; dropping it would shift every later value to another input.
+fn nums(a: &[String], flag: &str) -> Result<Vec<u64>, String> {
+    let Some(i) = a.iter().position(|x| x == flag) else {
+        return Ok(Vec::new());
+    };
+    let Some(list) = a.get(i + 1) else {
+        return Err(format!("{flag} needs a comma-separated list of numbers"));
+    };
+    if list.trim().is_empty() {
+        return Ok(Vec::new());
+    }
+    list.split(',')
+        .map(|t| {
+            let t = t.trim();
+            match t.parse::<u64>() {
+                Ok(v) if v < MODULUS => Ok(v),
+                Ok(_) => Err(format!(
+                    "{flag}: {t} is not below the field modulus {MODULUS}"
+                )),
+                Err(_) => Err(format!("{flag}: `{t}` is not a decimal number")),
+            }
+        })
+        .collect()
 }
 
 fn hex(b: &[u8]) -> String {
@@ -144,8 +170,10 @@ fn cmd_run(a: &[String]) -> i32 {
         Ok(s) => s,
         Err(e) => return err(&e),
     };
-    let inputs = nums(flag(a, "--input"));
-    let witness = nums(flag(a, "--witness"));
+    let (inputs, witness) = match (nums(a, "--input"), nums(a, "--witness")) {
+        (Ok(i), Ok(w)) => (i, w),
+        (Err(e), _) | (_, Err(e)) => return err(&e),
+    };
     match prove_source_with_witness(&src, &inputs, &witness) {
         Ok(r) if r.verified => {
             println!("{}", paint("verified", "1;32"));
@@ -238,8 +266,10 @@ fn cmd_fee(a: &[String]) -> i32 {
         Ok(s) => s,
         Err(e) => return err(&e),
     };
-    let inputs = nums(flag(a, "--input"));
-    let witness = nums(flag(a, "--witness"));
+    let (inputs, witness) = match (nums(a, "--input"), nums(a, "--witness")) {
+        (Ok(i), Ok(w)) => (i, w),
+        (Err(e), _) | (_, Err(e)) => return err(&e),
+    };
     match prove_source_with_witness(&src, &inputs, &witness) {
         Ok(r) if r.verified => {
             let q = quote(&r);
