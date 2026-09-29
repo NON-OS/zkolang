@@ -33,7 +33,6 @@ impl Compiler {
             Expr::Var(n) => {
                 self.lookup(n).is_none()
                     && self.loop_const(n).is_none()
-                    && self.scalar_const(n).is_none()
                     && self.lookup_array(n).is_some()
             }
             Expr::Call(name, _) => self

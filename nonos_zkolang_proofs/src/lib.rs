@@ -78,6 +78,8 @@ mod lang_tests;
 #[cfg(test)]
 mod legacy_golden_tests;
 #[cfg(test)]
+mod lexical_scope_tests;
+#[cfg(test)]
 mod library_tests;
 #[cfg(test)]
 mod line_ending_tests;

@@ -5,8 +5,10 @@
 
 /*!
  * Refuse the names the edition leaves ambiguous before lowering: a second function or
- * constant of one name, a binding named like a constant, and a binding in a loop body named
- * like the loop's variable. The lowering and the optimizer resolved these differently.
+ * constant of one name, a top-level binding named like a constant, and a binding in a
+ * loop body named like the loop's variable. The lowering and the optimizer resolved these
+ * differently. A parameter or a block local opens a scope of its own and shadows a
+ * constant of its name there.
  */
 
 use alloc::string::String;
@@ -26,12 +28,6 @@ pub(crate) fn check_names(ast: &Ast) -> Result<(), CompileError> {
         return Err(dup(n));
     }
     let consts: Vec<&str> = ast.consts.iter().map(|c| c.name.as_str()).collect();
-    for f in &ast.fns {
-        for p in &f.params {
-            bind(p, &consts, &[])?;
-        }
-        block_binds(&f.body, &mut |n| bind(n, &consts, &[]))?;
-    }
     stmts(&ast.stmts, &consts, &mut Vec::new())
 }
 
@@ -39,17 +35,17 @@ fn stmts(list: &[Stmt], consts: &[&str], loops: &mut Vec<String>) -> Result<(), 
     for s in list {
         match s {
             Stmt::Let(n, e) => {
-                block_binds(e, &mut |m| bind(m, consts, loops))?;
+                block_binds(e, &mut |m| bind(m, &[], loops))?;
                 bind(n, consts, loops)?;
             }
             Stmt::LetTuple(ns, e) => {
-                block_binds(e, &mut |m| bind(m, consts, loops))?;
+                block_binds(e, &mut |m| bind(m, &[], loops))?;
                 for n in ns.iter().filter(|n| *n != "_") {
                     bind(n, consts, loops)?;
                 }
             }
             Stmt::Input(n) | Stmt::Secret(n) => bind(n, consts, loops)?,
-            Stmt::Output(e) | Stmt::Assert(e) => block_binds(e, &mut |m| bind(m, consts, loops))?,
+            Stmt::Output(e) | Stmt::Assert(e) => block_binds(e, &mut |m| bind(m, &[], loops))?,
             Stmt::For { var, body, .. } => {
                 loops.push(var.clone());
                 stmts(body, consts, loops)?;

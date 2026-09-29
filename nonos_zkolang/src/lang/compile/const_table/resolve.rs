@@ -23,12 +23,15 @@ impl Compiler {
             Expr::Var(n) => n.as_str(),
             _ => return Err(CompileError::NotIndexable { at }),
         };
-        let is_value = self.lookup(name).is_some()
-            || self.loop_const(name).is_some()
-            || self.scalar_const(name).is_some();
+        /* A value in an inner scope hides a table of its name. */
+        if self.lookup(name).is_some() || self.loop_const(name).is_some() {
+            return Err(CompileError::NotIndexable { at });
+        }
         let table = match self.const_table(name) {
             Some(t) => t,
-            None if is_value => return Err(CompileError::NotIndexable { at }),
+            None if self.scalar_const(name).is_some() => {
+                return Err(CompileError::NotIndexable { at })
+            }
             None => {
                 return Err(CompileError::UnknownConst {
                     name: alloc::string::String::from(name),
