@@ -16,6 +16,8 @@ mod array_return_tests;
 #[cfg(test)]
 mod array_tests;
 #[cfg(test)]
+mod assert_top_tests;
+#[cfg(test)]
 mod backend_tests;
 #[cfg(test)]
 mod block_propagation_tests;

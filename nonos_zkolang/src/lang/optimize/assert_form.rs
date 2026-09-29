@@ -21,7 +21,7 @@ pub(super) fn norm_assert(e: &Expr, env: &Env) -> Option<Stmt> {
     let (l, r, equal) = match e {
         Expr::Eq(l, r) => (l, r, true),
         Expr::Ne(l, r) => (l, r, false),
-        _ => return Some(Stmt::Assert(norm(e, env))),
+        _ => return Some(Stmt::Assert(zero_form(norm(e, env)))),
     };
     let (l, r) = (norm(l, env), norm(r, env));
     if let (Expr::Num(a), Expr::Num(b)) = (&l, &r) {
@@ -38,4 +38,18 @@ pub(super) fn norm_assert(e: &Expr, env: &Env) -> Option<Stmt> {
     } else {
         Expr::Ne(l, r)
     }))
+}
+
+/**
+ * An expression asserted to be zero, in a form the lowering reads the same way. Folding
+ * can leave `==` or `!=` on top, `(a == b) + 0` becoming `a == b`, and the lowering reads a
+ * top relation as the claim itself; the bit of `a == b` being zero is `a != b`, and the bit
+ * of `a != b` being zero is `a == b`.
+ */
+fn zero_form(e: Expr) -> Expr {
+    match e {
+        Expr::Eq(l, r) => Expr::Ne(l, r),
+        Expr::Ne(l, r) => Expr::Eq(l, r),
+        other => other,
+    }
 }
