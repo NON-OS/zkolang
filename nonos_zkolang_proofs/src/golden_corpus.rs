@@ -37,17 +37,9 @@ fn collect(dir: &Path, out: &mut Vec<PathBuf>) {
 
 /** An include from the file's directory or a `stdlib` folder in any ancestor. */
 fn resolve(dir: &Path, name: &str) -> Option<String> {
-    let mut d = dir.to_path_buf();
-    loop {
-        for cand in [d.join(name), d.join("stdlib").join(name)] {
-            if let Ok(s) = fs::read_to_string(&cand) {
-                return Some(s);
-            }
-        }
-        if !d.pop() {
-            return None;
-        }
-    }
+    dir.ancestors()
+        .flat_map(|d| [d.join(name), d.join("stdlib").join(name)])
+        .find_map(|c| fs::read_to_string(c).ok())
 }
 
 fn line_for(root: &Path, path: &Path) -> String {
