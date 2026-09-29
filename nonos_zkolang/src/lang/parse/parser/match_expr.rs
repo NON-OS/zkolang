@@ -17,6 +17,7 @@ use alloc::vec::Vec;
 
 impl<'a> Parser<'a> {
     pub(crate) fn match_expr(&mut self) -> Result<Expr, CompileError> {
+        let start = self.at();
         let scrut = self.expr()?;
         self.expect(&Tok::LBrace)?;
         let mut specific: Vec<(u64, Expr)> = Vec::new();
@@ -52,6 +53,7 @@ impl<'a> Parser<'a> {
         for (v, body) in specific.into_iter().rev() {
             let cond = Expr::Eq(Box::new(scrut.clone()), Box::new(Expr::Num(v)));
             acc = Expr::Sel(Box::new(cond), Box::new(body), Box::new(acc));
+            self.within_budget(&acc, start)?;
         }
         Ok(acc)
     }

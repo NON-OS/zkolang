@@ -25,6 +25,7 @@ impl Compiler {
             consts,
             fns,
             inline_depth: 0,
+            expr_depth: 0,
             syms: Vec::new(),
             loop_consts: Vec::new(),
             arrays: Vec::new(),

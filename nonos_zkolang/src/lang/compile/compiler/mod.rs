@@ -38,3 +38,8 @@ pub(crate) const MAX_OPS: usize = 1 << 20;
 /// The deepest a chain of inlined calls may nest, which turns a recursive call into
 /// a compile error rather than a non-terminating inline.
 pub(crate) const MAX_INLINE: usize = 256;
+
+/// The deepest expression lowering may recurse. The parser bounds how deep one expression
+/// nests, but inlining stacks function bodies on top of each other, so lowering keeps its
+/// own bound and stops with an error instead of exhausting the host's stack.
+pub(crate) const MAX_EXPR_DEPTH: usize = 1024;

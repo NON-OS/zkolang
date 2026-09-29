@@ -12,6 +12,9 @@ use crate::lang::CompileError;
 impl<'a> Parser<'a> {
     /// An expression, lowest precedence first: logical or binds loosest.
     pub(crate) fn expr(&mut self) -> Result<Expr, CompileError> {
-        self.logic_or()
+        self.enter()?;
+        let e = self.logic_or()?;
+        self.leave(1);
+        Ok(e)
     }
 }

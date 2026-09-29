@@ -15,19 +15,27 @@ impl<'a> Parser<'a> {
     /// Add and subtract, binding looser than multiply and divide.
     pub(crate) fn sum(&mut self) -> Result<Expr, CompileError> {
         let mut lhs = self.product()?;
+        let mut links = 0;
         loop {
             match self.peek() {
                 Some(Tok::Plus) => {
                     self.pos += 1;
+                    self.enter()?;
+                    links += 1;
                     let rhs = self.product()?;
                     lhs = Expr::Add(Box::new(lhs), Box::new(rhs));
                 }
                 Some(Tok::Minus) => {
                     self.pos += 1;
+                    self.enter()?;
+                    links += 1;
                     let rhs = self.product()?;
                     lhs = Expr::Sub(Box::new(lhs), Box::new(rhs));
                 }
-                _ => return Ok(lhs),
+                _ => {
+                    self.leave(links);
+                    return Ok(lhs);
+                }
             }
         }
     }

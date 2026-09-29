@@ -16,19 +16,27 @@ impl<'a> Parser<'a> {
     /// expressions, so a leading minus binds tighter still.
     pub(crate) fn product(&mut self) -> Result<Expr, CompileError> {
         let mut lhs = self.unary()?;
+        let mut links = 0;
         loop {
             match self.peek() {
                 Some(Tok::Star) => {
                     self.pos += 1;
+                    self.enter()?;
+                    links += 1;
                     let rhs = self.unary()?;
                     lhs = Expr::Mul(Box::new(lhs), Box::new(rhs));
                 }
                 Some(Tok::Slash) => {
                     self.pos += 1;
+                    self.enter()?;
+                    links += 1;
                     let rhs = self.unary()?;
                     lhs = Expr::Div(Box::new(lhs), Box::new(rhs));
                 }
-                _ => return Ok(lhs),
+                _ => {
+                    self.leave(links);
+                    return Ok(lhs);
+                }
             }
         }
     }

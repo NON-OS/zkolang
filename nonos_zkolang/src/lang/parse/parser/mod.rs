@@ -23,6 +23,7 @@ mod if_expr;
 mod input_secret;
 mod inv_expr;
 mod match_expr;
+mod nesting;
 mod number;
 mod or;
 mod primary;
@@ -42,6 +43,8 @@ pub(crate) struct Parser<'a> {
     pub(crate) spans: &'a [usize],
     pub(crate) eof: usize,
     pub(crate) pos: usize,
+    /// Open nesting levels, spent and returned by `enter` and `leave`.
+    pub(crate) depth: usize,
 }
 
 /// Parse a token stream into an AST. `spans` holds each token's byte offset and `eof`
@@ -52,6 +55,7 @@ pub fn parse(toks: &[Tok], spans: &[usize], eof: usize) -> Result<Ast, CompileEr
         spans,
         eof,
         pos: 0,
+        depth: 0,
     };
     p.program()
 }

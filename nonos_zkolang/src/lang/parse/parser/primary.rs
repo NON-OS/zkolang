@@ -16,13 +16,17 @@ impl<'a> Parser<'a> {
     /// parses left to right. Indexing binds tighter than the unary minus above it.
     pub(crate) fn primary(&mut self) -> Result<Expr, CompileError> {
         let mut base = self.atom()?;
+        let mut links = 0;
         while matches!(self.peek(), Some(Tok::LBracket)) {
             let at = self.at();
             self.pos += 1;
+            self.enter()?;
+            links += 1;
             let index = self.expr()?;
             self.expect(&Tok::RBracket)?;
             base = Expr::Index(Box::new(base), Box::new(index), at);
         }
+        self.leave(links);
         Ok(base)
     }
 }

@@ -18,12 +18,16 @@ impl<'a> Parser<'a> {
     pub(crate) fn unary(&mut self) -> Result<Expr, CompileError> {
         if matches!(self.peek(), Some(Tok::Minus)) {
             self.pos += 1;
+            self.enter()?;
             let inner = self.unary()?;
+            self.leave(1);
             return Ok(Expr::Neg(Box::new(inner)));
         }
         if matches!(self.peek(), Some(Tok::Bang)) {
             self.pos += 1;
+            self.enter()?;
             let inner = self.unary()?;
+            self.leave(1);
             return Ok(Expr::Sub(Box::new(Expr::Num(1)), Box::new(inner)));
         }
         self.primary()

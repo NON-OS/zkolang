@@ -22,7 +22,7 @@ mod num;
 mod select;
 mod tuple;
 mod var;
-use super::compiler::{Compiler, Val};
+use super::compiler::{Compiler, Val, MAX_EXPR_DEPTH};
 use crate::isa::Op;
 use crate::lang::parse::Expr;
 use crate::lang::CompileError;
@@ -30,6 +30,16 @@ use crate::lang::CompileError;
 impl Compiler {
     /// Compile an expression, returning the register that holds its value.
     pub(crate) fn expr(&mut self, e: &Expr) -> Result<Val, CompileError> {
+        if self.expr_depth >= MAX_EXPR_DEPTH {
+            return Err(CompileError::RecursionTooDeep);
+        }
+        self.expr_depth += 1;
+        let v = self.expr_node(e);
+        self.expr_depth -= 1;
+        v
+    }
+
+    fn expr_node(&mut self, e: &Expr) -> Result<Val, CompileError> {
         match e {
             Expr::Num(v) => self.emit_num(*v),
             Expr::Var(n) => self.emit_var(n),

@@ -22,7 +22,9 @@ pub fn span_of(err: &CompileError) -> Option<usize> {
         | CompileError::UnexpectedEof { at }
         | CompileError::UnexpectedToken { at }
         | CompileError::NotIndexable { at }
-        | CompileError::IndexOutOfBounds { at } => Some(*at),
+        | CompileError::IndexOutOfBounds { at }
+        | CompileError::NestingTooDeep { at }
+        | CompileError::ExpressionTooLarge { at } => Some(*at),
         _ => None,
     }
 }
@@ -60,6 +62,8 @@ pub fn message(err: &CompileError) -> String {
         }
         CompileError::IncludeNotFound => "included file not found".into(),
         CompileError::IncludeTooDeep => "include nested too deep".into(),
+        CompileError::NestingTooDeep { .. } => "nested too deep".into(),
+        CompileError::ExpressionTooLarge { .. } => "expression grows too large".into(),
     }
 }
 
