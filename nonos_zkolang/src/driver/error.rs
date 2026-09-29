@@ -39,4 +39,9 @@ pub enum RunError {
     /// query count, so the openings could not be made jointly uniform. The honest
     /// answer is to refuse rather than return a proof that hides less than it claims.
     TraceTooSmallToHide { log_trace_len: u32 },
+    /**
+     * An input at or above the field modulus, counted from the first public input on
+     * through the secrets. Reducing it would prove a statement about another number.
+     */
+    InputNotInField { position: usize },
 }

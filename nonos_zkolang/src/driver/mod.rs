@@ -9,6 +9,7 @@
 
 mod advice;
 mod error;
+mod field_inputs;
 mod log_t;
 mod params;
 mod pipeline;

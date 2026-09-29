@@ -14,6 +14,7 @@ use nonos_stark::air::RATE;
 use nonos_stark::field::Fp;
 
 use super::advice::fill_advice;
+use super::field_inputs::field_inputs;
 use super::pipeline::{run_and_prove, run_and_prove_hidden};
 use super::{Report, RunError};
 use crate::lang::compile_source_full;
@@ -71,8 +72,7 @@ fn compile_and_bind(
             secret_got: secret_inputs.len(),
         });
     }
-    let mut inputs: Vec<Fp> = public_inputs.iter().map(|&v| Fp::from_u64(v)).collect();
-    inputs.extend(secret_inputs.iter().map(|&v| Fp::from_u64(v)));
+    let mut inputs = field_inputs(public_inputs, secret_inputs)?;
     // Ordered comparisons decompose values whose bits the prover must supply. Extend the
     // witness with the advice region and fill it from an evaluation run of the program.
     if compiled.n_advice > 0 {
@@ -96,8 +96,7 @@ pub fn evaluate(
     public: &[u64],
     secret: &[u64],
 ) -> Result<Vec<u64>, RunError> {
-    let mut inputs: Vec<Fp> = public.iter().map(|&v| Fp::from_u64(v)).collect();
-    inputs.extend(secret.iter().map(|&v| Fp::from_u64(v)));
+    let inputs = field_inputs(public, secret)?;
     let trace = crate::vm::Vm::new()
         .run(program, &inputs, public.len())
         .map_err(RunError::Execute)?;

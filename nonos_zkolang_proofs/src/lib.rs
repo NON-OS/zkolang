@@ -54,6 +54,8 @@ mod equivalence_tests;
 #[cfg(test)]
 mod feature_tests;
 #[cfg(test)]
+mod field_input_tests;
+#[cfg(test)]
 mod field_tests;
 #[cfg(test)]
 mod fn_tests;

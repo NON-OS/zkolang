@@ -56,6 +56,9 @@ fn render_run(src: &str, e: &RunError) -> String {
         RunError::TraceTooSmallToHide { log_trace_len } => {
             format!("trace too small to hide: log_trace_len {log_trace_len}")
         }
+        RunError::InputNotInField { position } => {
+            format!("input {position} is not below the field modulus")
+        }
     }
 }
 
