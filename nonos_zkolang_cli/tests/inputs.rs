@@ -3,9 +3,11 @@
  AGPL-3.0-or-later
 */
 
-//! The command line reads inputs strictly. A value it cannot read is refused by name, never
-//! dropped: dropping one shifts every later value onto a different input, and the proof
-//! would then be about numbers nobody typed.
+/*!
+ * The command line reads inputs strictly. A value it cannot read is refused by name, never
+ * dropped: dropping one shifts every later value onto a different input, and the proof
+ * would then be about numbers nobody typed.
+ */
 
 use std::path::PathBuf;
 use std::process::Command;
