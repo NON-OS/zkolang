@@ -57,13 +57,19 @@ pub enum CompileError {
     IncludeNotFound,
     /// An include chain nested past the depth bound, which a cycle would cause.
     IncludeTooDeep,
-    /// More public inputs, secrets, outputs or comparison advice bits than the machine's
-    /// sixteen-bit input and output indices can name.
+    /**
+     * More public inputs, secrets, outputs or comparison advice bits than the machine's
+     * sixteen-bit input and output indices can name.
+     */
     IoLimit,
-    /// Source nested deeper than the parser's budget, at this byte offset. Deeper input
-    /// would build a tree the compiler cannot walk without exhausting its stack.
+    /**
+     * Source nested deeper than the parser's budget, at this byte offset. Deeper input
+     * would build a tree the compiler cannot walk without exhausting its stack.
+     */
     NestingTooDeep { at: usize },
-    /// An operator whose meaning copies its operands, `||` or `match`, would build an
-    /// expression past the size budget, at this byte offset.
+    /**
+     * An operator whose meaning copies its operands, `||` or `match`, would build an
+     * expression past the size budget, at this byte offset.
+     */
     ExpressionTooLarge { at: usize },
 }

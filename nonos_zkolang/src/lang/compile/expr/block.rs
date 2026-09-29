@@ -36,8 +36,10 @@ impl Compiler {
                 }
                 for (i, (n, v)) in names.iter().zip(&vals).enumerate() {
                     if n == "_" {
-                        // A wildcard binds nothing; free its register if no live name holds
-                        // it and no later name of this destructure is about to.
+                        /*
+                         * A wildcard binds nothing; free its register if no live name holds
+                         * it and no later name of this destructure is about to.
+                         */
                         let later = names[i + 1..]
                             .iter()
                             .zip(&vals[i + 1..])

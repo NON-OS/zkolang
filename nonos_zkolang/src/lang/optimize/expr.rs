@@ -3,13 +3,15 @@
  AGPL-3.0-or-later
 */
 
-//! Fold an expression. Sub-expressions over constants collapse to one constant, computed
-//! in the field so the fold agrees with the run, and the algebraic identities that add
-//! nothing to a trace are removed: adding or subtracting zero, multiplying by one,
-//! multiplying by zero, and selecting on a constant condition. An identity that would
-//! discard an operand applies only when that operand carries no constraint. Ordered
-//! comparison is left alone, because its bit decomposition is not a constant even when its
-//! operands are.
+/*!
+ * Fold an expression. Sub-expressions over constants collapse to one constant, computed
+ * in the field so the fold agrees with the run, and the algebraic identities that add
+ * nothing to a trace are removed: adding or subtracting zero, multiplying by one,
+ * multiplying by zero, and selecting on a constant condition. An identity that would
+ * discard an operand applies only when that operand carries no constraint. Ordered
+ * comparison is left alone, because its bit decomposition is not a constant even when its
+ * operands are.
+ */
 
 use alloc::boxed::Box;
 

@@ -24,9 +24,11 @@ pub enum RunError {
     Layout(BuildError),
     /// The program needs more steps than the driver will size a trace to.
     ProgramTooLong { steps: usize },
-    /// The caller supplied a different number of public inputs or secrets than the program
-    /// declares. Too few public inputs would let a declared `input` read a value outside the
-    /// bound statement; any mismatch misplaces the comparison advice.
+    /**
+     * The caller supplied a different number of public inputs or secrets than the program
+     * declares. Too few public inputs would let a declared `input` read a value outside the
+     * bound statement; any mismatch misplaces the comparison advice.
+     */
     InputCount {
         public_expected: usize,
         public_got: usize,

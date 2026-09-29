@@ -28,9 +28,11 @@ impl Compiler {
         }
         for (i, (name, v)) in names.iter().zip(&vals).enumerate() {
             if name == "_" {
-                // A wildcard ignores its value: bind nothing, and return the register to the
-                // pool when no live name holds it and no later name of this destructure is
-                // about to, since one register can carry several of the values.
+                /*
+                 * A wildcard ignores its value: bind nothing, and return the register to the
+                 * pool when no live name holds it and no later name of this destructure is
+                 * about to, since one register can carry several of the values.
+                 */
                 let later = names[i + 1..]
                     .iter()
                     .zip(&vals[i + 1..])

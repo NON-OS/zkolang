@@ -25,6 +25,7 @@ mod input_secret;
 mod inv_expr;
 mod match_expr;
 mod nesting;
+mod node_budget;
 mod number;
 mod or;
 mod primary;
