@@ -23,7 +23,7 @@ impl Compiler {
         }
         if let Some(old) = self.take_scalar(name) {
             if !regs.contains(&old) && !self.reg_in_use(old) {
-                self.free.push(old);
+                self.free_reg(old);
             }
         }
         self.bind_array(name, regs);
@@ -36,7 +36,7 @@ impl Compiler {
         let regs = self.expr_array(e)?;
         if let Some(old) = self.take_scalar(name) {
             if !regs.contains(&old) && !self.reg_in_use(old) {
-                self.free.push(old);
+                self.free_reg(old);
             }
         }
         self.bind_array(name, regs);

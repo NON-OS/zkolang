@@ -23,9 +23,9 @@ impl Compiler {
         let a = self.expr(l)?;
         let b = self.expr(r)?;
         let ta = self.decompose(a.reg, W)?;
-        self.free.push(ta);
+        self.free_reg(ta);
         let tb = self.decompose(b.reg, W)?;
-        self.free.push(tb);
+        self.free_reg(tb);
 
         let base = self.emit_num(1u64 << W)?;
         let sub = self.alloc()?;
@@ -42,14 +42,14 @@ impl Compiler {
             a: sub,
             b: base.reg,
         });
-        self.free.push(sub);
-        self.free.push(base.reg);
+        self.free_reg(sub);
+        self.free_reg(base.reg);
 
         let sign = self.decompose(t, W + 1)?;
-        self.free.push(t);
+        self.free_reg(t);
         let one = self.emit_num(1)?;
-        self.free.push(sign);
-        self.free.push(one.reg);
+        self.free_reg(sign);
+        self.free_reg(one.reg);
         let d = self.alloc()?;
         self.ops.push(Op::Sub {
             d,

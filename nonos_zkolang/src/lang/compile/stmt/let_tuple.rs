@@ -38,7 +38,7 @@ impl Compiler {
                     .zip(&vals[i + 1..])
                     .any(|(n, w)| n != "_" && w.reg == v.reg);
                 if !later && !self.reg_in_use(v.reg) && !self.free.contains(&v.reg) {
-                    self.free.push(v.reg);
+                    self.free_reg(v.reg);
                 }
                 continue;
             }
@@ -46,14 +46,14 @@ impl Compiler {
             if let Some(old_array) = self.take_array(name) {
                 for r in old_array {
                     if r != v.reg && !self.reg_in_use(r) && !self.free.contains(&r) {
-                        self.free.push(r);
+                        self.free_reg(r);
                     }
                 }
             }
             self.rebind(name, v.reg);
             if let Some(old_reg) = old {
                 if old_reg != v.reg && !self.reg_in_use(old_reg) && !self.free.contains(&old_reg) {
-                    self.free.push(old_reg);
+                    self.free_reg(old_reg);
                 }
             }
         }

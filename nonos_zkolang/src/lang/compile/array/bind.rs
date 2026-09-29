@@ -20,7 +20,7 @@ impl Compiler {
         if let Some(old) = old {
             for r in old {
                 if !regs.contains(&r) && !self.reg_in_use(r) {
-                    self.free.push(r);
+                    self.free_reg(r);
                 }
             }
         }

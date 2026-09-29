@@ -45,7 +45,7 @@ impl Compiler {
                             .zip(&vals[i + 1..])
                             .any(|(m, w)| m != "_" && w.reg == v.reg);
                         if !later && !self.reg_in_use(v.reg) && !self.free.contains(&v.reg) {
-                            self.free.push(v.reg);
+                            self.free_reg(v.reg);
                         }
                         continue;
                     }
@@ -68,7 +68,7 @@ impl Compiler {
             .collect();
         for r in held {
             if !result_regs.contains(&r) && !self.reg_in_use(r) && !self.free.contains(&r) {
-                self.free.push(r);
+                self.free_reg(r);
             }
         }
     }

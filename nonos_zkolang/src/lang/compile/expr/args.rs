@@ -83,7 +83,7 @@ impl Compiler {
             match a {
                 Arg::Scalar(v) => {
                     if v.temp && !result_regs.contains(&v.reg) && !self.free.contains(&v.reg) {
-                        self.free.push(v.reg);
+                        self.free_reg(v.reg);
                     }
                 }
                 Arg::Array { regs, owned: true } => {
@@ -92,7 +92,7 @@ impl Compiler {
                             && !self.reg_in_use(*r)
                             && !self.free.contains(r)
                         {
-                            self.free.push(*r);
+                            self.free_reg(*r);
                         }
                     }
                 }

@@ -12,6 +12,7 @@ mod alloc;
 mod bind_fresh;
 mod finish;
 mod free_dead;
+mod free_reg;
 mod io_index;
 mod limits;
 mod lookup;

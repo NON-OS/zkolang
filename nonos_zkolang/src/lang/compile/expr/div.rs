@@ -21,7 +21,7 @@ impl Compiler {
         let recip = self.alloc()?;
         self.ops.push(Op::Inv { d: recip, a: b.reg });
         self.release(&a);
-        self.free.push(recip);
+        self.free_reg(recip);
         let d = self.alloc()?;
         self.ops.push(Op::Mul {
             d,

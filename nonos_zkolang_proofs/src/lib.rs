@@ -38,6 +38,8 @@ mod desugar_budget_tests;
 #[cfg(test)]
 mod diagnostic_tests;
 #[cfg(test)]
+mod double_free_tests;
+#[cfg(test)]
 mod embedded_stdlib_tests;
 #[cfg(test)]
 mod equivalence_tests;

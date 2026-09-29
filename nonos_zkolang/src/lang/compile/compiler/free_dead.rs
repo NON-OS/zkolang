@@ -25,7 +25,7 @@ impl Compiler {
             }
             let reg = self.syms.remove(i).1;
             if !self.reg_in_use(reg) {
-                self.free.push(reg);
+                self.free_reg(reg);
             }
         }
     }
