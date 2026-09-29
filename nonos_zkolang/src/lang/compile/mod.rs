@@ -34,8 +34,10 @@ use crate::isa::Op;
 // first, through any loops, so secrets index after the public prefix and comparison advice
 // indexes after the secrets.
 fn lower(ast: &Ast) -> Result<Compiled, CompileError> {
-    let n_public = count_inputs::count_inputs(&ast.stmts).min(u16::MAX as u64) as u16;
-    let n_secret = count_secrets::count_secrets(&ast.stmts).min(u16::MAX as u64) as u16;
+    let n_public = u16::try_from(count_inputs::count_inputs(&ast.stmts))
+        .map_err(|_| CompileError::IoLimit)?;
+    let n_secret = u16::try_from(count_secrets::count_secrets(&ast.stmts))
+        .map_err(|_| CompileError::IoLimit)?;
     let mut c = Compiler::new(ast.consts.clone(), ast.fns.clone(), n_public, n_secret);
     // reads_after[i] is the sorted set of names read by statements i onward, so after
     // lowering statement i a binding is dead exactly when its name is absent from

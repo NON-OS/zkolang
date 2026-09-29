@@ -31,12 +31,10 @@ impl Compiler {
         self.free.push(zero.reg);
 
         let start = self.next_advice;
-        let base = self.n_public + self.n_secret;
         let mut bits: Vec<u8> = Vec::with_capacity(nbits as usize);
         for _ in 0..nbits {
             let bit = self.alloc()?;
-            let idx = base + self.next_advice;
-            self.next_advice += 1;
+            let idx = self.take_advice()?;
             self.ops.push(Op::Inp { d: bit, idx });
             self.ops.push(Op::Bool { a: bit });
             bits.push(bit);

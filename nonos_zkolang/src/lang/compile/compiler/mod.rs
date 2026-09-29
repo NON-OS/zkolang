@@ -11,6 +11,7 @@
 mod alloc;
 mod finish;
 mod free_dead;
+mod io_index;
 mod lookup;
 mod loop_const;
 mod new;

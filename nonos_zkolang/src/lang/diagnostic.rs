@@ -62,6 +62,9 @@ pub fn message(err: &CompileError) -> String {
         }
         CompileError::IncludeNotFound => "included file not found".into(),
         CompileError::IncludeTooDeep => "include nested too deep".into(),
+        CompileError::IoLimit => {
+            "more inputs, outputs or comparison bits than the machine can index".into()
+        }
         CompileError::NestingTooDeep { .. } => "nested too deep".into(),
         CompileError::ExpressionTooLarge { .. } => "expression grows too large".into(),
     }

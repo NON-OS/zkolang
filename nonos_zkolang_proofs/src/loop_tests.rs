@@ -80,3 +80,15 @@ fn nested_loops_within_the_per_loop_bound_still_cannot_run_away() {
         "a nested loop bomb compiled"
     );
 }
+
+#[test]
+fn unrolling_past_the_machine_indices_is_an_error() {
+    // The machine names inputs and outputs by sixteen-bit indices. A loop that unrolls past
+    // them wrapped its counter onto indices already used, a panic in a debug build and a
+    // program reading the wrong inputs in a release one.
+    let outputs = "for i in 0..40000 { output 1; }\nfor j in 0..30000 { output 2; }";
+    assert_eq!(compile_source(outputs).err(), Some(CompileError::IoLimit));
+    // Each ordered comparison takes forty-nine advice bits from the same index space.
+    let advice = "input a;\ninput b;\nfor i in 0..1400 { let c = a < b; }\noutput a;";
+    assert_eq!(compile_source(advice).err(), Some(CompileError::IoLimit));
+}

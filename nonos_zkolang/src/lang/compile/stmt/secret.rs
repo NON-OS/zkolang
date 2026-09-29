@@ -16,8 +16,7 @@ impl Compiler {
     /// vector rather than part of the public statement.
     pub(crate) fn secret(&mut self, name: &str) -> Result<(), CompileError> {
         let d = self.alloc()?;
-        let idx = self.n_public + self.next_secret;
-        self.next_secret += 1;
+        let idx = self.take_secret()?;
         self.ops.push(Op::Inp { d, idx });
         self.syms.push((String::from(name), d));
         Ok(())
