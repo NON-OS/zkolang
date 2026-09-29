@@ -12,15 +12,18 @@
 
 mod array;
 mod block_binds;
+mod callees;
 mod compiled;
 mod compiler;
 mod const_table;
 mod count_inputs;
 mod count_secrets;
+mod duplicates;
 mod expr;
 mod live;
 mod lower;
 mod name_check;
+mod recursion;
 mod same_expr;
 mod stmt;
 

@@ -5,9 +5,6 @@
 
 /*! Every name a block inside an expression binds, however deep the block sits. */
 
-use alloc::collections::BTreeMap;
-use alloc::string::String;
-
 use crate::lang::parse::Expr;
 
 /** Call `f` with each name bound by a block local anywhere inside `e`. */
@@ -42,25 +39,4 @@ pub(super) fn block_binds<E>(e: &Expr, f: &mut impl FnMut(&str) -> Result<(), E>
             block_binds(r, f)
         }
     }
-}
-
-/**
- * The first name defined twice with definitions `same` tells apart. Including one library
- * through two paths repeats its items word for word, and an identical repeat is harmless.
- */
-pub(super) fn conflicting<'a, D>(
-    defs: impl Iterator<Item = (&'a String, D)>,
-    same: impl Fn(&D, &D) -> bool,
-) -> Option<&'a String> {
-    let mut seen: BTreeMap<&String, D> = BTreeMap::new();
-    for (n, d) in defs {
-        match seen.get(n) {
-            Some(e) if !same(e, &d) => return Some(n),
-            Some(_) => {}
-            None => {
-                seen.insert(n, d);
-            }
-        }
-    }
-    None
 }

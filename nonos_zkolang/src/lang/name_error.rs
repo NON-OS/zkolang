@@ -9,10 +9,12 @@ use alloc::string::String;
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum NameError {
-    /** Two functions, or two constants, of one name. */
+    /** Two functions, two constants, or two parameters of one function, of one name. */
     Duplicate { name: String },
     /** A parameter, binding, input or block local named like a constant or table. */
     ShadowsConstant { name: String },
     /** A binding inside a loop body named like the loop's variable. */
     ShadowsLoopVariable { name: String },
+    /** A function that calls itself, directly or through others. */
+    Recursive { name: String },
 }

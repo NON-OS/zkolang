@@ -108,6 +108,8 @@ mod optimize_tests;
 #[cfg(test)]
 mod recipes_tests;
 #[cfg(test)]
+mod recursion_tests;
+#[cfg(test)]
 mod register_file_tests;
 #[cfg(test)]
 mod render_tests;

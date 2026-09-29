@@ -4,31 +4,27 @@
 */
 
 /*!
- * Refuse the names the edition leaves ambiguous before lowering: a second function or
- * constant of one name, a top-level binding named like a constant, and a binding in a
- * loop body named like the loop's variable. The lowering and the optimizer resolved these
- * differently. A parameter or a block local opens a scope of its own and shadows a
- * constant of its name there.
+ * Refuse the names the edition leaves ambiguous before lowering: a name defined twice, a
+ * top-level binding named like a constant, and a binding in a loop body named like the
+ * loop's variable, which the lowering and the optimizer resolved differently. A parameter
+ * or a block local opens a scope of its own and shadows a constant of its name there.
+ * Recursion is refused too, whether or not anything calls the function.
  */
 
 use alloc::string::String;
 use alloc::vec::Vec;
 
-use super::block_binds::{block_binds, conflicting};
-use super::same_expr::same;
+use super::block_binds::block_binds;
+use super::duplicates::check_duplicates;
+use super::recursion::recursive;
 use crate::lang::parse::{Ast, Stmt};
 use crate::lang::{CompileError, NameError};
 
 /** Check a program's names, on the tree as written, before the optimizer rewrites it. */
 pub(crate) fn check_names(ast: &Ast) -> Result<(), CompileError> {
-    let dup = |n: &String| CompileError::Name(NameError::Duplicate { name: n.clone() });
-    let fn_defs = ast.fns.iter().map(|f| (&f.name, (&f.params, &f.body)));
-    if let Some(n) = conflicting(fn_defs, |a, b| a.0 == b.0 && same(a.1, b.1)) {
-        return Err(dup(n));
-    }
-    let const_defs = ast.consts.iter().map(|c| (&c.name, (&c.values, c.scalar)));
-    if let Some(n) = conflicting(const_defs, |a, b| a == b) {
-        return Err(dup(n));
+    check_duplicates(ast)?;
+    if let Some(n) = recursive(&ast.fns) {
+        return Err(CompileError::Name(NameError::Recursive { name: n.clone() }));
     }
     let consts: Vec<&str> = ast.consts.iter().map(|c| c.name.as_str()).collect();
     stmts(&ast.stmts, &consts, &mut Vec::new())

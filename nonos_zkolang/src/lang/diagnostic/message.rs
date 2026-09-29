@@ -55,5 +55,8 @@ pub fn message(err: &CompileError) -> String {
         CompileError::Name(NameError::ShadowsLoopVariable { name }) => {
             format!("`{name}` is the loop's variable and cannot be rebound in its body")
         }
+        CompileError::Name(NameError::Recursive { name }) => {
+            format!("function `{name}` calls itself, and functions cannot recurse")
+        }
     }
 }
