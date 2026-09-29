@@ -18,60 +18,8 @@ mod count_inputs;
 mod count_secrets;
 mod expr;
 mod live;
+mod lower;
 mod stmt;
 
-use alloc::vec::Vec;
-
-use compiler::Compiler;
-
 pub use compiled::Compiled;
-
-use super::parse::Ast;
-use super::CompileError;
-use crate::isa::Op;
-
-// Lower an AST as given, without optimizing. The public inputs and secrets are counted
-// first, through any loops, so secrets index after the public prefix and comparison advice
-// indexes after the secrets.
-fn lower(ast: &Ast) -> Result<Compiled, CompileError> {
-    let n_public = u16::try_from(count_inputs::count_inputs(&ast.stmts))
-        .map_err(|_| CompileError::IoLimit)?;
-    let n_secret = u16::try_from(count_secrets::count_secrets(&ast.stmts))
-        .map_err(|_| CompileError::IoLimit)?;
-    let mut c = Compiler::new(ast.consts.clone(), ast.fns.clone(), n_public, n_secret);
-    // reads_after[i] is the sorted set of names read by statements i onward, so after
-    // lowering statement i a binding is dead exactly when its name is absent from
-    // reads_after[i + 1]. Building it from the end keeps the whole pass linear.
-    let stmts = &ast.stmts;
-    let mut reads_after: Vec<Vec<alloc::string::String>> = Vec::with_capacity(stmts.len() + 1);
-    reads_after.resize(stmts.len() + 1, Vec::new());
-    for i in (0..stmts.len()).rev() {
-        let mut names = reads_after[i + 1].clone();
-        live::reads_of_stmt(&stmts[i], &mut names);
-        names.sort_unstable();
-        names.dedup();
-        reads_after[i] = names;
-    }
-    for (i, s) in stmts.iter().enumerate() {
-        c.stmt(s)?;
-        c.free_dead(&reads_after[i + 1]);
-    }
-    Ok(c.finish())
-}
-
-/// Lower an AST into a VM program with its advice plan, optimizing first so the trace is
-/// smaller while the proof is unchanged.
-pub fn compile_full(ast: &Ast) -> Result<Compiled, CompileError> {
-    lower(&super::optimize::optimize(ast))
-}
-
-/// Lower an AST into a VM program ending in `Halt`.
-pub fn compile(ast: &Ast) -> Result<Vec<Op>, CompileError> {
-    compile_full(ast).map(|c| c.ops)
-}
-
-/// Lower an AST into a VM program without the optimizer, for checking that optimization
-/// preserves behavior.
-pub fn compile_unoptimized(ast: &Ast) -> Result<Vec<Op>, CompileError> {
-    lower(ast).map(|c| c.ops)
-}
+pub use lower::{compile, compile_full, compile_unoptimized};

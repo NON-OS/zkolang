@@ -13,6 +13,7 @@ mod atom;
 mod block;
 mod const_def;
 mod cursor;
+mod entry;
 mod equality;
 mod expr;
 mod fn_def;
@@ -30,32 +31,10 @@ mod primary;
 mod product;
 mod program;
 mod sel_expr;
+mod state;
 mod stmt;
 mod sum;
 mod unary;
 
-use super::super::lex::Tok;
-use super::super::CompileError;
-use super::ast::Ast;
-
-pub(crate) struct Parser<'a> {
-    pub(crate) toks: &'a [Tok],
-    pub(crate) spans: &'a [usize],
-    pub(crate) eof: usize,
-    pub(crate) pos: usize,
-    /// Open nesting levels, spent and returned by `enter` and `leave`.
-    pub(crate) depth: usize,
-}
-
-/// Parse a token stream into an AST. `spans` holds each token's byte offset and `eof`
-/// is the length of the source, so a diagnostic can point past the last token.
-pub fn parse(toks: &[Tok], spans: &[usize], eof: usize) -> Result<Ast, CompileError> {
-    let mut p = Parser {
-        toks,
-        spans,
-        eof,
-        pos: 0,
-        depth: 0,
-    };
-    p.program()
-}
+pub use entry::parse;
+pub(crate) use state::Parser;
