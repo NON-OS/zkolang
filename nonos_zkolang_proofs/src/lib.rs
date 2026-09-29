@@ -88,6 +88,8 @@ mod loop_io_tests;
 #[cfg(test)]
 mod loop_tests;
 #[cfg(test)]
+mod match_default_tests;
+#[cfg(test)]
 mod name_check_tests;
 #[cfg(test)]
 mod nesting_tests;

@@ -25,6 +25,10 @@ impl<'a> Parser<'a> {
         loop {
             let at = self.at();
             if matches!(self.peek(), Some(Tok::Ident(n)) if n == "_") {
+                /* A second default would silently replace the first. */
+                if default.is_some() {
+                    return Err(CompileError::UnexpectedToken { at });
+                }
                 self.pos += 1;
                 self.expect(&Tok::FatArrow)?;
                 default = Some(self.expr()?);
@@ -48,8 +52,10 @@ impl<'a> Parser<'a> {
                 _ => return Err(CompileError::UnexpectedToken { at: self.at() }),
             }
         }
+        /* A match without a default is refused at its closing brace, where `_` belonged. */
+        let close = self.at();
         self.expect(&Tok::RBrace)?;
-        let mut acc = default.ok_or(CompileError::UnexpectedToken { at: self.at() })?;
+        let mut acc = default.ok_or(CompileError::UnexpectedToken { at: close })?;
         for (v, body) in specific.into_iter().rev() {
             let cond = Expr::Eq(Box::new(scrut.clone()), Box::new(Expr::Num(v)));
             acc = Expr::Sel(Box::new(cond), Box::new(body), Box::new(acc));
