@@ -3,20 +3,23 @@
  AGPL-3.0-or-later
 */
 
-//! The zKolang command-line tool. `run` compiles a program, proves it, and reports the
-//! result; `check` compiles without proving; `build` emits a native backend; `key`
-//! prints a circuit's registration commitment and verifier key. Includes are resolved
-//! from the program's directory and any `stdlib` folder above it, so a program runs the
-//! same from a shell or an editor task.
+/*!
+ * The zKolang command-line tool. `run` compiles a program, proves it, and reports the
+ * result; `check` compiles without proving; `build` emits a native backend; `key`
+ * prints a circuit's registration commitment and verifier key. An include resolves from
+ * the file that writes it, a `stdlib` folder above it, or the standard library built into
+ * the binary, so a program runs the same from a shell or an editor task.
+ */
 
 use std::io::IsTerminal;
-use std::path::{Path, PathBuf};
 use std::process::exit;
 use std::{env, fs};
 
 mod args;
+mod load;
 
 use args::nums;
+use load::load;
 
 /// Wrap text in an ANSI color, but only when standard output is a terminal, so piped or
 /// captured output stays plain text.
@@ -29,8 +32,8 @@ fn paint(s: &str, code: &str) -> String {
 }
 
 use nonos_zkolang::{
-    commit, compile_source, expand_includes, prove_source_with_witness, quote, render_error,
-    to_asm, to_c, to_python, verifier_key, ProveError, RunError, REGISTRATION_RATE,
+    commit, compile_source, prove_source_with_witness, quote, render_error, to_asm, to_c,
+    to_python, verifier_key, ProveError, RunError, REGISTRATION_RATE,
 };
 
 /// A one-line human message for a run failure. An unprovable statement is the honest
@@ -103,30 +106,6 @@ fn file_arg(a: &[String]) -> Option<&str> {
 
 fn hex(b: &[u8]) -> String {
     b.iter().map(|x| format!("{x:02x}")).collect()
-}
-
-// Read a program and expand its includes, resolving each from the file's directory or a
-// `stdlib` folder in any ancestor.
-fn load(file: &str) -> Result<String, String> {
-    let path = Path::new(file);
-    let src = fs::read_to_string(path).map_err(|e| format!("read {file}: {e}"))?;
-    let dir = path.parent().map(PathBuf::from).unwrap_or_default();
-    let mut resolve = |name: &str| resolve_include(&dir, name);
-    expand_includes(&src, &mut resolve).map_err(|e| format!("include error: {e:?}"))
-}
-
-fn resolve_include(dir: &Path, name: &str) -> Option<String> {
-    let mut d = dir.to_path_buf();
-    loop {
-        for cand in [d.join(name), d.join("stdlib").join(name)] {
-            if let Ok(s) = fs::read_to_string(&cand) {
-                return Some(s);
-            }
-        }
-        if !d.pop() {
-            return None;
-        }
-    }
 }
 
 fn err(msg: &str) -> i32 {
