@@ -25,10 +25,15 @@ pub struct Advice {
 }
 
 /// A program and the advice its comparisons need. `n_advice` is the total number of
-/// advice bits, the length of the witness suffix past the user secrets.
+/// advice bits, the length of the witness suffix past the user secrets. `n_public` and
+/// `n_secret` are how many public inputs and secrets the program declares, which a caller
+/// must supply exactly: the advice sits right after them, and a public input the statement
+/// does not carry would read a value nobody bound.
 #[derive(Clone, Debug)]
 pub struct Compiled {
     pub ops: Vec<Op>,
     pub advice: Vec<Advice>,
     pub n_advice: u16,
+    pub n_public: u16,
+    pub n_secret: u16,
 }

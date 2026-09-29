@@ -61,6 +61,16 @@ fn compile_and_bind(
     secret_inputs: &[u64],
 ) -> Result<(Vec<crate::isa::Op>, Vec<Fp>), RunError> {
     let compiled = compile_source_full(src).map_err(RunError::Compile)?;
+    let (public_expected, secret_expected) =
+        (compiled.n_public as usize, compiled.n_secret as usize);
+    if public_inputs.len() != public_expected || secret_inputs.len() != secret_expected {
+        return Err(RunError::InputCount {
+            public_expected,
+            public_got: public_inputs.len(),
+            secret_expected,
+            secret_got: secret_inputs.len(),
+        });
+    }
     let mut inputs: Vec<Fp> = public_inputs.iter().map(|&v| Fp::from_u64(v)).collect();
     inputs.extend(secret_inputs.iter().map(|&v| Fp::from_u64(v)));
     // Ordered comparisons decompose values whose bits the prover must supply. Extend the

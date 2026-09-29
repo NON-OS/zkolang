@@ -40,6 +40,15 @@ fn render_run(src: &str, e: &RunError) -> String {
         RunError::Execute(pe) => format!("cannot run: {pe:?}"),
         RunError::Layout(be) => format!("cannot lay out the trace: {be:?}"),
         RunError::ProgramTooLong { steps } => format!("program too long: {steps} steps"),
+        RunError::InputCount {
+            public_expected,
+            public_got,
+            secret_expected,
+            secret_got,
+        } => format!(
+            "the program takes {public_expected} public inputs and {secret_expected} secrets, \
+             but {public_got} and {secret_got} were given"
+        ),
         RunError::TraceTooSmallToHide { log_trace_len } => {
             format!("trace too small to hide: log_trace_len {log_trace_len}")
         }

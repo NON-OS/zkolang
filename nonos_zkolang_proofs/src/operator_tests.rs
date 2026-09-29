@@ -7,7 +7,7 @@
 //! front-end sugar over the existing opcodes, so each is proven the same way. The
 //! tests check both a true program that verifies and a false claim that has none.
 
-use nonos_zkolang::{compile_source, prove_source_with_inputs};
+use nonos_zkolang::{compile_source, prove_source_with_inputs, prove_source_with_witness};
 
 #[test]
 fn division_is_multiplication_by_an_inverse() {
@@ -100,12 +100,17 @@ fn boolean_operators_bind_looser_than_comparison() {
 #[test]
 fn the_cypherpunk_keyword_spelling_is_the_same_language() {
     // public/witness/reveal/prove are aliases of input/secret/output/assert. A program
-    // written in either spelling compiles to the same proof.
-    let plain = prove_source_with_inputs("input a; secret b; output a + b; assert a - a;", &[3, 4])
-        .expect("run");
-    let styled =
-        prove_source_with_inputs("public a; witness b; reveal a + b; prove a - a;", &[3, 4])
+    // written in either spelling compiles to the same proof. The secret goes in as a
+    // witness: passed as a second public input it would sit in the public statement.
+    let plain =
+        prove_source_with_witness("input a; secret b; output a + b; assert a - a;", &[3], &[4])
             .expect("run");
+    let styled = prove_source_with_witness(
+        "public a; witness b; reveal a + b; prove a - a;",
+        &[3],
+        &[4],
+    )
+    .expect("run");
     assert!(plain.verified && styled.verified);
     assert_eq!(plain.outputs, styled.outputs);
     assert_eq!(styled.outputs, vec![7]);
