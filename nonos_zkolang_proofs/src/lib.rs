@@ -56,6 +56,8 @@ mod kernel_tests;
 #[cfg(test)]
 mod lang_tests;
 #[cfg(test)]
+mod legacy_golden_tests;
+#[cfg(test)]
 mod library_tests;
 #[cfg(test)]
 mod logic_tests;
