@@ -61,3 +61,13 @@ fn a_character_of_no_width_is_named_by_its_code_alone() {
         );
     }
 }
+
+#[test]
+fn every_default_ignorable_character_shows_its_code() {
+    for c in ['\u{1d173}', '\u{1bca0}', '\u{fff0}', '\u{e0080}'] {
+        let text = format!("x {c} y\n");
+        let got = show(&text, (2, 2 + c.len_utf8() as u32, "here"), &[]);
+        let (source, _) = rows(&got);
+        assert_eq!(source, format!("1 | x <U+{:04X}> y", c as u32));
+    }
+}

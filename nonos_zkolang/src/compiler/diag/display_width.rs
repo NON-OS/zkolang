@@ -13,14 +13,15 @@ use super::width_wide::WIDE;
 
 /**
  * Characters with no visible form, that change the direction of the text around them, or
- * that change how the character before them is drawn, such as variation selectors.
+ * that change how the character before them is drawn: the Unicode Default_Ignorable code
+ * points, the C1 controls, and the line, paragraph and annotation separators.
  */
 pub(super) fn invisible(c: char) -> bool {
     matches!(c as u32,
         0x80..=0x9F | 0xAD | 0x34F | 0x61C | 0x115F | 0x1160 | 0x17B4 | 0x17B5
         | 0x180B..=0x180F | 0x200B..=0x200F | 0x2028..=0x202E | 0x2060..=0x206F | 0x3164
-        | 0xFE00..=0xFE0F | 0xFEFF | 0xFFA0 | 0xFFF9..=0xFFFB | 0xE0000..=0xE007F
-        | 0xE0100..=0xE01EF)
+        | 0xFE00..=0xFE0F | 0xFEFF | 0xFFA0 | 0xFFF0..=0xFFFB | 0x1BCA0..=0x1BCA3
+        | 0x1D173..=0x1D17A | 0xE0000..=0xE0FFF)
 }
 
 /** The number of columns a visible character takes: none for a mark, two for a wide one. */

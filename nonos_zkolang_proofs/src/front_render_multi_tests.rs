@@ -57,3 +57,15 @@ fn a_second_file_is_introduced_at_its_first_shown_line() {
     let want = "error[E0100]: m\n --> main.zkl:1:1\n  |\n1 | g(1, 2);\n  | ^^^^^^^ call\n  |\n ::: util.zkl:1:1\n  |\n1 | fn g(a: u8) {}\n  | ----------- first\n2 | const Q: u8 = 1;\n  | ----- later\n";
     assert_eq!(got, want);
 }
+
+#[test]
+fn a_label_before_a_label_over_lines_on_its_line_shares_the_line() {
+    let (lo, hi) = (
+        CALL.find("f(").unwrap() as u32,
+        CALL.find(");").unwrap() as u32 + 2,
+    );
+    let t = CALL.find("t =").unwrap() as u32;
+    let got = show(CALL, (lo, hi, "call"), &[(t, t + 1, "bound")]);
+    let want = "error[E0100]: m\n --> t.zkl:2:13\n  |\n2 |       let t = f(\n  |           - bound\n  |  _____________^\n... |\n6 | |     );\n  | |______^ call\n";
+    assert_eq!(got, want);
+}

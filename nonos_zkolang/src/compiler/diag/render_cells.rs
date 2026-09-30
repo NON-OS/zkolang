@@ -44,7 +44,10 @@ pub(super) fn whole(line: &str, subjects: &[usize]) -> bool {
     true
 }
 
-/** Where a cut window of `line` starts: at most `LEAD` columns and `CHARS` characters before `at`. */
+/**
+ * Where a cut window of `line` starts: at most `LEAD` columns and a quarter of `CHARS`
+ * characters before `at`, so the window reaches past `at` however narrow they are.
+ */
 pub(super) fn lead_start(line: &str, at: usize, subjects: &[usize]) -> usize {
     let (mut from, mut lead) = (at, 0);
     let mut s = String::new();
@@ -53,7 +56,7 @@ pub(super) fn lead_start(line: &str, at: usize, subjects: &[usize]) -> usize {
         .unwrap_or("")
         .char_indices()
         .rev()
-        .take(CHARS)
+        .take(CHARS / 4)
     {
         s.clear();
         lead += shown_cell(c, subjects.contains(&i), &mut s);

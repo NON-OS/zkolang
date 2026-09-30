@@ -51,3 +51,14 @@ fn labels_far_apart_on_a_long_line_are_each_shown() {
         "{got}"
     );
 }
+
+#[test]
+fn a_mark_after_many_characters_of_no_width_stays_in_the_window() {
+    let text = format!("let x = e{} @;\n", "\u{301}".repeat(450));
+    let at = text.find('@').unwrap() as u32;
+    let (source, marks) = rows(&show(&text, (at, at + 1, "here"), &[]));
+    let before = source.split('@').next().unwrap();
+    let col = before.chars().filter(|&c| c != '\u{301}').count();
+    assert!(source.contains('@'), "{source}");
+    assert_eq!(marks.find('^'), Some(col), "{source}\n{marks}");
+}

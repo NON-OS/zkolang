@@ -19,7 +19,8 @@ use super::render_placed::Placed;
 
 /** Show `ls`, the labels in one file, under the margin `g`. */
 pub(super) fn push_file(out: &mut String, mut ls: Vec<&Placed>, g: &Gutter) {
-    ls.sort_by_key(|p| (p.line, p.label.span.lo));
+    /* A label over lines comes first on its line, so the labels beside it are drawn in it. */
+    ls.sort_by_key(|p| (p.line, !p.is_multiline(), p.label.span.lo));
     let mut last: Option<usize> = None;
     let mut i = 0;
     while let Some(p) = ls.get(i) {
