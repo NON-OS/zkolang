@@ -32,6 +32,8 @@ mod commit_tests;
 #[cfg(test)]
 mod comparison_tests;
 #[cfg(test)]
+mod compile_field_tests;
+#[cfg(test)]
 mod compile_prop_tests;
 #[cfg(test)]
 mod compile_run;
@@ -63,6 +65,14 @@ mod feature_tests;
 mod field_input_tests;
 #[cfg(test)]
 mod field_tests;
+#[cfg(test)]
+mod flow_gen;
+#[cfg(test)]
+mod flow_gen_cond;
+#[cfg(test)]
+mod flow_gen_stmt;
+#[cfg(test)]
+mod flow_tests;
 #[cfg(test)]
 mod fn_tests;
 #[cfg(test)]

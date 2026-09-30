@@ -15,6 +15,7 @@
 use alloc::vec;
 
 use super::machine::{Machine, Origin};
+use super::verify_done::{missing, own_slots};
 use super::verify_op::Replay;
 use crate::compiler::ssa::{Inst, Ssa};
 use crate::isa::{Op, REGS};
@@ -45,6 +46,7 @@ pub fn verify(ssa: &Ssa, m: &Machine) -> Result<(), VerifyError> {
         done: vec![false; ssa.insts.len()],
         copies: vec![false; m.advice.len()],
         spill: None,
+        own: own_slots(ssa),
     };
     for (k, (&op, &origin)) in m.ops.iter().zip(&m.origins).enumerate() {
         let fail = |why| VerifyError { op: k, why };
@@ -62,14 +64,5 @@ pub fn verify(ssa: &Ssa, m: &Machine) -> Result<(), VerifyError> {
             why: "the program does not end with halt",
         });
     }
-    for (i, inst) in ssa.insts.iter().enumerate() {
-        let needed = inst.is_effect() || matches!(inst, Inst::Inv(_) | Inst::Sel(..));
-        if needed && !rp.done.get(i).copied().unwrap_or(false) {
-            return Err(VerifyError {
-                op: m.ops.len(),
-                why: "a constraint, output, inverse or selection is missing",
-            });
-        }
-    }
-    Ok(())
+    missing(ssa, &rp.done, m.ops.len())
 }

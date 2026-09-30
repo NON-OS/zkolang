@@ -20,6 +20,8 @@ pub(super) struct Replay<'a> {
     pub(super) copies: Vec<bool>,
     /** A spill being checked: its value, slot, register and how far it got. */
     pub(super) spill: Option<(V, usize, u8, u8)>,
+    /** Each advice value's slot: how many advice values precede it. */
+    pub(super) own: Vec<Option<usize>>,
 }
 
 impl<'a> Replay<'a> {
@@ -38,15 +40,9 @@ impl<'a> Replay<'a> {
         usize::from(idx).checked_sub(self.m.n_inputs)
     }
 
-    /** The advice slot of the advice value `v`: how many advice values precede it. */
+    /** The advice slot of the advice value `v`. */
     fn own_slot(&self, v: V) -> Option<usize> {
-        let before = self.ssa.insts.get(..v.index())?;
-        Some(
-            before
-                .iter()
-                .filter(|i| matches!(i, Inst::Advice(_)))
-                .count(),
-        )
+        self.own.get(v.index()).copied().flatten()
     }
 
     /** Whether `op` reads `v` again into a register, and which. */

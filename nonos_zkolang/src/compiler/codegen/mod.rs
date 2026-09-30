@@ -21,6 +21,7 @@ mod spill;
 mod state;
 mod verify;
 mod verify_def;
+mod verify_done;
 mod verify_op;
 mod verify_spill;
 

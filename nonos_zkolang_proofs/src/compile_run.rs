@@ -16,8 +16,13 @@ use nonos_zkolang::Vm;
 
 /** The compiled program of `p`'s `main`, panicking with the reason if it does not compile. */
 pub(crate) fn compile(p: &TProgram) -> Compiled {
-    let ssa = lower_program(p).unwrap_or_else(|e| panic!("lowering: {e:?}"));
-    backend(&ssa).unwrap_or_else(|e| panic!("back end: {e:?}"))
+    try_compile(p).unwrap_or_else(|e| panic!("{e}"))
+}
+
+/** The compiled program of `p`'s `main`, or why it does not compile. */
+pub(crate) fn try_compile(p: &TProgram) -> Result<Compiled, String> {
+    let ssa = lower_program(p).map_err(|e| format!("lowering: {e:?}"))?;
+    backend(&ssa).map_err(|e| format!("back end: {e:?}"))
 }
 
 /** The outputs of a run of `c` on `inputs`, with `n_public` public slots; `None` if rejected. */
