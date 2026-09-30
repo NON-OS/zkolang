@@ -34,6 +34,7 @@ mod for_range;
 mod helpers;
 mod if_expr;
 mod index;
+mod infer;
 mod int_or_field;
 mod labels;
 mod let_stmt;
@@ -65,10 +66,6 @@ mod scope;
 mod stmt;
 mod structs;
 mod unary;
-mod unify;
 mod unused;
-mod vars;
-mod vars_join;
-mod zonk;
 
 pub use cx::FnCx;

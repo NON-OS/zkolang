@@ -31,13 +31,13 @@ impl<'a> Sema<'a> {
     pub(crate) fn not_yet(&mut self, item: &Item) {
         let (what, at): (&str, Span) = match &item.kind {
             ItemKind::Fn(f) => ("generic functions", f.name.span),
-            ItemKind::Struct(s) => ("generic structs", s.name.span),
-            ItemKind::Enum(e) => ("generic enums", e.name.span),
-            ItemKind::TypeAlias(t) => ("generic type aliases", t.name.span),
             ItemKind::Mod(m) => ("modules in their own files", m.name.span),
             ItemKind::Impl(_) => ("generic impl blocks", item.span),
             ItemKind::Const(c) => ("this constant", c.name.span),
             ItemKind::Use(_) => ("this import", item.span),
+            ItemKind::Struct(_) | ItemKind::Enum(_) | ItemKind::TypeAlias(_) => {
+                ("this item", item.span)
+            }
         };
         self.not_checked(what, at);
     }

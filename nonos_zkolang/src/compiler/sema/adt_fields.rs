@@ -12,7 +12,7 @@ use alloc::format;
 use alloc::vec::Vec;
 
 use super::cx::Sema;
-use super::defs::{DefId, DefKind};
+use super::defs::DefId;
 use crate::compiler::diag::{Code, Diagnostic};
 use crate::compiler::sema::ty::AdtField;
 use crate::compiler::syntax::ast::{FieldDecl, Visibility};
@@ -51,16 +51,6 @@ impl<'a> Sema<'a> {
             });
         }
         (fields, labels)
-    }
-
-    /** Lower every struct of the program, so each declaration is checked. */
-    pub(super) fn structs(&mut self) {
-        let kinds: Vec<_> = self.defs.defs.iter().map(|d| d.kind).collect();
-        for (i, k) in kinds.into_iter().enumerate() {
-            if matches!(k, DefKind::Struct | DefKind::Enum) {
-                self.struct_ty(DefId(u32::try_from(i).unwrap_or(u32::MAX)));
-            }
-        }
     }
 
     /** Report that the struct `def` contains itself (E0313). */

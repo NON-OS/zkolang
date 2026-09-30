@@ -32,6 +32,7 @@ impl<'s, 'a> FnCx<'s, 'a> {
             BinOp::Rem | BinOp::Shl | BinOp::Shr => (false, false),
             BinOp::Eq | BinOp::Ne | BinOp::And | BinOp::Or => return,
         };
+        let t = self.numeric(t);
         let ok = match self.kind(t) {
             TyKind::Error | TyKind::Never | TyKind::Int(_) => true,
             TyKind::Field => field,

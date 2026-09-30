@@ -7,11 +7,13 @@
 
 mod adt;
 mod display;
+mod generic_arg;
 mod kind;
 mod prim;
 mod types;
 mod types_adt;
 
 pub use adt::{Adt, AdtField, AdtId, AdtVariant, Form};
+pub use generic_arg::GenArg;
 pub use kind::{TyId, TyKind};
 pub use types::Types;

@@ -4,14 +4,14 @@
 */
 
 /*!
- * A type with every literal variable in it replaced by what it stands for. Finishing a
- * body also gives each free variable its default (section 5.6) and binds it, so every
- * use of the variable agrees.
+ * A type with every variable in it replaced by what it stands for. Finishing a body also
+ * gives each free literal variable its default (section 5.6) and binds it, so every use
+ * of the variable agrees; a general one left free is reported (E0303).
  */
 
 use alloc::vec::Vec;
 
-use super::cx::FnCx;
+use super::super::cx::FnCx;
 use crate::compiler::sema::ty::{TyId, TyKind, Types};
 use crate::compiler::syntax::IntTy;
 
@@ -37,6 +37,12 @@ impl<'s, 'a> FnCx<'s, 'a> {
                 let e = self.zonk(e, default);
                 self.sema.types.intern(TyKind::Array(e, n))
             }
+            TyKind::Infer(n) if default => {
+                self.cannot_infer(n);
+                self.vars.bind(n, Types::ERROR);
+                Types::ERROR
+            }
+            TyKind::Adt(_) => self.zonk_adt(t, default),
             _ => t,
         }
     }

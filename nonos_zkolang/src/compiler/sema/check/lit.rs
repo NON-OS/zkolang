@@ -54,7 +54,9 @@ impl<'s, 'a> FnCx<'s, 'a> {
             return Types::int(s);
         }
         match want.map(|w| (w, self.kind(w))) {
-            Some((w, TyKind::Int(_) | TyKind::Field | TyKind::Var(_))) => self.resolve(w),
+            Some((w, TyKind::Int(_) | TyKind::Field | TyKind::Var(_) | TyKind::Infer(_))) => {
+                self.numeric(w)
+            }
             _ => self.vars.fresh(&mut self.sema.types, false),
         }
     }

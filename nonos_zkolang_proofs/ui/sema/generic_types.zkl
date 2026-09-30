@@ -1,0 +1,23 @@
+/* Generic type mistakes: arguments of the wrong number or kind, and types never settled. */
+#![allow(unused)]
+struct Pair<T> { a: T, b: T }
+enum Maybe<T> { Just(T), Nothing }
+struct Buf<const N: usize> { data: [u8; N] }
+struct Grow<T> { next: Maybe<Grow<(T, T)>> } /*~ E0313 */
+struct Loop<T> { x: Loop<T> } /*~ E0313 */
+
+fn f(g: Grow<u8>, l: Loop<u8>) {}
+
+fn g(x: u8) -> u8 {
+    let n = Maybe::Nothing; /*~ E0303 */
+    let q: Pair<u8, u8> = Pair { a: 1, b: 2 }; /*~ E0701 */
+    let r: Pair = Pair { a: 1, b: 2 }; /*~ E0701 */
+    let b = Buf { data: [1, 2] }; /*~ E0303 */
+    let c = Pair { a: 1u8, b: true }; /*~ E0300 */
+    let d: Pair<secret u8> = Pair { a: 1, b: 2 }; /*~ E0701 */
+    let e = Maybe::Nothing::<u8, u8>; /*~ E0701 */
+    let h: Buf<u8> = Buf::<2> { data: [1, 2] }; /*~ E0701 */
+    let i: Pair<3> = Pair { a: 1, b: 2 }; /*~ E0701 */
+    let j = Maybe::Just::<u8>(1);
+    x
+}

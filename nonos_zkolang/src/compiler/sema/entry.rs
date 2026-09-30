@@ -37,8 +37,9 @@ fn check_mode(ast: &SourceAst, testing: bool) -> (TProgram, Diagnostics) {
     sema.check_main();
     sema.structs();
     for (i, d) in sema.defs.defs.clone().iter().enumerate() {
-        if d.kind == DefKind::Alias {
-            sema.alias(DefId(u32::try_from(i).unwrap_or(u32::MAX)));
+        let def = DefId(u32::try_from(i).unwrap_or(u32::MAX));
+        if d.kind == DefKind::Alias && sema.params_of(def).is_empty() {
+            sema.alias(def);
         }
     }
     for c in 0..sema.consts.len() {

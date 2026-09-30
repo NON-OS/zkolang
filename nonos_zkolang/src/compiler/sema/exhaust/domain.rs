@@ -41,7 +41,7 @@ pub(super) fn domain(types: &Types, ty: TyId) -> Domain {
             Some(_) => Domain::Single,
             None => Domain::Opaque,
         },
-        TyKind::Error | TyKind::Var(_) => Domain::Opaque,
+        TyKind::Error | TyKind::Var(_) | TyKind::Infer(_) => Domain::Opaque,
     }
 }
 

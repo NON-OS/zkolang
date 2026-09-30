@@ -14,8 +14,8 @@ use alloc::string::String;
 use alloc::vec::Vec;
 
 use super::deferred::Deferred;
+use super::infer::IntVars;
 use super::matching::PatCx;
-use super::vars::IntVars;
 use crate::compiler::sema::cx::Sema;
 use crate::compiler::sema::defs::DefId;
 use crate::compiler::sema::ty::TyId;

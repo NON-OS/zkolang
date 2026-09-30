@@ -13,6 +13,7 @@ use alloc::vec::Vec;
 
 use super::cx::FnCx;
 use super::prim::prim_path;
+use crate::compiler::sema::ty::Form;
 use crate::compiler::source::Span;
 use crate::compiler::syntax::ast::{Expr, ExprKind, PathRoot};
 use crate::compiler::tir::TExpr;
@@ -29,8 +30,11 @@ impl<'s, 'a> FnCx<'s, 'a> {
         if p.root == PathRoot::SelfType && p.segments.is_empty() {
             return self.tuple_struct(p, args, at);
         }
-        if let Some(Ok(_)) = self.variant_of(p) {
-            return self.tuple_struct(p, args, at);
+        if let Some(found @ Ok(_)) = self.variant_of(p) {
+            return match self.variant_shape(p, found, Form::Tuple) {
+                Some(s) => self.tuple_shape(s, args, at),
+                None => self.check_args_then_error(args, at),
+            };
         }
         if let Some(found) = self.assoc_fn(p) {
             return match found {

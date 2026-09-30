@@ -25,13 +25,10 @@ pub(crate) type Shape = (TyId, u32);
 impl<'s, 'a> FnCx<'s, 'a> {
     /** The struct or variant `p` names, built in the form `form`; `None` once reported. */
     pub(crate) fn shape_named(&mut self, p: &'a Path, form: Form) -> Option<Shape> {
-        let s = match self.variant_of(p) {
-            None => return self.struct_named(p, form).map(|t| (t, 0)),
-            Some(Err(ty)) => return self.no_variant(p, ty),
-            Some(Ok(s)) => s,
-        };
-        self.sema.no_generics(p);
-        self.shape_form(p, s, form).map(|_| s)
+        match self.variant_of(p) {
+            None => self.struct_named(p, form).map(|t| (t, 0)),
+            Some(found) => self.variant_shape(p, found, form),
+        }
     }
 
     /** The name and type of each field of the shape `s`. */

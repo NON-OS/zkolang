@@ -13,7 +13,7 @@ use alloc::format;
 use super::super::cx::FnCx;
 use super::shape::Shape;
 use crate::compiler::diag::{Code, Diagnostic};
-use crate::compiler::sema::ty::{Form, TyId};
+use crate::compiler::sema::ty::Form;
 use crate::compiler::syntax::ast::Path;
 
 impl<'s, 'a> FnCx<'s, 'a> {
@@ -35,9 +35,8 @@ impl<'s, 'a> FnCx<'s, 'a> {
         None
     }
 
-    /** Report `p`, which names the enum `ty` where one of its variants is wanted. */
-    pub(super) fn whole_enum<T>(&mut self, p: &'a Path, ty: TyId) -> Option<T> {
-        let name = self.show(ty);
+    /** Report `p`, which names the enum `name` where one of its variants is wanted. */
+    pub(super) fn whole_enum<T>(&mut self, p: &'a Path, name: &str) -> Option<T> {
         let what = format!("`{name}` is an enum; name one of its variants, as `{name}::V`");
         let d = Diagnostic::error(Code::WRONG_KIND, what, p.span, "an enum, not a variant");
         self.sema.diags.push(d);

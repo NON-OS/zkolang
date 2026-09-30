@@ -18,8 +18,11 @@ check reports statement forms where they cannot stand. Diagnostics render as tex
 JSON. The checker resolves names, checks types and constants, reports recursion, checks
 secret flow and lowers the program to the typed IR, which the reference interpreter runs.
 It checks a program in one file, structs, enums, `match`, `impl` blocks, methods and
-`Self` included, and reports each form it does not check yet (generic items, and modules
-in their own files) as E0904. `sema/exhaust` decides whether a `match` covers every
+`Self` included, and generic structs, enums and aliases, and reports each form it does
+not check yet (generic functions and `impl` blocks, and modules in their own files) as
+E0904. Each instance of a generic struct or enum is one entry of the type table; type
+inference has general variables beside literal ones, unifies instances by their
+arguments, and resolves an instance whose arguments it settles. `sema/exhaust` decides whether a `match` covers every
 value, and which arms no value reaches, by the usefulness of its patterns over their
 constructors, integer ranges cut at the ends of the ranges its arms name. The back end lowers the typed IR to SSA, runs the
 passes, expands the gadgets, schedules, allocates registers, emits machine code and checks

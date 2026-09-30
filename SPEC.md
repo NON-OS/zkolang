@@ -27,8 +27,9 @@ normative, is the only one that describes the repository rather than the languag
   parser with its error recovery, the placement check and the diagnostics. So do the
   checker of sections 4 to 13 and the reference interpreter of the typed IR, for a
   program in one file, structs, enums, `match`, `impl` blocks, methods and `Self`
-  included. The checker reports each form it does not check yet (generic items, and
-  modules in their own files) as E0904. The back end compiles the typed IR of such a
+  included, and generic structs, enums and aliases. The checker reports each form it
+  does not check yet (generic functions and `impl` blocks, and modules in their own
+  files) as E0904. The back end compiles the typed IR of such a
   program to the machine: lowering to SSA, the passes, gadget expansion, scheduling, register allocation
   and a check of the machine program against the SSA. `compiler::driver::build` and
   `prove` build a program and prove a run of it with the STARK, hiding the witness;
@@ -429,6 +430,10 @@ parameters of type `usize`. Generic items are *templates*: they are type-checked
 per distinct instantiation, after substitution. An instantiation is created by a use
 with concrete arguments, written or inferred. A type error in an instantiation is
 reported at the instantiating use, with a note at the offending line of the template.
+In a type, a generic item is given every argument. In a body, a struct literal, a variant
+or a pattern that names a generic struct or enum without arguments has its type
+arguments inferred from what builds or meets it; a constant argument is written. A type
+argument nothing settles is an error (E0303).
 
 ### 5.6 Integer literal inference
 
@@ -578,7 +583,8 @@ array of `N` copies of `e`, where `e` is evaluated once.
 A variant of an enum `E` is built through its enum's path, in the form it is declared in:
 `E::V` for a unit variant, `E::V(a, b)` for a tuple variant and `E::V { f: e }` for one
 with named fields, the fields given as for a struct. Inside an `impl` block of `E`,
-`Self::V` names the same variant. A variant's fields are visible wherever its enum is. A
+`Self::V` names the same variant. Generic arguments written after the path, `E::V::<A>`,
+are the enum's. A variant's fields are visible wherever its enum is. A
 lone name never names a variant.
 
 ### 7.12 `declassify`

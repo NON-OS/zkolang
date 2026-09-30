@@ -14,7 +14,7 @@ use alloc::vec::Vec;
 
 use crate::compiler::diag::Diagnostics;
 use crate::compiler::sema::defs::{DefId, Defs};
-use crate::compiler::sema::ty::{TyId, Types};
+use crate::compiler::sema::ty::{GenArg, TyId, Types};
 use crate::compiler::source::Span;
 use crate::compiler::tir::{ConstId, FnId, Labels};
 
@@ -39,6 +39,12 @@ pub struct Sig {
     pub ret_labels: Labels,
 }
 
+/** An item, and the generic arguments of one of its instances. */
+pub type Instance = (DefId, Vec<GenArg>);
+
+/** Each instance of a type's item lowered, with the labels it writes, or being lowered. */
+pub type Lowered = BTreeMap<Instance, State<(TyId, Labels)>>;
+
 /** Everything semantic analysis knows about one program. */
 #[derive(Debug, Default)]
 pub struct Sema<'a> {
@@ -49,10 +55,12 @@ pub struct Sema<'a> {
     pub fn_of: BTreeMap<DefId, FnId>,
     pub consts: Vec<ConstInfo<'a>>,
     pub const_of: BTreeMap<DefId, ConstId>,
-    /** Each type alias lowered, or being lowered. */
-    pub aliases: BTreeMap<DefId, State<(TyId, Labels)>>,
-    /** Each struct lowered, or being lowered. */
-    pub structs: BTreeMap<DefId, State<(TyId, Labels)>>,
+    /** Each instance of a type alias lowered, or being lowered. */
+    pub aliases: Lowered,
+    /** Each instance of a struct or enum lowered, or being lowered. */
+    pub structs: Lowered,
+    /** The generic parameters in scope and what each stands for, where one is. */
+    pub generics: Vec<(alloc::string::String, GenArg)>,
     /** The functions of `impl` blocks, by the type and their name. */
     pub assoc: BTreeMap<(TyId, alloc::string::String), FnId>,
     /** The type `Self` names where a signature or body is being checked, if any. */

@@ -15,7 +15,7 @@ use crate::compiler::sema::ty::{TyId, TyKind, Types};
 /** How many slots a value of type `t` takes. */
 pub(crate) fn slots(types: &Types, t: TyId) -> usize {
     match types.kind(t) {
-        TyKind::Unit | TyKind::Never | TyKind::Error | TyKind::Var(_) => 0,
+        TyKind::Unit | TyKind::Never | TyKind::Error | TyKind::Var(_) | TyKind::Infer(_) => 0,
         TyKind::Bool | TyKind::Field => 1,
         TyKind::Int(i) => {
             if i.bits() > 32 {

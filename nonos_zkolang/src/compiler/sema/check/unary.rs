@@ -22,7 +22,7 @@ impl<'s, 'a> FnCx<'s, 'a> {
     /** `-a` or `!a`. */
     pub(crate) fn unary(&mut self, op: UnOp, a: &'a Expr, want: Option<TyId>, at: Span) -> TExpr {
         let a = self.infer(a, want);
-        let ty = self.resolve(a.ty);
+        let ty = self.numeric(a.ty);
         let ok = match (op, self.kind(ty)) {
             (_, TyKind::Error | TyKind::Never) => true,
             (UnOp::Neg, TyKind::Field) | (UnOp::Not, TyKind::Bool) => true,

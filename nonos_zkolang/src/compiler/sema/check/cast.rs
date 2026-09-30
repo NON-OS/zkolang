@@ -25,7 +25,11 @@ impl<'s, 'a> FnCx<'s, 'a> {
         let to_kind = self.kind(to);
         let numeric = matches!(to_kind, TyKind::Int(_) | TyKind::Field);
         let e = self.infer(a, numeric.then_some(to));
-        let from = self.kind(e.ty);
+        let from = match numeric {
+            true => self.numeric(e.ty),
+            false => e.ty,
+        };
+        let from = self.kind(from);
         if numeric && matches!(from, TyKind::Var(_)) {
             self.deferred.push(Deferred::Cast {
                 ty: e.ty,

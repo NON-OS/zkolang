@@ -25,14 +25,18 @@ impl<'s, 'a> FnCx<'s, 'a> {
             false => self.struct_def(p)?,
         };
         if self.sema.types.adt(ty).is_some_and(|a| a.is_enum) {
-            return self.whole_enum(p, ty);
+            let name = self.show(ty);
+            return self.whole_enum(p, &name);
         }
         self.shape_form(p, (ty, 0), form).map(|_| ty)
     }
 
     /** The type of the struct the path `p` names; `None` once reported. */
     fn struct_def(&mut self, p: &'a Path) -> Option<TyId> {
-        self.sema.no_generics(p);
+        let (last, prefix) = p.segments.split_last()?;
+        if prefix.iter().any(|s| s.generics.is_some()) {
+            self.sema.no_generics(p);
+        }
         let names: Vec<&str> = p.segments.iter().map(|s| s.ident.name.as_str()).collect();
         let def = match self.sema.defs.resolve(self.module, p.root, &names) {
             Ok(d) => d,
@@ -44,8 +48,13 @@ impl<'s, 'a> FnCx<'s, 'a> {
         self.sema.note_use(def, p);
         let kind = self.sema.defs.get(def).map(|d| d.kind);
         if kind == Some(DefKind::Enum) {
-            let ty = self.sema.struct_ty(def).0;
-            return self.whole_enum(p, ty);
+            let name = self
+                .sema
+                .defs
+                .get(def)
+                .map(|d| d.name.clone())
+                .unwrap_or_default();
+            return self.whole_enum(p, &name);
         }
         if kind != Some(DefKind::Struct) {
             let d = Diagnostic::error(
@@ -57,6 +66,6 @@ impl<'s, 'a> FnCx<'s, 'a> {
             self.sema.diags.push(d);
             return None;
         }
-        Some(self.sema.struct_ty(def).0)
+        Some(self.instance(def, last.generics.as_deref(), p.span))
     }
 }

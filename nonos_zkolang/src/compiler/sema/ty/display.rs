@@ -3,12 +3,13 @@
  AGPL-3.0-or-later
 */
 
-/*! Types as a diagnostic writes them: `u8`, `(field, bool)`, `[u8; 4]`, `{integer}`. */
+/*! Types as a diagnostic writes them: `u8`, `(field, bool)`, `[u8; 4]`, `Pair<u8>`, `_`. */
 
 use alloc::format;
 use alloc::string::String;
+use alloc::vec::Vec;
 
-use super::{TyId, TyKind, Types};
+use super::{GenArg, TyId, TyKind, Types};
 
 impl Types {
     /** How a message names type `t`. */
@@ -36,9 +37,23 @@ impl Types {
             }
             TyKind::Array(e, n) => format!("[{}; {n}]", self.display(*e)),
             TyKind::Var(_) => String::from("{integer}"),
-            TyKind::Adt(_) => self
-                .adt(t)
-                .map_or_else(|| String::from("{unknown}"), |a| a.name.clone()),
+            TyKind::Infer(_) => String::from("_"),
+            TyKind::Adt(_) => match self.adt(t) {
+                Some(a) if a.args.is_empty() => a.name.clone(),
+                Some(a) => {
+                    let args: Vec<String> = a.args.iter().map(|g| self.arg(*g)).collect();
+                    format!("{}<{}>", a.name, args.join(", "))
+                }
+                None => String::from("{unknown}"),
+            },
+        }
+    }
+
+    /** How a message names the generic argument `g`. */
+    pub fn arg(&self, g: GenArg) -> String {
+        match g {
+            GenArg::Type(t) => self.display(t),
+            GenArg::Const(n) => format!("{n}"),
         }
     }
 }

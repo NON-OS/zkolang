@@ -12,7 +12,7 @@
 use alloc::string::String;
 use alloc::vec::Vec;
 
-use super::TyId;
+use super::{GenArg, TyId};
 use crate::compiler::tir::Labels;
 
 /** A struct or enum, as an index into the type table's entries. */
@@ -53,6 +53,8 @@ pub struct Adt {
     pub name: String,
     pub def: u32,
     pub module: u32,
+    /** The generic arguments of this instance; none for an item that takes none. */
+    pub args: Vec<GenArg>,
     pub is_enum: bool,
     pub variants: Vec<AdtVariant>,
 }

@@ -11,7 +11,7 @@ use alloc::vec::Vec;
 use super::cx::Sema;
 use super::defs::DefId;
 use crate::compiler::diag::{Code, Diagnostic};
-use crate::compiler::sema::ty::Types;
+use crate::compiler::sema::ty::{GenArg, Types};
 use crate::compiler::syntax::ast::Path;
 use crate::compiler::syntax::IntTy;
 
@@ -19,6 +19,14 @@ impl<'a> Sema<'a> {
     /** The value of the constant `p` names in module `m`, which must be a `usize`. */
     pub(super) fn const_path(&mut self, m: DefId, p: &'a Path) -> Option<i128> {
         let usize_ty = Types::int(IntTy::Usize);
+        match self.generic_named(p) {
+            Some(GenArg::Const(n)) => return Some(i128::from(n)),
+            Some(GenArg::Type(_)) => {
+                self.generic_kind(p, "a constant");
+                return None;
+            }
+            None => {}
+        }
         self.no_generics(p);
         let names: Vec<&str> = p.segments.iter().map(|s| s.ident.name.as_str()).collect();
         let def = match self.defs.resolve(m, p.root, &names) {

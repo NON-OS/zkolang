@@ -6,6 +6,7 @@
 /*! Structs in bodies: building them, and taking them apart in patterns. */
 
 mod field_of;
+mod instance;
 mod pat_bind_struct;
 mod pat_named;
 mod pat_struct;
@@ -17,5 +18,6 @@ mod shorthand;
 mod struct_form;
 mod struct_named;
 mod variant_of;
+mod variant_shape;
 
 pub(super) use field_of::Key;

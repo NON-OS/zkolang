@@ -33,6 +33,11 @@ pub enum TyKind {
     Array(TyId, u32),
     /** The type of an unsuffixed integer literal while it is not yet known (section 5.6). */
     Var(u32),
+    /**
+     * A type not yet known that may be any type, such as a generic argument to infer. It
+     * shares its numbering with `Var`, and one that meets a `Var` becomes that `Var`.
+     */
+    Infer(u32),
     /** A struct or enum, an entry of the type table. */
     Adt(AdtId),
 }

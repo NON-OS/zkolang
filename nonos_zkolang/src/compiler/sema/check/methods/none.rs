@@ -27,7 +27,7 @@ impl<'s, 'a> FnCx<'s, 'a> {
         args: &'a [Expr],
         at: Span,
     ) -> TExpr {
-        let d = if let TyKind::Var(_) = self.kind(rt) {
+        let d = if let TyKind::Var(_) | TyKind::Infer(_) = self.kind(rt) {
             let what = format!(
                 "the type of the value `{}` is called on is not known",
                 method.name

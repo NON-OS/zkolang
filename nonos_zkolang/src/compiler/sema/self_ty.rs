@@ -33,8 +33,8 @@ impl<'a> Sema<'a> {
 
     /** The labels the fields of the struct `ty` write, each under its index. */
     pub(crate) fn labels_of(&mut self, ty: TyId) -> Labels {
-        match self.types.adt(ty).map(|a| a.def) {
-            Some(def) => self.struct_ty(DefId(def)).1,
+        match self.types.adt(ty).map(|a| (a.def, a.args.clone())) {
+            Some((def, args)) => self.adt_ty(DefId(def), &args).1,
             None => Labels::default(),
         }
     }
