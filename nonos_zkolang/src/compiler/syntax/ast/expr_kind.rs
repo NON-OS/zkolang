@@ -9,7 +9,7 @@ use alloc::boxed::Box;
 use alloc::vec::Vec;
 
 use super::{Arm, AssignOp, BinOp, Block, ConstArg, Expr, FieldInit, ForIter, GenericArg};
-use super::{Ident, Lit, Path, Pattern, Type, UnOp};
+use super::{Ident, IfBranch, Lit, Path, Pattern, Type, UnOp};
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum ExprKind {
@@ -27,11 +27,8 @@ pub enum ExprKind {
     /** `( e )`, kept so the formatter preserves the author's parentheses. */
     Paren(Box<Expr>),
     Block(Box<Block>),
-    If {
-        cond: Box<Expr>,
-        then_block: Box<Block>,
-        else_branch: Option<Box<Expr>>,
-    },
+    /** `if a { .. } else if b { .. } else { .. }`: the branches in order and the last block. */
+    If(Vec<IfBranch>, Option<Box<Block>>),
     Match {
         scrutinee: Box<Expr>,
         arms: Vec<Arm>,
@@ -51,7 +48,8 @@ pub enum ExprKind {
     Continue,
     Declassify(Box<Expr>),
     Unary(UnOp, Box<Expr>),
-    Binary(BinOp, Box<Expr>, Box<Expr>),
+    /** Operators of one precedence, left to right: `a + b - c` is `(a + b) - c`. */
+    Binary(Box<Expr>, Vec<(BinOp, Expr)>),
     Cast(Box<Expr>, Type),
     Call(Box<Expr>, Vec<Expr>),
     MethodCall {

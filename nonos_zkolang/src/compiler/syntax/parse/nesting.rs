@@ -21,7 +21,7 @@ impl<'a> Parser<'a> {
                         self.span(),
                         "the parser's nesting budget runs out here",
                     )
-                    .with_help("split the expression into `let` bindings"),
+                    .with_help("name inner parts: `let` bindings for expressions, `type` aliases for types"),
                 );
             }
             return Err(Reported);

@@ -71,6 +71,14 @@ must agree with it on every run (section 14.3).
 A conforming compiler rejects every program this document calls an error, with a
 diagnostic, and never aborts, panics or fails to terminate on any input text.
 
+A compiler may bound how deeply the source nests, so that every stage walks a tree of
+bounded depth. Nesting is a bracket, block or argument list inside another, a prefix
+operator or cast applied to an operand, a field, index or call applied to a receiver,
+and an operator of one precedence taking an operand built with an operator of another.
+A run of operators of one precedence, such as a sum of any number of terms, and an
+`else if` chain of any length are not nesting. The reference compiler's bound is 128
+levels; source nested deeper is an error (E0102).
+
 ## 2. Lexical structure
 
 Source text is UTF-8. Outside comments and string literals only ASCII is permitted; any

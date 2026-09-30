@@ -19,7 +19,7 @@ codes! {
     /* Syntax. */
     UNEXPECTED_TOKEN = "E0100", "The parser expected something else at this point. The label says what it was looking for.";
     UNCLOSED_DELIMITER = "E0101", "An opening `(`, `[` or `{` without its matching close.";
-    NESTING_TOO_DEEP = "E0102", "The source nests deeper than the compiler's bound of 128 levels. Deeper input would build a tree the compiler cannot walk safely; split the expression with `let` bindings.";
+    NESTING_TOO_DEEP = "E0102", "The source nests deeper than the compiler's bound of 128 levels: brackets, blocks, prefix operators, casts, postfix chains, and operators of different precedence each nest. A run of one operator, such as a long sum, and an `else if` chain do not. Deeper input would build a tree the compiler cannot walk safely; name inner parts with `let` bindings or type aliases.";
     CHAINED_COMPARISON = "E0103", "Comparisons do not chain: `a < b < c` compares a `bool` with `c`. Write `a < b && b < c`.";
     INCLUDE_REMOVED = "E0104", "Edition 2026 has no textual include. Declare the file as a module with `mod name;` and import its items with `use`.";
     MISPLACED_STATEMENT = "E0105", "`return`, `break`, `continue` and assignment are statements and may not appear inside a larger expression.";

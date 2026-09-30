@@ -4,17 +4,16 @@
 */
 
 /*!
- * Binary operators by precedence climbing. Each link of an operator chain spends one
- * nesting level while the chain is open, because each link deepens the tree even though
- * the parser loops rather than recurses there.
+ * Binary operators by precedence climbing. The operators of one precedence in a row form
+ * one node, left-associative, so a long sum costs one nesting level however many terms it
+ * has; each such node spends one level while it is open.
  */
 
-use alloc::boxed::Box;
+use alloc::vec::Vec;
 
 use super::binop::binop;
-use super::parser::{PResult, Parser, Reported};
-use crate::compiler::diag::{Code, Diagnostic};
-use crate::compiler::syntax::ast::{Expr, ExprKind};
+use super::parser::{PResult, Parser};
+use crate::compiler::syntax::ast::{BinOp, Expr};
 
 impl<'a> Parser<'a> {
     /** An expression, without assignment. */
@@ -32,7 +31,7 @@ impl<'a> Parser<'a> {
 
     fn binary_links(&mut self, min: u8) -> PResult<Expr> {
         let mut lhs = self.cast()?;
-        let mut last_cmp = false;
+        let mut chain: Option<(u8, Vec<(BinOp, Expr)>)> = None;
         loop {
             let Some(op) = binop(self.kind()) else {
                 break;
@@ -41,26 +40,29 @@ impl<'a> Parser<'a> {
             if prec < min {
                 break;
             }
-            if op.is_comparison() && last_cmp {
-                let at = self.span();
-                self.diags.push(
-                    Diagnostic::error(
-                        Code::CHAINED_COMPARISON,
-                        "comparison operators cannot be chained",
-                        at,
-                        "a second comparison here",
-                    )
-                    .with_help("write each comparison separately and join them with `&&`"),
-                );
-                return Err(Reported);
+            if op.is_comparison() && chain.as_ref().is_some_and(|c| c.0 == prec) {
+                return Err(self.chained_comparison());
             }
             self.bump();
-            self.enter()?;
+            let extends = chain.as_ref().is_some_and(|c| c.0 == prec);
+            if !extends {
+                /* A new node wraps what came before: one level deeper, spent before the operand. */
+                self.enter()?;
+            }
             let rhs = self.binary(prec + 1)?;
-            let span = lhs.span.to(rhs.span);
-            lhs = self.mk(ExprKind::Binary(op, Box::new(lhs), Box::new(rhs)), span);
-            last_cmp = op.is_comparison();
+            match &mut chain {
+                Some((_, rest)) if extends => rest.push((op, rhs)),
+                _ => {
+                    if let Some((_, rest)) = chain.take() {
+                        lhs = self.binary_node(lhs, rest);
+                    }
+                    chain = Some((prec, alloc::vec![(op, rhs)]));
+                }
+            }
         }
-        Ok(lhs)
+        Ok(match chain {
+            Some((_, rest)) => self.binary_node(lhs, rest),
+            None => lhs,
+        })
     }
 }

@@ -3,11 +3,14 @@
  AGPL-3.0-or-later
 */
 
-/*! The parts some expressions hold: struct literal fields, `match` arms and loop iterators. */
+/*!
+ * The parts some expressions hold: struct literal fields, `if` branches, `match` arms and
+ * loop iterators.
+ */
 
 use alloc::boxed::Box;
 
-use super::{Expr, Ident, Pattern};
+use super::{Block, Expr, Ident, Pattern};
 use crate::compiler::source::Span;
 
 /** A field initializer in a struct literal, `name: value` or the shorthand `name`. */
@@ -40,4 +43,11 @@ pub enum ForIter {
     Array(Box<Expr>),
     /** `arr.enumerate()`, binding an index and an element. */
     Enumerate(Box<Expr>),
+}
+
+/** One branch of an `if`: a condition and the block it guards. */
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct IfBranch {
+    pub cond: Expr,
+    pub block: Block,
 }

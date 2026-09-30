@@ -6,37 +6,35 @@
 /*! The `if` expression and its `else if` and `else` branches. */
 
 use alloc::boxed::Box;
+use alloc::vec::Vec;
 
 use super::parser::{PResult, Parser};
-use crate::compiler::syntax::ast::{Expr, ExprKind};
+use crate::compiler::syntax::ast::{Expr, ExprKind, IfBranch};
 use crate::compiler::syntax::keyword::Keyword;
 
 impl<'a> Parser<'a> {
-    /** `if cond { .. } else if .. else { .. }`. */
+    /**
+     * `if cond { .. } else if .. else { .. }`. An `else if` chain is one node with a branch
+     * per condition, so a long chain costs no nesting.
+     */
     pub(super) fn if_expr(&mut self) -> PResult<Expr> {
         let start = self.span();
-        self.bump();
-        let cond = self.restricted(true, |p| p.expr())?;
-        let then_block = self.block()?;
-        let else_branch = if self.eat_kw(Keyword::Else) {
-            if self.at_kw(Keyword::If) {
-                Some(Box::new(self.nested(|p| p.if_expr())?))
-            } else {
-                let b = self.block()?;
-                let span = b.span;
-                Some(Box::new(self.mk(ExprKind::Block(Box::new(b)), span)))
+        let mut branches = Vec::new();
+        let mut else_block = None;
+        loop {
+            self.bump();
+            let cond = self.restricted(true, |p| p.expr())?;
+            let block = self.block()?;
+            branches.push(IfBranch { cond, block });
+            if !self.eat_kw(Keyword::Else) {
+                break;
             }
-        } else {
-            None
-        };
+            if !self.at_kw(Keyword::If) {
+                else_block = Some(Box::new(self.block()?));
+                break;
+            }
+        }
         let span = start.to(self.prev_span());
-        Ok(self.mk(
-            ExprKind::If {
-                cond: Box::new(cond),
-                then_block: Box::new(then_block),
-                else_branch,
-            },
-            span,
-        ))
+        Ok(self.mk(ExprKind::If(branches, else_block), span))
     }
 }

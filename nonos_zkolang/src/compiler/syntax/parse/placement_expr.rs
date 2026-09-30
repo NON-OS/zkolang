@@ -39,7 +39,11 @@ pub(super) fn check_kind(k: &ExprKind, diags: &mut Diagnostics) {
         ExprKind::Cast(x, _) => sub(x),
         ExprKind::Field(x, _) | ExprKind::TupleField(x, _, _) => sub(x),
         ExprKind::Return(x) => x.iter().for_each(|x| sub(x)),
-        ExprKind::Binary(_, a, b) | ExprKind::Index(a, b) => {
+        ExprKind::Binary(first, rest) => {
+            sub(first);
+            rest.iter().for_each(|(_, e)| sub(e));
+        }
+        ExprKind::Index(a, b) => {
             sub(a);
             sub(b);
         }

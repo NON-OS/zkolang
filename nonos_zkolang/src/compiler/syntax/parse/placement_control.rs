@@ -14,14 +14,12 @@ pub(super) fn check_control(k: &ExprKind, diags: &mut Diagnostics) {
     let mut sub = |e: &Expr| check_expr(e, false, diags);
     match k {
         ExprKind::Block(b) => check_block(b, diags),
-        ExprKind::If {
-            cond,
-            then_block,
-            else_branch,
-        } => {
-            sub(cond);
-            check_block(then_block, diags);
-            else_branch.iter().for_each(|e| check_expr(e, true, diags));
+        ExprKind::If(branches, else_block) => {
+            for b in branches {
+                check_expr(&b.cond, false, diags);
+                check_block(&b.block, diags);
+            }
+            else_block.iter().for_each(|b| check_block(b, diags));
         }
         ExprKind::Match { scrutinee, arms } => {
             sub(scrutinee);

@@ -38,7 +38,7 @@ pub use generic::{ConstArg, GenericArg};
 pub use item::{Item, ItemKind, SourceAst};
 pub use lit::Lit;
 pub use op::{AssignOp, BinOp, UnOp};
-pub use parts::{Arm, FieldInit, ForIter};
+pub use parts::{Arm, FieldInit, ForIter, IfBranch};
 pub use pat::{FieldPat, PatKind, Pattern};
 pub use path::{Path, PathRoot, PathSegment};
 pub use ty::{Label, Type, TypeKind};

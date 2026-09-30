@@ -8,6 +8,7 @@
 mod attr_lit;
 mod attrs;
 mod binary;
+mod binary_node;
 mod binop;
 mod block_errors;
 mod const_arg;
