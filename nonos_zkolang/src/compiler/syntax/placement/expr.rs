@@ -5,8 +5,8 @@
 
 /*! The placement check inside each expression form. */
 
-use super::placement::{check_const, check_expr};
-use super::placement_control::check_control;
+use super::check::{check_const, check_expr};
+use super::control::check_control;
 use crate::compiler::diag::Diagnostics;
 use crate::compiler::syntax::ast::ExprKind;
 

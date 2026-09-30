@@ -5,7 +5,7 @@
 
 /*! The placement check inside blocks, branches and loops, whose bodies hold statements. */
 
-use super::placement::{check_block, check_const, check_expr};
+use super::check::{check_block, check_const, check_expr};
 use crate::compiler::diag::Diagnostics;
 use crate::compiler::syntax::ast::{Expr, ExprKind, ForIter};
 

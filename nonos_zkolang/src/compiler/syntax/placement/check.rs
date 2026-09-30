@@ -14,7 +14,7 @@ use crate::compiler::diag::{Code, Diagnostic, Diagnostics};
 use crate::compiler::syntax::ast::{Block, ConstArg, Expr, Item, ItemKind, StmtKind};
 
 /** Report every statement form in a file that stands inside a larger expression. */
-pub(super) fn check_items(items: &[Item], diags: &mut Diagnostics) {
+pub(in crate::compiler::syntax) fn check_items(items: &[Item], diags: &mut Diagnostics) {
     for item in items {
         match &item.kind {
             ItemKind::Fn(f) => check_block(&f.body, diags),
@@ -59,5 +59,5 @@ pub(super) fn check_expr(e: &Expr, free: bool, diags: &mut Diagnostics) {
             .with_help("write it as its own statement, or as the last expression of a block"),
         );
     }
-    super::placement_expr::check_kind(&e.kind, diags);
+    super::expr::check_kind(&e.kind, diags);
 }

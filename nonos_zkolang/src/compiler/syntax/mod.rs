@@ -12,6 +12,7 @@ mod keyword;
 mod keyword_macro;
 pub mod lex;
 pub mod parse;
+mod placement;
 mod token;
 mod token_describe;
 mod token_kind;

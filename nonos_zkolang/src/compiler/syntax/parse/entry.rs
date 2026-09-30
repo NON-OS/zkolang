@@ -6,11 +6,11 @@
 /*! The parser's entry points. */
 
 use super::parser::Parser;
-use super::placement::check_items;
 use crate::compiler::diag::Diagnostics;
 use crate::compiler::source::{FileId, Span};
 use crate::compiler::syntax::ast::{Expr, SourceAst};
 use crate::compiler::syntax::lex::Lexed;
+use crate::compiler::syntax::placement::check_items;
 use crate::compiler::syntax::token::TokenKind;
 
 /**
