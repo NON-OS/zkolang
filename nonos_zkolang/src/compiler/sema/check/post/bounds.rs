@@ -5,7 +5,7 @@
 
 /*! A constant index must be in bounds, and a constant shift count below the width. */
 
-use super::cx::FnCx;
+use super::super::cx::FnCx;
 use crate::compiler::diag::{Code, Diagnostic};
 use crate::compiler::sema::ty::{TyId, TyKind};
 use crate::compiler::syntax::ast::BinOp;

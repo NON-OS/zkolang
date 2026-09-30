@@ -13,7 +13,7 @@ use alloc::vec;
 use alloc::vec::Vec;
 
 use crate::compiler::diag::Diagnostics;
-use crate::compiler::package::{load_package, CrateSrc};
+use crate::compiler::package::{load_package, CrateSrc, Limits};
 use crate::compiler::source::SourceMap;
 use crate::compiler::syntax::load::{load, Files};
 
@@ -47,6 +47,7 @@ pub(super) fn crates_of(
             name: String::from("crate"),
             ast: load(files, src.root, map, diags),
             deps: Vec::new(),
+            limits: Limits::default(),
         }],
     }
 }

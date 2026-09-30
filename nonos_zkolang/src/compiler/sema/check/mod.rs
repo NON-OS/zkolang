@@ -57,7 +57,6 @@ mod path_expr;
 mod path_kind;
 mod place;
 mod post;
-mod post_bounds;
 mod prim;
 mod prim_const;
 mod ref_mut;

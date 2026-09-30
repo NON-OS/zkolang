@@ -14,7 +14,7 @@ use alloc::vec::Vec;
 
 use super::collect::check_mode;
 use crate::compiler::diag::Diagnostics;
-use crate::compiler::package::CrateSrc;
+use crate::compiler::package::{CrateSrc, Limits};
 use crate::compiler::source::SourceMap;
 use crate::compiler::syntax::ast::SourceAst;
 use crate::compiler::tir::TProgram;
@@ -24,6 +24,7 @@ pub(super) struct CrateRef<'a> {
     pub(super) name: &'a str,
     pub(super) ast: &'a SourceAst,
     pub(super) deps: &'a [(String, usize)],
+    pub(super) limits: Limits,
 }
 
 /**
@@ -35,6 +36,7 @@ pub fn check(map: &mut SourceMap, ast: &SourceAst) -> (TProgram, Diagnostics) {
         name: "crate",
         ast,
         deps: &[],
+        limits: Limits::default(),
     };
     check_mode(map, &[only], false)
 }
@@ -45,6 +47,7 @@ pub fn check_tests(map: &mut SourceMap, ast: &SourceAst) -> (TProgram, Diagnosti
         name: "crate",
         ast,
         deps: &[],
+        limits: Limits::default(),
     };
     check_mode(map, &[only], true)
 }
@@ -61,6 +64,7 @@ pub fn check_crates(
             name: &c.name,
             ast: &c.ast,
             deps: &c.deps,
+            limits: c.limits,
         })
         .collect();
     check_mode(map, &refs, testing)

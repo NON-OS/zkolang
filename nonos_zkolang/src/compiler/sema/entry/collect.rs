@@ -28,6 +28,7 @@ pub(super) fn check_mode(
     let Some(first) = crates.first() else {
         return (TProgram::default(), sema.diags);
     };
+    sema.limits = first.limits;
     for c in crates {
         sema.check_attrs(&c.ast.items, &c.ast.inner_attrs, c.ast.span);
     }

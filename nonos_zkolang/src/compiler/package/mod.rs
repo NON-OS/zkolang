@@ -9,6 +9,7 @@ mod crate_src;
 mod graph;
 mod graph_dep;
 mod graph_entry;
+mod limits;
 mod load_package;
 mod manifest;
 mod manifest_check;
@@ -26,6 +27,7 @@ mod toml_string;
 mod toml_value;
 
 pub use crate_src::CrateSrc;
+pub use limits::Limits;
 pub use load_package::load_package;
 pub use manifest::{manifest, Dep, Manifest};
 pub use paths::normalize;

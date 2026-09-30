@@ -1,0 +1,8 @@
+/* The thresholds the manifest's `[cost]` sets (section 15.3): ten iterations, a thousand elements. */
+fn sum(a: [u8; 100], i: usize) -> u32 {
+    let mut s = 0u32;
+    for k in 0..20u32 { /*~ W0100 */
+        s = s + k;
+    }
+    s + a[i] as u32
+}

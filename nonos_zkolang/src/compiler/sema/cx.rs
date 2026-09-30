@@ -13,6 +13,7 @@ use alloc::collections::BTreeMap;
 use alloc::vec::Vec;
 
 use crate::compiler::diag::Diagnostics;
+use crate::compiler::package::Limits;
 use crate::compiler::sema::defs::{DefId, Defs};
 use crate::compiler::sema::ty::{GenArg, TyId, Types};
 use crate::compiler::source::Span;
@@ -49,4 +50,6 @@ pub struct Sema<'a> {
     pub depth: u32,
     /** Each span a lint is allowed in (section 17.1). */
     pub allowed: Vec<(Span, &'static str)>,
+    /** The thresholds of the cost warnings (section 15.3). */
+    pub limits: Limits,
 }

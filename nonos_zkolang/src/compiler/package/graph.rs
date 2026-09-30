@@ -55,6 +55,7 @@ impl Graph<'_> {
             name: m.name.clone(),
             ast,
             deps: Vec::new(),
+            limits: m.limits(),
         });
         self.loaded.push((dir.clone(), index));
         self.open.push(dir.clone());

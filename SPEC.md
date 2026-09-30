@@ -32,8 +32,9 @@ normative, is the only one that describes the repository rather than the languag
   A crate of several files is loaded from its root file, each `mod name;` from its own
   file (section 4.2). A program that a manifest governs is loaded with the path
   dependencies of its package and theirs, each a crate that its dependents name by the
-  key their manifests give it (section 4.1); the `[cost]` thresholds are read and checked,
-  and the warnings they set (section 15.3) are not emitted yet. The command line takes a
+  key their manifests give it (section 4.1). The cost warnings W0100 and W0101 (section
+  15.3) are given at the thresholds the manifest's `[cost]` sets; W0102, which needs each
+  function's rows, is not given yet. The command line takes a
   file's edition from `--edition`, else from the manifest that governs it, and otherwise
   compiles edition 2025, where section 4.1 says 2026. The
   standard library, written in zKølang under `std/` and built into the compiler, is
@@ -920,7 +921,8 @@ The compiler warns when a single loop unrolls to more than `unroll_warn` iterati
 (default 1024), when a dynamic index or dynamic assignment is over an array longer than
 `dyn_index_warn` elements (default 64), and when a function's inclusive rows exceed half
 the row limit. `#[allow(cost)]` on a function silences these for its body. The thresholds
-may be set in the manifest's `[cost]` table.
+may be set in the manifest's `[cost]` table. The warnings are given for the code of the
+program's own crate, not of its dependencies or `std`.
 
 ### 15.4 Registers
 
