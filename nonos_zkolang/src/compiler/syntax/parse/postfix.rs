@@ -57,7 +57,7 @@ impl<'a> Parser<'a> {
                 TokenKind::LBracket => {
                     self.enter()?;
                     self.bump();
-                    let index = self.restricted(false, |p| p.expr())?;
+                    let index = self.restricted(false, |p| p.assign_expr())?;
                     self.expect(TokenKind::RBracket)?;
                     let span = e.span.to(self.prev_span());
                     e = self.mk(ExprKind::Index(Box::new(e), Box::new(index)), span);

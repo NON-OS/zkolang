@@ -20,7 +20,7 @@ impl<'a> Parser<'a> {
         let open = self.expect(TokenKind::LBrace)?;
         let saved = self.no_struct;
         self.no_struct = false;
-        let r = self.nested(|p| p.block_body(open.span));
+        let r = self.block_body(open.span);
         self.no_struct = saved;
         r
     }

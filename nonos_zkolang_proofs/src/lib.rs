@@ -80,6 +80,8 @@ mod front_lex_recovery_tests;
 #[cfg(test)]
 mod front_lex_tests;
 #[cfg(test)]
+mod front_nesting_tests;
+#[cfg(test)]
 mod front_place_tests;
 #[cfg(test)]
 mod front_recovery_tests;

@@ -29,11 +29,12 @@ pub struct Reported;
 pub type PResult<T> = Result<T, Reported>;
 
 /**
- * The deepest the parser nests: parentheses, blocks, prefix operators, arguments, and each
- * link of an operator or postfix chain spend one level while open. Every later stage walks
- * the tree recursively, and this bound keeps that within a small host stack.
+ * The deepest the source may nest (spec section 1): each bracket, block, argument list,
+ * prefix operator, cast, postfix link and operator of another precedence spends one level
+ * while open. Every later stage walks the tree recursively, and this bound keeps that
+ * within a small host stack, with room to spare in a debug build.
  */
-pub const MAX_NESTING: usize = 128;
+pub const MAX_NESTING: usize = 64;
 
 /** The parser over one file: its tokens and comments, the cursor, and the shared counters. */
 pub struct Parser<'a> {

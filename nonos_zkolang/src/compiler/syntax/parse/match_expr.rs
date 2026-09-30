@@ -21,7 +21,7 @@ impl<'a> Parser<'a> {
         self.bump();
         let scrutinee = self.restricted(true, |p| p.expr())?;
         self.expect(TokenKind::LBrace)?;
-        let arms = self.restricted(false, |p| p.nested(|p| p.arms()))?;
+        let arms = self.restricted(false, |p| p.arms())?;
         self.expect(TokenKind::RBrace)?;
         let span = start.to(self.prev_span());
         Ok(self.mk(

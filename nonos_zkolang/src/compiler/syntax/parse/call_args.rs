@@ -20,7 +20,8 @@ impl<'a> Parser<'a> {
                 if p.at(TokenKind::Eof) {
                     return Err(p.unexpected(close.describe()));
                 }
-                out.push(p.expr()?);
+                /* The call spent a nesting level; its arguments stand side by side in it. */
+                out.push(p.assign_expr()?);
                 if !p.eat(TokenKind::Comma) {
                     break;
                 }

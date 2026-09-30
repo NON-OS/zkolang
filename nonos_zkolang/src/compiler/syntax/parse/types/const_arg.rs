@@ -29,7 +29,7 @@ impl<'a> Parser<'a> {
             }
             TokenKind::LBrace => {
                 self.bump();
-                let e = self.nested(|p| p.restricted(false, |p| p.expr()))?;
+                let e = self.restricted(false, |p| p.expr())?;
                 self.expect(TokenKind::RBrace)?;
                 Ok(ConstArg::Expr(Box::new(e)))
             }

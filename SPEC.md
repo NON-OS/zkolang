@@ -76,7 +76,7 @@ bounded depth. Nesting is a bracket, block or argument list inside another, a pr
 operator or cast applied to an operand, a field, index or call applied to a receiver,
 and an operator of one precedence taking an operand built with an operator of another.
 A run of operators of one precedence, such as a sum of any number of terms, and an
-`else if` chain of any length are not nesting. The reference compiler's bound is 128
+`else if` chain of any length are not nesting. The reference compiler's bound is 64
 levels; source nested deeper is an error (E0102).
 
 ## 2. Lexical structure

@@ -21,17 +21,16 @@ impl<'a> Parser<'a> {
         if self.at_generic_close() && !self.after_stray() {
             self.empty_generics(open.span.to(self.span()));
         }
-        self.nested(|p| {
-            let mut args = Vec::new();
-            while !p.at_generic_close() {
-                args.push(p.generic_arg()?);
-                if !p.eat(TokenKind::Comma) {
-                    break;
-                }
+        /* Each argument is a type or constant, which spends its own nesting level. */
+        let mut args = Vec::new();
+        while !self.at_generic_close() {
+            args.push(self.generic_arg()?);
+            if !self.eat(TokenKind::Comma) {
+                break;
             }
-            p.close_generics()?;
-            Ok(args)
-        })
+        }
+        self.close_generics()?;
+        Ok(args)
     }
 
     fn generic_arg(&mut self) -> PResult<GenericArg> {
