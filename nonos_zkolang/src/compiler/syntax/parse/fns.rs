@@ -25,7 +25,7 @@ impl<'a> Parser<'a> {
                 break;
             }
         }
-        self.expect(TokenKind::RParen)?;
+        self.expect_list_end(TokenKind::RParen)?;
         let ret = if self.eat(TokenKind::Arrow) {
             Some(self.ty()?)
         } else {

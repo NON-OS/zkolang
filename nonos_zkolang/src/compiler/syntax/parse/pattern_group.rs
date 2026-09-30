@@ -30,7 +30,7 @@ impl<'a> Parser<'a> {
                 }
                 elems.push(self.pattern()?);
             }
-            self.expect(TokenKind::RParen)?;
+            self.expect_list_end(TokenKind::RParen)?;
             PatKind::Tuple(elems)
         };
         let span = start.to(self.prev_span());
@@ -51,7 +51,7 @@ impl<'a> Parser<'a> {
                 break;
             }
         }
-        self.expect(TokenKind::RBracket)?;
+        self.expect_list_end(TokenKind::RBracket)?;
         Ok(PatKind::Array(elems))
     }
 }

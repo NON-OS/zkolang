@@ -45,7 +45,7 @@ impl<'a> Parser<'a> {
                 }
                 Ok(trees)
             })?;
-            self.expect(TokenKind::RBrace)?;
+            self.expect_list_end(TokenKind::RBrace)?;
             return Ok(UseTree::Nested {
                 prefix,
                 trees,

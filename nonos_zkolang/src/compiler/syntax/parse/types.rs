@@ -37,7 +37,7 @@ impl<'a> Parser<'a> {
                         }
                         elems.push(self.ty()?);
                     }
-                    self.expect(TokenKind::RParen)?;
+                    self.expect_list_end(TokenKind::RParen)?;
                     TypeKind::Tuple(elems)
                 }
             }

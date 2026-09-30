@@ -64,7 +64,7 @@ impl<'a> Parser<'a> {
                 break;
             }
         }
-        self.expect(TokenKind::RBrace)?;
+        self.expect_list_end(TokenKind::RBrace)?;
         Ok(Fields::Named(fields))
     }
 }

@@ -34,7 +34,7 @@ impl<'a> Parser<'a> {
                 }
                 elems.push(p.expr()?);
             }
-            p.expect(TokenKind::RParen)?;
+            p.expect_list_end(TokenKind::RParen)?;
             let span = start.to(p.prev_span());
             Ok(p.mk(ExprKind::Tuple(elems), span))
         })
@@ -63,7 +63,7 @@ impl<'a> Parser<'a> {
                 }
                 elems.push(p.expr()?);
             }
-            p.expect(TokenKind::RBracket)?;
+            p.expect_list_end(TokenKind::RBracket)?;
             let span = start.to(p.prev_span());
             Ok(p.mk(ExprKind::Array(elems), span))
         })

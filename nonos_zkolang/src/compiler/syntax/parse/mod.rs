@@ -53,6 +53,7 @@ mod primary_token;
 mod recover;
 mod recover_item;
 mod recover_owed;
+mod report_unexpected;
 mod reserved;
 mod skip_stmt;
 mod stmt_expr;

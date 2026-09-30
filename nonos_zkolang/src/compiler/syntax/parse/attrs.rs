@@ -42,7 +42,7 @@ impl<'a> Parser<'a> {
                     break;
                 }
             }
-            self.expect(TokenKind::RParen)?;
+            self.expect_list_end(TokenKind::RParen)?;
             args = Some(list);
         }
         self.expect(TokenKind::RBracket)?;

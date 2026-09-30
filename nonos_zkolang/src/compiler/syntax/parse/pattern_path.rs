@@ -25,7 +25,7 @@ impl<'a> Parser<'a> {
                     break;
                 }
             }
-            self.expect(TokenKind::RParen)?;
+            self.expect_list_end(TokenKind::RParen)?;
             Ok(PatKind::TupleStruct(path, elems))
         } else if self.at(TokenKind::LBrace) {
             self.bump();
@@ -66,7 +66,7 @@ impl<'a> Parser<'a> {
                 break;
             }
         }
-        self.expect(TokenKind::RBrace)?;
+        self.expect_list_end(TokenKind::RBrace)?;
         Ok((fields, rest))
     }
 }

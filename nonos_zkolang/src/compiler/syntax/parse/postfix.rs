@@ -67,7 +67,7 @@ impl<'a> Parser<'a> {
                     break;
                 }
             }
-            p.expect(close)?;
+            p.expect_list_end(close)?;
             Ok(out)
         })
     }

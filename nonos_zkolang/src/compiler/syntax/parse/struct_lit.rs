@@ -48,7 +48,7 @@ impl<'a> Parser<'a> {
                     break;
                 }
             }
-            p.expect(TokenKind::RBrace)?;
+            p.expect_list_end(TokenKind::RBrace)?;
             Ok(fields)
         })?;
         let span = path.span.to(self.prev_span());
