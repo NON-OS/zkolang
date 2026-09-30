@@ -15,7 +15,8 @@ use std::io::Read;
 use nonos_zkolang::compiler::diag::render;
 use nonos_zkolang::compiler::driver::{diagnose, prove, seed_of, SEED_BYTES};
 
-use super::modern::{built, values};
+use super::modern::built;
+use super::values::values;
 use crate::line::Line;
 use crate::out::paint;
 

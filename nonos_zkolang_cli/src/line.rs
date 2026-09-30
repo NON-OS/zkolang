@@ -20,6 +20,15 @@ impl<'a> Line<'a> {
      * still be named. A mistake is an error that ends with `usage`.
      */
     pub(crate) fn parse(args: &'a [String], known: &[&str], usage: &str) -> Result<Self, String> {
+        Line::parse_with(args, (known, &[]), usage)
+    }
+
+    /** As `parse`, with the flags `switches` too, which take no value. */
+    pub(crate) fn parse_with(
+        args: &'a [String],
+        (known, switches): (&[&str], &[&str]),
+        usage: &str,
+    ) -> Result<Self, String> {
         let wrong = |why: String| format!("{why}\n{usage}");
         let (mut file, mut flags, mut only_files) = (None, Vec::new(), false);
         let mut it = args.iter().map(String::as_str);
@@ -27,12 +36,13 @@ impl<'a> Line<'a> {
             if a == "--" && !only_files {
                 only_files = true;
             } else if a.starts_with('-') && !only_files {
-                if !known.contains(&a) {
-                    return Err(wrong(format!("unknown flag {a}")));
-                }
-                let value = it
-                    .next()
-                    .ok_or_else(|| wrong(format!("{a} needs a value")))?;
+                let value = match (known.contains(&a), switches.contains(&a)) {
+                    (true, _) => it
+                        .next()
+                        .ok_or_else(|| wrong(format!("{a} needs a value")))?,
+                    (false, true) => "",
+                    (false, false) => return Err(wrong(format!("unknown flag {a}"))),
+                };
                 if flags.iter().any(|&(f, _)| f == a) {
                     return Err(wrong(format!("{a} is given twice")));
                 }
@@ -51,5 +61,10 @@ impl<'a> Line<'a> {
             .iter()
             .find(|&&(f, _)| f == flag)
             .map(|&(_, v)| v)
+    }
+
+    /** Whether the switch `flag` was given. */
+    pub(crate) fn switch(&self, flag: &str) -> bool {
+        self.flags.iter().any(|&(f, _)| f == flag)
     }
 }

@@ -11,7 +11,7 @@
 
 use std::fs;
 
-use nonos_zkolang::compiler::diag::render;
+use nonos_zkolang::compiler::diag::{render, to_json};
 use nonos_zkolang::compiler::driver::{build, Built, Source};
 use nonos_zkolang::compiler::source::SourceMap;
 
@@ -20,7 +20,8 @@ use crate::line::Line;
 
 /**
  * The program `line` names, built, and its source map. Its warnings are printed to
- * standard error; if it does not build, every diagnostic is, and the error counts them.
+ * standard error, or with `--json` as one JSON array on standard output; if it does not
+ * build, every diagnostic is, and the error counts them.
  */
 pub(super) fn built(line: &Line) -> Result<(SourceMap, Built), String> {
     let src = fs::read_to_string(line.file).map_err(|e| format!("read {}: {e}", line.file))?;
@@ -38,8 +39,13 @@ pub(super) fn built(line: &Line) -> Result<(SourceMap, Built), String> {
         }
         Err(d) => (None, d),
     };
-    for d in diags.items() {
-        eprint!("{}", render(&map, d));
+    if line.switch("--json") {
+        println!("{}", to_json(&map, diags.items()));
+    } else {
+        diags
+            .items()
+            .iter()
+            .for_each(|d| eprint!("{}", render(&map, d)));
     }
     let errors = diags.items().iter().filter(|d| d.is_error()).count();
     match built {
@@ -53,23 +59,4 @@ pub(super) fn built(line: &Line) -> Result<(SourceMap, Built), String> {
             Err(format!("{}: {errors}; nothing was compiled", line.file))
         }
     }
-}
-
-/**
- * The comma-separated values given for `flag`, one per scalar of the parameters, as signed
- * decimals; none if the flag is absent. A value that is not a decimal integer is refused
- * by name, since dropping it would move every later value onto another parameter.
- */
-pub(super) fn values(line: &Line, flag: &str) -> Result<Vec<i128>, String> {
-    let list = line.value(flag).unwrap_or("");
-    if list.trim().is_empty() {
-        return Ok(Vec::new());
-    }
-    list.split(',')
-        .map(|t| {
-            let t = t.trim();
-            t.parse::<i128>()
-                .map_err(|_| format!("{flag}: `{t}` is not a decimal integer"))
-        })
-        .collect()
 }

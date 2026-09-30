@@ -22,10 +22,11 @@ mod out;
 mod render_run;
 
 const USAGE: &str = "\
-zkolang <run|check|test|build|key|fee> <file.zkl> [options]
+zkolang <run|check|test|explain|build|key|fee> <file.zkl> [options]
   run   <file> [--input a,b] [--witness x,y]     compile, prove, report
   check <file>                                   compile only
   test  <file>                                   run each #[test] of an edition 2026 crate
+  explain <code>                                 the long description of a diagnostic code
   --edition 2026 compiles the new language: run takes [--public a,b] [--secret x,y],
   one value per scalar of main's public and secret parameters, and hides the secrets
   build <file> [--target c|asm|python] [--out f] emit a native backend
@@ -39,6 +40,7 @@ fn main() {
         Some("run") => cmd::run(rest),
         Some("check") => cmd::check(rest),
         Some("test") => cmd::test(rest),
+        Some("explain") => cmd::explain(rest),
         Some("build") => cmd::build(rest),
         Some("key") => cmd::key(rest),
         Some("fee") => cmd::fee(rest),

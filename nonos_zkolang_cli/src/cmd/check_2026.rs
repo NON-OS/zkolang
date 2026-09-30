@@ -9,10 +9,12 @@ use super::modern::built;
 use crate::line::Line;
 use crate::out::paint;
 
-/** Build the program `line` names and print its cost. */
+/** Build the program `line` names and print its cost, unless `--json` asks for the diagnostics alone. */
 pub(super) fn check(line: &Line) -> Result<(), String> {
     let (_, b) = built(line)?;
     let rows = b.compiled.machine.ops.len();
-    println!("{}  {rows} rows", paint("ok", "1;32"));
+    if !line.switch("--json") {
+        println!("{}  {rows} rows", paint("ok", "1;32"));
+    }
     Ok(())
 }
