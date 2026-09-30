@@ -25,7 +25,7 @@ impl<'a> Parser<'a> {
     /** Report that the current token is not what was expected. */
     pub(super) fn unexpected(&mut self, expected: &str) -> Reported {
         let t = self.tok();
-        if t.kind == TokenKind::Error {
+        if t.kind == TokenKind::Error || self.at_reserved() {
             /* The lexer already reported this text. */
             return Reported;
         }

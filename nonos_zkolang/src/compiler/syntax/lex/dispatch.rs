@@ -38,7 +38,7 @@ pub(super) fn scan_token(
         if c.is_ascii_digit() {
             number(&text[start..i], span(start, i), diags)
         } else {
-            word(&text[start..i], span(start, i), diags)
+            word(text, start, i, span(start, i), diags)
         }
     } else if c == b'"' {
         let (next, problem) = scan_string(b, i, len);

@@ -60,6 +60,9 @@ impl<'a> Parser<'a> {
     /** One statement, or the expression that may be the block's tail. */
     fn stmt(&mut self) -> PResult<Option<StmtOrTail>> {
         let start = self.span();
+        if self.skip_reserved_stmt() {
+            return Ok(None);
+        }
         let stmt = match self.kind() {
             TokenKind::Semi => self.stmt_empty(start),
             TokenKind::Kw(Keyword::Let) => self.stmt_let(start)?,

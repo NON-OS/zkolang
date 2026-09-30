@@ -39,7 +39,7 @@ impl<'a> Parser<'a> {
                 ItemKind::Use(tree)
             }
             TokenKind::Kw(Keyword::Impl) => ItemKind::Impl(self.impl_decl()?),
-            TokenKind::Ident if self.text_of(self.tok()) == "include" => {
+            _ if self.at_include() => {
                 self.skip_include();
                 return Ok(None);
             }

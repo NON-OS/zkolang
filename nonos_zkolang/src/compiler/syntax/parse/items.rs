@@ -49,21 +49,4 @@ impl<'a> Parser<'a> {
         }
         items
     }
-
-    /** Report a textual `include`, the current token, and skip past its `;`. */
-    pub(super) fn skip_include(&mut self) {
-        self.diags.push(
-            Diagnostic::error(
-                Code::INCLUDE_REMOVED,
-                "`include` is not part of edition 2026",
-                self.span(),
-                "textual include",
-            )
-            .with_help(
-                "declare the file as a module with `mod name;` and import its items with `use`",
-            ),
-        );
-        self.skip_until(&[TokenKind::Semi]);
-        self.eat(TokenKind::Semi);
-    }
 }

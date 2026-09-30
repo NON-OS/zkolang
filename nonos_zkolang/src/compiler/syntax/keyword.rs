@@ -30,6 +30,7 @@ keywords! {
     Impl = "impl",
     In = "in",
     Let = "let",
+    Limit = "limit",
     Match = "match",
     Mod = "mod",
     Mut = "mut",

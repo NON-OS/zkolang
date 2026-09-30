@@ -10,6 +10,7 @@ use alloc::boxed::Box;
 use super::parser::{PResult, Parser, Reported};
 use crate::compiler::diag::{Code, Diagnostic};
 use crate::compiler::syntax::ast::{Expr, ExprKind};
+use crate::compiler::syntax::keyword::Keyword;
 use crate::compiler::syntax::token::TokenKind;
 
 impl<'a> Parser<'a> {
@@ -18,7 +19,7 @@ impl<'a> Parser<'a> {
         let start = self.span();
         self.bump();
         let cond = self.restricted(true, |p| p.expr())?;
-        let limit_ok = self.at(TokenKind::Ident) && self.text_of(self.tok()) == "limit";
+        let limit_ok = self.at(TokenKind::Kw(Keyword::Limit));
         if !limit_ok {
             let d = Diagnostic::error(
                 Code::UNEXPECTED_TOKEN,

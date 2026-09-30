@@ -13,10 +13,17 @@ use crate::compiler::syntax::keyword::{Keyword, RESERVED};
 use crate::compiler::syntax::token::TokenKind;
 
 /**
- * Classify a word: the wildcard, a keyword, a reserved word (an error, lexed as an
- * identifier so parsing continues), or an identifier.
+ * Classify the word at bytes `start..end` of `text`: the wildcard, a keyword, a reserved
+ * word (an error, lexed as an identifier so parsing continues), or an identifier.
  */
-pub(super) fn word(w: &str, span: Span, diags: &mut Diagnostics) -> TokenKind {
+pub(super) fn word(
+    text: &str,
+    start: usize,
+    end: usize,
+    span: Span,
+    diags: &mut Diagnostics,
+) -> TokenKind {
+    let w = &text[start..end];
     if w == "_" {
         return TokenKind::Wildcard;
     }
@@ -24,16 +31,33 @@ pub(super) fn word(w: &str, span: Span, diags: &mut Diagnostics) -> TokenKind {
         return TokenKind::Kw(k);
     }
     /*
-     * `include` is reserved too, but the parser reports it where it can say what replaces
-     * it, so the lexer lets it through.
+     * `include "file";` is the edition 2025 textual include, which the parser reports with
+     * its replacement; every other use of the word is a reserved word used as a name.
      */
-    if w != "include" && RESERVED.contains(&w) {
-        diags.push(Diagnostic::error(
+    let textual_include = w == "include" && text[end..].trim_start().starts_with('"');
+    if RESERVED.contains(&w) && !textual_include {
+        let d = Diagnostic::error(
             Code::RESERVED_WORD,
             format!("`{w}` is reserved"),
             span,
             "reserved for a future edition",
-        ));
+        );
+        diags.push(match instead(w) {
+            Some(h) => d.with_help(h),
+            None => d,
+        });
     }
     TokenKind::Ident
+}
+
+/** What to write instead of a reserved word that names a Rust feature. */
+fn instead(w: &str) -> Option<&'static str> {
+    Some(match w {
+        "loop" => "every loop is bounded: write `while cond limit N { ... }` or `for i in a..b`",
+        "static" => "write a constant with `const`",
+        "trait" => "functions on a type go in an `impl Type { ... }` block",
+        "ref" => "a binding pattern binds by value; drop `ref`",
+        "where" => "there are no bounds to state: generic functions are checked per use",
+        _ => return None,
+    })
 }
