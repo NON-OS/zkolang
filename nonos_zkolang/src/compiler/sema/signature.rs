@@ -26,6 +26,7 @@ impl<'a> Sema<'a> {
             };
         };
         let (m, decl, owner) = (info.module, info.decl, info.owner);
+        let owner = self.owner_of(f, owner);
         let outer = core::mem::replace(&mut self.self_ty, owner);
         let mut params = Vec::with_capacity(decl.params.len());
         for p in &decl.params {

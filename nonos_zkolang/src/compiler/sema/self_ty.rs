@@ -13,7 +13,7 @@ use super::defs::DefId;
 use crate::compiler::diag::{Code, Diagnostic};
 use crate::compiler::sema::ty::{TyId, Types};
 use crate::compiler::source::Span;
-use crate::compiler::tir::Labels;
+use crate::compiler::tir::{FnId, Labels};
 
 impl<'a> Sema<'a> {
     /** The type `Self` names at `at`, and its labels. */
@@ -37,5 +37,18 @@ impl<'a> Sema<'a> {
             Some((def, args)) => self.adt_ty(DefId(def), &args).1,
             None => Labels::default(),
         }
+    }
+
+    /**
+     * The type `Self` names in function `f`: `owner` if known, else the type its generic
+     * `impl` block is for, lowered with the generic parameters in scope.
+     */
+    pub(crate) fn owner_of(&mut self, f: FnId, owner: Option<TyId>) -> Option<TyId> {
+        if owner.is_some() {
+            return owner;
+        }
+        let info = self.fns.get(f.0 as usize)?;
+        let (m, t) = (info.module, info.impl_self?);
+        Some(self.lower_ty(m, t).0)
     }
 }

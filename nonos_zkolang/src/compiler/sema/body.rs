@@ -27,8 +27,8 @@ impl<'a> Sema<'a> {
         }
         let (decl, owner, args, origin) = (info.decl, info.owner, info.args.clone(), info.origin);
         self.set_body(f, State::Checking);
-        let generics = self.bind_generics(&decl.generics, &args);
-        let generics = generics.unwrap_or_else(|| self.generics.clone());
+        let generics = self.bind_fn(f, &args);
+        let owner = self.owner_of(f, owner);
         let outer = core::mem::replace(&mut self.self_ty, owner);
         let errors = self.diags.error_count();
         let out = self.within(decl.name.span, |s| s.body_of(f));

@@ -9,7 +9,14 @@
  */
 
 mod assoc_fn;
+mod assoc_generic;
 mod call;
+mod impl_args;
+mod impl_match;
+mod impl_match_arg;
+mod impl_mentions;
+mod member;
+mod member_generics;
 mod none;
 mod prim_assoc;
 mod self_value;

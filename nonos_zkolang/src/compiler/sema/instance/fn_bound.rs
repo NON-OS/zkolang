@@ -10,8 +10,8 @@
 
 use alloc::format;
 
-use super::cx::Sema;
-use super::defs::DefId;
+use super::super::cx::Sema;
+use super::super::defs::DefId;
 use crate::compiler::diag::{Code, Diagnostic};
 use crate::compiler::sema::ty::GenArg;
 use crate::compiler::source::Span;
@@ -25,7 +25,7 @@ const WRITTEN: usize = 1024;
 
 impl<'a> Sema<'a> {
     /** Whether an instance of `def`, named `name`, for `args` may be made at `at` in `from`. */
-    pub(super) fn instance_bounded(
+    pub(crate) fn instance_bounded(
         &mut self,
         (def, name): (DefId, &str),
         args: &[GenArg],

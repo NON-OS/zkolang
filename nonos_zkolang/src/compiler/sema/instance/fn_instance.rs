@@ -9,7 +9,7 @@
  * the bounds `fn_bound` keeps.
  */
 
-use super::cx::{Sema, State};
+use super::super::cx::{Sema, State};
 use crate::compiler::sema::ty::GenArg;
 use crate::compiler::source::Span;
 use crate::compiler::tir::FnId;
@@ -34,6 +34,9 @@ impl<'a> Sema<'a> {
         if !self.instance_bounded((inst.def, &inst.decl.name.name), args, from, at) {
             return None;
         }
+        let outer = self.bind_fn(t, args);
+        inst.owner = self.owner_of(t, inst.owner);
+        self.generics = outer;
         (inst.template, inst.args, inst.origin) = (false, args.to_vec(), Some((from, at)));
         (inst.sig, inst.body, inst.clean) = (None, State::Unchecked, false);
         let id = FnId(u32::try_from(self.fns.len()).ok()?);

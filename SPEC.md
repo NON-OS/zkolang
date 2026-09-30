@@ -27,9 +27,9 @@ normative, is the only one that describes the repository rather than the languag
   parser with its error recovery, the placement check and the diagnostics. So do the
   checker of sections 4 to 13 and the reference interpreter of the typed IR, for a
   program in one file, structs, enums, `match`, `impl` blocks, methods and `Self`
-  included, and generic structs, enums, aliases and functions. The checker reports each
-  form it does not check yet (generic `impl` blocks and generic methods, and modules in
-  their own files) as E0904. The back end compiles the typed IR of such a
+  included, and generic structs, enums, aliases, functions, methods and `impl` blocks.
+  The checker reports each form it does not check yet (modules in their own files) as
+  E0904. The back end compiles the typed IR of such a
   program to the machine: lowering to SSA, the passes, gadget expansion, scheduling, register allocation
   and a check of the machine program against the SSA. `compiler::driver::build` and
   `prove` build a program and prove a run of it with the STARK, hiding the witness;
@@ -710,6 +710,13 @@ the result, or the value of a `return`.
 the same crate. A function whose first parameter is `self` or `&mut self` is a method,
 called `value.m(args)`; others are associated functions, called `T::f(args)`. At most one
 `impl` item may define a given name for a type.
+
+A generic `impl<T> G<T> { ... }` is for a struct or enum `G`; its type may place its
+parameters anywhere in `G`'s arguments, as in `impl<T> G<(T, u8)>`. A function of it is
+found through a type when the type matches the block's type, which gives the block's
+parameters their arguments; through `G` named without arguments, `G::f(..)`, they are
+inferred. A function of an `impl` block for one instance, such as `impl G<u8>`, and a
+function of a generic block for the same struct or enum may not share a name.
 
 ### 10.3 `&mut` parameters
 

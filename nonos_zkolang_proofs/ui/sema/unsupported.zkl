@@ -1,11 +1,9 @@
 /* Forms this build does not check yet are each reported once (E0904). */
 #![allow(unused)]
-struct P { x: u8 }
+mod elsewhere; /*~ E0904 */
+
 struct G<T> { x: T }
-fn id<T>(x: T) -> T { x }
-impl P {
-    fn get(self) -> u8 { 1 }
-}
-impl<T> G<T> { /*~ E0904 */
-    fn get(self) -> u8 { 1 }
+
+impl<T> G<T> {
+    fn get(self) -> T { self.x }
 }

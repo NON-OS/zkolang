@@ -13,6 +13,7 @@
 use alloc::vec::Vec;
 
 use super::cx::FnCx;
+use crate::compiler::sema::ty::GenArg;
 use crate::compiler::source::Span;
 use crate::compiler::syntax::ast::{Expr, Path};
 use crate::compiler::tir::{FnId, TArg, TExpr, TExprKind};
@@ -33,8 +34,19 @@ impl<'s, 'a> FnCx<'s, 'a> {
         let Some(generics) = self.generic_args(def, given, at) else {
             return self.check_args_then_error(args, at);
         };
+        self.call_template(t, (p.last_name(), generics), args, at)
+    }
+
+    /** A call of the template `t`, named `name`, for `generics`, on `args`. */
+    pub(crate) fn call_template(
+        &mut self,
+        t: FnId,
+        (name, generics): (&str, Vec<GenArg>),
+        args: &'a [Expr],
+        at: Span,
+    ) -> TExpr {
         let sig = self.sema.sig_with(t, &generics);
-        self.arity_of(p.last_name(), sig.params.len(), args.len(), at);
+        self.arity_of(name, sig.params.len(), args.len(), at);
         let targs: Vec<TArg> = args
             .iter()
             .enumerate()

@@ -11,7 +11,7 @@
 use alloc::vec::Vec;
 
 use super::super::cx::FnCx;
-use crate::compiler::sema::ty::TyId;
+use crate::compiler::sema::ty::{GenArg, TyId};
 use crate::compiler::source::Span;
 use crate::compiler::syntax::ast::{Expr, Ident, Param};
 use crate::compiler::tir::{FnId, TArg, TExpr, TExprKind};
@@ -19,11 +19,12 @@ use crate::compiler::tir::{FnId, TArg, TExpr, TExprKind};
 impl<'s, 'a> FnCx<'s, 'a> {
     /**
      * The call of the method `fid` on `receiver`, of type `ty`, checked as `recv` with the
-     * diagnostics from `mark` on, which a `&mut self` receiver checks again as a place.
+     * diagnostics from `mark` on, which a `&mut self` receiver checks again as a place;
+     * for a generic method, `generics` are its template's arguments.
      */
     pub(super) fn user_method(
         &mut self,
-        fid: FnId,
+        (fid, generics): (FnId, Option<Vec<GenArg>>),
         (receiver, recv, ty, mark): (&'a Expr, TExpr, TyId, usize),
         method: &Ident,
         args: &'a [Expr],
@@ -37,7 +38,10 @@ impl<'s, 'a> FnCx<'s, 'a> {
         if !matches!(is_method, Some(Param::SelfParam { .. })) {
             return self.not_a_method(ty, method, args, at);
         }
-        let sig = self.sema.sig(fid);
+        let sig = match &generics {
+            Some(g) => self.sema.sig_with(fid, g),
+            None => self.sema.sig(fid),
+        };
         let first = match sig.params.first().is_some_and(|p| p.2) {
             true => {
                 self.sema.diags.rewind(mark);
@@ -59,6 +63,9 @@ impl<'s, 'a> FnCx<'s, 'a> {
             targs.push(self.arg(a, sig.params.get(i + 1)));
         }
         self.check_disjoint(&targs);
+        if let Some(g) = generics {
+            self.pending.push((at, g));
+        }
         TExpr {
             kind: TExprKind::Call(fid, targs),
             ty: sig.ret,

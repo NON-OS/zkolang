@@ -60,7 +60,7 @@ impl<'s, 'a> FnCx<'s, 'a> {
                 method,
                 generics,
                 args,
-            } => self.method_call(receiver, method, generics.is_some(), args, want, at),
+            } => self.method_call(receiver, method, generics.as_deref(), args, want, at),
             ExprKind::Field(a, name) => self.named_field(a, name, at),
             ExprKind::TupleField(a, i, _) => self.tuple_field(a, *i, at),
             ExprKind::Index(a, i) => self.index(a, i, at),

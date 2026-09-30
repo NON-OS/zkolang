@@ -16,7 +16,7 @@ use super::adt_enum::form_of;
 use super::cx::Sema;
 use super::defs::DefId;
 use crate::compiler::sema::ty::{AdtVariant, GenArg};
-use crate::compiler::syntax::ast::{GenericParam, Item, ItemKind};
+use crate::compiler::syntax::ast::{Item, ItemKind};
 use crate::compiler::tir::Labels;
 
 impl<'a> Sema<'a> {
@@ -49,24 +49,5 @@ impl<'a> Sema<'a> {
         };
         self.generics = outer;
         Some(out)
-    }
-
-    /**
-     * Put the generic parameters `params` in scope, each standing for its argument, and
-     * return what was in scope; `None`, with nothing changed, if the numbers differ.
-     */
-    pub(crate) fn bind_generics(
-        &mut self,
-        params: &[GenericParam],
-        args: &[GenArg],
-    ) -> Option<Vec<(alloc::string::String, GenArg)>> {
-        if params.len() != args.len() {
-            return None;
-        }
-        let bound = params
-            .iter()
-            .zip(args)
-            .map(|(p, a)| (p.name().name.clone(), *a));
-        Some(core::mem::replace(&mut self.generics, bound.collect()))
     }
 }

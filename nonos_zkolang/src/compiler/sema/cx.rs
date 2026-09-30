@@ -16,34 +16,10 @@ use crate::compiler::diag::Diagnostics;
 use crate::compiler::sema::defs::{DefId, Defs};
 use crate::compiler::sema::ty::{GenArg, TyId, Types};
 use crate::compiler::source::Span;
-use crate::compiler::tir::{ConstId, FnId, Labels};
+use crate::compiler::tir::{ConstId, FnId};
 
+pub use super::cx_state::{Instance, Lowered, Sig, State};
 pub use super::info::{ConstInfo, FnInfo};
-
-/** Where the check of a body or constant stands. */
-#[derive(Clone, Debug)]
-pub enum State<T> {
-    Unchecked,
-    /** Being checked: meeting it again is a cycle. */
-    Checking,
-    Done(T),
-    /** Checked with errors, which are reported. */
-    Failed,
-}
-
-/** A function's parameter and result types, and the labels they write. */
-#[derive(Clone, Debug)]
-pub struct Sig {
-    pub params: Vec<(TyId, Labels, bool)>,
-    pub ret: TyId,
-    pub ret_labels: Labels,
-}
-
-/** An item, and the generic arguments of one of its instances. */
-pub type Instance = (DefId, Vec<GenArg>);
-
-/** Each instance of a type's item lowered, with the labels it writes, or being lowered. */
-pub type Lowered = BTreeMap<Instance, State<(TyId, Labels)>>;
 
 /** Everything semantic analysis knows about one program. */
 #[derive(Debug, Default)]
@@ -65,6 +41,8 @@ pub struct Sema<'a> {
     pub instances: BTreeMap<(FnId, Vec<GenArg>), FnId>,
     /** The functions of `impl` blocks, by the type and their name. */
     pub assoc: BTreeMap<(TyId, alloc::string::String), FnId>,
+    /** The functions of generic `impl` blocks, by the struct or enum and their name. */
+    pub generic_assoc: BTreeMap<(DefId, alloc::string::String), FnId>,
     /** The type `Self` names where a signature or body is being checked, if any. */
     pub self_ty: Option<TyId>,
     /** How many on-demand checks are open, one inside another. */

@@ -19,7 +19,10 @@ impl<'a> Sema<'a> {
     /** Register the function `f`, the item `member` of an `impl` block for `ty` in `m`. */
     pub(super) fn member(&mut self, ty: TyId, member: &'a Item, f: &'a FnDecl, m: DefId) {
         let key = (ty, String::from(f.name.name.as_str()));
-        if self.assoc.contains_key(&key) {
+        let generic = self.types.adt(ty).map(|a| (DefId(a.def), key.1.clone()));
+        if self.assoc.contains_key(&key)
+            || generic.is_some_and(|g| self.generic_assoc.contains_key(&g))
+        {
             let what = format!(
                 "`{}` already has a function `{}`",
                 self.types.display(ty),

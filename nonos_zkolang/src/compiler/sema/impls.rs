@@ -25,7 +25,7 @@ impl<'a> Sema<'a> {
                 continue;
             }
             match &item.kind {
-                ItemKind::Impl(imp) => self.impl_block(item, imp, m),
+                ItemKind::Impl(imp) => self.impl_block(imp, m),
                 ItemKind::Mod(md) => {
                     let inner = self
                         .defs
@@ -39,9 +39,9 @@ impl<'a> Sema<'a> {
         }
     }
 
-    fn impl_block(&mut self, item: &'a Item, imp: &'a ImplDecl, m: DefId) {
+    fn impl_block(&mut self, imp: &'a ImplDecl, m: DefId) {
         if !imp.generics.is_empty() {
-            return self.not_checked("generic impl blocks", item.span);
+            return self.generic_impl(imp, m);
         }
         let (ty, _) = self.lower_ty(m, &imp.self_ty);
         if self.types.adt(ty).is_none() {
@@ -63,10 +63,6 @@ impl<'a> Sema<'a> {
             let ItemKind::Fn(f) = &member.kind else {
                 continue;
             };
-            if !f.generics.is_empty() {
-                self.not_checked("generic functions", f.name.span);
-                continue;
-            }
             self.member(ty, member, f, m);
         }
     }

@@ -12,7 +12,7 @@
 use super::super::cx::FnCx;
 use crate::compiler::sema::ty::TyId;
 use crate::compiler::source::Span;
-use crate::compiler::syntax::ast::{Expr, Ident};
+use crate::compiler::syntax::ast::{Expr, GenericArg, Ident};
 use crate::compiler::tir::{TExpr, TExprKind};
 
 /** The methods whose value has the receiver's type. */
@@ -33,7 +33,7 @@ impl<'s, 'a> FnCx<'s, 'a> {
         &mut self,
         receiver: &'a Expr,
         method: &Ident,
-        generic: bool,
+        given: Option<&'a [GenericArg]>,
         args: &'a [Expr],
         want: Option<TyId>,
         at: Span,
@@ -44,13 +44,13 @@ impl<'s, 'a> FnCx<'s, 'a> {
         let rt = self.resolve(recv.ty);
         if self.sema.types.adt(rt).is_some() {
             let recv = (receiver, recv, rt, mark);
-            return self.struct_method(recv, (method, generic), args, at);
+            return self.struct_method(recv, (method, given), args, at);
         }
         let (b, params, ret) = match self.method_sig(receiver, method, rt, args, at) {
             Ok(sig) => sig,
             Err(done) => return done,
         };
-        if generic {
+        if given.is_some() {
             self.no_generic_args(method);
         }
         self.arity(method, params.len(), args, at);

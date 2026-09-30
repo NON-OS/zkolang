@@ -8,7 +8,7 @@
 use super::super::cx::FnCx;
 use crate::compiler::sema::ty::TyId;
 use crate::compiler::source::Span;
-use crate::compiler::syntax::ast::{Expr, Ident};
+use crate::compiler::syntax::ast::{Expr, GenericArg, Ident};
 use crate::compiler::tir::TExpr;
 
 impl<'s, 'a> FnCx<'s, 'a> {
@@ -19,19 +19,19 @@ impl<'s, 'a> FnCx<'s, 'a> {
     pub(super) fn struct_method(
         &mut self,
         recv: (&'a Expr, TExpr, TyId, usize),
-        (method, generic): (&Ident, bool),
+        (method, given): (&Ident, Option<&'a [GenericArg]>),
         args: &'a [Expr],
         at: Span,
     ) -> TExpr {
-        if generic {
-            self.no_generic_args(method);
-        }
-        let Some(fid) = self.member_fn(recv.2, &method.name, method.span) else {
+        let Some((fid, impl_args)) = self.member_fn(recv.2, &method.name, method.span) else {
             args.iter().for_each(|a| {
                 self.infer(a, None);
             });
             return self.error(at);
         };
-        self.user_method(fid, recv, method, args, at)
+        let Some(generics) = self.member_generics((fid, impl_args), given, method.span) else {
+            return self.check_args_then_error(args, at);
+        };
+        self.user_method((fid, generics), recv, method, args, at)
     }
 }

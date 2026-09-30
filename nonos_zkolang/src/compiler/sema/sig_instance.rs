@@ -18,10 +18,8 @@ impl<'a> Sema<'a> {
         if let Some(s) = &info.sig {
             return s.clone();
         }
-        let (params, args) = (&info.decl.generics, info.args.clone());
-        let outer = self
-            .bind_generics(params, &args)
-            .unwrap_or_else(|| self.generics.clone());
+        let args = info.args.clone();
+        let outer = self.bind_fn(f, &args);
         let sig = self.lower_sig(f);
         self.generics = outer;
         if let Some(info) = self.fns.get_mut(f.0 as usize) {
@@ -35,13 +33,7 @@ impl<'a> Sema<'a> {
      * may hold type variables of the body that calls it; it is not kept.
      */
     pub(crate) fn sig_with(&mut self, f: FnId, args: &[GenArg]) -> Sig {
-        let params = self
-            .fns
-            .get(f.0 as usize)
-            .map_or(&[][..], |i| &i.decl.generics);
-        let outer = self
-            .bind_generics(params, args)
-            .unwrap_or_else(|| self.generics.clone());
+        let outer = self.bind_fn(f, args);
         let sig = self.lower_sig(f);
         self.generics = outer;
         sig

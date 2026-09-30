@@ -4,9 +4,8 @@
 */
 
 /*!
- * Generic arguments written on a path (section 5.5): one per parameter of the item, a type
- * for a type parameter and a constant `usize` for a constant one (E0701). A generic
- * argument is a whole type: it writes no `secret` or `public` (section 5.4).
+ * Generic arguments written on a path (section 5.5): one per parameter, a type or a
+ * constant `usize` as it is (E0701), writing no `secret` or `public` (section 5.4).
  */
 
 use alloc::format;
@@ -32,9 +31,12 @@ impl<'a> Sema<'a> {
         at: Span,
     ) -> Option<Vec<GenArg>> {
         if params.len() != given.len() {
-            let n = params.len();
-            let noun = if n == 1 { "argument" } else { "arguments" };
-            let what = format!("`{name}` takes {n} generic {noun}, not {}", given.len());
+            let (n, got) = (params.len(), given.len());
+            let what = match n {
+                0 => format!("`{name}` takes no generic arguments"),
+                1 => format!("`{name}` takes 1 generic argument, not {got}"),
+                _ => format!("`{name}` takes {n} generic arguments, not {got}"),
+            };
             let d = Diagnostic::error(Code::WRONG_GENERICS, what, at, "wrong number");
             self.diags.push(d);
             return None;

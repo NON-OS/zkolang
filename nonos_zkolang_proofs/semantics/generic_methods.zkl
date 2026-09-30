@@ -1,0 +1,26 @@
+/* A generic method of an `impl` block for one type (section 10.5), and `Self` in it. */
+
+struct Picker {
+    left: bool,
+}
+
+impl Picker {
+    fn pick<T>(self, a: T, b: T) -> T {
+        if self.left { a } else { b }
+    }
+
+    fn both<T>(self, x: T) -> (T, Self) {
+        (x, self)
+    }
+}
+
+#[test]
+fn a_generic_method_is_instantiated_per_call() {
+    let l = Picker { left: true };
+    let r = Picker { left: false };
+    assert l.pick(7u32, 9) == 7;
+    assert r.pick(true, false) == false;
+    assert l.pick::<u8>(1, 2) == 1;
+    let (x, p) = r.both(4i8);
+    assert x == 4 && !p.left;
+}

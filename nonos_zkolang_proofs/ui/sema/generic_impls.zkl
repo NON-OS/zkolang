@@ -1,0 +1,28 @@
+/* Generic `impl` block mistakes: names given twice, types that match no block, bodies that fail. */
+#![allow(unused)]
+struct Pair<T> { a: T, b: T }
+
+impl<T> Pair<T> {
+    fn first(self) -> T { self.a }
+    fn add(self) -> T { self.a + self.b } /*~ E0301 */
+}
+
+impl Pair<u8> {
+    fn first(self) -> u8 { self.b } /*~ E0201 */
+}
+
+impl<T> Pair<(T, u8)> {
+    fn only(self) -> T { self.a.0 }
+}
+
+impl<T> u8 {} /*~ E0205 */
+
+fn f(x: u8) -> u8 {
+    let p = Pair { a: true, b: false };
+    let a = p.add(); /*~ E0702 */
+    let b = Pair::nope(); /*~ E0308 */
+    let c = p.first::<u8>(); /*~ E0701 */
+    let d = Pair { a: (true, 1u8), b: (false, 2) }.only();
+    let e = Pair { a: 1u16, b: 2 }.only(); /*~ E0308 */
+    x
+}

@@ -12,7 +12,7 @@ use crate::compiler::interp::Value;
 use crate::compiler::sema::defs::DefId;
 use crate::compiler::sema::ty::{GenArg, TyId};
 use crate::compiler::source::Span;
-use crate::compiler::syntax::ast::{ConstDecl, FnDecl};
+use crate::compiler::syntax::ast::{ConstDecl, FnDecl, GenericParam, Type};
 use crate::compiler::tir::{FnId, TConst, TFn};
 
 /** A function of the program. */
@@ -33,24 +33,10 @@ pub struct FnInfo<'a> {
     pub args: Vec<GenArg>,
     /** For an instance, the function whose call made it, if one did, and the call. */
     pub origin: Option<(Option<FnId>, Span)>,
-}
-
-impl<'a> FnInfo<'a> {
-    /** The function `decl`, the item `def` of `module`, declared for `owner` if given. */
-    pub fn new(def: DefId, decl: &'a FnDecl, module: DefId, owner: Option<TyId>) -> FnInfo<'a> {
-        FnInfo {
-            def,
-            decl,
-            module,
-            owner,
-            sig: None,
-            body: State::Unchecked,
-            clean: false,
-            template: !decl.generics.is_empty(),
-            args: Vec::new(),
-            origin: None,
-        }
-    }
+    /** The generic parameters of the `impl` block that declares it, before its own. */
+    pub impl_generics: &'a [GenericParam],
+    /** The type a generic `impl` block is for, as written, which names its parameters. */
+    pub impl_self: Option<&'a Type>,
 }
 
 /** A constant item of the program: its checked initializer and, once evaluated, its value. */
