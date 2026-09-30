@@ -9,8 +9,11 @@
  * reported once.
  */
 
+mod bad_signature;
 mod block_errors;
 mod bracket_end;
+mod impl_items;
+mod indent;
 mod owed;
 mod recover;
 mod recover_item;
@@ -18,5 +21,6 @@ mod recover_owed;
 mod reserved;
 mod skip_stmt;
 mod stray_gap;
+mod unclosed;
 
 pub(super) use recover_item::starts_item;

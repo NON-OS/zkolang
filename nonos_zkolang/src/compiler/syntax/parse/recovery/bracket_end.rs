@@ -31,7 +31,7 @@ impl<'a> Parser<'a> {
     }
 
     /** Whether `closer` comes later on the current line, within a few tokens. */
-    fn closer_on_line(&self, closer: TokenKind) -> bool {
+    pub(in crate::compiler::syntax::parse) fn closer_on_line(&self, closer: TokenKind) -> bool {
         let ahead = self
             .tokens
             .get(self.pos..)

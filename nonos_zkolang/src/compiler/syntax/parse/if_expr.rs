@@ -24,7 +24,7 @@ impl<'a> Parser<'a> {
         loop {
             self.bump();
             let cond = self.restricted(true, |p| p.expr())?;
-            let block = self.block()?;
+            let block = self.body_block()?;
             branches.push(IfBranch { cond, block });
             if !self.eat_kw(Keyword::Else) {
                 break;

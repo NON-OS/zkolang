@@ -6,7 +6,7 @@
 /*! Expression statements, and the expression that ends a block as its value. */
 
 use super::parser::{starts_item, PResult, Parser};
-use super::stmts::StmtOrTail;
+use super::stmt::StmtOrTail;
 use crate::compiler::source::Span;
 use crate::compiler::syntax::ast::{Expr, ExprKind, Stmt, StmtKind};
 use crate::compiler::syntax::keyword::Keyword;

@@ -1,0 +1,23 @@
+/* A missing `{`, a bad signature, a stray closer or an attribute is reported once. */
+fn f(xs: [u32; 4]) -> u32 {
+    let mut acc = 0;
+    for i in 0..4 acc += xs[i]; } /*~ E0100 */
+    let x = (acc + 1)) & 0xff; /*~ E0100 */
+    #![allow(unused)] /*~ E0100 */
+    let w = 1;
+    #[inline] /*~ E0100 */
+    let y = #[inline] 3; /*~ E0100 */
+    let z = acc + ; /*~ E0100 */
+    z
+}
+
+fn g(a: &u32) -> u32 { /*~ E0100 */
+    let z = a + ; /*~ E0100 */
+    z
+}
+
+impl P {
+    const MAX: u32 = 10; /*~ E0100 */
+    type Out = u32; /*~ E0100 */
+    fn b(self) -> u32 { 1 }
+}

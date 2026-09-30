@@ -52,7 +52,7 @@ impl<'a> Parser<'a> {
                 inclusive,
             })
         })?;
-        let body = self.block()?;
+        let body = self.body_block()?;
         let span = start.to(self.prev_span());
         Ok(self.mk(
             ExprKind::For {

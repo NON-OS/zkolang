@@ -59,4 +59,8 @@ pub struct Parser<'a> {
     pub(super) no_struct: bool,
     /** Whether the type about to be parsed is a parameter's, where `&mut T` may stand. */
     pub(super) ref_mut_ok: bool,
+    /** The indentation of the line the innermost item being parsed starts on. */
+    pub(super) item_indent: usize,
+    /** Whether an unclosed block has been reported since the current item began. */
+    pub(super) unclosed_reported: bool,
 }

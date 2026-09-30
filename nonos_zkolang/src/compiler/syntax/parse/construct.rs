@@ -35,6 +35,8 @@ impl<'a> Parser<'a> {
             split: None,
             no_struct: false,
             ref_mut_ok: false,
+            item_indent: 0,
+            unclosed_reported: false,
         }
     }
 

@@ -8,7 +8,6 @@
 use alloc::vec::Vec;
 
 use super::parser::{PResult, Parser};
-use crate::compiler::diag::{Code, Diagnostic};
 use crate::compiler::syntax::ast::ModDecl;
 use crate::compiler::syntax::token::TokenKind;
 
@@ -28,12 +27,7 @@ impl<'a> Parser<'a> {
         let (inner_doc, inner_attrs) = self.inner_doc_and_attrs(open.span.hi)?;
         let items = self.nested(|p| Ok(p.items(true)))?;
         if !self.at(TokenKind::RBrace) {
-            self.diags.push(Diagnostic::error(
-                Code::UNCLOSED_DELIMITER,
-                "unclosed module",
-                open.span,
-                "this `{` is never closed",
-            ));
+            self.report_unclosed(open.span, "module");
             return Err(super::parser::Reported);
         }
         self.bump();

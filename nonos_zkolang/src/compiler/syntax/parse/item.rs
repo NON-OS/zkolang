@@ -13,6 +13,15 @@ use crate::compiler::syntax::token::TokenKind;
 impl<'a> Parser<'a> {
     /** One item, or `None` for a construct that was reported and skipped. */
     pub(super) fn item(&mut self) -> PResult<Option<Item>> {
+        let saved = self.item_indent;
+        self.item_indent = self.line_indent(self.span().lo);
+        self.unclosed_reported = false;
+        let item = self.item_inner();
+        self.item_indent = saved;
+        item
+    }
+
+    fn item_inner(&mut self) -> PResult<Option<Item>> {
         let start = self.span();
         let (doc, attrs) = self.doc_and_attrs()?;
         let vis = if self.eat_kw(Keyword::Pub) {

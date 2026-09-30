@@ -8,7 +8,6 @@
 use alloc::vec::Vec;
 
 use super::parser::{PResult, Parser};
-use crate::compiler::diag::{Code, Diagnostic};
 use crate::compiler::syntax::ast::ImplDecl;
 use crate::compiler::syntax::token::TokenKind;
 
@@ -21,13 +20,19 @@ impl<'a> Parser<'a> {
         let mut items = Vec::new();
         while !self.at(TokenKind::RBrace) {
             if self.at(TokenKind::Eof) {
-                self.diags.push(Diagnostic::error(
-                    Code::UNCLOSED_DELIMITER,
-                    "unclosed impl block",
-                    open.span,
-                    "this `{` is never closed",
-                ));
+                self.report_unclosed(open.span, "impl block");
                 return Err(super::parser::Reported);
+            }
+            if self.at_outer_item() {
+                self.report_unclosed(open.span, "impl block");
+                return Ok(ImplDecl {
+                    generics,
+                    self_ty,
+                    items,
+                });
+            }
+            if self.at_non_fn_item() {
+                continue;
             }
             let before = self.pos;
             match self.impl_item() {

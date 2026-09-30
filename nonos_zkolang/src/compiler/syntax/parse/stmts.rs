@@ -8,17 +8,11 @@
 use alloc::boxed::Box;
 use alloc::vec::Vec;
 
-use super::parser::{PResult, Parser};
+use super::parser::{PResult, Parser, Reported};
+use super::stmt::StmtOrTail;
 use crate::compiler::source::Span;
-use crate::compiler::syntax::ast::{Block, Expr, Stmt};
-use crate::compiler::syntax::keyword::Keyword;
+use crate::compiler::syntax::ast::Block;
 use crate::compiler::syntax::token::TokenKind;
-
-/** A parsed statement, or an expression that ended at the block's `}` and is its value. */
-pub(super) enum StmtOrTail {
-    Stmt(Stmt),
-    Tail(Expr),
-}
 
 impl<'a> Parser<'a> {
     /** `{ stmts tail }`. */
@@ -31,13 +25,27 @@ impl<'a> Parser<'a> {
         r
     }
 
-    fn block_body(&mut self, open: Span) -> PResult<Block> {
+    pub(super) fn block_body(&mut self, open: Span) -> PResult<Block> {
         let mut stmts = Vec::new();
         let mut tail = None;
         loop {
             match self.kind() {
                 TokenKind::RBrace => break,
-                TokenKind::Eof => return Err(self.block_unclosed(open)),
+                TokenKind::Eof => {
+                    self.report_unclosed(open, "block");
+                    return Err(Reported);
+                }
+                _ if self.at_outer_item() => {
+                    self.report_unclosed(open, "block");
+                    let span = open.to(self.prev_span());
+                    let (id, tail) = (self.id(), tail.map(Box::new));
+                    return Ok(Block {
+                        id,
+                        stmts,
+                        tail,
+                        span,
+                    });
+                }
                 _ => {}
             }
             let from = self.pos;
@@ -55,20 +63,5 @@ impl<'a> Parser<'a> {
             tail: tail.map(Box::new),
             span: open.to(close.span),
         })
-    }
-
-    /** One statement, or the expression that may be the block's tail. */
-    fn stmt(&mut self) -> PResult<Option<StmtOrTail>> {
-        let start = self.span();
-        if self.skip_reserved_stmt() {
-            return Ok(None);
-        }
-        let stmt = match self.kind() {
-            TokenKind::Semi => self.stmt_empty(start),
-            TokenKind::Kw(Keyword::Let) => self.stmt_let(start)?,
-            TokenKind::Kw(Keyword::Assert) => self.stmt_assert(start)?,
-            _ => return self.stmt_item_or_expr(start),
-        };
-        Ok(Some(StmtOrTail::Stmt(stmt)))
     }
 }

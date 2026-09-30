@@ -39,6 +39,10 @@ impl<'a> Parser<'a> {
                 let span = b.span;
                 Ok(self.mk(ExprKind::Block(Box::new(b)), span))
             }
+            TokenKind::Pound => {
+                self.expr_attrs()?;
+                self.primary()
+            }
             TokenKind::Kw(Keyword::If) => self.if_expr(),
             TokenKind::Kw(Keyword::Match) => self.match_expr(),
             TokenKind::Kw(Keyword::For) => self.for_expr(),

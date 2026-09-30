@@ -14,6 +14,14 @@ use crate::compiler::syntax::token::TokenKind;
 impl<'a> Parser<'a> {
     /** A function inside an impl block. */
     pub(super) fn impl_item(&mut self) -> PResult<Item> {
+        let saved = self.item_indent;
+        self.item_indent = self.line_indent(self.span().lo);
+        let item = self.impl_item_inner();
+        self.item_indent = saved;
+        item
+    }
+
+    fn impl_item_inner(&mut self) -> PResult<Item> {
         let start = self.span();
         let (doc, attrs) = self.doc_and_attrs()?;
         let vis = if self.eat_kw(Keyword::Pub) {

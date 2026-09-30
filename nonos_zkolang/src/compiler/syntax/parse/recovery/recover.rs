@@ -52,6 +52,11 @@ impl<'a> Parser<'a> {
     pub(in crate::compiler::syntax::parse) fn recover_stmt(&mut self, from: usize) {
         self.pay_owed(from);
         self.skip_stmt_rest();
+        /* A closer no bracket is owed is a stray one: step over it with the statement. */
+        while self.pos != from && matches!(self.kind(), TokenKind::RParen | TokenKind::RBracket) {
+            self.bump();
+            self.skip_stmt_rest();
+        }
         if !self.eat(TokenKind::Semi)
             && self.pos == from
             && !matches!(self.kind(), TokenKind::RBrace | TokenKind::Eof)
