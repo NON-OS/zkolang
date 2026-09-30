@@ -50,6 +50,9 @@ impl<'a> Parser<'a> {
                 generics: None,
             });
         }
+        if self.at(TokenKind::ColonColon) {
+            self.after_colons(mode)?;
+        }
         self.path_generics(&mut segments, mode)?;
         let span = start.to(self.prev_span());
         Ok(Path {

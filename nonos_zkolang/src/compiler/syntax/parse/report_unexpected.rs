@@ -22,10 +22,20 @@ use crate::compiler::syntax::token::TokenKind;
 impl<'a> Parser<'a> {
     /** Report the current token where `expected` was; `after_line` if a separator is missing. */
     pub(super) fn report_unexpected(&mut self, expected: &str, after_line: bool) -> Reported {
+        if let Some(d) = self.unexpected_diag(expected, after_line) {
+            self.diags.push(d);
+        }
+        Reported
+    }
+
+    /**
+     * The report of the current token where `expected` was, or `None` when the lexer
+     * already reported this text or text just before it.
+     */
+    pub(super) fn unexpected_diag(&self, expected: &str, after_line: bool) -> Option<Diagnostic> {
         let t = self.tok();
         if t.kind == TokenKind::Error || self.at_reserved() || self.after_stray() {
-            /* The lexer already reported this text, or text just before it. */
-            return Reported;
+            return None;
         }
         let found = match t.kind {
             TokenKind::Ident => format!("`{}`", self.text_of(t)),
@@ -39,7 +49,7 @@ impl<'a> Parser<'a> {
             _ if after_line => self.line_end_before(t.span),
             _ => None,
         };
-        let d = match at_end {
+        Some(match at_end {
             Some(at) => {
                 let label = format!("expected {expected} after this");
                 let d = Diagnostic::error(Code::UNEXPECTED_TOKEN, message, at, label);
@@ -53,8 +63,6 @@ impl<'a> Parser<'a> {
                 let label = format!("expected {expected}");
                 Diagnostic::error(Code::UNEXPECTED_TOKEN, message, t.span, label)
             }
-        };
-        self.diags.push(d);
-        Reported
+        })
     }
 }

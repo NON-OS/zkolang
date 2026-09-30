@@ -23,8 +23,10 @@ pub(in crate::compiler::syntax::parse) enum PathMode {
     Type,
     /** In an expression or pattern: `Name::<args>`. */
     Expr,
-    /** In a `use` or `mod` path: no generic arguments. */
+    /** In a pattern or a constant argument: no generic arguments. */
     Plain,
+    /** In a `use` tree: no generic arguments, and `::*` or `::{` may follow. */
+    Use,
 }
 
 impl<'a> Parser<'a> {

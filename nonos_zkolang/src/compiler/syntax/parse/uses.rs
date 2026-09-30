@@ -5,8 +5,6 @@
 
 /*! Import trees, the body of a `use` item. */
 
-use alloc::vec::Vec;
-
 use super::parser::{PResult, Parser};
 use super::types::PathMode;
 use crate::compiler::syntax::ast::UseTree;
@@ -20,7 +18,7 @@ impl<'a> Parser<'a> {
         if !self.at_path_start() {
             return Err(self.unexpected("a path"));
         }
-        let prefix = self.path(PathMode::Plain)?;
+        let prefix = self.path(PathMode::Use)?;
         if self.at(TokenKind::ColonColon) {
             self.bump();
             if self.eat(TokenKind::Star) {
@@ -30,17 +28,7 @@ impl<'a> Parser<'a> {
                 });
             }
             self.expect(TokenKind::LBrace)?;
-            let trees = self.nested(|p| {
-                let mut trees = Vec::new();
-                while !p.at(TokenKind::RBrace) {
-                    trees.push(p.use_tree()?);
-                    if !p.eat(TokenKind::Comma) {
-                        break;
-                    }
-                }
-                Ok(trees)
-            })?;
-            self.expect_list_end(TokenKind::RBrace)?;
+            let trees = self.nested(|p| p.decl_list(TokenKind::RBrace, |p| p.use_tree()))?;
             return Ok(UseTree::Nested {
                 prefix,
                 trees,

@@ -10,6 +10,7 @@ mod const_arg;
 mod generic_args;
 mod generic_params;
 mod path;
+mod path_colons;
 mod path_generics;
 mod paths;
 mod primitive_path;
