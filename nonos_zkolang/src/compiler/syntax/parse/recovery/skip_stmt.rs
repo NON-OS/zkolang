@@ -13,7 +13,8 @@ use crate::compiler::syntax::token::TokenKind;
 impl<'a> Parser<'a> {
     /**
      * Skip to the `;` that ends the statement, or stop before a closing bracket of the
-     * enclosing block or before a token that starts the next statement or an item.
+     * enclosing block, before a token that starts the next statement or an item, or before
+     * a block-like statement that starts a line.
      * Brackets in between are skipped whole, without recursion.
      */
     pub(in crate::compiler::syntax::parse) fn skip_stmt_rest(&mut self) {
@@ -32,6 +33,10 @@ impl<'a> Parser<'a> {
                 }
                 TokenKind::Semi if depth == 0 => return,
                 TokenKind::Kw(Keyword::Let | Keyword::Assert) if depth == 0 => return,
+                /* These may go on an expression, but at the start of a line they start a statement. */
+                TokenKind::Kw(
+                    Keyword::If | Keyword::Match | Keyword::For | Keyword::While | Keyword::Return,
+                ) if depth == 0 && self.line_end_before(self.span()).is_some() => return,
                 _ if depth == 0 && starts_item(k) => return,
                 _ => {}
             }

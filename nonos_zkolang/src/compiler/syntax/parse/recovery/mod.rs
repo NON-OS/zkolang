@@ -10,6 +10,7 @@
  */
 
 mod block_errors;
+mod bracket_end;
 mod owed;
 mod recover;
 mod recover_item;

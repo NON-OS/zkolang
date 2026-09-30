@@ -10,9 +10,8 @@
  * after it. So the skip first pays the closers the construct owes.
  */
 
-use super::super::parser::{starts_item, Parser};
+use super::super::parser::Parser;
 use super::owed::Owed;
-use crate::compiler::syntax::keyword::Keyword;
 use crate::compiler::syntax::token::TokenKind;
 
 impl<'a> Parser<'a> {
@@ -43,7 +42,8 @@ impl<'a> Parser<'a> {
             let k = self.kind();
             let left_open = owed.len() <= before
                 && matches!(owed.last(), Some(TokenKind::RParen | TokenKind::RBracket));
-            if k == TokenKind::Eof || (left_open && self.ends_bracket(k)) {
+            let owes = owed.last().unwrap_or(TokenKind::Eof);
+            if k == TokenKind::Eof || (left_open && self.ends_bracket(k, owes)) {
                 return;
             }
             if !owed.take(k) {
@@ -51,11 +51,5 @@ impl<'a> Parser<'a> {
             }
             self.bump();
         }
-    }
-
-    /** Whether `k`, the current token, cannot continue a parenthesis or bracket. */
-    fn ends_bracket(&self, k: TokenKind) -> bool {
-        matches!(k, TokenKind::Semi | TokenKind::Kw(Keyword::Let))
-            || (starts_item(k) && self.line_end_before(self.span()).is_some())
     }
 }

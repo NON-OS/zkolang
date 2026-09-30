@@ -30,6 +30,7 @@ impl<'a> Parser<'a> {
                     depth -= 1;
                     if depth == 0 && k == TokenKind::RBrace {
                         self.bump();
+                        self.eat(TokenKind::Semi);
                         return;
                     }
                 }
