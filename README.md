@@ -72,7 +72,7 @@ reveal nullifier(key, position);
 prove balance == 0;
 ```
 
-The [specification](SPEC.md) is normative; the [manifesto](MANIFESTO.md) says what it is
+The [specification](docs/edition-2025.md) is normative; the [manifesto](MANIFESTO.md) says what it is
 for.
 
 ## The standard library

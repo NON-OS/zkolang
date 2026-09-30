@@ -225,7 +225,7 @@ zkolang key cube.zkl
 
 ## Where to go next
 
-- The [specification](SPEC.md) is the normative reference.
+- The [specification](docs/edition-2025.md) is the normative reference.
 - The [standard library](stdlib) is small and readable; every gadget is one expression.
 - The [circuits](circuits) are the real utilities: a shielded spend and transfer, and the
   kernel's attestation and anti-rollback.
