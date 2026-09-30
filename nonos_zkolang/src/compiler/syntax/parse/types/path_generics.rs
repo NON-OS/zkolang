@@ -5,7 +5,7 @@
 
 /*! The generic arguments of a path, which follow the whole path (spec section 3). */
 
-use super::parser::{PResult, Parser, Reported};
+use super::super::parser::{PResult, Parser, Reported};
 use super::paths::PathMode;
 use crate::compiler::diag::{Code, Diagnostic};
 use crate::compiler::syntax::ast::PathSegment;
@@ -13,7 +13,7 @@ use crate::compiler::syntax::token::TokenKind;
 
 impl<'a> Parser<'a> {
     /** The generic arguments after the path `segments`, if the mode takes them there. */
-    pub(super) fn path_generics(
+    pub(in crate::compiler::syntax::parse) fn path_generics(
         &mut self,
         segments: &mut [PathSegment],
         mode: PathMode,

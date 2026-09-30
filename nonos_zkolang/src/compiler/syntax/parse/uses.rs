@@ -8,7 +8,7 @@
 use alloc::vec::Vec;
 
 use super::parser::{PResult, Parser};
-use super::paths::PathMode;
+use super::types::PathMode;
 use crate::compiler::syntax::ast::UseTree;
 use crate::compiler::syntax::keyword::Keyword;
 use crate::compiler::syntax::token::TokenKind;

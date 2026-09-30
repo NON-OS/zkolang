@@ -10,13 +10,13 @@
 
 use alloc::vec::Vec;
 
-use super::parser::{PResult, Parser};
+use super::super::parser::{PResult, Parser};
 use crate::compiler::syntax::ast::GenericArg;
 use crate::compiler::syntax::token::{Token, TokenKind};
 
 impl<'a> Parser<'a> {
     /** `<arg, ...>`, the opening `<` current. */
-    pub(super) fn generic_args(&mut self) -> PResult<Vec<GenericArg>> {
+    pub(in crate::compiler::syntax::parse) fn generic_args(&mut self) -> PResult<Vec<GenericArg>> {
         let open = self.expect(TokenKind::Lt)?;
         if self.at_generic_close() {
             self.empty_generics(open.span.to(self.span()));

@@ -7,7 +7,7 @@
 
 use alloc::boxed::Box;
 
-use super::parser::{PResult, Parser};
+use super::super::parser::{PResult, Parser};
 use super::paths::PathMode;
 use crate::compiler::diag::{Code, Diagnostic};
 use crate::compiler::syntax::ast::ConstArg;
@@ -16,7 +16,7 @@ use crate::compiler::syntax::token::TokenKind;
 
 impl<'a> Parser<'a> {
     /** A constant argument: an integer literal, a path, or `{ expr }`. */
-    pub(super) fn const_arg(&mut self) -> PResult<ConstArg> {
+    pub(in crate::compiler::syntax::parse) fn const_arg(&mut self) -> PResult<ConstArg> {
         match self.kind() {
             TokenKind::Int => {
                 let t = self.bump();

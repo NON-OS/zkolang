@@ -5,14 +5,17 @@
 
 /*! Bare types: every form of type but the qualifier. */
 
-use super::parser::{PResult, Parser};
+use super::super::parser::{PResult, Parser};
 use crate::compiler::diag::{Code, Diagnostic};
 use crate::compiler::syntax::ast::{Type, TypeKind};
 use crate::compiler::syntax::token::TokenKind;
 
 impl<'a> Parser<'a> {
     /** A bare type; `&mut T` is allowed when `ref_mut_ok`. */
-    pub(super) fn bare_ty(&mut self, ref_mut_ok: bool) -> PResult<Type> {
+    pub(in crate::compiler::syntax::parse) fn bare_ty(
+        &mut self,
+        ref_mut_ok: bool,
+    ) -> PResult<Type> {
         let start = self.span();
         let kind = if self.at(TokenKind::LParen) {
             self.paren_ty()?
@@ -55,5 +58,17 @@ impl<'a> Parser<'a> {
         }
         self.expect_list_end(TokenKind::RParen)?;
         Ok(TypeKind::Tuple(elems))
+    }
+
+    /** Report `&mut` at `at`, outside a parameter's type. */
+    pub(super) fn ref_mut_misplaced(&mut self, at: crate::compiler::source::Span) {
+        let d = Diagnostic::error(
+            Code::UNEXPECTED_TOKEN,
+            "`&mut T` is a parameter type only",
+            at,
+            "a reference outside a parameter",
+        )
+        .with_help("a function takes `&mut T` to update its caller's place; elsewhere use `T`");
+        self.diags.push(d);
     }
 }

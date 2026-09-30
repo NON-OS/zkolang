@@ -7,7 +7,7 @@
 
 use alloc::boxed::Box;
 
-use super::parser::{PResult, Parser};
+use super::super::parser::{PResult, Parser};
 use crate::compiler::diag::{Code, Diagnostic};
 use crate::compiler::syntax::ast::{Label, Type, TypeKind};
 use crate::compiler::syntax::keyword::Keyword;
@@ -15,12 +15,12 @@ use crate::compiler::syntax::token::TokenKind;
 
 impl<'a> Parser<'a> {
     /** A type, possibly qualified. */
-    pub(super) fn ty(&mut self) -> PResult<Type> {
+    pub(in crate::compiler::syntax::parse) fn ty(&mut self) -> PResult<Type> {
         self.nested(|p| p.ty_inner())
     }
 
     /** The type of a function parameter: the one place `&mut T` may stand. */
-    pub(super) fn param_ty(&mut self) -> PResult<Type> {
+    pub(in crate::compiler::syntax::parse) fn param_ty(&mut self) -> PResult<Type> {
         self.ref_mut_ok = true;
         let ty = self.ty();
         self.ref_mut_ok = false;

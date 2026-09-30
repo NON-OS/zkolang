@@ -7,7 +7,7 @@
 
 use alloc::vec::Vec;
 
-use super::parser::{PResult, Parser};
+use super::super::parser::{PResult, Parser};
 use super::paths::PathMode;
 use crate::compiler::syntax::ast::{Path, PathRoot, PathSegment};
 use crate::compiler::syntax::keyword::Keyword;
@@ -19,7 +19,7 @@ impl<'a> Parser<'a> {
      * arguments, where the mode takes them, follow the whole path and are kept on its last
      * segment.
      */
-    pub(super) fn path(&mut self, mode: PathMode) -> PResult<Path> {
+    pub(in crate::compiler::syntax::parse) fn path(&mut self, mode: PathMode) -> PResult<Path> {
         let start = self.span();
         let mut segments = Vec::new();
         let root = match self.kind() {

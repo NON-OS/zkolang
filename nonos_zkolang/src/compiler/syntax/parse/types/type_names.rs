@@ -5,7 +5,7 @@
 
 /*! The types keywords name, and the target of `as`, which takes only a type's name. */
 
-use super::parser::{PResult, Parser};
+use super::super::parser::{PResult, Parser};
 use super::paths::PathMode;
 use crate::compiler::syntax::ast::{Type, TypeKind};
 use crate::compiler::syntax::keyword::Keyword;
@@ -14,7 +14,7 @@ use crate::compiler::syntax::IntTy;
 
 impl<'a> Parser<'a> {
     /** The target of `as`: `field`, `bool`, an integer type, or a path without arguments. */
-    pub(super) fn cast_ty(&mut self) -> PResult<Type> {
+    pub(in crate::compiler::syntax::parse) fn cast_ty(&mut self) -> PResult<Type> {
         let start = self.span();
         let kind = match self.kind() {
             TokenKind::Kw(Keyword::Field | Keyword::Bool) => self.ty_kind(false)?,
@@ -32,7 +32,7 @@ impl<'a> Parser<'a> {
 }
 
 /** The integer type an integer keyword names. */
-pub(super) fn int_keyword(k: Keyword) -> Option<IntTy> {
+pub(in crate::compiler::syntax::parse) fn int_keyword(k: Keyword) -> Option<IntTy> {
     Some(match k {
         Keyword::U8 => IntTy::U8,
         Keyword::U16 => IntTy::U16,

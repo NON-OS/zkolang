@@ -14,14 +14,14 @@
 
 use alloc::string::String;
 
-use super::parser::{PResult, Parser};
+use super::super::parser::{PResult, Parser};
 use crate::compiler::syntax::ast::{Ident, Path, PathRoot, PathSegment};
 use crate::compiler::syntax::keyword::Keyword;
 use crate::compiler::syntax::token::TokenKind;
 
 /** Where a path is being parsed, which decides how it takes generic arguments. */
 #[derive(Clone, Copy, PartialEq, Eq)]
-pub(super) enum PathMode {
+pub(in crate::compiler::syntax::parse) enum PathMode {
     /** In a type: `Name<args>`. */
     Type,
     /** In an expression or pattern: `Name::<args>`. */
@@ -32,7 +32,7 @@ pub(super) enum PathMode {
 
 impl<'a> Parser<'a> {
     /** Whether the current token can begin a path. */
-    pub(super) fn at_path_start(&self) -> bool {
+    pub(in crate::compiler::syntax::parse) fn at_path_start(&self) -> bool {
         matches!(
             self.kind(),
             TokenKind::Ident
@@ -47,7 +47,7 @@ impl<'a> Parser<'a> {
      * A one-segment path over a primitive type keyword, for `u8::MAX` and
      * `field::from_le_bits`.
      */
-    pub(super) fn primitive_path(&mut self) -> PResult<Path> {
+    pub(in crate::compiler::syntax::parse) fn primitive_path(&mut self) -> PResult<Path> {
         let t = self.bump();
         let ident = Ident {
             name: String::from(self.text_of(t)),
