@@ -8,6 +8,7 @@ fn f(a: u32) -> u32 {
     let g = [1, 2; /*~ E0100 */
     let h = a /*~ E0100 */
     let i = 3;
+    let r = 1 + return; /*~ E0105 */
     a
 }
 

@@ -6,6 +6,7 @@
 /*! The parser's entry points. */
 
 use super::parser::Parser;
+use super::placement::check_items;
 use crate::compiler::diag::Diagnostics;
 use crate::compiler::source::{FileId, Span};
 use crate::compiler::syntax::ast::{Expr, SourceAst};
@@ -29,6 +30,7 @@ pub fn parse_file(
     let inner_attrs = p.inner_attrs().unwrap_or_default();
     let items = p.items(false);
     p.warn_unused_docs();
+    check_items(&items, p.diags);
     let end = u32::try_from(text.len()).unwrap_or(u32::MAX);
     SourceAst {
         file,
