@@ -10,7 +10,6 @@
 
 use alloc::format;
 
-use super::attr_query::cfg_test;
 use super::cx::Sema;
 use crate::compiler::diag::{Code, Diagnostic};
 use crate::compiler::source::Span;
@@ -36,28 +35,10 @@ impl<'a> Sema<'a> {
             ItemKind::Enum(e) => ("enums", e.name.span),
             ItemKind::TypeAlias(t) => ("generic type aliases", t.name.span),
             ItemKind::Mod(m) => ("modules in their own files", m.name.span),
-            ItemKind::Impl(_) => ("impl blocks", item.span),
+            ItemKind::Impl(_) => ("generic impl blocks", item.span),
             ItemKind::Const(c) => ("this constant", c.name.span),
             ItemKind::Use(_) => ("this import", item.span),
         };
         self.not_checked(what, at);
-    }
-
-    /** Report every impl block of `items` and the modules inside them (E0904). */
-    pub(super) fn impls(&mut self, items: &'a [Item]) {
-        for item in items {
-            if !self.defs.testing && cfg_test(&item.attrs) {
-                continue;
-            }
-            match &item.kind {
-                ItemKind::Impl(_) => self.not_yet(item),
-                ItemKind::Mod(m) => {
-                    if let Some(body) = &m.body {
-                        self.impls(body);
-                    }
-                }
-                _ => {}
-            }
-        }
     }
 }

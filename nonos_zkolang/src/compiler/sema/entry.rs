@@ -33,7 +33,7 @@ fn check_mode(ast: &SourceAst, testing: bool) -> (TProgram, Diagnostics) {
     sema.defs = defs;
     sema.defs.resolve_imports(&imports, &mut sema.diags);
     sema.register();
-    sema.impls(&ast.items);
+    sema.impls(&ast.items, DefId(0));
     sema.check_main();
     sema.structs();
     for (i, d) in sema.defs.defs.clone().iter().enumerate() {

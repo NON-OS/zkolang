@@ -14,7 +14,7 @@ use super::cx::FnCx;
 use crate::compiler::sema::defs::DefKind;
 use crate::compiler::sema::ty::Types;
 use crate::compiler::source::Span;
-use crate::compiler::syntax::ast::Path;
+use crate::compiler::syntax::ast::{Path, PathRoot};
 use crate::compiler::tir::{TExpr, TExprKind};
 
 impl<'s, 'a> FnCx<'s, 'a> {
@@ -30,6 +30,12 @@ impl<'s, 'a> FnCx<'s, 'a> {
                     span: at,
                 };
             }
+        }
+        if p.segments.is_empty() && p.root == PathRoot::SelfType {
+            return self.unit_struct(p, at);
+        }
+        if p.segments.is_empty() && p.root == PathRoot::SelfModule {
+            return self.self_value(at);
         }
         if let Some(e) = self.prim_const(p, at) {
             return e;

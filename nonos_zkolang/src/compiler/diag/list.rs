@@ -15,7 +15,7 @@ use super::diagnostic::{Diagnostic, Severity};
 /** An ordered collection of diagnostics. */
 #[derive(Clone, Debug, Default)]
 pub struct Diagnostics {
-    items: Vec<Diagnostic>,
+    pub(super) items: Vec<Diagnostic>,
 }
 
 impl Diagnostics {

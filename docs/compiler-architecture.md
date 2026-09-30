@@ -17,9 +17,9 @@ parser recovers, so that one run reports each independent mistake once, and a pl
 check reports statement forms where they cannot stand. Diagnostics render as text or
 JSON. The checker resolves names, checks types and constants, reports recursion, checks
 secret flow and lowers the program to the typed IR, which the reference interpreter runs.
-It checks a program in one file, structs included, and reports each form it does not check
-yet (generic items, enums, `match`, `impl` blocks, methods on user types, `Self`, and
-modules in their own files) as E0904. The back end lowers the typed IR to SSA, runs the
+It checks a program in one file, structs, `impl` blocks, methods and `Self` included, and
+reports each form it does not check yet (generic items, enums, `match`, and modules in
+their own files) as E0904. The back end lowers the typed IR to SSA, runs the
 passes, expands the gadgets, schedules, allocates registers, emits machine code and checks
 it against the SSA; `driver::build` and `driver::prove` build a program from source and prove
 a run of it, hiding the witness. The programs in `nonos_zkolang_proofs/ui/syntax` and

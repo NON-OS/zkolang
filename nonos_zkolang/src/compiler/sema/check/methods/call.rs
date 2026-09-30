@@ -9,10 +9,7 @@
  * when the method gives a value of the receiver's type.
  */
 
-use alloc::format;
-
-use super::cx::FnCx;
-use crate::compiler::diag::{Code, Diagnostic};
+use super::super::cx::FnCx;
 use crate::compiler::sema::ty::TyId;
 use crate::compiler::source::Span;
 use crate::compiler::syntax::ast::{Expr, Ident};
@@ -42,20 +39,19 @@ impl<'s, 'a> FnCx<'s, 'a> {
         at: Span,
     ) -> TExpr {
         let same = SAME_TYPE.contains(&method.name.as_str());
+        let mark = self.sema.diags.mark();
         let recv = self.infer(receiver, want.filter(|_| same));
         let rt = self.resolve(recv.ty);
+        if self.sema.types.adt(rt).is_some() {
+            let recv = (receiver, recv, rt, mark);
+            return self.struct_method(recv, (method, generic), args, at);
+        }
         let (b, params, ret) = match self.method_sig(receiver, method, rt, args, at) {
             Ok(sig) => sig,
             Err(done) => return done,
         };
         if generic {
-            let d = Diagnostic::error(
-                Code::WRONG_GENERICS,
-                format!("`{}` takes no generic arguments", method.name),
-                method.span,
-                "generic arguments given",
-            );
-            self.sema.diags.push(d);
+            self.no_generic_args(method);
         }
         self.arity(method, params.len(), args, at);
         let mut operands = alloc::vec![recv];

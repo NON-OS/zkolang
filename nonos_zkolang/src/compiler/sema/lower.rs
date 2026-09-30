@@ -62,8 +62,11 @@ impl<'a> Sema<'a> {
             TypeKind::RefMut(inner) => self.lower_at(m, inner, path, labels),
             TypeKind::Path(p) => self.lower_path(m, p, path, labels),
             TypeKind::SelfType => {
-                self.not_checked("`Self`", t.span);
-                Types::ERROR
+                let (ty, own) = self.self_type(t.span);
+                for (q, l) in own.0 {
+                    labels.0.push(([&path[..], &q].concat(), l));
+                }
+                ty
             }
             TypeKind::Error => Types::ERROR,
         }

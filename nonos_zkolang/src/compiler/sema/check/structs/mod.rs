@@ -12,6 +12,7 @@ mod pat_struct;
 mod record;
 mod record_forms;
 mod shorthand;
+mod struct_form;
 mod struct_named;
 
 pub(super) use field_of::Key;

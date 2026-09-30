@@ -1,0 +1,66 @@
+/* `impl` mistakes: each reported once, where it is made. */
+#![allow(unused)]
+struct Point {
+    x: u32,
+    y: u32,
+}
+
+impl Point {
+    pub fn new(x: u32, y: u32) -> Self {
+        Self { x, y }
+    }
+
+    fn norm(self) -> u32 {
+        self.x + self.y
+    }
+
+    fn norm(self) -> u32 { /*~ E0201 */
+        0
+    }
+
+    fn shift(&mut self) {
+        self.x += 1;
+    }
+}
+
+impl u8 { /*~ E0205 */
+    fn f() {}
+}
+
+mod geo {
+    pub struct Hidden {
+        pub v: u8,
+    }
+
+    impl Hidden {
+        fn inner(self) -> u8 {
+            self.v
+        }
+
+        pub fn open(self) -> u8 {
+            self.inner()
+        }
+    }
+}
+
+fn outside() -> Self { /*~ E0205 */
+    self /*~ E0200 */
+}
+
+fn f(p: Point, h: geo::Hidden) -> u32 {
+    let a = Point::new(1, 2);
+    let b = Point::old(1); /*~ E0308 */
+    let c = p.width(); /*~ E0308 */
+    let d = a.new(1, 2); /*~ E0308 */
+    let e = h.inner(); /*~ E0202 */
+    let g = h.open();
+    Point::new(1, 2).shift(); /*~ E0305 */
+    let i = a.norm::<u8>(); /*~ E0701 */
+    p.norm()
+}
+
+impl Point {
+    fn spin(self) -> u32 {
+        self.spin() /*~ E0700 */
+    }
+}

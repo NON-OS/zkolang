@@ -21,6 +21,7 @@ mod display;
 mod display_width;
 mod json;
 mod list;
+mod list_mark;
 mod quote;
 mod render;
 mod render_cells;

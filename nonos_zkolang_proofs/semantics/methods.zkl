@@ -1,0 +1,74 @@
+/* `impl` blocks (section 10.2): associated functions, methods on `self` and `&mut self`, and `Self`. */
+
+struct Counter {
+    count: u32,
+    step: u32,
+}
+
+impl Counter {
+    pub fn new(step: u32) -> Self {
+        Self { count: 0, step }
+    }
+
+    pub fn tick(&mut self) {
+        self.count += self.step;
+    }
+
+    pub fn ticked(self, n: u32) -> Self {
+        let mut c = self;
+        let mut i = 0u32;
+        while i < n limit 16 {
+            c.tick();
+            i += 1;
+        }
+        c
+    }
+
+    fn doubled(self) -> u32 {
+        self.count * 2
+    }
+
+    pub fn report(self) -> u32 {
+        self.doubled() + Self::bias()
+    }
+
+    fn bias() -> u32 { 1 }
+}
+
+struct Vec2(i32, i32);
+
+impl Vec2 {
+    fn dot(self, o: Vec2) -> i32 {
+        self.0 * o.0 + self.1 * o.1
+    }
+
+    fn scale(&mut self, k: i32) {
+        self.0 *= k;
+        self.1 *= k;
+    }
+
+    fn zero() -> Self {
+        Self(0, 0)
+    }
+}
+
+#[test]
+fn associated_functions_and_methods() {
+    let mut c = Counter::new(3);
+    c.tick();
+    c.tick();
+    assert c.count == 6;
+    let d = c.ticked(2);
+    assert d.count == 12 && c.count == 6;
+    assert d.report() == 25;
+}
+
+#[test]
+fn methods_on_tuple_structs_and_places() {
+    let mut v = Vec2(2, -3);
+    v.scale(2);
+    assert v.dot(Vec2(1, 1)) == -2;
+    let mut vs = [Vec2::zero(), Vec2(1, 2)];
+    vs[1].scale(3);
+    assert vs[1].1 == 6 && vs[0] == Vec2::zero();
+}

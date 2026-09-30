@@ -10,7 +10,7 @@
 
 use alloc::format;
 
-use super::cx::FnCx;
+use super::super::cx::FnCx;
 use crate::compiler::diag::{Code, Diagnostic};
 use crate::compiler::sema::ty::{TyId, TyKind};
 use crate::compiler::source::Span;

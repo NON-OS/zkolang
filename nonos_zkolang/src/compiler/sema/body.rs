@@ -23,9 +23,14 @@ impl<'a> Sema<'a> {
             State::Failed | State::Checking => return false,
             State::Unchecked => {}
         }
-        let (m, decl, def) = (info.module, info.decl, info.def);
+        let (m, decl, def, owner) = (info.module, info.decl, info.def, info.owner);
         self.set_body(f, State::Checking);
         let sig = self.sig(f);
+        let name = match owner {
+            Some(t) => alloc::format!("{}::{}", self.types.display(t), decl.name.name),
+            None => decl.name.name.clone(),
+        };
+        let outer = core::mem::replace(&mut self.self_ty, owner);
         let errors = self.diags.error_count();
         let out = self.within(decl.name.span, |s| {
             let mut cx = FnCx::new(s, m, Some(sig.ret));
@@ -42,7 +47,7 @@ impl<'a> Sema<'a> {
             let locals = core::mem::take(&mut cx.locals);
             Some(TFn {
                 def,
-                name: decl.name.name.clone(),
+                name,
                 is_const: decl.is_const,
                 params,
                 ret: sig.ret,
@@ -52,6 +57,7 @@ impl<'a> Sema<'a> {
                 span: decl.name.span,
             })
         });
+        self.self_ty = outer;
         let ok = out.is_some();
         let clean = ok && self.diags.error_count() == errors;
         self.set_body(f, out.map_or(State::Failed, State::Done));

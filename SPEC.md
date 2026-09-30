@@ -26,9 +26,9 @@ normative, is the only one that describes the repository rather than the languag
 - Of edition 2026, the front end exists, in `nonos_zkolang/src/compiler`: the lexer, the
   parser with its error recovery, the placement check and the diagnostics. So do the
   checker of sections 4 to 13 and the reference interpreter of the typed IR, for a
-  program in one file, structs included. The checker reports each form it does not check
-  yet (generic items, enums, `match`, `impl` blocks, methods on user types, `Self`, and
-  modules in their own files) as E0904. The back end compiles the typed IR of such a
+  program in one file, structs, `impl` blocks, methods and `Self` included. The checker
+  reports each form it does not check yet (generic items, enums, `match`, and modules in
+  their own files) as E0904. The back end compiles the typed IR of such a
   program to the machine: lowering to SSA, the passes, gadget expansion, scheduling, register allocation
   and a check of the machine program against the SSA. `compiler::driver::build` and
   `prove` build a program and prove a run of it with the STARK, hiding the witness;

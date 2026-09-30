@@ -14,8 +14,8 @@ use alloc::vec::Vec;
 use super::cx::FnCx;
 use super::prim::prim_path;
 use crate::compiler::source::Span;
-use crate::compiler::syntax::ast::{Expr, ExprKind};
-use crate::compiler::tir::{TArg, TExpr, TExprKind};
+use crate::compiler::syntax::ast::{Expr, ExprKind, PathRoot};
+use crate::compiler::tir::TExpr;
 
 impl<'s, 'a> FnCx<'s, 'a> {
     /** `f(args)`. */
@@ -25,6 +25,15 @@ impl<'s, 'a> FnCx<'s, 'a> {
         };
         if let Some((ty, name)) = prim_path(p) {
             return self.assoc_call(ty, name, args, at);
+        }
+        if p.root == PathRoot::SelfType && p.segments.is_empty() {
+            return self.tuple_struct(p, args, at);
+        }
+        if let Some(found) = self.assoc_fn(p) {
+            return match found {
+                Some(fid) => self.call_fn(fid, p.last_name(), args, at),
+                None => self.not_callable(f, args, "", at),
+            };
         }
         if p.as_ident().is_some_and(|i| self.lookup(&i.name).is_some()) {
             return self.not_callable(f, args, "a variable is not a function", at);
@@ -48,18 +57,6 @@ impl<'s, 'a> FnCx<'s, 'a> {
             let message = self.not_fn_message(def, p.last_name());
             return self.not_callable(f, args, &message, at);
         };
-        let sig = self.sema.sig(fid);
-        self.arity_of(p.last_name(), sig.params.len(), args.len(), at);
-        let targs: Vec<TArg> = args
-            .iter()
-            .enumerate()
-            .map(|(i, a)| self.arg(a, sig.params.get(i)))
-            .collect();
-        self.check_disjoint(&targs);
-        TExpr {
-            kind: TExprKind::Call(fid, targs),
-            ty: sig.ret,
-            span: at,
-        }
+        self.call_fn(fid, p.last_name(), args, at)
     }
 }

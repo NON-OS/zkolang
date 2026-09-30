@@ -16,7 +16,7 @@ use crate::compiler::diag::{Code, Diagnostic};
 use crate::compiler::sema::cx::Sig;
 use crate::compiler::sema::ty::Types;
 use crate::compiler::syntax::ast::{Param, PatKind};
-use crate::compiler::tir::{Labels, TParam, TPat};
+use crate::compiler::tir::{Labels, TParam};
 
 impl<'s, 'a> FnCx<'s, 'a> {
     /** Bind the parameters `params`, whose types `sig` gives. */
@@ -29,27 +29,14 @@ impl<'s, 'a> FnCx<'s, 'a> {
                     .cloned()
                     .unwrap_or((Types::ERROR, Labels::default(), false));
             let Param::Typed { pat, .. } = p else {
-                let Param::SelfParam { span, .. } = p else {
-                    continue;
-                };
-                let local = self.declare("self", ty, false, labels, *span);
-                out.push(TParam {
-                    local,
-                    pat: TPat::Bind(local),
-                    by_ref: false,
-                });
+                if let Param::SelfParam { span, .. } = p {
+                    out.push(self.named_param("self", (ty, labels, by_ref), by_ref, *span));
+                }
                 continue;
             };
             if let PatKind::Bind { name, mutable } = &pat.kind {
-                let local = self.declare(&name.name, ty, *mutable || by_ref, labels, name.span);
-                if by_ref {
-                    self.read_local(local);
-                }
-                out.push(TParam {
-                    local,
-                    pat: TPat::Bind(local),
-                    by_ref,
-                });
+                let mutable = *mutable || by_ref;
+                out.push(self.named_param(&name.name, (ty, labels, by_ref), mutable, name.span));
                 continue;
             }
             if by_ref {

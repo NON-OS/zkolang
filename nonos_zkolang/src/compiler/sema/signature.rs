@@ -25,13 +25,14 @@ impl<'a> Sema<'a> {
         if let Some(s) = &info.sig {
             return s.clone();
         }
-        let (m, decl) = (info.module, info.decl);
+        let (m, decl, owner) = (info.module, info.decl, info.owner);
+        let outer = core::mem::replace(&mut self.self_ty, owner);
         let mut params = Vec::with_capacity(decl.params.len());
         for p in &decl.params {
             params.push(match p {
-                Param::SelfParam { span, .. } => {
-                    self.not_checked("methods", *span);
-                    (Types::ERROR, Labels::default(), false)
+                Param::SelfParam { by_ref_mut, span } => {
+                    let (t, l) = self.self_type(*span);
+                    (t, l, *by_ref_mut)
                 }
                 Param::Typed { ty, .. } => {
                     let by_ref = matches!(ty.kind, TypeKind::RefMut(_));
@@ -44,6 +45,7 @@ impl<'a> Sema<'a> {
             Some(t) => self.lower_ty(m, t),
             None => (Types::UNIT, Labels::default()),
         };
+        self.self_ty = outer;
         let sig = Sig {
             params,
             ret,

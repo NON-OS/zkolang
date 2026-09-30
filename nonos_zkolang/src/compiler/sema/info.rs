@@ -18,6 +18,8 @@ pub struct FnInfo<'a> {
     pub def: DefId,
     pub decl: &'a FnDecl,
     pub module: DefId,
+    /** The type whose `impl` block declares it, if one does. */
+    pub owner: Option<TyId>,
     pub sig: Option<Sig>,
     pub body: State<TFn>,
     /** Whether the body checked without an error, so a constant may run it. */

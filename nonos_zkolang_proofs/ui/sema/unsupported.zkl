@@ -4,7 +4,10 @@ struct P { x: u8 }
 struct G<T> { x: T } /*~ E0904 */
 enum E { A, B } /*~ E0904 */
 fn id<T>(x: T) -> T { x } /*~ E0904 */
-impl P { /*~ E0904 */
+impl P {
+    fn get(self) -> u8 { 1 }
+}
+impl<T> G<T> { /*~ E0904 */
     fn get(self) -> u8 { 1 }
 }
 

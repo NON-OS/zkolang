@@ -12,7 +12,7 @@ use alloc::vec::Vec;
 
 use super::super::cx::FnCx;
 use crate::compiler::sema::ty::{TyId, Types};
-use crate::compiler::syntax::ast::{Expr, ExprKind};
+use crate::compiler::syntax::ast::{Expr, ExprKind, PathRoot};
 use crate::compiler::tir::TPlace;
 
 impl<'s, 'a> FnCx<'s, 'a> {
@@ -29,10 +29,13 @@ impl<'s, 'a> FnCx<'s, 'a> {
                     steps.push(at);
                     at = inner;
                 }
-                ExprKind::Path(p) => match p.as_ident().and_then(|i| self.lookup(&i.name)) {
-                    Some(l) => break Some(l),
-                    None => break None,
-                },
+                ExprKind::Path(p) => {
+                    let bare_self = p.segments.is_empty() && p.root == PathRoot::SelfModule;
+                    let name = p.as_ident().map(|i| i.name.as_str());
+                    break name
+                        .or(bare_self.then_some("self"))
+                        .and_then(|n| self.lookup(n));
+                }
                 _ => break None,
             }
         };

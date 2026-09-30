@@ -35,6 +35,7 @@ impl<'a> Sema<'a> {
                         def: id,
                         decl: f,
                         module,
+                        owner: None,
                         sig: None,
                         body: State::Unchecked,
                         clean: false,

@@ -53,6 +53,10 @@ pub struct Sema<'a> {
     pub aliases: BTreeMap<DefId, State<(TyId, Labels)>>,
     /** Each struct lowered, or being lowered. */
     pub structs: BTreeMap<DefId, State<(TyId, Labels)>>,
+    /** The functions of `impl` blocks, by the type and their name. */
+    pub assoc: BTreeMap<(TyId, alloc::string::String), FnId>,
+    /** The type `Self` names where a signature or body is being checked, if any. */
+    pub self_ty: Option<TyId>,
     /** How many on-demand checks are open, one inside another. */
     pub depth: u32,
     /** Each span a lint is allowed in (section 17.1). */

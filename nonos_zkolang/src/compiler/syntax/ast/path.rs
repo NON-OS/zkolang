@@ -54,9 +54,13 @@ impl Path {
 
     /** The last segment's name. */
     pub fn last_name(&self) -> &str {
-        self.segments
-            .last()
-            .map(|s| s.ident.name.as_str())
-            .unwrap_or("")
+        match (self.segments.last(), self.root) {
+            (Some(s), _) => s.ident.name.as_str(),
+            (None, PathRoot::SelfType) => "Self",
+            (None, PathRoot::SelfModule) => "self",
+            (None, PathRoot::Crate) => "crate",
+            (None, PathRoot::Super) => "super",
+            (None, PathRoot::Plain) => "",
+        }
     }
 }

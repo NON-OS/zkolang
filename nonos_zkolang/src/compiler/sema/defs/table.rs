@@ -29,7 +29,7 @@ impl<'a> Defs<'a> {
     }
 
     /** Add an item and return its id. */
-    pub(super) fn push(&mut self, def: Def<'a>) -> DefId {
+    pub(crate) fn push(&mut self, def: Def<'a>) -> DefId {
         let id = DefId(u32::try_from(self.defs.len()).unwrap_or(u32::MAX));
         self.defs.push(def);
         id

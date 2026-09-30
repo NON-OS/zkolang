@@ -11,7 +11,7 @@
 use alloc::vec;
 use alloc::vec::Vec;
 
-use super::cx::FnCx;
+use super::super::cx::FnCx;
 use crate::compiler::sema::ty::{TyId, TyKind, Types};
 use crate::compiler::source::Span;
 use crate::compiler::syntax::ast::{Expr, Ident};
