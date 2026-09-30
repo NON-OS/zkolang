@@ -266,6 +266,8 @@ mod shield_membership_tests;
 #[cfg(test)]
 mod shield_tests;
 #[cfg(test)]
+mod site_tests;
+#[cfg(test)]
 mod small_stack;
 #[cfg(test)]
 mod ssa_adversary;

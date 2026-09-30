@@ -36,6 +36,7 @@ pub(super) fn rebuild(ssa: &Ssa, f: fn(&mut Rebuild, Inst) -> V) -> Ssa {
     };
     for (at, inst) in ssa.insts.iter().enumerate() {
         r.at = at;
+        r.b.site = ssa.site(at);
         let map = &r.map;
         let inst = inst.map(&mut |v| map.get(v.index()).copied().unwrap_or(v));
         let v = f(&mut r, inst);
@@ -43,6 +44,7 @@ pub(super) fn rebuild(ssa: &Ssa, f: fn(&mut Rebuild, Inst) -> V) -> Ssa {
     }
     Ssa {
         insts: r.b.ssa.insts,
+        sites: r.b.ssa.sites,
         ..*ssa
     }
 }

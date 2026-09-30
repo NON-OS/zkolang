@@ -14,7 +14,7 @@
 pub struct FileId(pub u32);
 
 /** The bytes `lo..hi` of file `file`. */
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub struct Span {
     pub file: FileId,
     pub lo: u32,

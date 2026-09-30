@@ -30,5 +30,10 @@ pub fn schedule(ssa: &Ssa) -> Ssa {
         .iter()
         .map(|&i| ssa.insts[i].map(&mut |v| new.get(v.index()).copied().unwrap_or(v)))
         .collect();
-    Ssa { insts, ..*ssa }
+    let sites = order.iter().map(|&i| ssa.site(i)).collect();
+    Ssa {
+        insts,
+        sites,
+        ..*ssa
+    }
 }

@@ -18,7 +18,8 @@ use crate::compiler::ssa::{Builder, Inst, Ssa, V};
 pub fn fold(ssa: &Ssa) -> Ssa {
     let mut b = Builder::default();
     let mut map: Vec<V> = Vec::with_capacity(ssa.insts.len());
-    for inst in &ssa.insts {
+    for (i, inst) in ssa.insts.iter().enumerate() {
+        b.site = ssa.site(i);
         let inst = inst.map(&mut |v| map.get(v.index()).copied().unwrap_or(v));
         let insts = &b.ssa.insts;
         let def = |v: V| insts.get(v.index()).copied();
@@ -32,6 +33,7 @@ pub fn fold(ssa: &Ssa) -> Ssa {
     }
     Ssa {
         insts: b.ssa.insts,
+        sites: b.ssa.sites,
         ..*ssa
     }
 }

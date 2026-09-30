@@ -43,7 +43,8 @@ pub fn dce(ssa: &Ssa) -> Ssa {
     }
     let mut b = Builder::default();
     let mut map: Vec<V> = Vec::with_capacity(n);
-    for (inst, keep) in ssa.insts.iter().zip(&live) {
+    for (i, (inst, keep)) in ssa.insts.iter().zip(&live).enumerate() {
+        b.site = ssa.site(i);
         let v = match keep {
             true => b.emit(inst.map(&mut |v| map.get(v.index()).copied().unwrap_or(v))),
             false => V(u32::MAX),
@@ -52,6 +53,7 @@ pub fn dce(ssa: &Ssa) -> Ssa {
     }
     Ssa {
         insts: b.ssa.insts,
+        sites: b.ssa.sites,
         ..*ssa
     }
 }

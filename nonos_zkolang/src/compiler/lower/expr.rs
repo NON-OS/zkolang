@@ -15,6 +15,14 @@ use crate::compiler::tir::{TExpr, TExprKind};
 impl<'p> Lower<'p> {
     /** The slots of the value of `e`, evaluated where the guard says the point runs. */
     pub(super) fn expr(&mut self, e: &TExpr) -> L<Vec<V>> {
+        let outer = self.enter(e.span);
+        let slots = self.expr_kind(e);
+        self.b.site = outer;
+        slots
+    }
+
+    /** `expr`, its site entered. */
+    fn expr_kind(&mut self, e: &TExpr) -> L<Vec<V>> {
         if self.b.over {
             return Err(LowerError::TooLarge);
         }

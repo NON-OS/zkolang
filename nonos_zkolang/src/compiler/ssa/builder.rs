@@ -11,7 +11,7 @@
 
 use nonos_stark::field::P;
 
-use super::{Inst, Ssa, V};
+use super::{Inst, Site, Ssa, V};
 
 /** The most instructions a program may grow to before lowering gives up. */
 pub const MAX_INSTS: usize = 1 << 22;
@@ -22,6 +22,8 @@ pub struct Builder {
     pub ssa: Ssa,
     /** Whether the program outgrew `MAX_INSTS`; what was written after is dropped. */
     pub over: bool,
+    /** The site of the instructions written now. */
+    pub site: Site,
 }
 
 impl Builder {
@@ -33,6 +35,7 @@ impl Builder {
         }
         let v = V(u32::try_from(self.ssa.insts.len()).unwrap_or(u32::MAX));
         self.ssa.insts.push(i);
+        self.ssa.sites.push(self.site);
         v
     }
 

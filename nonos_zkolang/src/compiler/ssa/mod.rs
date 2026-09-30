@@ -20,10 +20,12 @@ mod inst;
 mod inst_map;
 mod inst_operands;
 mod program;
+mod site;
 mod value;
 
 pub use builder::Builder;
 pub use hint::Hint;
 pub use inst::Inst;
 pub use program::Ssa;
+pub use site::Site;
 pub use value::V;

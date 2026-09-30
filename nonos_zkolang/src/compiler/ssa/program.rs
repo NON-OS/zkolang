@@ -7,15 +7,17 @@
 
 use alloc::vec::Vec;
 
-use super::{Inst, V};
+use super::{Inst, Site, V};
 
 /**
- * A program: its instructions, where each defines the value of its index, and how many
- * public and secret input slots and output slots it has (section 12.2).
+ * A program: its instructions, where each defines the value of its index, the site of
+ * each, and how many public and secret input slots and output slots it has (section
+ * 12.2). An instruction past the end of `sites` has the default site.
  */
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Ssa {
     pub insts: Vec<Inst>,
+    pub sites: Vec<Site>,
     pub n_public: u16,
     pub n_secret: u16,
     pub n_outputs: u16,
@@ -25,6 +27,11 @@ impl Ssa {
     /** The instruction that defines `v`. */
     pub fn get(&self, v: V) -> Option<&Inst> {
         self.insts.get(v.index())
+    }
+
+    /** The site of the instruction at index `i`. */
+    pub fn site(&self, i: usize) -> Site {
+        self.sites.get(i).copied().unwrap_or_default()
     }
 
     /** How many input slots there are, public and secret. */

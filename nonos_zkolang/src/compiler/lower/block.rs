@@ -26,10 +26,12 @@ impl<'p> Lower<'p> {
                     self.bind(pat, &v, init.ty)?;
                 }
                 TStmt::Assert { cond, .. } => {
+                    let outer = self.enter(cond.span);
                     let c = self.expr(cond)?;
                     if let Some(&c) = c.first() {
                         self.require(c);
                     }
+                    self.b.site = outer;
                 }
                 TStmt::Expr(e) => {
                     self.expr(e)?;

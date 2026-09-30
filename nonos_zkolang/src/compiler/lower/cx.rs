@@ -12,6 +12,7 @@
 
 use alloc::vec::Vec;
 
+use super::sites::Sites;
 use crate::compiler::ssa::{Builder, V};
 use crate::compiler::tir::{FnId, TProgram};
 
@@ -39,6 +40,8 @@ pub(super) struct Lower<'p> {
     pub(super) b: Builder,
     pub(super) g: V,
     pub(super) frames: Vec<Frame>,
+    /** The sites of the instructions written so far. */
+    pub(super) sites: Sites,
 }
 
 impl<'p> Lower<'p> {

@@ -20,7 +20,8 @@ use crate::compiler::ssa::{Builder, Inst, Ssa, V};
 pub fn elide_range_checks(ssa: &Ssa) -> Ssa {
     let mut bound: Vec<u128> = Vec::with_capacity(ssa.insts.len());
     let mut b = Builder::default();
-    for inst in &ssa.insts {
+    for (i, inst) in ssa.insts.iter().enumerate() {
+        b.site = ssa.site(i);
         let get = |v: V| bound.get(v.index()).copied().unwrap_or(ANY);
         let insts = &ssa.insts;
         let k = |v: V| match insts.get(v.index()) {
@@ -50,6 +51,7 @@ pub fn elide_range_checks(ssa: &Ssa) -> Ssa {
     }
     Ssa {
         insts: b.ssa.insts,
+        sites: b.ssa.sites,
         ..*ssa
     }
 }

@@ -21,7 +21,8 @@ pub fn cse(ssa: &Ssa) -> Ssa {
     let mut b = Builder::default();
     let mut map: Vec<V> = Vec::with_capacity(ssa.insts.len());
     let mut seen: BTreeMap<Inst, V> = BTreeMap::new();
-    for inst in &ssa.insts {
+    for (i, inst) in ssa.insts.iter().enumerate() {
+        b.site = ssa.site(i);
         let inst = canonical(inst.map(&mut |v| map.get(v.index()).copied().unwrap_or(v)));
         /* An advice value is kept apart from an equal one, since one read of it would be
          * held in a register from the first place it is needed to the last. */
@@ -38,6 +39,7 @@ pub fn cse(ssa: &Ssa) -> Ssa {
     }
     Ssa {
         insts: b.ssa.insts,
+        sites: b.ssa.sites,
         ..*ssa
     }
 }
