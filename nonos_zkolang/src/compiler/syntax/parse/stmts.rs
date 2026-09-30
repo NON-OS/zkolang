@@ -35,6 +35,10 @@ impl<'a> Parser<'a> {
                     self.report_unclosed(open, "block");
                     return Err(Reported);
                 }
+                TokenKind::RParen | TokenKind::RBracket => {
+                    self.skip_stray_run();
+                    continue;
+                }
                 _ if self.at_outer_item() => {
                     self.report_unclosed(open, "block");
                     let span = open.to(self.prev_span());

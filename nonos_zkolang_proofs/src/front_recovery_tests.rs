@@ -51,3 +51,10 @@ fn recovery_is_linear_in_unclosed_brackets() {
         assert!(n <= most, "{n} reports for {}", &src[..20]);
     }
 }
+
+#[test]
+fn a_run_of_stray_tokens_is_one_error() {
+    let block = format!("fn f() {{\n{}}}", "    )\n".repeat(1_000));
+    let items = format!("fn f() {{}}\n{}\nfn g() {{}}", ";".repeat(1_000));
+    assert_eq!((reports(&block), reports(&items)), (1, 1));
+}
