@@ -32,6 +32,18 @@ impl<'a> Parser<'a> {
             return Err(Reported);
         }
         self.bump();
+        if self.limit_without_bound() {
+            let d = Diagnostic::error(
+                Code::UNEXPECTED_TOKEN,
+                "`limit` needs a bound",
+                self.span(),
+                "the loop's body, with no bound before it",
+            )
+            .with_help("write the most iterations the loop may take: `limit 32`");
+            self.diags.push(d);
+            self.skip_until(&[TokenKind::RBrace]);
+            return Err(Reported);
+        }
         let limit = self.const_arg()?;
         let body = self.body_block()?;
         let span = start.to(self.prev_span());

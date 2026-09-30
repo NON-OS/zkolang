@@ -21,6 +21,8 @@ mod recover_owed;
 mod reserved;
 mod skip_stmt;
 mod stray_gap;
+mod stray_run;
 mod unclosed;
+mod unsupported;
 
 pub(super) use recover_item::starts_item;

@@ -11,7 +11,6 @@
 use alloc::vec::Vec;
 
 use super::parser::Parser;
-use crate::compiler::diag::{Code, Diagnostic};
 use crate::compiler::syntax::ast::Item;
 use crate::compiler::syntax::token::TokenKind;
 
@@ -23,14 +22,8 @@ impl<'a> Parser<'a> {
             match self.kind() {
                 TokenKind::Eof => break,
                 TokenKind::RBrace if in_block => break,
-                TokenKind::RBrace => {
-                    let t = self.bump();
-                    self.diags.push(Diagnostic::error(
-                        Code::UNEXPECTED_TOKEN,
-                        "unexpected `}`",
-                        t.span,
-                        "no block to close here",
-                    ));
+                _ if self.at_stray_between_items() => {
+                    self.skip_stray_run();
                     continue;
                 }
                 _ => {}

@@ -13,7 +13,8 @@ use alloc::vec::Vec;
 
 use super::binop::binop;
 use super::parser::{PResult, Parser};
-use crate::compiler::syntax::ast::{BinOp, Expr};
+use crate::compiler::syntax::ast::{BinOp, Expr, ExprKind};
+use crate::compiler::syntax::token::TokenKind;
 
 impl<'a> Parser<'a> {
     /** An expression, assignment included; where assignment may stand is checked later. */
@@ -41,7 +42,13 @@ impl<'a> Parser<'a> {
                 break;
             }
             if op.is_comparison() && chain.as_ref().is_some_and(|c| c.0 == prec) {
-                return Err(self.chained_comparison());
+                let generic = op == BinOp::Gt
+                    && matches!(lhs.kind, ExprKind::Path(_))
+                    && self.peek(1) == TokenKind::LParen
+                    && chain
+                        .as_ref()
+                        .is_some_and(|c| matches!(c.1.as_slice(), [(BinOp::Lt, _)]));
+                return Err(self.chained_comparison(generic));
             }
             self.bump();
             let extends = chain.as_ref().is_some_and(|c| c.0 == prec);

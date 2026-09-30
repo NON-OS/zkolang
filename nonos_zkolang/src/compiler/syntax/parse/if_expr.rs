@@ -23,6 +23,9 @@ impl<'a> Parser<'a> {
         let mut else_block = None;
         loop {
             self.bump();
+            if self.at_kw(Keyword::Let) {
+                return Err(self.if_let());
+            }
             let cond = self.restricted(true, |p| p.expr())?;
             let block = self.body_block()?;
             branches.push(IfBranch { cond, block });

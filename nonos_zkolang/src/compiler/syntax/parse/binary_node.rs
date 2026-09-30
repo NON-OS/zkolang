@@ -20,15 +20,23 @@ impl<'a> Parser<'a> {
         self.mk(ExprKind::Binary(Box::new(first), rest), span)
     }
 
-    /** Report a comparison that follows another, as in `a < b < c`. */
-    pub(super) fn chained_comparison(&mut self) -> Reported {
+    /**
+     * Report a comparison that follows another, as in `a < b < c`; `generic` when the text
+     * reads as a call with generic arguments, `f<T>(x)`.
+     */
+    pub(super) fn chained_comparison(&mut self, generic: bool) -> Reported {
+        let help = if generic {
+            "to call a function with generic arguments, write `f::<T>(x)`"
+        } else {
+            "write each comparison separately and join them with `&&`"
+        };
         let d = Diagnostic::error(
             Code::CHAINED_COMPARISON,
             "comparison operators cannot be chained",
             self.span(),
             "a second comparison here",
         )
-        .with_help("write each comparison separately and join them with `&&`");
+        .with_help(help);
         self.diags.push(d);
         Reported
     }
