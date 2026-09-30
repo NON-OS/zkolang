@@ -7,27 +7,41 @@
 
 use super::parser::{PResult, Parser, Reported, MAX_NESTING};
 use crate::compiler::diag::{Code, Diagnostic};
+use crate::compiler::syntax::token::TokenKind;
 
 impl<'a> Parser<'a> {
-    /** Open one nesting level. */
+    /**
+     * Open one nesting level. Past the bound, the first construct too deep in each
+     * top-level item is reported, at the bracket just opened or else at the current token.
+     */
     pub(super) fn enter(&mut self) -> PResult<()> {
-        if self.depth >= MAX_NESTING {
-            if !self.nesting_reported {
-                self.nesting_reported = true;
-                self.diags.push(
-                    Diagnostic::error(
-                        Code::NESTING_TOO_DEEP,
-                        "nested too deep",
-                        self.span(),
-                        "the parser's nesting budget runs out here",
-                    )
-                    .with_help("name inner parts: `let` bindings for expressions, `type` aliases for types"),
-                );
-            }
-            return Err(Reported);
+        if self.depth < MAX_NESTING {
+            self.depth += 1;
+            return Ok(());
         }
-        self.depth += 1;
-        Ok(())
+        if !self.nesting_reported {
+            self.nesting_reported = true;
+            let prev = self.pos.checked_sub(1).and_then(|i| self.tokens.get(i));
+            let opens = |k| {
+                matches!(
+                    k,
+                    TokenKind::LParen | TokenKind::LBracket | TokenKind::LBrace | TokenKind::Lt
+                )
+            };
+            let at = match prev {
+                Some(t) if self.split.is_none() && opens(t.kind) => t.span,
+                _ => self.span(),
+            };
+            let d = Diagnostic::error(
+                Code::NESTING_TOO_DEEP,
+                "nested too deep",
+                at,
+                "this goes past the nesting bound",
+            )
+            .with_help("nesting is bounded at 64 levels: split the construct into parts with names of their own");
+            self.diags.push(d);
+        }
+        Err(Reported)
     }
 
     /** Close `n` nesting levels. */
