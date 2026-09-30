@@ -9,37 +9,9 @@
  * was ignored, a repeated one took its first value, and `check` passed unprovable lengths.
  */
 
-use std::path::PathBuf;
-use std::process::Command;
+mod args_support;
 
-fn files() -> PathBuf {
-    let dir = std::env::temp_dir().join(format!("zkolang-args-{}", std::process::id()));
-    std::fs::create_dir_all(&dir).expect("temp dir");
-    let long = format!(
-        "input x;\n{}output x;",
-        "for i in 0..40000 { let x = x + i; }\n".repeat(2)
-    );
-    let files = [
-        ("sq.zkl", "input x;\noutput x * x;"),
-        ("-sq.zkl", "output 4;"),
-        ("long.zkl", &long),
-    ];
-    for (path, text) in files {
-        std::fs::write(dir.join(path), text).expect("write");
-    }
-    dir
-}
-
-fn zk(args: &[&str]) -> (bool, String) {
-    let out = Command::new(env!("CARGO_BIN_EXE_zkolang"))
-        .current_dir(files())
-        .args(args)
-        .output()
-        .expect("run zkolang");
-    let text =
-        String::from_utf8_lossy(&out.stdout).to_string() + &String::from_utf8_lossy(&out.stderr);
-    (out.status.success(), text)
-}
+use args_support::run::zk;
 
 #[test]
 fn flags_may_come_before_the_file() {
