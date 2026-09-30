@@ -4,13 +4,14 @@
 */
 
 /*!
- * One source file: its display name, its text, and the byte offset each line starts at,
- * so a span converts to a line and column in logarithmic time.
+ * One source file: its display name, its text, and the tables that convert a byte offset
+ * to a line and column without rescanning the line.
  */
 
 use alloc::string::String;
 use alloc::vec::Vec;
 
+use super::line_table::{char_marks, line_starts};
 use super::span::FileId;
 
 /** A source file held by the source map. */
@@ -22,23 +23,19 @@ pub struct SourceFile {
     pub text: String,
     /** The byte offset of each line's first byte; `file_lines` reads it. */
     pub(super) line_starts: Vec<u32>,
+    /** The characters before every `MARK_STRIDE`th byte; empty for an ASCII file. */
+    pub(super) char_marks: Vec<u32>,
 }
 
 impl SourceFile {
     /** A file with its line table built. */
     pub fn new(id: FileId, name: String, text: String) -> SourceFile {
-        let mut line_starts = Vec::new();
-        line_starts.push(0);
-        for (i, b) in text.bytes().enumerate() {
-            if b == b'\n' {
-                line_starts.push(u32::try_from(i + 1).unwrap_or(u32::MAX));
-            }
-        }
         SourceFile {
             id,
             name,
+            line_starts: line_starts(text.as_bytes()),
+            char_marks: char_marks(text.as_bytes()),
             text,
-            line_starts,
         }
     }
 

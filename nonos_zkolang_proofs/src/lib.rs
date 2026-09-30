@@ -74,6 +74,8 @@ mod front_fuzz_tests;
 #[cfg(test)]
 mod front_lex_tests;
 #[cfg(test)]
+mod front_source_tests;
+#[cfg(test)]
 mod fuzz_tests;
 #[cfg(test)]
 mod golden_corpus;

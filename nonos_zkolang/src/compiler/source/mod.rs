@@ -11,6 +11,7 @@
 
 mod file;
 mod file_lines;
+mod line_table;
 mod map;
 mod provider;
 mod span;
