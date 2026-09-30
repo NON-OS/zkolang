@@ -180,6 +180,8 @@ mod sema_defs_tests;
 #[cfg(test)]
 mod sema_run_tests;
 #[cfg(test)]
+mod semantics_tests;
+#[cfg(test)]
 mod shield_key_kat;
 #[cfg(test)]
 mod shield_membership_tests;

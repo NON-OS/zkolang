@@ -31,9 +31,11 @@ mod failure;
 mod machine;
 mod place_access;
 mod run;
+mod test_run;
 mod value;
 
 pub use env::Env;
 pub use failure::{FailKind, Failure};
 pub use machine::Interp;
+pub use test_run::{run_tests, TestRun};
 pub use value::Value;
