@@ -66,6 +66,8 @@ mod fold_constraint_tests;
 #[cfg(test)]
 mod fold_meaning_tests;
 #[cfg(test)]
+mod front_lex_tests;
+#[cfg(test)]
 mod fuzz_tests;
 #[cfg(test)]
 mod golden_corpus;

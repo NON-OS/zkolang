@@ -56,12 +56,14 @@ fn scan_block_comment(b: &[u8], i: usize, len: usize, file: FileId) -> (Comment,
         }
     }
     let span = Span::new(file, i as u32, j as u32);
-    (
-        Comment {
-            span,
-            kind: CommentKind::Block,
-        },
-        j,
-        closed,
-    )
+    /*
+     * A second star after the opening slash and star makes an outer doc comment and a bang
+     * an inner one; a third star, or a comment closed at once, keeps it ordinary.
+     */
+    let kind = match (b.get(i + 2), b.get(i + 3)) {
+        (Some(b'*'), Some(&c)) if c != b'*' && c != b'/' => CommentKind::DocOuter,
+        (Some(b'!'), _) => CommentKind::DocInner,
+        _ => CommentKind::Block,
+    };
+    (Comment { span, kind }, j, closed)
 }

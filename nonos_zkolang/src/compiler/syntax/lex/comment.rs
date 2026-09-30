@@ -30,10 +30,13 @@ pub struct Comment {
     pub kind: CommentKind,
 }
 
-/** Scan a line comment starting at `i`, returning it and the offset of the line end. */
+/**
+ * Scan a line comment starting at `i`, returning it and the offset of the line end. A
+ * line ends at a line feed or a carriage return, as editors display it.
+ */
 pub(super) fn scan_line_comment(b: &[u8], i: usize, len: usize, file: FileId) -> (Comment, usize) {
     let mut j = i;
-    while j < len && b[j] != b'\n' {
+    while j < len && b[j] != b'\n' && b[j] != b'\r' {
         j += 1;
     }
     let kind = if b.get(i + 2) == Some(&b'/') && b.get(i + 3) != Some(&b'/') {

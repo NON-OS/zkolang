@@ -4,13 +4,14 @@
 */
 
 /*!
- * Doc comments. An item's documentation is the run of `///` comments between the token
- * before it and its first token. A module's is the run of `//!` comments at the start of
- * its file or inline body. A doc comment that documents nothing is a warning.
+ * Doc comments. An item's documentation is the run of outer doc comments between the
+ * token before it and its first token. A module's is the run of inner doc comments at the
+ * start of its file or inline body. A doc comment that documents nothing is a warning.
  */
 
 use alloc::string::String;
 
+use super::doc_text::doc_text;
 use super::parser::Parser;
 use crate::compiler::diag::{Code, Diagnostic};
 use crate::compiler::syntax::lex::CommentKind;
@@ -47,13 +48,11 @@ impl<'a> Parser<'a> {
                 .text
                 .get(c.span.lo as usize..c.span.hi as usize)
                 .unwrap_or("");
-            let body = text.get(3..).unwrap_or("");
-            let body = body.strip_prefix(' ').unwrap_or(body);
             let s = out.get_or_insert_with(String::new);
             if !s.is_empty() {
                 s.push('\n');
             }
-            s.push_str(body.trim_end());
+            s.push_str(&doc_text(text));
         }
         out
     }
@@ -65,7 +64,7 @@ impl<'a> Parser<'a> {
             if doc && !self.doc_used.get(i).copied().unwrap_or(true) {
                 self.diags.push(
                     Diagnostic::warning(Code::MISPLACED_DOC, "doc comment documents nothing", c.span, "")
-                        .with_help("`///` documents the item after it and `//!` the module it opens; use `//` for other comments"),
+                        .with_help("`/** */` and `///` document the item after them, `/*! */` and `//!` the module they open; use `/* */` or `//` for other comments"),
                 );
             }
         }

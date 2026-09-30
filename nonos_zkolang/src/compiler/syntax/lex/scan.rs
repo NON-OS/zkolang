@@ -35,7 +35,8 @@ pub fn lex(file: FileId, text: &str, diags: &mut Diagnostics) -> Lexed {
     let b = text.as_bytes();
     let len = b.len().min(MAX_SOURCE_LEN);
     let span = |lo: usize, hi: usize| Span::new(file, lo as u32, hi as u32);
-    let mut i = 0usize;
+    /* A byte-order mark some editors write before the first character is not source. */
+    let mut i = if text.starts_with('\u{feff}') { 3 } else { 0 };
     while i < len {
         let c = b[i];
         if c == b' ' || c == b'\t' || c == b'\n' || c == b'\r' {
