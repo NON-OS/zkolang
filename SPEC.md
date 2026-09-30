@@ -726,7 +726,8 @@ guard. The compiler decides this exactly for every type: `bool`, enums, tuples, 
 and arrays by their parts, and integers and `field` by the values their literals and
 ranges cover, so an integer scrutinee needs a wildcard or binding arm unless its ranges
 cover the whole type. A non-exhaustive `match` is an error (E0400) naming a pattern that
-some value no arm covers matches. An arm that no value reaches, because the arms without
+some value no arm covers matches, written as an arm could write it: a generic struct or
+enum is named without its arguments. An arm that no value reaches, because the arms without
 a guard before it cover every value it matches, is a warning (W0004). *Note: the check of
 one `match` takes at most 200 000 steps; one that needs more is reported as E0400, and
 splitting it into nested `match`es brings it under the budget.*

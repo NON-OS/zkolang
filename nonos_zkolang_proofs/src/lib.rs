@@ -164,6 +164,8 @@ mod match_default_tests;
 #[cfg(test)]
 mod match_exhaust_tests;
 #[cfg(test)]
+mod match_witness_arm_tests;
+#[cfg(test)]
 mod match_gen;
 #[cfg(test)]
 mod match_pat;

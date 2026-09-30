@@ -50,9 +50,10 @@ fn shape(types: &Types, ty: TyId, c: Ctor, each: &[String]) -> String {
     let Some(v) = adt.variants.get(tag as usize) else {
         return String::from("_");
     };
+    /* A pattern names a generic item without its arguments, which the scrutinee settles. */
     let name = match adt.is_enum {
-        true => format!("{}::{}", types.display(ty), v.name),
-        false => types.display(ty),
+        true => format!("{}::{}", adt.name, v.name),
+        false => adt.name.clone(),
     };
     match v.form {
         Form::Unit => name,
