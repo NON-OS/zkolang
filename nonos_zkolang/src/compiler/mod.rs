@@ -9,5 +9,6 @@
  */
 
 pub mod diag;
+pub mod sema;
 pub mod source;
 pub mod syntax;
