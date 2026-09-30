@@ -28,8 +28,13 @@ normative, is the only one that describes the repository rather than the languag
   checker of sections 4 to 13 and the reference interpreter of the typed IR, for a
   program in one file. The checker reports each form it does not check yet (structs,
   enums, `match`, generics, `impl` blocks, methods on user types, `Self`, and modules in
-  their own files) as E0904. Nothing compiles the typed IR to the machine yet. The rest of
-  the compiler is being built in the stages `docs/compiler-architecture.md` describes.
+  their own files) as E0904. The back end compiles the typed IR of such a program to the
+  machine: lowering to SSA, the passes, gadget expansion, scheduling, register allocation
+  and a check of the machine program against the SSA. `compiler::driver::build` and
+  `prove` build a program and prove a run of it with the STARK, hiding the witness. The
+  command line does not call them yet, and a 64-bit power with a variable exponent is not
+  compiled yet (E0904). The rest of the compiler is being built in the stages
+  `docs/compiler-architecture.md` describes.
 - The tools this document names (`zkolang abi`, `zkolang test`, `zkolang doc`,
   `zkolang explain`, and `zkolang check` with `--cost` or `--declassify`), the
   standard library `std` and its reference, the migration guide and the constraint ledger
@@ -830,7 +835,8 @@ piece of.*
 
 The cost of a program is the number of machine instructions its compilation emits, each
 one trace row, including the final `Halt`. It is a function of the program text alone.
-A program must compile to at most `2^16` rows; a larger one is an error.
+A program must compile to at most `2^16` rows; a larger one is an error. A program shorter
+than 33 rows is padded to 33, the fewest in which the prover hides the witness.
 
 ### 15.2 Reporting
 

@@ -17,6 +17,7 @@
 mod emit;
 mod machine;
 mod op_of;
+mod pad;
 mod regs;
 mod reload;
 mod state;
@@ -28,4 +29,5 @@ mod verify_read;
 
 pub use emit::codegen;
 pub use machine::{CodegenError, Machine, Origin};
+pub use pad::pad;
 pub use verify::{verify, VerifyError};

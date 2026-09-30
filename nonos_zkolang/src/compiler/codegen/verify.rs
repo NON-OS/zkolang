@@ -53,6 +53,10 @@ pub fn verify(ssa: &Ssa, m: &Machine) -> Result<(), VerifyError> {
         match origin {
             Origin::Def(v) => rp.def(op, v).map_err(fail)?,
             Origin::Reload(v) => rp.reload(op, v).map_err(fail)?,
+            Origin::Pad => match op {
+                Op::Imm { d, .. } => rp.set(d, None),
+                _ => return Err(fail("padding that is not a constant")),
+            },
             Origin::Halt if k + 1 == m.ops.len() && matches!(op, Op::Halt) => {}
             Origin::Halt => return Err(fail("a halt that does not end the program")),
         }

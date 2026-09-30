@@ -11,21 +11,25 @@ correctness first, then for the size of the trace, then for compile speed.
 ## Status
 
 This is the design the compiler is being built to. So far `source/`, `diag/`, `syntax/`,
-`sema/`, `tir/` and `interp/` exist. The front end reads a file into a syntax tree; after
-an error the parser recovers, so that one run reports each independent mistake once, and
-a placement check reports statement forms where they cannot stand. Diagnostics render as
-text or JSON. The checker resolves names, checks types and constants, reports recursion,
-checks secret flow and lowers the program to the typed IR, which the reference
-interpreter runs. It checks a program in one file, and reports each form it does not
-check yet (structs, enums, `match`, generics, `impl` blocks, methods on user types,
-`Self`, and modules in their own files) as E0904. The programs in
-`nonos_zkolang_proofs/ui/syntax` and `ui/sema`, each of which states the diagnostics it
-expects, and the `front_*` and `sema_*` tests of `nonos_zkolang_proofs` pin this
-behaviour. Nothing compiles the typed IR to the machine yet. The compiler lands in
-stages, in this order: the front end; types and secret flow; the SSA IR, its passes,
-allocation and code generation; structs, enums, `match` and generics; packages and the
-standard library; the tools; and the Lean development. This section is updated as each
-stage lands.
+`sema/`, `tir/`, `interp/`, `ssa/`, `lower/`, `opt/`, `gadget/`, `schedule/`, `codegen/`
+and `driver/` exist. The front end reads a file into a syntax tree; after an error the
+parser recovers, so that one run reports each independent mistake once, and a placement
+check reports statement forms where they cannot stand. Diagnostics render as text or
+JSON. The checker resolves names, checks types and constants, reports recursion, checks
+secret flow and lowers the program to the typed IR, which the reference interpreter runs.
+It checks a program in one file, and reports each form it does not check yet (structs,
+enums, `match`, generics, `impl` blocks, methods on user types, `Self`, and modules in
+their own files) as E0904. The back end lowers the typed IR to SSA, runs the passes,
+expands the gadgets, schedules, allocates registers, emits machine code and checks it
+against the SSA; `driver::build` and `driver::prove` build a program from source and prove
+a run of it, hiding the witness. The programs in `nonos_zkolang_proofs/ui/syntax` and
+`ui/sema`, each of which states the diagnostics it expects, the `semantics/*.zkl` tests,
+run both interpreted and compiled, and the `front_*`, `sema_*`, `ssa_*`, `compile_*`,
+`codegen_*`, `flow_*` and `prove_2026_*` tests of `nonos_zkolang_proofs` pin this
+behaviour. The compiler lands in stages, in this order: the front end; types and secret
+flow; the SSA IR, its passes, allocation and code generation; structs, enums, `match`
+and generics; packages and the standard library; the tools; and the Lean development.
+This section is updated as each stage lands.
 
 ## Where it lives
 
@@ -51,7 +55,7 @@ nonos_zkolang/src/compiler/
   gadget/     expansion of high-level SSA constraints into machine-level SSA
   schedule/   the order of the machine-level SSA, chosen for register pressure
   codegen/    register allocation, machine instructions, input and advice layout,
-              and the program verifier
+              padding, and the program verifier
   cost/       the cost report
   fmt/        the formatter
   driver/     the pipeline: compile, witness, run, prove
@@ -206,7 +210,9 @@ read again is held in a register or recomputed.
    is placed to its last use; when none is free, the constant or public input needed
    furthest ahead gives up its register. If every register holds a value that cannot be
    brought back, compilation stops with E0801.
-4. **Verification.** An independent checker replays the emitted instructions, tracking
+4. **Padding.** A program shorter than 33 rows is padded with constants written before
+   its halt, since a trace of 32 rows cannot carry the blinding of a hiding proof.
+5. **Verification.** An independent checker replays the emitted instructions, tracking
    which machine SSA value each register holds, and confirms that every operand of every
    instruction is the value the machine SSA says it should be, that every read of an
    input or advice value reads its own slot, that no secret input or advice slot is read
@@ -216,8 +222,10 @@ read again is held in a register or recomputed.
 ### Witness, run and prove
 
 The driver compiles, runs the SSA interpreter to produce the advice, runs the machine with
-every constraint enforced, and proves through the existing `nonos-stark` API. A failing run
-is reported at the source line of the failing constraint.
+every constraint enforced, runs the reference interpreter beside it, and proves through
+the existing `nonos-stark` API, hiding the witness. The two runs must both fail or return
+the same result; a disagreement is reported as a compiler bug. A failing run has no
+witness, so the reference interpreter's failure, with its source span, is the report.
 
 ## Testing
 

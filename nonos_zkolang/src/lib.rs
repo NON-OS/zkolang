@@ -32,8 +32,8 @@ pub use air::{BuildError, StepAir, TRACE_WIDTH};
 pub use backend::{to_asm, to_c, to_python};
 pub use commit::{commit, commit_limbs, serialize};
 pub use driver::{
-    evaluate, prove_program, prove_source, prove_source_with_inputs, prove_source_with_witness,
-    prove_source_with_witness_zk, Report, RunError,
+    evaluate, prove_program, prove_program_hidden, prove_source, prove_source_with_inputs,
+    prove_source_with_witness, prove_source_with_witness_zk, Report, RunError,
 };
 pub use isa::{Op, Program, REGS};
 pub use lang::{

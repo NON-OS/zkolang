@@ -17,6 +17,8 @@ pub enum Origin {
     Def(V),
     /** Brings a constant or a public input into a register again. */
     Reload(V),
+    /** A constant written only to lengthen the program, whose register it forgets. */
+    Pad,
     Halt,
 }
 

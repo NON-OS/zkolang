@@ -28,6 +28,8 @@ mod block_propagation_tests;
 #[cfg(test)]
 mod block_tests;
 #[cfg(test)]
+mod codegen_pad_tests;
+#[cfg(test)]
 mod codegen_reads_tests;
 #[cfg(test)]
 mod commit_tests;
@@ -199,6 +201,10 @@ mod prop_model;
 mod prop_print;
 #[cfg(test)]
 mod prop_tests;
+#[cfg(test)]
+mod prove_2026_abi_tests;
+#[cfg(test)]
+mod prove_2026_tests;
 #[cfg(test)]
 mod python_guard_tests;
 #[cfg(test)]
