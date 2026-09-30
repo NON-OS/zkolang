@@ -53,11 +53,14 @@ impl<'p> Lower<'p> {
                 let exp = args
                     .get(1)
                     .and_then(|k| Interp::new(self.p, 1_000_000).eval_const(k, 0).ok());
-                let n = exp.map(|v| v.int() as u64).ok_or(LowerError::Unsupported(
-                    "a 64-bit power of a variable exponent",
-                    e.span,
-                ))?;
-                pair(self.pow64(x, n, t.signed()))
+                match exp {
+                    Some(n) => pair(self.pow64(x, n.int() as u64, t.signed())),
+                    None => {
+                        let k = vals.get(1).and_then(|v| v.first().copied());
+                        let k = k.ok_or(LowerError::Unsupported("an exponent", e.span))?;
+                        pair(self.pow64_var(x, k, t.signed()))
+                    }
+                }
             }
             _ => return self.convert64(b, first, from, to, e),
         })

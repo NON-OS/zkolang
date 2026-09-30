@@ -1,0 +1,48 @@
+/* Powers of 64-bit integers with an exponent known only at run time (section 7.2), checked. */
+
+fn up(x: u64, k: u32) -> u64 {
+    x.pow(k)
+}
+
+fn signed(x: i64, k: u32) -> i64 {
+    x.pow(k)
+}
+
+#[test]
+fn a_power_that_fits_is_exact() {
+    assert up(3, 40) == 12157665459056928801;
+    assert up(2, 63) == 9223372036854775808;
+    assert up(7, 0) == 1 && up(0, 0) == 1 && up(0, 9) == 0;
+    assert signed(-2, 63) == -9223372036854775808;
+    assert signed(-3, 3) == -27;
+}
+
+#[test]
+fn a_power_of_64_or_more_fits_only_for_small_bases() {
+    assert up(1, 70000) == 1 && up(0, 70000) == 0 && up(0, 64) == 0;
+    assert signed(-1, 70001) == -1 && signed(-1, 70000) == 1 && signed(0, 99) == 0;
+}
+
+#[test]
+#[should_fail]
+fn a_large_exponent_fails_for_a_large_base() {
+    let _v = signed(-2, 64);
+}
+
+#[test]
+#[should_fail]
+fn an_unsigned_overflow_fails() {
+    let _v = up(2, 64);
+}
+
+#[test]
+#[should_fail]
+fn a_signed_overflow_fails() {
+    let _v = signed(2, 63);
+}
+
+#[test]
+#[should_fail]
+fn a_large_base_overflows_early() {
+    let _v = up(4294967296, 2);
+}

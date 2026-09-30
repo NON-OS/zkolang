@@ -21,6 +21,7 @@ mod mul;
 mod narrow;
 mod ops;
 mod pow;
+mod pow_var;
 mod shift;
 mod shift_parts;
 mod unary;

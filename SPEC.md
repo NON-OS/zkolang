@@ -45,8 +45,7 @@ normative, is the only one that describes the repository rather than the languag
   program to the machine: lowering to SSA, the passes, gadget expansion, scheduling, register allocation
   and a check of the machine program against the SSA. `compiler::driver::build` and
   `prove` build a program and prove a run of it with the STARK, hiding the witness;
-  `zkolang check` and `zkolang run` call them with `--edition 2026`. A 64-bit power with a
-  variable exponent is not compiled yet (E0904). The rest of the compiler is being built in the stages
+  `zkolang check` and `zkolang run` call them with `--edition 2026`. The rest of the compiler is being built in the stages
   `docs/compiler-architecture.md` describes.
 - `zkolang test` runs the tests of an edition 2026 crate (section 16), each compiled and
   run on the machine beside the reference interpreter; `zkolang explain CODE` prints a
