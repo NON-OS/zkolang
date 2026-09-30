@@ -31,9 +31,9 @@ normative, is the only one that describes the repository rather than the languag
   their own files) as E0904. The back end compiles the typed IR of such a program to the
   machine: lowering to SSA, the passes, gadget expansion, scheduling, register allocation
   and a check of the machine program against the SSA. `compiler::driver::build` and
-  `prove` build a program and prove a run of it with the STARK, hiding the witness. The
-  command line does not call them yet, and a 64-bit power with a variable exponent is not
-  compiled yet (E0904). The rest of the compiler is being built in the stages
+  `prove` build a program and prove a run of it with the STARK, hiding the witness;
+  `zkolang check` and `zkolang run` call them with `--edition 2026`. A 64-bit power with a
+  variable exponent is not compiled yet (E0904). The rest of the compiler is being built in the stages
   `docs/compiler-architecture.md` describes.
 - The tools this document names (`zkolang abi`, `zkolang test`, `zkolang doc`,
   `zkolang explain`, and `zkolang check` with `--cost` or `--declassify`), the

@@ -7,10 +7,14 @@
 
 mod build;
 mod check;
+mod check_2026;
+mod edition;
 mod fee;
 mod key;
+mod modern;
 mod prepare;
 mod run;
+mod run_2026;
 
 pub(crate) use build::build;
 pub(crate) use check::check;

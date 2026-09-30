@@ -25,6 +25,8 @@ const USAGE: &str = "\
 zkolang <run|check|build|key|fee> <file.zkl> [options]
   run   <file> [--input a,b] [--witness x,y]     compile, prove, report
   check <file>                                   compile only
+  --edition 2026 compiles the new language: run takes [--public a,b] [--secret x,y],
+  one value per scalar of main's public and secret parameters, and hides the secrets
   build <file> [--target c|asm|python] [--out f] emit a native backend
   key   <file>                                   commitment and verifier key
   fee   <file> [--input a,b] [--witness x,y]     the pay-to-prove cost in NOX";
