@@ -36,6 +36,7 @@ mod program_failed;
 mod recursion;
 mod register;
 mod scc;
+pub mod secret;
 mod signature;
 pub mod ty;
 mod uses;

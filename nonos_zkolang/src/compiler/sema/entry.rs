@@ -37,7 +37,13 @@ pub fn check(ast: &SourceAst) -> (TProgram, Diagnostics) {
     sema.check_const_fns();
     sema.check_recursion();
     let program = sema.program();
-    let diags = core::mem::take(&mut sema.diags);
+    let ok: alloc::vec::Vec<bool> = sema
+        .fns
+        .iter()
+        .map(|f| matches!(f.body, super::cx::State::Done(_)))
+        .collect();
+    let mut diags = core::mem::take(&mut sema.diags);
+    crate::compiler::sema::secret::check_program(&program, &ok, &mut diags);
     (program, diags)
 }
 
