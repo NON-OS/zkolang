@@ -40,6 +40,8 @@ mod corpus_extra_tests;
 #[cfg(test)]
 mod corpus_tests;
 #[cfg(test)]
+mod cse_scale_tests;
+#[cfg(test)]
 mod curve_tests;
 #[cfg(test)]
 mod desugar_budget_tests;
