@@ -41,10 +41,11 @@ normative, is the only one that describes the repository rather than the languag
   `zkolang check` and `zkolang run` call them with `--edition 2026`. A 64-bit power with a
   variable exponent is not compiled yet (E0904). The rest of the compiler is being built in the stages
   `docs/compiler-architecture.md` describes.
-- The tools this document names (`zkolang abi`, `zkolang test`, `zkolang doc`,
-  `zkolang explain`, and `zkolang check` with `--cost` or `--declassify`), the
-  standard library `std` and its reference, the migration guide and the constraint ledger
-  do not exist yet.
+- `zkolang test` runs the tests of an edition 2026 crate (section 16), each compiled and
+  run on the machine beside the reference interpreter. The other tools this document
+  names (`zkolang abi`, `zkolang doc`, `zkolang explain`, and `zkolang check` with
+  `--cost` or `--declassify`), the reference of the standard library, the migration guide
+  and the constraint ledger do not exist yet.
 
 ## Contents
 
