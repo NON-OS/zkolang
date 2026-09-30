@@ -61,8 +61,10 @@ fn a_run_of_stray_tokens_is_one_error() {
 
 #[test]
 fn many_items_on_one_line_parse_in_linear_time() {
-    let src = "fn f() {} ".repeat(100_000);
-    let t = Instant::now();
-    assert_eq!(reports(&src), 0);
-    assert!(t.elapsed() < Duration::from_secs(20), "{:?}", t.elapsed());
+    let items = "fn f() {} ".repeat(100_000);
+    for src in [items.clone(), format!("{}{items}", " ".repeat(300_000))] {
+        let t = Instant::now();
+        assert_eq!(reports(&src), 0);
+        assert!(t.elapsed() < Duration::from_secs(20), "{:?}", t.elapsed());
+    }
 }
