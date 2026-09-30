@@ -56,8 +56,8 @@ normative, is the only one that describes the repository rather than the languag
   its doc comments (section 17.2), and `docs/stdlib.md` is the standard library's, which a
   test keeps equal to what `zkolang doc --std` makes; `zkolang abi` prints the layout of
   `main`'s inputs and result (section 12.2), and `zkolang check --declassify` lists each
-  `declassify` (section 13.2). `zkolang check --cost`, the migration guide and the
-  constraint ledger do not exist yet.
+  `declassify` (section 13.2); `zkolang check --cost` gives the cost report of section
+  15.2. The migration guide and the constraint ledger do not exist yet.
 
 ## Contents
 
@@ -924,7 +924,12 @@ than 33 rows is padded to 33, the fewest in which the prover hides the witness.
 
 `zkolang check --cost` reports, per function, the rows attributed to it inclusive of the
 functions inlined into it and exclusive of them, the peak number of live registers, and
-the source lines that emit the most rows.
+the source lines that emit the most rows. A row is attributed to the innermost expression
+whose instruction it is, in the function whose code that expression is, and to each
+function inlined to reach it; a row that brings a value back into a register, to the row
+after it that needs the value. Reading and checking the inputs, padding and the final
+`Halt` are no function's. The live registers at a row are those it or a later row reads
+before any row writes them again; a function's peak is the most at a row of its own.
 
 ### 15.3 Warnings
 

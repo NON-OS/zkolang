@@ -72,16 +72,18 @@ nonos_zkolang/src/compiler/
   tir/        the typed IR: monomorphic, resolved, desugared; its printer
   interp/     the reference interpreter over the TIR (the oracle), also the constant
               evaluator
-  ssa/        the SSA IR, its printer and its interpreter (the witness generator)
+  ssa/        the SSA IR, its printer and its interpreter (the witness generator);
+              each instruction carries the site, a span and the inlined calls, it
+              comes from, which every pass keeps
   lower/      TIR to SSA lowering (scalarisation, guards, if-conversion, unrolling)
   opt/        the SSA passes
   gadget/     expansion of high-level SSA constraints into machine-level SSA
   schedule/   the order of the machine-level SSA, chosen for register pressure
   codegen/    register allocation, machine instructions, input and advice layout,
               padding, and the program verifier
-  cost/       the cost report
   fmt/        the formatter
-  driver/     the pipeline: compile, witness, run, prove
+  driver/     the pipeline: compile, witness, run, prove; the cost report, each
+              machine row charged to its site
 ```
 
 `mod.rs` files re-export only. One concept per file.

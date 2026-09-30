@@ -7,6 +7,7 @@
 
 use nonos_zkolang::compiler::driver::declassified;
 
+use super::cost::print_cost;
 use super::modern::built;
 use crate::line::Line;
 use crate::out::paint;
@@ -19,6 +20,9 @@ pub(super) fn check(line: &Line) -> Result<(), String> {
             let (file, row, col) = map.locate(at).unwrap_or(("?", 0, 0));
             println!("{file}:{row}:{col}: {}", map.snippet(at));
         }
+    }
+    if line.switch("--cost") {
+        print_cost(&map, &b);
     }
     let rows = b.compiled.machine.ops.len();
     if !line.switch("--json") {

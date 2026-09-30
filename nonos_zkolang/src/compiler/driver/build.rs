@@ -18,7 +18,7 @@ use super::build_lower::lowering;
 use super::built::Built;
 use super::source::{crates_of, Source};
 use crate::compiler::diag::Diagnostics;
-use crate::compiler::lower::lower_program;
+use crate::compiler::lower::{lower_sited, LowerError};
 use crate::compiler::sema::check_crates;
 use crate::compiler::source::{SourceMap, Span};
 use crate::compiler::syntax::load::Files;
@@ -46,7 +46,9 @@ pub fn build(
         return Err(diags);
     }
     let at = crates.first().map_or(Span::DUMMY, |c| c.ast.span);
-    let ssa = lower_program(&program).map_err(|e| lowering(e, at))?;
+    let main = program.main.ok_or(LowerError::NoMain);
+    let lowered = main.and_then(|m| lower_sited(&program, m));
+    let (ssa, sites) = lowered.map_err(|e| lowering(e, at))?;
     let compiled = backend(&ssa).map_err(|e| backend_failure(e, at))?;
     let rows = compiled.machine.ops.len();
     if rows > MAX_ROWS {
@@ -61,5 +63,6 @@ pub fn build(
         secret,
         output,
         warnings: diags,
+        sites,
     })
 }

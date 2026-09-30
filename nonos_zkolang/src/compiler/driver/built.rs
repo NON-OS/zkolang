@@ -10,6 +10,7 @@ use alloc::vec::Vec;
 use super::abi::Leaf;
 use super::backend::Compiled;
 use crate::compiler::diag::Diagnostics;
+use crate::compiler::lower::Sites;
 use crate::compiler::tir::TProgram;
 
 /**
@@ -24,4 +25,6 @@ pub struct Built {
     pub secret: Vec<Leaf>,
     pub output: Vec<Leaf>,
     pub warnings: Diagnostics,
+    /** Where each instruction of its SSA program comes from (section 15.2). */
+    pub sites: Sites,
 }

@@ -12,21 +12,25 @@ use super::prepare::compiled;
 use crate::line::Line;
 use crate::out::paint;
 
-const USAGE: &str = "usage: zkolang check <file> [--edition 2025|2026] [--json] [--declassify]";
+const USAGE: &str =
+    "usage: zkolang check <file> [--edition 2025|2026] [--json] [--declassify] [--cost]";
 
 /**
  * Compile the program, and refuse one the prover cannot size a trace for, as `run` and
  * `key` refuse it, rather than report as fine a program that can never be proven.
  */
 pub(crate) fn check(args: &[String]) -> Result<(), String> {
-    let line = Line::parse_with(args, (&["--edition"], &["--json", "--declassify"]), USAGE)?;
+    let line = Line::parse_with(
+        args,
+        (&["--edition"], &["--json", "--declassify", "--cost"]),
+        USAGE,
+    )?;
     if modern(&line)? {
         return super::check_2026::check(&line);
     }
-    if line.switch("--json") {
-        return Err(String::from(
-            "--json reports the diagnostics of edition 2026",
-        ));
+    let switches = ["--json", "--declassify", "--cost"];
+    if let Some(s) = switches.into_iter().find(|s| line.switch(s)) {
+        return Err(format!("{s} is for edition 2026 programs"));
     }
     let ops = compiled(&line)?.1.ops;
     if program_log_t(&ops).is_none() {

@@ -10,6 +10,7 @@ mod abi_words;
 mod build;
 mod check;
 mod check_2026;
+mod cost;
 mod disk;
 mod doc;
 mod edition;
