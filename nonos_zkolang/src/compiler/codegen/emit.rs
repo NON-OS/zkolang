@@ -1,0 +1,72 @@
+/*
+ zKølang by NØNOS
+ AGPL-3.0-or-later
+*/
+
+/*! The allocation walk: each instruction's operands brought into registers, then it. */
+
+use alloc::vec::Vec;
+
+use super::machine::{CodegenError, Machine, Origin};
+use super::op_of::op_of;
+use super::state::Cg;
+use crate::compiler::ssa::{Inst, Ssa, V};
+use crate::isa::Op;
+
+/** The machine program of `ssa`, whose gadgets are expanded. */
+pub fn codegen(ssa: &Ssa) -> Result<Machine, CodegenError> {
+    let mut cg = Cg::new(ssa);
+    for (i, &inst) in ssa.insts.iter().enumerate() {
+        let v = V(u32::try_from(i).unwrap_or(u32::MAX));
+        if inst.is_gadget() {
+            return Err(CodegenError::Unexpanded(v));
+        }
+        /* A value no register reads, which cannot fail, is for the witness alone. */
+        let pure = matches!(
+            inst,
+            Inst::Const(_)
+                | Inst::Input(_)
+                | Inst::Advice(_)
+                | Inst::Add(..)
+                | Inst::Sub(..)
+                | Inst::Mul(..)
+                | Inst::Eq(..)
+        );
+        if pure && cg.uses.get(i).is_none_or(|u| u.is_empty()) {
+            continue;
+        }
+        let operands: Vec<V> = inst.operands().collect();
+        let mut regs: Vec<(V, u8)> = Vec::with_capacity(operands.len());
+        for &o in &operands {
+            let r = cg.ensure(o, &operands)?;
+            regs.push((o, r));
+        }
+        for &o in &operands {
+            if let Some(p) = cg.passed.get_mut(o.index()) {
+                *p += 1;
+            }
+        }
+        for &o in &operands {
+            if cg.next_use(o).is_none() {
+                cg.release(o);
+            }
+        }
+        let d = match inst.is_effect() {
+            true => 0,
+            false => cg.take_reg(&[])?,
+        };
+        let slot = cg.slot.get(i).copied().flatten().unwrap_or(0);
+        let advice = cg.index(slot)?;
+        let r = |x: V| regs.iter().find(|(o, _)| *o == x).map_or(0, |(_, r)| *r);
+        let op = op_of(inst, d, &r, advice).ok_or(CodegenError::Unexpanded(v))?;
+        cg.push(op, Origin::Def(v));
+        if !inst.is_effect() {
+            cg.bind(v, d);
+            if cg.next_use(v).is_none() {
+                cg.release(v);
+            }
+        }
+    }
+    cg.push(Op::Halt, Origin::Halt);
+    Ok(cg.out)
+}

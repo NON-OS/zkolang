@@ -210,6 +210,22 @@ mod shield_tests;
 #[cfg(test)]
 mod small_stack;
 #[cfg(test)]
+mod ssa_adversary;
+#[cfg(test)]
+mod ssa_backend_tests;
+#[cfg(test)]
+mod ssa_gadget_tests;
+#[cfg(test)]
+mod ssa_gen;
+#[cfg(test)]
+mod ssa_gen_step;
+#[cfg(test)]
+mod ssa_mutate;
+#[cfg(test)]
+mod ssa_small;
+#[cfg(test)]
+mod ssa_spill_tests;
+#[cfg(test)]
 mod stdlib_tests;
 #[cfg(test)]
 mod step_tests;

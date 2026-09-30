@@ -8,7 +8,9 @@
  * `docs/compiler-architecture.md`.
  */
 
+pub mod codegen;
 pub mod diag;
+pub mod driver;
 pub mod gadget;
 pub mod interp;
 pub mod opt;
