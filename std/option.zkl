@@ -20,6 +20,16 @@ impl<T> Option<T> {
         !self.is_some()
     }
 
+    /** The value held; the run fails if there is none. */
+    pub fn unwrap(self) -> T {
+        match self {
+            Option::Some(x) => x,
+            Option::None => {
+                assert false, "`unwrap` of `None`";
+            }
+        }
+    }
+
     /** The value held, or `default`. */
     pub fn unwrap_or(self, default: T) -> T {
         match self {
@@ -33,6 +43,14 @@ impl<T> Option<T> {
         match self {
             Option::Some(x) => Option::Some(x),
             Option::None => other,
+        }
+    }
+
+    /** `other` if this option holds a value, else `None`. */
+    pub fn and(self, other: Option<T>) -> Option<T> {
+        match self {
+            Option::Some(_) => other,
+            Option::None => Option::None,
         }
     }
 

@@ -4,9 +4,9 @@
 */
 
 /*!
- * Blocks (section 8.9). A block whose statements leave it with `return`, `break` or
- * `continue` has type `!` when it has no tail, and what follows the leaving statement is
- * unreachable (W0003).
+ * Blocks (section 8.9). A block whose statements leave it with `return`, `break`,
+ * `continue` or `assert false` has type `!` when it has no tail, and what follows the
+ * leaving statement is unreachable (W0003).
  */
 
 use alloc::boxed::Box;

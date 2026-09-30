@@ -39,3 +39,8 @@ fn plain(a: u8) -> u8 {
 }
 
 fn calls_skipped() -> u8 { skipped::<0>(1) + plain(2) }
+
+fn after_assert(x: u8) -> u8 {
+    assert false;
+    x /*~ W0003 */
+}

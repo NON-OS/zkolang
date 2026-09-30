@@ -621,7 +621,10 @@ error.
 
 `assert e;` requires `e: bool` and fails the run when `e` is `false`. `assert e, "msg";`
 attaches a message the tools report when a run fails there. (In edition 2025, `assert e`
-meant `e == 0`; section 20.3.)
+meant `e == 0`; section 20.3.) An `assert` whose condition is the literal `false` fails
+wherever it is reached, so it leaves its block as `return` does (section 8.8): what
+follows it in the block is unreachable, and a block without a tail that it leaves has
+type `!`. This is how `Option::unwrap` fails on `None`.
 
 ### 8.4 `if` and guards
 

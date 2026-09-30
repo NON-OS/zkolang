@@ -5,14 +5,14 @@
 
 /*!
  * Statements (sections 8.1 to 8.3): `let`, `assert`, and an expression, whose value is
- * dropped after a `;` and must be `()` without one.
+ * dropped after a `;` and must be `()` without one. `assert false` leaves its block.
  */
 
 use super::block_warn::discarded;
 use super::cx::FnCx;
 use crate::compiler::sema::ty::{TyKind, Types};
 use crate::compiler::syntax::ast::{Stmt, StmtKind};
-use crate::compiler::tir::TStmt;
+use crate::compiler::tir::{TExprKind, TLit, TStmt};
 
 impl<'s, 'a> FnCx<'s, 'a> {
     /** The statement `s`; `diverges` becomes true if it leaves the block. */
@@ -21,6 +21,8 @@ impl<'s, 'a> FnCx<'s, 'a> {
             StmtKind::Let { pat, ty, init } => Some(self.let_stmt(pat, ty.as_ref(), init)),
             StmtKind::Assert { cond, message } => {
                 let cond = self.expr(cond, Some(Types::BOOL));
+                /* `assert false` fails wherever it is reached, so nothing after it runs. */
+                *diverges |= matches!(cond.kind, TExprKind::Lit(TLit::Bool(false)));
                 let message = message.clone();
                 Some(TStmt::Assert { cond, message })
             }
