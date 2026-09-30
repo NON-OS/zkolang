@@ -36,7 +36,8 @@ pub fn elide_range_checks(ssa: &Ssa) -> Ssa {
             Inst::AssertBool(v) => [(Some(v), 1), (None, 0)],
             _ => [(None, 0), (None, 0)],
         };
-        let holds = matches!(*inst, Inst::RangeCheck(v, n) if get(v) <= limit(n));
+        /* A check of 64 bits or more fails in the semantics, so it is never dropped. */
+        let holds = matches!(*inst, Inst::RangeCheck(v, n) if n < 64 && get(v) <= limit(n));
         if !holds {
             b.emit(*inst);
         } else {

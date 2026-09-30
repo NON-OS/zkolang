@@ -25,7 +25,9 @@ impl Rebuild {
     /** The bits of `v`, least significant first, which must make up `v < 2^n`. */
     pub(super) fn decompose(&mut self, v: V, n: u8) -> Vec<V> {
         match self.bits.get(&(v, n)) {
-            Some((bits, at)) if self.at.saturating_sub(*at) <= NEAR => return bits.clone(),
+            Some((bits, at)) if n < 64 && self.at.saturating_sub(*at) <= NEAR => {
+                return bits.clone()
+            }
             _ => {}
         }
         let bits = self.fresh(v, n);
@@ -35,8 +37,9 @@ impl Rebuild {
 
     /** Check `v < 2^n`, with bits of its own unless nearby ones already check it. */
     pub(super) fn range_check(&mut self, v: V, n: u8) {
+        /* The field bits of `v`, kept under width 64, check no width of 64 or more. */
         match self.bits.get(&(v, n)) {
-            Some((_, at)) if self.at.saturating_sub(*at) <= NEAR => {}
+            Some((_, at)) if n < 64 && self.at.saturating_sub(*at) <= NEAR => {}
             _ => {
                 self.fresh(v, n);
             }

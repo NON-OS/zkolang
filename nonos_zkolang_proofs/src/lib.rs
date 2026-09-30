@@ -316,6 +316,8 @@ mod vkey_tests;
 #[cfg(test)]
 mod vm_tests;
 #[cfg(test)]
+mod wide_check_tests;
+#[cfg(test)]
 mod wildcard_env_tests;
 #[cfg(test)]
 mod wildcard_tests;
