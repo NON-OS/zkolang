@@ -57,7 +57,7 @@ impl<'a> Parser<'a> {
     /** An inline module's body, from its `{`, which is current, through its `}`. */
     fn mod_body(&mut self) -> PResult<ModBody> {
         let open = self.bump();
-        let (inner_doc, inner_attrs) = self.inner_doc_and_attrs(open.span.hi)?;
+        let (inner_doc, inner_attrs) = self.inner_doc_and_attrs(open.span.hi);
         let items = self.nested(|p| Ok(p.items(true)))?;
         if !self.at(TokenKind::RBrace) {
             self.report_unclosed(open.span, "module");

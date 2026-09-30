@@ -5,10 +5,8 @@
 
 /*! Attributes: `#[...]` before an item or field, and `#![...]` at the start of a module. */
 
-use alloc::vec::Vec;
-
 use super::parser::{PResult, Parser};
-use crate::compiler::syntax::ast::{Attr, AttrArg};
+use crate::compiler::syntax::ast::Attr;
 use crate::compiler::syntax::token::TokenKind;
 
 impl<'a> Parser<'a> {
@@ -25,25 +23,7 @@ impl<'a> Parser<'a> {
         if self.eat(TokenKind::Eq) {
             value = Some(self.attr_lit()?);
         } else if self.eat(TokenKind::LParen) {
-            let mut list = Vec::new();
-            while !self.at(TokenKind::RParen) {
-                if self.at(TokenKind::Ident) {
-                    let n = self.ident()?;
-                    let v = if self.eat(TokenKind::Eq) {
-                        Some(self.attr_lit()?)
-                    } else {
-                        None
-                    };
-                    list.push(AttrArg::Named { name: n, value: v });
-                } else {
-                    list.push(AttrArg::Lit(self.attr_lit()?));
-                }
-                if !self.eat(TokenKind::Comma) {
-                    break;
-                }
-            }
-            self.expect_list_end(TokenKind::RParen)?;
-            args = Some(list);
+            args = Some(self.decl_list(TokenKind::RParen, |p| p.attr_arg())?);
         }
         self.expect(TokenKind::RBracket)?;
         Ok(Attr {
@@ -53,5 +33,20 @@ impl<'a> Parser<'a> {
             inner,
             span: start.to(self.prev_span()),
         })
+    }
+
+    /**
+     * An attribute, or `None` after reporting an error in it and skipping to its `]`, so
+     * that the attributes and doc comments around it and the item after it are kept.
+     */
+    pub(super) fn attr_or_skip(&mut self, inner: bool) -> Option<Attr> {
+        let from = self.pos;
+        match self.attr(inner) {
+            Ok(a) => Some(a),
+            Err(_) => {
+                self.pay_owed(from);
+                None
+            }
+        }
     }
 }

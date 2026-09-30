@@ -12,19 +12,22 @@
 use alloc::string::String;
 use alloc::vec::Vec;
 
-use super::parser::{PResult, Parser};
+use super::parser::Parser;
 use crate::compiler::diag::{Code, Diagnostic};
 use crate::compiler::syntax::ast::Attr;
 use crate::compiler::syntax::token::TokenKind;
 
 impl<'a> Parser<'a> {
     /** The doc comments and `#[...]` attributes before an item or field. */
-    pub(super) fn doc_and_attrs(&mut self) -> PResult<(Option<String>, Vec<Attr>)> {
+    pub(super) fn doc_and_attrs(&mut self) -> (Option<String>, Vec<Attr>) {
         let mut doc = self.take_doc(self.span().lo);
         let mut attrs = Vec::new();
         while self.at(TokenKind::Pound) {
             let inner = self.peek(1) == TokenKind::Bang;
-            let a = self.attr(inner)?;
+            let Some(a) = self.attr_or_skip(inner) else {
+                doc = join(doc, self.take_doc(self.span().lo));
+                continue;
+            };
             if inner {
                 let d = Diagnostic::error(
                     Code::UNEXPECTED_TOKEN,
@@ -39,22 +42,19 @@ impl<'a> Parser<'a> {
             }
             doc = join(doc, self.take_doc(self.span().lo));
         }
-        Ok((doc, attrs))
+        (doc, attrs)
     }
 
     /** The inner doc comments and `#![...]` attributes at a module's start, after `after`. */
-    pub(super) fn inner_doc_and_attrs(
-        &mut self,
-        after: u32,
-    ) -> PResult<(Option<String>, Vec<Attr>)> {
+    pub(super) fn inner_doc_and_attrs(&mut self, after: u32) -> (Option<String>, Vec<Attr>) {
         let mut doc = self.take_inner_doc(after, self.span().lo);
         let mut attrs = Vec::new();
         while self.at(TokenKind::Pound) && self.peek(1) == TokenKind::Bang {
-            attrs.push(self.attr(true)?);
+            attrs.extend(self.attr_or_skip(true));
             let more = self.take_inner_doc(self.prev_span().hi, self.span().lo);
             doc = join(doc, more);
         }
-        Ok((doc, attrs))
+        (doc, attrs)
     }
 }
 

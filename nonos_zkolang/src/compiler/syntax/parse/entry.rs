@@ -25,10 +25,7 @@ pub fn parse_file(
     next_id: &mut u32,
 ) -> SourceAst {
     let mut p = Parser::new(file, text, lexed, diags, next_id);
-    let (inner_doc, inner_attrs) = p.inner_doc_and_attrs(0).unwrap_or_else(|_| {
-        p.recover_item(0);
-        Default::default()
-    });
+    let (inner_doc, inner_attrs) = p.inner_doc_and_attrs(0);
     let items = p.items(false);
     p.warn_unused_docs();
     check_items(&items, p.diags);

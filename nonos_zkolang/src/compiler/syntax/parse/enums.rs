@@ -27,7 +27,7 @@ impl<'a> Parser<'a> {
     /** A variant: its name, and its fields if it has any. */
     fn variant(&mut self) -> PResult<Variant> {
         let start = self.span();
-        let (doc, attrs) = self.doc_and_attrs()?;
+        let (doc, attrs) = self.doc_and_attrs();
         let name = self.ident()?;
         let fields = match self.kind() {
             TokenKind::LParen => self.tuple_fields(true)?,

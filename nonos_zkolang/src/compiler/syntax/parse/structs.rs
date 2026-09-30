@@ -39,7 +39,7 @@ impl<'a> Parser<'a> {
         self.expect(TokenKind::LBrace)?;
         let fields = self.decl_list(TokenKind::RBrace, |p| {
             let start = p.span();
-            let (doc, attrs) = p.doc_and_attrs()?;
+            let (doc, attrs) = p.doc_and_attrs();
             let vis = p.field_vis(in_variant);
             let name = p.ident()?;
             p.expect(TokenKind::Colon)?;

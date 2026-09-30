@@ -20,7 +20,7 @@ impl<'a> Parser<'a> {
         self.expect(TokenKind::LParen)?;
         let fields = self.decl_list(TokenKind::RParen, |p| {
             let start = p.span();
-            let (doc, attrs) = p.doc_and_attrs()?;
+            let (doc, attrs) = p.doc_and_attrs();
             if in_variant {
                 if let Some(a) = attrs.first() {
                     p.not_in_variant(

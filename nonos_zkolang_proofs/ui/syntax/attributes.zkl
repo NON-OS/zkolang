@@ -1,0 +1,18 @@
+//! A keyword may name an attribute's argument; a bad attribute is skipped, and the
+//! attributes, doc comments and item around it are kept.
+#![allow(declassify)]
+#![allow(1 2, cost)] /*~ E0100 */
+//! More documentation for the file.
+
+#[allow(unused, declassify)]
+fn f() {}
+
+#[allow(-)] /*~ E0100 */
+#[test]
+fn g() { let x = ; } /*~ E0100 */
+
+#[allow(unused /*~ E0100 */
+fn h() {}
+
+#[deprecated = b] /*~ E0100 */
+fn k() {}

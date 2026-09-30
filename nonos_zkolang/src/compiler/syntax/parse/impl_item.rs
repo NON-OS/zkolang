@@ -24,7 +24,7 @@ impl<'a> Parser<'a> {
 
     fn impl_item_inner(&mut self) -> PResult<Item> {
         let start = self.span();
-        let (doc, attrs) = self.doc_and_attrs()?;
+        let (doc, attrs) = self.doc_and_attrs();
         let vis = if self.eat_kw(Keyword::Pub) {
             Visibility::Public
         } else {

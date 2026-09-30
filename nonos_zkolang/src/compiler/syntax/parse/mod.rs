@@ -5,6 +5,7 @@
 
 /*! The parser: tokens to the syntax tree, reporting every error it can find in one run. */
 
+mod attr_arg;
 mod attr_lit;
 mod attrs;
 mod binary;

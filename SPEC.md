@@ -166,7 +166,8 @@ file          = { inner_attr } { item } ;
 inner_attr    = "#!" "[" attr "]" ;
 outer_attr    = "#" "[" attr "]" ;
 attr          = ident [ "(" [ attr_arg { "," attr_arg } [ "," ] ] ")" | "=" literal ] ;
-attr_arg      = ident [ "=" literal ] | literal ;
+attr_arg      = attr_name [ "=" literal ] | literal ;
+attr_name     = ident | keyword ;    (* a keyword of section 2.2 but `true` and `false` *)
 literal       = int_lit | bool_lit | str_lit ;
 
 item          = { outer_attr } [ "pub" ] item_kind ;
