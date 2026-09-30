@@ -13,12 +13,13 @@
 use alloc::string::String;
 use alloc::vec::Vec;
 
+use super::source::{crates_of, Source};
 use super::test_verdict::{compiled_accepts, verdict};
 use crate::compiler::diag::Diagnostics;
 use crate::compiler::interp::{run_tests, TestRun};
-use crate::compiler::sema::check_tests;
+use crate::compiler::sema::check_crates;
 use crate::compiler::source::SourceMap;
-use crate::compiler::syntax::load::{load, Files};
+use crate::compiler::syntax::load::Files;
 use crate::compiler::tir::TProgram;
 
 /** The steps the reference run of one test may take. */
@@ -34,21 +35,21 @@ pub struct TestReport {
 }
 
 /**
- * Run the tests of the crate whose root file is `root`, a path and its text, reading its
- * modules from `files` into `map`: a report per test and the warnings of checking it, or
- * the diagnostics of a crate that does not check.
+ * Run the tests of the program `src`, reading its files from `files` into `map`: a report
+ * per test of its own crate and the warnings of checking it, or the diagnostics of a
+ * program that does not check.
  */
 pub fn test(
     map: &mut SourceMap,
     files: &dyn Files,
-    root: (&str, String),
+    src: Source<'_>,
 ) -> Result<(Vec<TestReport>, Diagnostics), Diagnostics> {
     let mut diags = Diagnostics::new();
-    let ast = load(files, root, map, &mut diags);
+    let crates = crates_of(files, src, map, &mut diags);
     if diags.has_errors() {
         return Err(diags);
     }
-    let (program, more) = check_tests(map, &ast);
+    let (program, more) = check_crates(map, &crates, true);
     diags.extend(more);
     if diags.has_errors() {
         return Err(diags);

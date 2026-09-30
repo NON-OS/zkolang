@@ -48,7 +48,7 @@ impl<'a> Defs<'a> {
     }
 
     /** Collect the crate `ast` as a root named `name`, returning the root. */
-    fn collect_crate(
+    pub(crate) fn collect_crate(
         &mut self,
         name: &str,
         ast: &'a SourceAst,

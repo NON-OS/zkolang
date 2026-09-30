@@ -1,0 +1,19 @@
+/*! Shapes, over the same `util` crate the root package uses. */
+
+pub fn area(w: u32, h: u32) -> u32 {
+    w * h
+}
+
+pub fn twice_area(w: u32, h: u32) -> u32 {
+    util::double(area(w, h))
+}
+
+#[cfg(test)]
+fn missing_outside_tests() -> u32 {
+    nowhere::at_all()
+}
+
+#[test]
+fn not_run_by_the_root() {
+    assert false;
+}

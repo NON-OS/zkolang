@@ -5,7 +5,7 @@
 
 /*!
  * Collecting the items of one module, and of the modules inline in it. An item marked
- * `#[cfg(test)]` is left out unless testing.
+ * `#[cfg(test)]` is left out unless testing, and always in a dependency.
  */
 
 use alloc::vec::Vec;
@@ -25,7 +25,7 @@ impl<'a> Defs<'a> {
         diags: &mut Diagnostics,
     ) {
         for item in items {
-            if !self.testing && cfg_test(&item.attrs) {
+            if !self.testing_in(module) && cfg_test(&item.attrs) {
                 continue;
             }
             let kind = match &item.kind {

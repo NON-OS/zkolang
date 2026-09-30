@@ -1,0 +1,9 @@
+# A package with two path dependencies, one of which the other also uses.
+[package]
+name = "root"
+version = "0.1.0"
+edition = "2026"
+
+[dependencies]
+geom = { path = "../geom" }
+util = { path = "../util" }

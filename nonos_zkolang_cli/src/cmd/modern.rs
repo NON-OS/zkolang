@@ -12,10 +12,10 @@
 use std::fs;
 
 use nonos_zkolang::compiler::diag::render;
-use nonos_zkolang::compiler::driver::{build, Built};
+use nonos_zkolang::compiler::driver::{build, Built, Source};
 use nonos_zkolang::compiler::source::SourceMap;
 
-use super::disk::Disk;
+use super::disk::{manifest_for, Disk};
 use crate::line::Line;
 
 /**
@@ -25,7 +25,13 @@ use crate::line::Line;
 pub(super) fn built(line: &Line) -> Result<(SourceMap, Built), String> {
     let src = fs::read_to_string(line.file).map_err(|e| format!("read {}: {e}", line.file))?;
     let mut map = SourceMap::new();
-    let (built, diags) = match build(&mut map, &Disk, (line.file, src)) {
+    let manifest = manifest_for(line.file);
+    let manifest = manifest.as_ref().map(|(p, t)| (p.as_str(), t.clone()));
+    let src = Source {
+        root: (line.file, src),
+        manifest,
+    };
+    let (built, diags) = match build(&mut map, &Disk, src) {
         Ok(b) => {
             let warnings = b.warnings.clone();
             (Some(b), warnings)

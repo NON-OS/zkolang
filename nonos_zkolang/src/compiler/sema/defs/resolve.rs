@@ -53,7 +53,8 @@ impl<'a> Defs<'a> {
             }
             let found = self.modules.get(&module).and_then(|m| m.names.get(*name));
             let Some(b) = found else {
-                let crate_root = (i == 0 && root == PathRoot::Plain).then(|| self.outside(name));
+                let crate_root =
+                    (i == 0 && root == PathRoot::Plain).then(|| self.outside(from, name));
                 def = crate_root.flatten().ok_or(PathError::Unresolved(i))?;
                 continue;
             };

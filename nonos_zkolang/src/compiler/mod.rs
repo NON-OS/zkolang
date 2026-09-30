@@ -15,6 +15,7 @@ pub mod gadget;
 pub mod interp;
 pub mod lower;
 pub mod opt;
+pub mod package;
 pub mod schedule;
 pub mod sema;
 pub mod source;

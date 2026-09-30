@@ -11,10 +11,10 @@
 use std::fs;
 
 use nonos_zkolang::compiler::diag::render;
-use nonos_zkolang::compiler::driver::test as run_tests;
+use nonos_zkolang::compiler::driver::{test as run_tests, Source};
 use nonos_zkolang::compiler::source::SourceMap;
 
-use super::disk::Disk;
+use super::disk::{manifest_for, Disk};
 use super::test_report::print_reports;
 use crate::line::Line;
 use crate::out::paint;
@@ -29,7 +29,13 @@ pub(crate) fn test(args: &[String]) -> Result<(), String> {
     }
     let src = fs::read_to_string(line.file).map_err(|e| format!("read {}: {e}", line.file))?;
     let mut map = SourceMap::new();
-    let (reports, warnings) = match run_tests(&mut map, &Disk, (line.file, src)) {
+    let manifest = manifest_for(line.file);
+    let manifest = manifest.as_ref().map(|(p, t)| (p.as_str(), t.clone()));
+    let src = Source {
+        root: (line.file, src),
+        manifest,
+    };
+    let (reports, warnings) = match run_tests(&mut map, &Disk, src) {
         Ok(r) => r,
         Err(d) => {
             d.items()

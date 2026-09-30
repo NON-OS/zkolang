@@ -10,42 +10,42 @@
  */
 
 use alloc::format;
-use alloc::string::String;
 
 use super::abi::abi_of;
 use super::backend::backend;
 use super::build_diag::{backend_failure, one, too_large};
 use super::build_lower::lowering;
 use super::built::Built;
+use super::source::{crates_of, Source};
 use crate::compiler::diag::Diagnostics;
 use crate::compiler::lower::lower_program;
-use crate::compiler::sema::check;
-use crate::compiler::source::SourceMap;
-use crate::compiler::syntax::load::{load, Files};
+use crate::compiler::sema::check_crates;
+use crate::compiler::source::{SourceMap, Span};
+use crate::compiler::syntax::load::Files;
 
 /** The most rows a provable trace holds (section 15.1). */
 pub const MAX_ROWS: usize = 1 << 16;
 
 /**
- * Build the crate whose root file is `root`, a path and its text, reading its modules'
- * files from `files` into `map`: the program, or why not.
+ * Build the program `src`, reading its files from `files` into `map`: the program, or why
+ * not.
  */
 pub fn build(
     map: &mut SourceMap,
     files: &dyn Files,
-    root: (&str, String),
+    src: Source<'_>,
 ) -> Result<Built, Diagnostics> {
     let mut diags = Diagnostics::new();
-    let ast = load(files, root, map, &mut diags);
+    let crates = crates_of(files, src, map, &mut diags);
     if diags.has_errors() {
         return Err(diags);
     }
-    let (program, more) = check(map, &ast);
+    let (program, more) = check_crates(map, &crates, false);
     diags.extend(more);
     if diags.has_errors() {
         return Err(diags);
     }
-    let at = ast.span;
+    let at = crates.first().map_or(Span::DUMMY, |c| c.ast.span);
     let ssa = lower_program(&program).map_err(|e| lowering(e, at))?;
     let compiled = backend(&ssa).map_err(|e| backend_failure(e, at))?;
     let rows = compiled.machine.ops.len();

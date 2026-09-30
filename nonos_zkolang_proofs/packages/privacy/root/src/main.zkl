@@ -1,0 +1,8 @@
+#![allow(unused)]
+fn f() -> u32 {
+    lib::hidden() /*~ E0202 */
+}
+
+fn g() -> u32 {
+    inner::x() /*~ E0200 */
+}

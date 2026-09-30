@@ -26,11 +26,16 @@ normative, is the only one that describes the repository rather than the languag
 - Of edition 2026, the front end exists, in `nonos_zkolang/src/compiler`: the lexer, the
   parser with its error recovery, the placement check and the diagnostics. So do the
   checker of sections 4 to 13 and the reference interpreter of the typed IR, for a
-  program in one file, structs, enums, `match`, `impl` blocks, methods and `Self`
+  program with structs, enums, `match`, `impl` blocks, methods and `Self`
   included, and generic structs, enums, aliases, functions, methods and `impl` blocks,
   with type and constant parameters, and constant `if` conditions.
   A crate of several files is loaded from its root file, each `mod name;` from its own
-  file (section 4.2); `zkolang.toml` manifests and dependencies are not read yet. The
+  file (section 4.2). A program that a manifest governs is loaded with the path
+  dependencies of its package and theirs, each a crate that its dependents name by the
+  key their manifests give it (section 4.1); the `[cost]` thresholds are read and checked,
+  and the warnings they set (section 15.3) are not emitted yet. The command line takes a
+  file's edition from `--edition`, else from the manifest that governs it, and otherwise
+  compiles edition 2025, where section 4.1 says 2026. The
   standard library, written in zKølang under `std/` and built into the compiler, is
   loaded beside every crate as the crate `std`; so far it holds `std::hash` (the MiMC
   permutation and compressions of the edition 2025 library), `std::merkle`, `std::option`

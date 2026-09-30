@@ -198,6 +198,10 @@ mod optimizer_gate_tests;
 #[cfg(test)]
 mod owned_element_tests;
 #[cfg(test)]
+mod packages_run;
+#[cfg(test)]
+mod packages_tests;
+#[cfg(test)]
 mod prop_binary;
 #[cfg(test)]
 mod prop_expr;

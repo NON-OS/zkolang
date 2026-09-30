@@ -21,7 +21,7 @@ impl<'a> Sema<'a> {
     /** Register the functions of every `impl` block of `items`, in module `m`, and inside. */
     pub(super) fn impls(&mut self, items: &'a [Item], m: DefId) {
         for item in items {
-            if !self.defs.testing && cfg_test(&item.attrs) {
+            if !self.defs.testing_in(m) && cfg_test(&item.attrs) {
                 continue;
             }
             match &item.kind {

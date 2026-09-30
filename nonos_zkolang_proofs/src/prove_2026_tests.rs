@@ -12,15 +12,15 @@
 use nonos_stark::air::RATE;
 use nonos_stark::field::Fp;
 use nonos_zkolang::compiler::driver::abi::AbiError;
-use nonos_zkolang::compiler::driver::{build, prove, Built, RunFailure};
+use nonos_zkolang::compiler::driver::{build, prove, Built, RunFailure, Source};
 use nonos_zkolang::compiler::interp::FailKind;
 use nonos_zkolang::compiler::source::SourceMap;
 use nonos_zkolang::compiler::syntax::load::NoFiles;
 
 /** The program `src`, built. */
 pub(crate) fn built(src: &str) -> Built {
-    let root = ("p.zkl", String::from(src));
-    build(&mut SourceMap::new(), &NoFiles, root).unwrap_or_else(|d| panic!("{:?}", d.items()))
+    let src = Source::file("p.zkl", String::from(src));
+    build(&mut SourceMap::new(), &NoFiles, src).unwrap_or_else(|d| panic!("{:?}", d.items()))
 }
 
 /** A blinding seed for tests; a real prover draws a fresh one per proof. */

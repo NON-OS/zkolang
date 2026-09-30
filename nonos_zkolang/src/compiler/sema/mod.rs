@@ -71,4 +71,4 @@ mod type_params;
 mod uses;
 mod within;
 
-pub use entry::{check, check_tests};
+pub use entry::{check, check_crates, check_tests};

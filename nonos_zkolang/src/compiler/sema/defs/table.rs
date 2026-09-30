@@ -6,6 +6,7 @@
 /*! The table of a program's items and the namespaces of its modules. */
 
 use alloc::collections::BTreeMap;
+use alloc::string::String;
 use alloc::vec::Vec;
 
 use super::{Def, DefId, Module};
@@ -19,6 +20,8 @@ pub struct Defs<'a> {
     pub testing: bool,
     /** The root of the crate `std`, when the standard library is loaded. */
     pub std: Option<DefId>,
+    /** The dependencies of each crate, by the names it gives them, keyed by its root. */
+    pub deps: BTreeMap<DefId, BTreeMap<String, DefId>>,
 }
 
 impl<'a> Defs<'a> {

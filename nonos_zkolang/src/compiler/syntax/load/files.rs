@@ -28,12 +28,12 @@ impl Files for NoFiles {
 }
 
 /** The directory of the file at `path`: what comes before its last `/`, or nothing. */
-pub(super) fn dir_of(path: &str) -> &str {
+pub fn dir_of(path: &str) -> &str {
     path.rsplit_once('/').map_or("", |(dir, _)| dir)
 }
 
 /** The path of `name` in the directory `dir`. */
-pub(super) fn join(dir: &str, name: &str) -> String {
+pub fn join(dir: &str, name: &str) -> String {
     if dir.is_empty() {
         name.to_string()
     } else {

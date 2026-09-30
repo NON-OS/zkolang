@@ -11,4 +11,4 @@ mod load_report;
 mod splice;
 
 pub use entry::load;
-pub use files::{Files, NoFiles};
+pub use files::{dir_of, join, Files, NoFiles};

@@ -12,6 +12,7 @@ use alloc::vec::Vec;
 
 use super::attr_query::has;
 use super::cx::Sema;
+use super::defs::Defs;
 use crate::compiler::tir::FnId;
 
 impl<'a> Sema<'a> {
@@ -22,7 +23,7 @@ impl<'a> Sema<'a> {
             let Some(item) = self.defs.get(info.def).and_then(|d| d.item) else {
                 continue;
             };
-            if has(&item.attrs, "test") {
+            if has(&item.attrs, "test") && self.defs.crate_of(info.def) == Defs::ROOT {
                 let f = FnId(u32::try_from(i).unwrap_or(u32::MAX));
                 out.push((f, has(&item.attrs, "should_fail")));
             }

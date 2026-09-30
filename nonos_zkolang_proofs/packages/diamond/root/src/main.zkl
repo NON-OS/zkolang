@@ -1,0 +1,9 @@
+/* A crate that names its dependencies by the names its manifest gives them (section 4.1). */
+use geom::area;
+
+#[test]
+fn dependencies_are_found_by_name() {
+    assert area(3, 4) == 12;
+    assert util::double(21) == 42;
+    assert geom::twice_area(1, 1) == 2;
+}
