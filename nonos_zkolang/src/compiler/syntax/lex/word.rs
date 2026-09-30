@@ -18,7 +18,7 @@ use crate::compiler::syntax::token::TokenKind;
  */
 pub(super) fn word(w: &str, span: Span, diags: &mut Diagnostics) -> TokenKind {
     if w == "_" {
-        return TokenKind::Underscore;
+        return TokenKind::Wildcard;
     }
     if let Some(k) = Keyword::from_word(w) {
         return TokenKind::Kw(k);

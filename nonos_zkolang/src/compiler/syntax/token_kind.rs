@@ -17,7 +17,7 @@ pub enum TokenKind {
     Str,
     Kw(Keyword),
     /** The lone wildcard `_`. */
-    Underscore,
+    Wildcard,
     Plus,
     Minus,
     Star,

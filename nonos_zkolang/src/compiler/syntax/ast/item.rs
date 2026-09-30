@@ -18,7 +18,7 @@ pub struct Item {
     pub id: NodeId,
     pub attrs: Vec<Attr>,
     pub vis: Visibility,
-    /** The text of the item's `///` comments, markers stripped, lines joined by `\n`. */
+    /** The text of the item's outer doc comments, markers stripped, lines joined by `\n`. */
     pub doc: Option<String>,
     pub kind: ItemKind,
     pub span: Span,

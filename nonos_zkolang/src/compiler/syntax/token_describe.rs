@@ -16,7 +16,7 @@ impl TokenKind {
             Int => "an integer literal",
             Str => "a string literal",
             Kw(k) => k.as_str(),
-            Underscore => "`_`",
+            Wildcard => "`_`",
             Plus => "`+`",
             Minus => "`-`",
             Star => "`*`",

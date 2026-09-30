@@ -17,7 +17,7 @@ use crate::compiler::diag::{Code, Diagnostic};
 use crate::compiler::syntax::lex::CommentKind;
 
 impl<'a> Parser<'a> {
-    /** The `///` comments directly before offset `before`: those after the previous token. */
+    /** The outer doc comments directly before offset `before`: those after the previous token. */
     pub(super) fn take_doc(&mut self, before: u32) -> Option<String> {
         let after = if self.pos == 0 {
             0
@@ -30,7 +30,7 @@ impl<'a> Parser<'a> {
         self.take_comments(CommentKind::DocOuter, after, before)
     }
 
-    /** The `//!` comments between two offsets. */
+    /** The inner doc comments between two offsets. */
     pub(super) fn take_inner_doc(&mut self, after: u32, before: u32) -> Option<String> {
         self.take_comments(CommentKind::DocInner, after, before)
     }

@@ -13,13 +13,13 @@ use crate::compiler::source::{FileId, Span};
 /** What a comment is. */
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum CommentKind {
-    /** `// ...` */
+    /** Two slashes to the end of the line. */
     Line,
-    /** `/* ... */`, possibly nested. */
+    /** A slash and a star to a star and a slash, possibly nested. */
     Block,
-    /** `/// ...`, documenting the item that follows. */
+    /** Three slashes, or a block with a second star, documenting the item that follows. */
     DocOuter,
-    /** `//! ...`, documenting the enclosing module. */
+    /** Two slashes and a bang, or a block with a bang, documenting the enclosing module. */
     DocInner,
 }
 

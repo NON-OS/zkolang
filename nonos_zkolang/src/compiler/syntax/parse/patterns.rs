@@ -41,7 +41,7 @@ impl<'a> Parser<'a> {
     fn pattern_one(&mut self) -> PResult<Pattern> {
         let start = self.span();
         let kind = match self.kind() {
-            TokenKind::Underscore => {
+            TokenKind::Wildcard => {
                 self.bump();
                 PatKind::Wild
             }

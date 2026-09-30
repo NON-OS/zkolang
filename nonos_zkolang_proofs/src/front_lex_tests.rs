@@ -5,8 +5,8 @@
 
 /*!
  * The edition 2026 lexer reads every line ending an editor displays, skips a byte-order
- * mark, reports a character that begins no token, and takes `/** */` and `/*! */` as doc
- * comments as it takes `///` and `//!`.
+ * mark, reports a character that begins no token, and takes block doc comments as it
+ * takes line doc comments.
  */
 
 use nonos_zkolang::compiler::diag::Diagnostics;
