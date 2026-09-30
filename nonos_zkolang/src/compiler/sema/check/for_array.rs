@@ -50,7 +50,7 @@ impl<'s, 'a> FnCx<'s, 'a> {
             ),
         };
         let body = self.loop_body(body);
-        let array = Box::new(array);
+        let (array, pat) = (Box::new(array), Box::new(pat));
         TExprKind::ForArray {
             index,
             pat,

@@ -9,6 +9,8 @@
  */
 
 mod adt;
+mod adt_decl;
+mod adt_enum;
 mod adt_fields;
 mod alias;
 pub(crate) mod attr_query;
@@ -29,6 +31,7 @@ mod deprecated;
 mod entry;
 mod env;
 mod eval;
+mod exhaust;
 mod impl_member;
 mod impls;
 mod info;

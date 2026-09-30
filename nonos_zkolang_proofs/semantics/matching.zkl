@@ -1,0 +1,60 @@
+/*
+ * `match` (sections 8.5 and 9): literals, ranges, alternatives and guards, the first arm
+ * that matches taken, in a function body and in a constant.
+ */
+
+const PICK: u8 = match 3u8 {
+    0 => 1,
+    1..=5 => 2,
+    _ => 3,
+};
+
+fn classify(x: u8) -> u8 {
+    match x {
+        0 => 10,
+        1 | 2 | 3 => 20,
+        4..=100 => 30,
+        n if n % 2 == 0 => 40,
+        _ => 50,
+    }
+}
+
+fn sign(x: i16) -> i8 {
+    match x {
+        -32768..=-1 => -1,
+        0 => 0,
+        1..=32767 => 1,
+    }
+}
+
+#[test]
+fn the_first_arm_that_matches_is_taken() {
+    assert classify(0) == 10;
+    assert classify(2) == 20;
+    assert classify(3) == 20;
+    assert classify(4) == 30;
+    assert classify(100) == 30;
+    assert classify(102) == 40;
+    assert classify(101) == 50;
+    assert classify(255) == 50;
+    assert PICK == 2;
+}
+
+#[test]
+fn ranges_cover_signed_values() {
+    assert sign(-32768) == -1;
+    assert sign(-1) == -1;
+    assert sign(0) == 0;
+    assert sign(32767) == 1;
+}
+
+#[test]
+fn a_guard_that_fails_moves_to_the_next_arm() {
+    let v = 6u8;
+    let r = match v {
+        n if n > 10 => 1,
+        n if n > 5 => 2,
+        _ => 3,
+    };
+    assert r == 2;
+}

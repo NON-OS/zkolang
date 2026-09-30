@@ -67,7 +67,7 @@ impl<'s, 'a> FnCx<'s, 'a> {
             ExprKind::Assign { op, place, value } => self.assign(*op, place, value, at),
             ExprKind::RefMut(_) => self.misplaced_ref_mut(at),
             ExprKind::Struct { path, fields } => self.struct_lit(path, fields, at),
-            ExprKind::Match { .. } => self.unsupported("`match`", at),
+            ExprKind::Match { scrutinee, arms } => self.match_expr(scrutinee, arms, want, at),
             ExprKind::Error => self.error(at),
         }
     }

@@ -7,7 +7,7 @@
 
 use super::cx::FnCx;
 use crate::compiler::sema::ty::TyId;
-use crate::compiler::tir::{Proj, TBlock, TStmt};
+use crate::compiler::tir::{Proj, TBlock, TExpr, TStmt};
 
 impl<'s, 'a> FnCx<'s, 'a> {
     /** Rewrite a block. */
@@ -21,6 +21,21 @@ impl<'s, 'a> FnCx<'s, 'a> {
         }
         if let Some(t) = &mut b.tail {
             self.rewrite(t);
+        }
+    }
+
+    /** Rewrite the branches of an `if`, then its last block. */
+    pub(super) fn rewrite_if(
+        &mut self,
+        branches: &mut [(TExpr, TBlock)],
+        last: &mut Option<TBlock>,
+    ) {
+        for (c, b) in branches.iter_mut() {
+            self.rewrite(c);
+            self.rewrite_block(b);
+        }
+        if let Some(b) = last {
+            self.rewrite_block(b);
         }
     }
 

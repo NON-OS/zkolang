@@ -30,10 +30,10 @@ impl<'a> Sema<'a> {
         };
         self.note_use(def, p);
         let Some(c) = self.const_of.get(&def).copied() else {
-            let kind = self.defs.get(def).map_or("item", |d| d.kind.describe());
+            let kind = self.defs.get(def).map_or("an item", |d| d.kind.a());
             self.diags.push(Diagnostic::error(
                 Code::WRONG_KIND,
-                format!("`{}` is a {kind}, not a constant", p.last_name()),
+                format!("`{}` is {kind}, not a constant", p.last_name()),
                 p.span,
                 "not a constant",
             ));

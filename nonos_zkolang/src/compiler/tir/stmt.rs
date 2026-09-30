@@ -9,6 +9,7 @@ use alloc::boxed::Box;
 use alloc::string::String;
 use alloc::vec::Vec;
 
+use super::lit::TLit;
 use super::{LocalId, TExpr};
 use crate::compiler::source::Span;
 
@@ -34,10 +35,21 @@ pub enum TStmt {
     Expr(TExpr),
 }
 
-/** A pattern that always matches: a binding, `_`, or a tuple of them. */
+/**
+ * A pattern. `let` and parameters take only the ones that always match: bindings, `_` and
+ * tuples of them (a tuple, struct or array pattern). A `match` arm takes any.
+ */
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum TPat {
     Bind(LocalId),
     Wild,
     Tuple(Vec<TPat>),
+    /** A literal: a `bool`, or an integer's value; the span is where it is written. */
+    Lit(TLit, Span),
+    /** An inclusive range of integer values, and where it is written. */
+    Range(i128, i128, Span),
+    /** The variant of the tag, and a pattern for each of its fields in order. */
+    Variant(u32, Vec<TPat>),
+    /** Any of the alternatives, each binding the same locals. */
+    Or(Vec<TPat>),
 }

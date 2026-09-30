@@ -18,6 +18,8 @@ pub enum Value {
     Field(u64),
     Tuple(Vec<Value>),
     Array(Vec<Value>),
+    /** An enum value: its variant's tag and its fields' values. */
+    Variant(u32, Vec<Value>),
 }
 
 impl Value {

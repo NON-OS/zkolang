@@ -26,6 +26,8 @@ pub fn encode(leaves: &[Leaf], values: &[i128]) -> Result<Vec<Fp>, AbiError> {
             Leaf::Bool => v == 0 || v == 1,
             Leaf::Field => (0..p).contains(&v),
             Leaf::Int(t) => t.contains(v),
+            Leaf::Tag(n) => (0..i128::from(*n)).contains(&v),
+            Leaf::Slot => (0..p).contains(&v),
         };
         if !ok {
             return Err(AbiError::Range { position });

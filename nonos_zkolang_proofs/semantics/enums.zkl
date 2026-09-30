@@ -1,0 +1,47 @@
+/* Enums (sections 5.2, 7.11 and 10.2): unit variants, and methods that match on `self`. */
+
+enum Op {
+    Add,
+    Sub,
+    Mul,
+}
+
+impl Op {
+    fn apply(self, a: u32, b: u32) -> u32 {
+        match self {
+            Op::Add => a + b,
+            Op::Sub => a - b,
+            Op::Mul => a * b,
+        }
+    }
+
+    fn code(self) -> u8 {
+        match self {
+            Self::Add => 1,
+            Self::Sub => 2,
+            Self::Mul => 3,
+        }
+    }
+}
+
+const DEFAULT: Op = Op::Mul;
+
+#[test]
+fn unit_variants_choose_an_operation() {
+    assert Op::Add.apply(6, 2) == 8;
+    assert Op::Sub.apply(6, 2) == 4;
+    assert DEFAULT.apply(6, 2) == 12;
+    assert Op::Mul.code() == 3;
+    assert Op::Add != Op::Sub;
+}
+
+#[test]
+fn enums_fill_arrays() {
+    let ops = [Op::Add, Op::Sub, Op::Mul];
+    let mut acc = 10u32;
+    for op in ops {
+        acc = op.apply(acc, 2);
+    }
+    assert acc == 20;
+    assert ops[2] == DEFAULT;
+}

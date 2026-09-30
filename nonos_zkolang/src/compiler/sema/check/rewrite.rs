@@ -35,21 +35,16 @@ impl<'s, 'a> FnCx<'s, 'a> {
             TExprKind::Builtin(_, es) | TExprKind::Tuple(es) | TExprKind::Array(es) => {
                 es.iter_mut().for_each(|x| self.rewrite(x))
             }
-            TExprKind::Record(fs) => fs.iter_mut().for_each(|(_, x)| self.rewrite(x)),
+            TExprKind::Record(fs) | TExprKind::Variant(_, fs) => {
+                fs.iter_mut().for_each(|(_, x)| self.rewrite(x))
+            }
+            TExprKind::Match(s, arms) => self.rewrite_match(s, arms),
             TExprKind::Index(a, i) => {
                 self.rewrite(a);
                 self.rewrite(i);
             }
             TExprKind::Block(b) => self.rewrite_block(b),
-            TExprKind::If(branches, last) => {
-                for (c, b) in branches.iter_mut() {
-                    self.rewrite(c);
-                    self.rewrite_block(b);
-                }
-                if let Some(b) = last {
-                    self.rewrite_block(b);
-                }
-            }
+            TExprKind::If(branches, last) => self.rewrite_if(branches, last),
             TExprKind::ForRange { lo, hi, body, .. } => {
                 self.rewrite(lo);
                 self.rewrite(hi);

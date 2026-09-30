@@ -29,6 +29,9 @@ impl<'s, 'a> FnCx<'s, 'a> {
         if p.root == PathRoot::SelfType && p.segments.is_empty() {
             return self.tuple_struct(p, args, at);
         }
+        if let Some(Ok(_)) = self.variant_of(p) {
+            return self.tuple_struct(p, args, at);
+        }
         if let Some(found) = self.assoc_fn(p) {
             return match found {
                 Some(fid) => self.call_fn(fid, p.last_name(), args, at),

@@ -4,8 +4,9 @@
 */
 
 /*!
- * Constant expressions (section 11): literals, constants, operators, conversions, tuples
- * and arrays over them, `if` over them, and calls of a `const fn` with constant arguments.
+ * Constant expressions (section 11): literals, constants, operators, conversions, tuples,
+ * arrays, structs and variants over them, `if` and `match` over them, and calls of a
+ * `const fn` with constant arguments.
  */
 
 use crate::compiler::sema::cx::Sema;
@@ -27,7 +28,15 @@ impl<'a> Sema<'a> {
             TExprKind::Builtin(_, es) | TExprKind::Tuple(es) | TExprKind::Array(es) => {
                 es.iter().find_map(|x| self.not_const(x))
             }
-            TExprKind::Record(fs) => fs.iter().find_map(|(_, x)| self.not_const(x)),
+            TExprKind::Record(fs) | TExprKind::Variant(_, fs) => {
+                fs.iter().find_map(|(_, x)| self.not_const(x))
+            }
+            TExprKind::Match(s, arms) => self.not_const(s).or_else(|| {
+                arms.iter().find_map(|a| {
+                    let g = a.guard.as_ref().and_then(|g| self.not_const(g));
+                    g.or_else(|| self.not_const(&a.body))
+                })
+            }),
             TExprKind::Index(a, i) => self.not_const(a).or_else(|| self.not_const(i)),
             TExprKind::Block(b) => self.block_not_const(b),
             TExprKind::If(branches, last) => branches

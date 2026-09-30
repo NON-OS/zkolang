@@ -16,10 +16,11 @@ use nonos_stark::field::Fp;
 
 use super::abi::{decode, encode};
 use super::build::Built;
+use super::leaves::leaves_of;
 use super::run::RunFailure;
-use super::values::{args_of, leaves_of};
+use super::values::{args_of, reference};
 use super::witness::witness;
-use crate::compiler::interp::{FailKind, Failure, Interp, Value};
+use crate::compiler::interp::FailKind;
 use crate::vm::Vm;
 
 /** A run: every input slot the machine reads, how many are public, and the result. */
@@ -33,6 +34,9 @@ pub(super) struct Executed {
 pub(super) fn execute(b: &Built, public: &[i128], secret: &[i128]) -> Result<Executed, RunFailure> {
     let pubs = encode(&b.public, public).map_err(|e| RunFailure::Inputs(e, false))?;
     let secs = encode(&b.secret, secret).map_err(|e| RunFailure::Inputs(e, true))?;
+    let main = b.program.main.ok_or(RunFailure::Disagree)?;
+    let args =
+        args_of(&b.program, main, public, secret).map_err(|(e, s)| RunFailure::Inputs(e, s))?;
     let n_public = pubs.len();
     let inputs: Vec<Fp> = pubs.into_iter().chain(secs).collect();
     let ran = witness(&b.compiled, &inputs).ok().and_then(|full| {
@@ -42,11 +46,11 @@ pub(super) fn execute(b: &Built, public: &[i128], secret: &[i128]) -> Result<Exe
         let slots: Vec<u64> = trace.public_outputs.iter().map(|f| f.value()).collect();
         Some((full, slots))
     });
-    let reference = reference(b, public, secret).ok_or(RunFailure::Disagree)?;
+    let (reference, ret) = reference(b, main, args).ok_or(RunFailure::Disagree)?;
     let (full, slots, expected) = match (ran, reference) {
         (Some((full, slots)), Ok(v)) => {
             let mut expected = Vec::new();
-            leaves_of(&v, &mut expected);
+            leaves_of(&b.program.types, ret, &v, &mut expected);
             (full, slots, Some(expected))
         }
         (Some((full, slots)), Err(f)) if f.kind == FailKind::Budget => (full, slots, None),
@@ -62,12 +66,4 @@ pub(super) fn execute(b: &Built, public: &[i128], secret: &[i128]) -> Result<Exe
         n_public,
         outputs,
     })
-}
-
-/** The reference run of `b`'s `main`, or `None` if it has none. */
-fn reference(b: &Built, public: &[i128], secret: &[i128]) -> Option<Result<Value, Failure>> {
-    let main = b.program.main?;
-    let span = b.program.fns.get(main.0 as usize)?.span;
-    let args = args_of(&b.program, main, public, secret);
-    Some(Interp::new(&b.program, 1 << 30).call(main, args, span))
 }

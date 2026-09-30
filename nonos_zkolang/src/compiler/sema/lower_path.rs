@@ -4,8 +4,8 @@
 */
 
 /*!
- * A type written as a path: an alias, replaced by what it stands for, its labels placed
- * where the path stands. A struct or enum is reported where it is declared (E0904).
+ * A type written as a path: an alias, replaced by what it stands for, or a struct or
+ * enum, the labels either writes placed where the path stands.
  */
 
 use alloc::format;
@@ -45,18 +45,17 @@ impl<'a> Sema<'a> {
                 }
                 ty
             }
-            Some(DefKind::Struct) => {
+            Some(DefKind::Struct | DefKind::Enum) => {
                 let (ty, own) = self.struct_ty(def);
                 for (q, l) in own.0 {
                     labels.0.push(([path, &q].concat(), l));
                 }
                 ty
             }
-            Some(DefKind::Enum) => Types::ERROR,
             Some(k) => {
                 let d = Diagnostic::error(
                     Code::WRONG_KIND,
-                    format!("`{}` is a {}, not a type", p.last_name(), k.describe()),
+                    format!("`{}` is {}, not a type", p.last_name(), k.a()),
                     p.span,
                     "not a type",
                 );

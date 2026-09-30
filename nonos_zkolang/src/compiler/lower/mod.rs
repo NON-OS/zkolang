@@ -10,6 +10,7 @@
  */
 
 mod assign;
+mod bind;
 mod binop;
 mod binop_scalar;
 mod bits_conv;
@@ -29,6 +30,7 @@ mod guard;
 mod if_;
 mod inline;
 mod inputs;
+mod inputs_enum;
 mod int;
 mod int64;
 mod int_bits;
@@ -43,6 +45,10 @@ mod lockstep;
 mod loop_const;
 mod loop_for;
 mod loops;
+mod match_;
+mod pat_cond;
+mod pat_parts;
+mod pat_range;
 mod place;
 mod place_access;
 mod place_index;
@@ -51,6 +57,8 @@ mod pow;
 mod power;
 mod shift;
 mod unary;
+mod value_slots;
+mod variant;
 mod wrapping;
 
 pub use entry::{lower_function, lower_program};

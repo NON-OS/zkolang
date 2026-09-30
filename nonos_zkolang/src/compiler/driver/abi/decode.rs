@@ -42,8 +42,9 @@ pub fn decode(leaves: &[Leaf], data: &[u64]) -> Option<Vec<i128>> {
         };
         let fits = match leaf {
             Leaf::Bool => v == 0 || v == 1,
-            Leaf::Field => true,
+            Leaf::Field | Leaf::Slot => true,
             Leaf::Int(t) => t.contains(v),
+            Leaf::Tag(n) => v < i128::from(*n),
         };
         out.push(fits.then_some(v)?);
     }

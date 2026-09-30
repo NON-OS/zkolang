@@ -8,7 +8,7 @@
 use alloc::boxed::Box;
 use alloc::vec::Vec;
 
-use super::{Builtin, ConstId, FnId, LocalId, TArg, TBlock, TExpr, TLit, TPat, TPlace};
+use super::{Builtin, ConstId, FnId, LocalId, TArg, TArm, TBlock, TExpr, TLit, TPat, TPlace};
 use crate::compiler::syntax::ast::{BinOp, UnOp};
 
 /** The shapes a typed expression takes. */
@@ -25,11 +25,12 @@ pub enum TExprKind {
     Call(FnId, Vec<TArg>),
     Builtin(Builtin, Vec<TExpr>),
     Tuple(Vec<TExpr>),
-    /**
-     * A struct literal: each field's index and value, in the order written, which is the
-     * order they are evaluated in.
-     */
+    /** A struct literal: each field's index and value, in the order written and run. */
     Record(Vec<(u32, TExpr)>),
+    /** An enum value: the variant's tag, and each field's index and value as written. */
+    Variant(u32, Vec<(u32, TExpr)>),
+    /** `match e { arms }`: the first arm whose pattern matches and whose guard holds. */
+    Match(Box<TExpr>, Vec<TArm>),
     Array(Vec<TExpr>),
     /** `[e; n]`, `e` evaluated once. */
     Repeat(Box<TExpr>, u32),
@@ -49,7 +50,7 @@ pub enum TExprKind {
     /** `for pat in array`, or `for (index, pat) in array.enumerate()`. */
     ForArray {
         index: Option<LocalId>,
-        pat: TPat,
+        pat: Box<TPat>,
         array: Box<TExpr>,
         body: TBlock,
     },

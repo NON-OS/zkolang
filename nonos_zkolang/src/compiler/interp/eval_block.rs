@@ -56,13 +56,19 @@ impl<'e> Interp<'e> {
                 }
             }
             TPat::Wild => {}
-            TPat::Tuple(ps) => {
-                if let Value::Tuple(parts) | Value::Array(parts) = v {
+            TPat::Tuple(ps) | TPat::Variant(_, ps) => {
+                if let Value::Tuple(parts) | Value::Array(parts) | Value::Variant(_, parts) = v {
                     for (p, part) in ps.iter().zip(parts) {
                         self.bind(p, part);
                     }
                 }
             }
+            TPat::Or(alts) => {
+                if let Some(a) = alts.iter().find(|a| super::eval_match::matches(a, &v)) {
+                    self.bind(a, v);
+                }
+            }
+            TPat::Lit(..) | TPat::Range(..) => {}
         }
     }
 }

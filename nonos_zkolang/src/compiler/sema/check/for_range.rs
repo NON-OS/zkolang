@@ -32,9 +32,7 @@ impl<'s, 'a> FnCx<'s, 'a> {
         self.deferred.push(Deferred::RangeInt { ty, span });
         let var = match self.bind_pat(pat, ty, &Labels::default(), &mut Vec::new()) {
             TPat::Bind(l) => l,
-            TPat::Wild | TPat::Tuple(_) => {
-                self.declare("_", ty, false, Labels::default(), pat.span)
-            }
+            _ => self.declare("_", ty, false, Labels::default(), pat.span),
         };
         let body = self.loop_body(body);
         TExprKind::ForRange {

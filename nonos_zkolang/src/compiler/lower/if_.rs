@@ -53,7 +53,7 @@ impl<'p> Lower<'p> {
 
     /** The slots of `v` where `c`, else `old`; a value with no slots, from an arm that
      * leaves, keeps `old`. */
-    fn pick(&mut self, c: V, v: &[V], old: &[V]) -> Vec<V> {
+    pub(super) fn pick(&mut self, c: V, v: &[V], old: &[V]) -> Vec<V> {
         if v.len() != old.len() {
             return old.to_vec();
         }

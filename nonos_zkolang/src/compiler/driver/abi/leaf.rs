@@ -3,10 +3,14 @@
  AGPL-3.0-or-later
 */
 
-/*! The scalar leaves of a type, and the slots they take. */
+/*!
+ * The scalar leaves of a type, and the slots they take. An enum's leaves are its slots:
+ * its tag, then its payload as laid out.
+ */
 
 use alloc::vec::Vec;
 
+use crate::compiler::lower::layout;
 use crate::compiler::sema::ty::{TyId, TyKind, Types};
 use crate::compiler::syntax::IntTy;
 
@@ -16,6 +20,10 @@ pub enum Leaf {
     Bool,
     Field,
     Int(IntTy),
+    /** An enum's tag: the index of its variant, below the number of variants. */
+    Tag(u32),
+    /** A slot of an enum's payload as it is laid out: any field element. */
+    Slot,
 }
 
 impl Leaf {
@@ -47,6 +55,11 @@ pub fn leaves(types: &Types, t: TyId, out: &mut Vec<Leaf>) {
         TyKind::Field => out.push(Leaf::Field),
         TyKind::Int(i) => out.push(Leaf::Int(*i)),
         TyKind::Array(e, n) => (0..*n).for_each(|_| leaves(types, *e, out)),
+        TyKind::Adt(_) => {
+            let n = types.adt(t).map_or(0, |a| a.variants.len());
+            out.push(Leaf::Tag(u32::try_from(n).unwrap_or(u32::MAX)));
+            (1..layout::slots(types, t)).for_each(|_| out.push(Leaf::Slot));
+        }
         _ => {}
     }
 }

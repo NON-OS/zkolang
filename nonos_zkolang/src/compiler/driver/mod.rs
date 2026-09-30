@@ -14,9 +14,14 @@ mod build;
 mod build_diag;
 mod build_lower;
 mod execute;
+mod leaves;
 mod run;
 mod run_diag;
 mod seed;
+mod slots_enum;
+mod slots_read;
+mod slots_write;
+mod value_of;
 mod values;
 mod witness;
 

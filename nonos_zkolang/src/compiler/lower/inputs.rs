@@ -5,7 +5,8 @@
 
 /*!
  * The invariants of section 6, checked on the slots of an input: a `bool` is 0 or 1, an
- * integer is in its type's range, and a 64-bit integer's halves are each below `2^32`.
+ * integer is in its type's range, a 64-bit integer's halves are each below `2^32`, and an
+ * enum's tag names a variant whose fields hold theirs.
  */
 
 use super::cx::Lower;
@@ -50,6 +51,7 @@ impl<'p> Lower<'p> {
                     self.check_input(e, vals.get(k * size..(k + 1) * size).unwrap_or(&[]));
                 }
             }
+            TyKind::Adt(_) if types.adt(t).is_some_and(|a| a.is_enum) => self.check_enum(t, vals),
             _ => {}
         }
     }

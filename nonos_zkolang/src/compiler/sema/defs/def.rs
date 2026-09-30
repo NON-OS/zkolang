@@ -26,6 +26,18 @@ pub enum DefKind {
 }
 
 impl DefKind {
+    /** How a message names one item of this kind: `a function`, `an enum`. */
+    pub fn a(self) -> &'static str {
+        match self {
+            DefKind::Mod => "a module",
+            DefKind::Fn => "a function",
+            DefKind::Const => "a constant",
+            DefKind::Alias => "a type alias",
+            DefKind::Struct => "a struct",
+            DefKind::Enum => "an enum",
+        }
+    }
+
     /** How a message names an item of this kind. */
     pub fn describe(self) -> &'static str {
         match self {

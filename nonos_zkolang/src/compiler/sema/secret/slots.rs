@@ -13,13 +13,14 @@
 use alloc::boxed::Box;
 use alloc::vec::Vec;
 
+use super::parts::parts;
 use super::shape::Shape;
 use super::taint::Taint;
 use crate::compiler::sema::ty::{TyId, TyKind, Types};
 
 /** A value of type `ty` whose every part is its own slot, the first being `next`. */
 pub(super) fn numbered(ty: TyId, next: &mut usize, types: &Types) -> Shape {
-    if let Some(ts) = types.record(ty) {
+    if let Some(ts) = parts(types, ty) {
         return Shape::Tuple(ts.iter().map(|&t| numbered(t, next, types)).collect());
     }
     match types.kind(ty) {
@@ -34,7 +35,7 @@ pub(super) fn numbered(ty: TyId, next: &mut usize, types: &Types) -> Shape {
 
 /** The labels of the parts of `v`, of type `ty`, in the order `numbered` gives slots. */
 pub(super) fn flatten(v: &Shape, ty: TyId, types: &Types, out: &mut Vec<Taint>) {
-    if let Some(ts) = types.record(ty) {
+    if let Some(ts) = parts(types, ty) {
         for (i, &t) in ts.iter().enumerate() {
             flatten(&v.child(i), t, types, out);
         }

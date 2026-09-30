@@ -13,10 +13,8 @@ use alloc::vec::Vec;
 
 use super::cx::Lower;
 use super::error::L;
-use super::layout::{elements, field_at, slots};
-use crate::compiler::sema::ty::{TyId, TyKind};
 use crate::compiler::ssa::V;
-use crate::compiler::tir::{TBlock, TPat, TStmt};
+use crate::compiler::tir::{TBlock, TStmt};
 
 impl<'p> Lower<'p> {
     /** The value of the block `b`. */
@@ -42,31 +40,5 @@ impl<'p> Lower<'p> {
             Some(t) => self.expr(t),
             None => Ok(Vec::new()),
         }
-    }
-
-    /** Bind the locals of `pat` to the parts of `vals`, a value of type `t`. */
-    pub(super) fn bind(&mut self, pat: &TPat, vals: &[V], t: TyId) -> L<()> {
-        match pat {
-            TPat::Bind(l) => self.set_local(*l, vals.to_vec()),
-            TPat::Wild => {}
-            TPat::Tuple(ps) => {
-                let types = &self.p.types;
-                let parts: Vec<(usize, TyId)> = match types.kind(t) {
-                    TyKind::Array(..) => match elements(types, t) {
-                        Some((e, size, _)) => (0..ps.len()).map(|k| (k * size, e)).collect(),
-                        None => Vec::new(),
-                    },
-                    _ => (0..ps.len())
-                        .filter_map(|k| field_at(types, t, k as u32))
-                        .collect(),
-                };
-                for (p, (at, ty)) in ps.iter().zip(parts) {
-                    let n = slots(&self.p.types, ty);
-                    let part = vals.get(at..at + n).unwrap_or(&[]).to_vec();
-                    self.bind(p, &part, ty)?;
-                }
-            }
-        }
-        Ok(())
     }
 }

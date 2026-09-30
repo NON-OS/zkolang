@@ -5,7 +5,7 @@
 
 /*! Visiting the expressions of a block, and the index a place step evaluates. */
 
-use super::{Proj, TBlock, TExpr, TStmt};
+use super::{Proj, TArm, TBlock, TExpr, TStmt};
 
 impl TBlock {
     /** Call `f` on each expression of the block's statements, then on its tail. */
@@ -20,6 +20,16 @@ impl TBlock {
         if let Some(t) = &self.tail {
             f(t);
         }
+    }
+}
+
+impl TArm {
+    /** Call `f` on the arm's guard, if it has one, then on its value. */
+    pub fn each_expr(&self, f: &mut dyn FnMut(&TExpr)) {
+        if let Some(g) = &self.guard {
+            f(g);
+        }
+        f(&self.body);
     }
 }
 

@@ -7,6 +7,7 @@
 
 use alloc::format;
 
+use super::call_report::arguments;
 use super::cx::FnCx;
 use crate::compiler::diag::{Code, Diagnostic};
 use crate::compiler::sema::ty::{TyId, TyKind, Types};
@@ -25,7 +26,12 @@ impl<'s, 'a> FnCx<'s, 'a> {
         if args.len() != n {
             let d = Diagnostic::error(
                 Code::WRONG_ARITY,
-                format!("`{}` takes {n} arguments, not {}", method.name, args.len()),
+                format!(
+                    "`{}` takes {n} {}, not {}",
+                    method.name,
+                    arguments(n),
+                    args.len()
+                ),
                 at,
                 "wrong number of arguments",
             );

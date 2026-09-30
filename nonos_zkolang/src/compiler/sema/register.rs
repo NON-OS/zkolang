@@ -55,6 +55,7 @@ impl<'a> Sema<'a> {
                 }
                 (ItemKind::TypeAlias(t), _) if t.generics.is_empty() => {}
                 (ItemKind::Struct(s), _) if s.generics.is_empty() => {}
+                (ItemKind::Enum(e), _) if e.generics.is_empty() => {}
                 (ItemKind::Mod(m), _) if m.body.is_some() => {}
                 _ => self.not_yet(item),
             }

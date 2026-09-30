@@ -14,6 +14,7 @@ use alloc::string::String;
 use alloc::vec::Vec;
 
 use super::deferred::Deferred;
+use super::matching::PatCx;
 use super::vars::IntVars;
 use crate::compiler::sema::cx::Sema;
 use crate::compiler::sema::defs::DefId;
@@ -37,6 +38,7 @@ pub struct FnCx<'s, 'a> {
     /** How many loops enclose the expression being checked. */
     pub(crate) loops: u32,
     pub(crate) deferred: Vec<Deferred>,
+    pub(crate) pats: PatCx,
 }
 
 impl<'s, 'a> FnCx<'s, 'a> {
@@ -53,6 +55,7 @@ impl<'s, 'a> FnCx<'s, 'a> {
             ret,
             loops: 0,
             deferred: Vec::new(),
+            pats: PatCx::default(),
         }
     }
 }

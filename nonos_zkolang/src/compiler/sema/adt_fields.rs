@@ -57,7 +57,7 @@ impl<'a> Sema<'a> {
     pub(super) fn structs(&mut self) {
         let kinds: Vec<_> = self.defs.defs.iter().map(|d| d.kind).collect();
         for (i, k) in kinds.into_iter().enumerate() {
-            if k == DefKind::Struct {
+            if matches!(k, DefKind::Struct | DefKind::Enum) {
                 self.struct_ty(DefId(u32::try_from(i).unwrap_or(u32::MAX)));
             }
         }
@@ -66,10 +66,10 @@ impl<'a> Sema<'a> {
     /** Report that the struct `def` contains itself (E0313). */
     pub(super) fn contains_itself(&mut self, def: DefId) {
         if let Some(d) = self.defs.get(def) {
-            let message = format!("the struct `{}` contains itself", d.name);
+            let message = format!("the type `{}` contains itself", d.name);
             let d = Diagnostic::error(Code::RECURSIVE_TYPE, message, d.span, "here");
             self.diags
-                .push(d.with_help("a field cannot hold its own struct, however deep"));
+                .push(d.with_help("a field cannot hold its own type, however deep"));
         }
     }
 }

@@ -9,6 +9,7 @@
  * precedence stay a flat chain, as in the syntax tree, so no stage recurses per link.
  */
 
+mod arm;
 mod builtin;
 mod expr;
 mod ids;
@@ -21,6 +22,7 @@ mod typed;
 mod visit;
 mod visit_block;
 
+pub use arm::TArm;
 pub use builtin::Builtin;
 pub use expr::TExprKind;
 pub use ids::{ConstId, FnId, LocalId};

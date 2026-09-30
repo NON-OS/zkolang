@@ -45,7 +45,7 @@ impl<'s, 'a> FnCx<'s, 'a> {
     }
 
     /** The type of an integer literal with `suffix`, where `want` is expected. */
-    fn int_lit_ty(
+    pub(super) fn int_lit_ty(
         &mut self,
         suffix: Option<crate::compiler::syntax::IntTy>,
         want: Option<TyId>,

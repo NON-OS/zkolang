@@ -5,8 +5,9 @@
 
 /*!
  * The ABI (section 12.2): `main`'s public inputs, secret inputs and result as lists of
- * scalar leaves in declaration order, a tuple or array giving its parts' leaves. A value
- * is given per leaf; a 64-bit integer's leaf takes two slots, its pattern's halves.
+ * scalar leaves in declaration order, a tuple, struct or array giving its parts' leaves.
+ * A value is given per leaf; a 64-bit integer's leaf takes two slots, its pattern's
+ * halves. An enum gives one leaf per slot: its tag, then its payload as laid out.
  */
 
 mod decode;

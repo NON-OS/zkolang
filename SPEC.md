@@ -26,9 +26,9 @@ normative, is the only one that describes the repository rather than the languag
 - Of edition 2026, the front end exists, in `nonos_zkolang/src/compiler`: the lexer, the
   parser with its error recovery, the placement check and the diagnostics. So do the
   checker of sections 4 to 13 and the reference interpreter of the typed IR, for a
-  program in one file, structs, `impl` blocks, methods and `Self` included. The checker
-  reports each form it does not check yet (generic items, enums, `match`, and modules in
-  their own files) as E0904. The back end compiles the typed IR of such a
+  program in one file, structs, enums, `match`, `impl` blocks, methods and `Self`
+  included. The checker reports each form it does not check yet (generic items, and
+  modules in their own files) as E0904. The back end compiles the typed IR of such a
   program to the machine: lowering to SSA, the passes, gadget expansion, scheduling, register allocation
   and a check of the machine program against the SSA. `compiler::driver::build` and
   `prove` build a program and prove a run of it with the STARK, hiding the witness;
@@ -575,6 +575,12 @@ evaluated left to right. An argument for a `&mut T` parameter is written `&mut p
 shorthand for `S { f: f }`. `(a, b)` builds a tuple, `[a, b, c]` an array, and `[e; N]` an
 array of `N` copies of `e`, where `e` is evaluated once.
 
+A variant of an enum `E` is built through its enum's path, in the form it is declared in:
+`E::V` for a unit variant, `E::V(a, b)` for a tuple variant and `E::V { f: e }` for one
+with named fields, the fields given as for a struct. Inside an `impl` block of `E`,
+`Self::V` names the same variant. A variant's fields are visible wherever its enum is. A
+lone name never names a variant.
+
 ### 7.12 `declassify`
 
 `declassify(e)` evaluates `e` and gives it the label `public` (section 13). It has no
@@ -657,24 +663,32 @@ block are not visible after it. A block is an expression.
 
 ### 9.1 Forms
 
-A pattern is a wildcard `_`, a binding `x` or `mut x`, a literal or an inclusive literal
-range (integer and `bool` scrutinees), a tuple pattern, an array pattern of exactly the
-array's length, a struct or tuple-struct pattern (with `..` to ignore the remaining
-fields), an enum variant pattern, or an alternation `p | q` whose alternatives bind the
-same names at the same types.
+A pattern is a wildcard `_`, a binding `x` or `mut x`, a literal (`bool`, integer and
+`field` scrutinees), an inclusive literal range `lo..=hi` with `lo <= hi` (integer
+scrutinees), a tuple pattern, an array pattern of exactly the array's length, a struct or
+tuple-struct pattern (with `..` to ignore the remaining fields), an enum variant pattern
+written with its enum's path (`E::V`, `E::V(p, q)`, `E::V { f: p, .. }`, or `Self::V`), or
+an alternation `p | q` whose alternatives bind the same names at the same types and
+mutability. A pattern binds each name at most once. A lone name in a pattern always
+binds; a variant is never named by a lone name.
 
 ### 9.2 Irrefutability
 
 `let` and function parameters take *irrefutable* patterns: wildcards, bindings, and tuple,
-array and struct patterns of irrefutable patterns. Anything else there is an error.
+array and struct patterns of irrefutable patterns, and variant patterns of an enum of one
+variant. Anything else there is an error.
 
 ### 9.3 Exhaustiveness
 
 A `match` is exhaustive when every value of the scrutinee's type matches some arm without a
-guard. The compiler decides exhaustiveness exactly for `bool`, enums, tuples, structs and
-arrays of these; for integer and `field` scrutinees it requires a wildcard or binding arm
-unless the literal ranges cover the whole type. A non-exhaustive `match` is an error that
-lists a missing pattern. An arm that can never be reached is a warning.
+guard. The compiler decides this exactly for every type: `bool`, enums, tuples, structs
+and arrays by their parts, and integers and `field` by the values their literals and
+ranges cover, so an integer scrutinee needs a wildcard or binding arm unless its ranges
+cover the whole type. A non-exhaustive `match` is an error (E0400) naming a pattern that
+some value no arm covers matches. An arm that no value reaches, because the arms without
+a guard before it cover every value it matches, is a warning (W0004). *Note: the check of
+one `match` takes at most 200 000 steps; one that needs more is reported as E0400, and
+splitting it into nested `match`es brings it under the budget.*
 
 ## 10. Functions, methods and generics
 
@@ -750,7 +764,9 @@ the program's public output; its label must be `public` (section 13).
 The *public input vector* is the concatenation, in parameter order, of the slots (section
 6) of every `public` parameter; the *secret input vector* likewise for the `secret`
 parameters; the *output vector* is the slots of the result. A tool that accepts typed
-inputs encodes them by this layout; `zkolang abi` prints it.
+inputs encodes them by this layout, taking one value per scalar and an enum slot by slot:
+its tag, then its payload as laid out. Slots that lay out no value of an enum are
+refused. `zkolang abi` prints the layout.
 
 ### 12.3 Inputs are checked
 
@@ -776,10 +792,15 @@ A variable or parameter declared with a qualified type keeps its qualifier: ever
 assigned to a `public` part must be `public`, and a `secret` part stays `secret`.
 
 A function is checked once. The label of each part of an unqualified parameter is the
-label of that part of the argument (section 5.4): a tuple's fields have their own labels,
-and an array's elements share one. *Note: the compiler follows the labels of the first
-128 scalar parts of a function's parameters apart; it takes the parts after them as
-`secret`, which can only add errors.*
+label of that part of the argument (section 5.4): a tuple's or struct's fields have their
+own labels, an enum's tag and each field of each of its variants have theirs, and an
+array's elements share one. A variant built where a guard does not decide it has a
+`public` tag. Which arm of a `match` runs depends on the parts of the scrutinee that its
+pattern and the patterns before it test (the tag of each variant they name, and each part
+a literal or range compares; a binding or `_` tests nothing) and on the guards before
+it; those labels are the `match`'s guard labels, as the condition's are an `if`'s.
+*Note: the compiler follows the labels of the first 128 scalar parts of a function's
+parameters apart; it takes the parts after them as `secret`, which can only add errors.*
 
 ### 13.2 Checked positions
 

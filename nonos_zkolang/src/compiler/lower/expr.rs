@@ -34,6 +34,8 @@ impl<'p> Lower<'p> {
             TExprKind::Cast(a) => self.cast(a, e)?,
             TExprKind::Call(f, args) => self.call(*f, args)?,
             TExprKind::Builtin(b, args) => self.builtin(*b, args, e)?,
+            TExprKind::Variant(tag, fs) => self.variant(*tag, fs, e.ty)?,
+            TExprKind::Match(s, arms) => self.match_(s, arms, e.ty)?,
             TExprKind::Tuple(_)
             | TExprKind::Record(_)
             | TExprKind::Array(_)

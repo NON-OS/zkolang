@@ -31,6 +31,8 @@ impl<'p> Flow<'p> {
             }
             TExprKind::Tuple(es) => Shape::Tuple(es.iter().map(|x| self.expr(x)).collect()),
             TExprKind::Record(fs) => self.record(fs, e.ty),
+            TExprKind::Variant(tag, fs) => self.variant(*tag, fs, e.ty),
+            TExprKind::Match(s, arms) => self.match_(s, arms, e.ty),
             TExprKind::Array(es) => match es.iter().map(|x| self.expr(x)).reduce(|a, b| a.join(&b))
             {
                 Some(el) => Shape::Array(Box::new(el)),

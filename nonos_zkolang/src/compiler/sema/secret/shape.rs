@@ -4,13 +4,14 @@
 */
 
 /*!
- * The labels of a value's parts: a tuple's fields each have their own, and an array's
- * elements share one, since a run-time index may name any of them.
+ * The labels of a value's parts: a tuple's fields each have their own, an enum's tag and
+ * fields theirs, and an array's elements share one, since a run-time index may name any.
  */
 
 use alloc::boxed::Box;
 use alloc::vec::Vec;
 
+use super::parts::parts;
 use super::taint::Taint;
 use crate::compiler::sema::ty::{TyId, TyKind, Types};
 
@@ -25,7 +26,7 @@ pub enum Shape {
 impl Shape {
     /** A value of type `ty` whose every part has label `t`. */
     pub fn of(ty: TyId, t: Taint, types: &Types) -> Shape {
-        if let Some(ts) = types.record(ty) {
+        if let Some(ts) = parts(types, ty) {
             return Shape::Tuple(ts.iter().map(|&e| Shape::of(e, t, types)).collect());
         }
         match types.kind(ty) {

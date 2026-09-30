@@ -55,3 +55,11 @@ pub(crate) fn elements(types: &Types, t: TyId) -> Option<(TyId, usize, usize)> {
         _ => None,
     }
 }
+
+/** The first slot of field `i` of variant `tag` of the enum `t`, and the field's type. */
+pub(crate) fn variant_field_at(types: &Types, t: TyId, tag: u32, i: u32) -> Option<(usize, TyId)> {
+    let fields = &types.adt(t)?.variants.get(tag as usize)?.fields;
+    let i = i as usize;
+    let at: usize = fields.get(..i)?.iter().map(|f| slots(types, f.ty)).sum();
+    Some((1 + at, fields.get(i)?.ty))
+}

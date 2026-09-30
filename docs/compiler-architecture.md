@@ -17,16 +17,19 @@ parser recovers, so that one run reports each independent mistake once, and a pl
 check reports statement forms where they cannot stand. Diagnostics render as text or
 JSON. The checker resolves names, checks types and constants, reports recursion, checks
 secret flow and lowers the program to the typed IR, which the reference interpreter runs.
-It checks a program in one file, structs, `impl` blocks, methods and `Self` included, and
-reports each form it does not check yet (generic items, enums, `match`, and modules in
-their own files) as E0904. The back end lowers the typed IR to SSA, runs the
+It checks a program in one file, structs, enums, `match`, `impl` blocks, methods and
+`Self` included, and reports each form it does not check yet (generic items, and modules
+in their own files) as E0904. `sema/exhaust` decides whether a `match` covers every
+value, and which arms no value reaches, by the usefulness of its patterns over their
+constructors, integer ranges cut at the ends of the ranges its arms name. The back end lowers the typed IR to SSA, runs the
 passes, expands the gadgets, schedules, allocates registers, emits machine code and checks
 it against the SSA; `driver::build` and `driver::prove` build a program from source and prove
 a run of it, hiding the witness. The programs in `nonos_zkolang_proofs/ui/syntax` and
 `ui/sema`, each of which states the diagnostics it expects, the `semantics/*.zkl` tests,
 run both interpreted and compiled, and the `front_*`, `sema_*`, `ssa_*`, `compile_*`,
-`codegen_*`, `flow_*` and `prove_2026_*` tests of `nonos_zkolang_proofs` pin this
-behaviour. The compiler lands in stages, in this order: the front end; types and secret
+`codegen_*`, `flow_*`, `match_*` and `prove_2026_*` tests of `nonos_zkolang_proofs` pin
+this behaviour; `match_exhaust_tests` checks exhaustiveness against every value of a
+small type. The compiler lands in stages, in this order: the front end; types and secret
 flow; the SSA IR, its passes, allocation and code generation; structs, enums, `match`
 and generics; packages and the standard library; the tools; and the Lean development.
 This section is updated as each stage lands.

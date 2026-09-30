@@ -38,4 +38,23 @@ impl Types {
             }
         }
     }
+
+    /**
+     * The types of the parts a pattern of type `t` takes apart, in order: the elements of
+     * a tuple or array, the fields of a struct, or the fields of the enum variant `tag`.
+     */
+    pub fn parts(&self, t: TyId, tag: Option<u32>) -> Vec<TyId> {
+        if let (TyKind::Array(el, n), _) = (self.kind(t), tag) {
+            return alloc::vec![*el; *n as usize];
+        }
+        match tag {
+            Some(tag) => {
+                let a = self.adt(t).filter(|a| a.is_enum);
+                let v = a.and_then(|a| a.variants.get(tag as usize));
+                v.map(|v| v.fields.iter().map(|f| f.ty).collect())
+                    .unwrap_or_default()
+            }
+            None => self.record(t).unwrap_or_default(),
+        }
+    }
 }

@@ -160,6 +160,16 @@ mod loop_tests;
 #[cfg(test)]
 mod match_default_tests;
 #[cfg(test)]
+mod match_exhaust_tests;
+#[cfg(test)]
+mod match_gen;
+#[cfg(test)]
+mod match_pat;
+#[cfg(test)]
+mod match_rng;
+#[cfg(test)]
+mod match_witness;
+#[cfg(test)]
 mod name_check_tests;
 #[cfg(test)]
 mod native_compare_tests;
@@ -203,6 +213,8 @@ mod prop_print;
 mod prop_tests;
 #[cfg(test)]
 mod prove_2026_abi_tests;
+#[cfg(test)]
+mod prove_2026_enum_tests;
 #[cfg(test)]
 mod prove_2026_struct_tests;
 #[cfg(test)]

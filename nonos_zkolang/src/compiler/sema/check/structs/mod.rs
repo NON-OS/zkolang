@@ -11,8 +11,11 @@ mod pat_named;
 mod pat_struct;
 mod record;
 mod record_forms;
+mod shape;
+mod shape_value;
 mod shorthand;
 mod struct_form;
 mod struct_named;
+mod variant_of;
 
 pub(super) use field_of::Key;

@@ -26,9 +26,11 @@ codes! {
     DUPLICATE_FIELD = "E0314", "A struct or variant declares a field twice, or a literal or pattern names a field twice.";
     MISSING_FIELD = "E0315", "A struct literal or pattern leaves out a field. A literal gives every field exactly once; a pattern that ignores fields ends with `..`.";
     /* Patterns. */
-    NON_EXHAUSTIVE = "E0400", "A `match` that does not cover every value of its scrutinee. The message names a missing pattern.";
+    NON_EXHAUSTIVE = "E0400", "A `match` that does not cover every value of its scrutinee. The message names a missing pattern; arms with a guard do not count. A `match` with too many cases to check is reported too, and splitting it into nested `match`es checks it.";
     REFUTABLE_PATTERN = "E0401", "A `let` or a parameter takes only patterns that always match.";
     PATTERN_MISMATCH = "E0402", "A pattern whose shape does not fit the scrutinee's type.";
+    PATTERN_BINDINGS = "E0403", "A pattern that binds a name twice, or alternatives `p | q` that do not bind the same names at the same types and mutability.";
+    EMPTY_RANGE = "E0404", "A range pattern `lo..=hi` whose lower end is above its upper end, which matches nothing.";
     /* Constants. */
     NOT_CONSTANT = "E0500", "This position needs a compile-time constant: a literal, a `const`, a constant generic parameter, or an expression over them.";
     CONST_EVAL_FAILED = "E0501", "Evaluating a constant failed: an overflow, a failed assertion, a division by zero or an out-of-bounds index.";

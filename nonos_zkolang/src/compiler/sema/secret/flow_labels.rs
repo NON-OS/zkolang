@@ -5,7 +5,8 @@
 
 /*!
  * A value meeting the labels written where it goes (section 13.2): each `public` part must
- * be public, and each `secret` part becomes secret.
+ * be public, and each `secret` part becomes secret. A `public` part is public from there
+ * on: where it was not, that is reported, or required of every caller, once.
  */
 
 use alloc::vec::Vec;
@@ -37,10 +38,10 @@ impl<'p> Flow<'p> {
     fn meet(&mut self, v: Shape, path: &[u32], label: Label, ty: TyId, at: Span) -> Shape {
         let types = &self.program.types;
         let mut needs = Taint::PUBLIC;
-        let out = update(v, ty, path, types, &mut |part, _| match label {
+        let out = update(v, ty, path, types, &mut |part, t| match label {
             Label::Public => {
                 needs = needs.join(part.all());
-                part
+                Shape::of(t, Taint::PUBLIC, types)
             }
             Label::Secret => part.raised(Taint::SECRET),
         });

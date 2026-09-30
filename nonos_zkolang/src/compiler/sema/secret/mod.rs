@@ -9,6 +9,7 @@
  */
 
 mod flow;
+mod flow_bind;
 mod flow_block;
 mod flow_call;
 mod flow_chain;
@@ -18,14 +19,18 @@ mod flow_if;
 mod flow_iter;
 mod flow_labels;
 mod flow_loop;
+mod flow_match;
 mod flow_new;
 mod flow_params;
 mod flow_put;
 mod flow_record;
 mod flow_report;
+mod flow_tested;
 mod flow_values;
+mod flow_variant;
 mod flow_write;
 mod order;
+mod parts;
 mod program;
 mod shape;
 mod shape_join;

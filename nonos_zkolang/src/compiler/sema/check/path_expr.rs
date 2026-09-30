@@ -37,6 +37,9 @@ impl<'s, 'a> FnCx<'s, 'a> {
         if p.segments.is_empty() && p.root == PathRoot::SelfModule {
             return self.self_value(at);
         }
+        if let Some(e) = self.variant_value(p, at) {
+            return e;
+        }
         if let Some(e) = self.prim_const(p, at) {
             return e;
         }

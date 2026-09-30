@@ -22,8 +22,8 @@ use crate::compiler::tir::FnId;
 
 impl<'s, 'a> FnCx<'s, 'a> {
     /**
-     * The function `p` names through a struct, if `p` names one: `Some(Some(f))` found,
-     * `Some(None)` reported; `None` if `p` does not go through a struct.
+     * The function `p` names through a struct or enum, if `p` names one: `Some(Some(f))`
+     * found, `Some(None)` reported; `None` if `p` does not go through one.
      */
     pub(crate) fn assoc_fn(&mut self, p: &'a Path) -> Option<Option<FnId>> {
         let names: Vec<&str> = p.segments.iter().map(|s| s.ident.name.as_str()).collect();
@@ -32,7 +32,8 @@ impl<'s, 'a> FnCx<'s, 'a> {
             (PathRoot::SelfType, true) => self.sema.self_type(p.span).0,
             (_, false) => {
                 let def = self.sema.defs.resolve(self.module, p.root, prefix).ok()?;
-                if self.sema.defs.get(def).map(|d| d.kind) != Some(DefKind::Struct) {
+                let kind = self.sema.defs.get(def).map(|d| d.kind);
+                if !matches!(kind, Some(DefKind::Struct | DefKind::Enum)) {
                     return None;
                 }
                 self.sema.note_use(def, p);
@@ -50,7 +51,10 @@ impl<'s, 'a> FnCx<'s, 'a> {
             return None;
         }
         let Some(&fid) = self.sema.assoc.get(&(ty, String::from(name))) else {
-            let what = format!("`{}` has no function `{name}`", self.show(ty));
+            let what = match self.sema.types.adt(ty).is_some_and(|a| a.is_enum) {
+                true => format!("`{}` has no variant or function `{name}`", self.show(ty)),
+                false => format!("`{}` has no function `{name}`", self.show(ty)),
+            };
             let d = Diagnostic::error(Code::NO_FIELD, what, at, "not found");
             self.sema.diags.push(d);
             return None;

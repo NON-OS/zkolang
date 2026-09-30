@@ -19,7 +19,7 @@ impl<'s, 'a> FnCx<'s, 'a> {
     /** Report a call of `name`, which takes `want` arguments, with `got` (E0307). */
     pub(super) fn arity_of(&mut self, name: &str, want: usize, got: usize, at: Span) {
         if want != got {
-            let what = format!("`{name}` takes {want} arguments, not {got}");
+            let what = format!("`{name}` takes {want} {}, not {got}", arguments(want));
             let d = Diagnostic::error(Code::WRONG_ARITY, what, at, "wrong number of arguments");
             self.sema.diags.push(d);
         }
@@ -29,7 +29,7 @@ impl<'s, 'a> FnCx<'s, 'a> {
     pub(super) fn not_fn_message(&self, def: DefId, name: &str) -> String {
         match self.sema.defs.get(def).map_or(DefKind::Fn, |d| d.kind) {
             DefKind::Fn => String::new(),
-            kind => format!("`{name}` is a {}, not a function", kind.describe()),
+            kind => format!("`{name}` is {}, not a function", kind.a()),
         }
     }
 
@@ -53,5 +53,14 @@ impl<'s, 'a> FnCx<'s, 'a> {
             self.infer(a, None);
         }
         self.error(at)
+    }
+}
+
+/** `argument` or `arguments`, as `n` of them are named. */
+pub(super) fn arguments(n: usize) -> &'static str {
+    if n == 1 {
+        "argument"
+    } else {
+        "arguments"
     }
 }

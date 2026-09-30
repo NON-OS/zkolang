@@ -23,6 +23,7 @@ mod eval_builtin;
 mod eval_call;
 mod eval_chain;
 mod eval_loop;
+mod eval_match;
 mod eval_parts;
 mod eval_place;
 mod eval_unary;
