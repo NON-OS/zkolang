@@ -5,13 +5,13 @@
 
 /*! Patterns. */
 
-use super::parser::{PResult, Parser};
+use super::super::parser::{PResult, Parser};
 use crate::compiler::syntax::ast::{PatKind, Pattern};
 use crate::compiler::syntax::keyword::Keyword;
 use crate::compiler::syntax::token::TokenKind;
 
 impl<'a> Parser<'a> {
-    pub(super) fn pattern_one(&mut self) -> PResult<Pattern> {
+    pub(in crate::compiler::syntax::parse) fn pattern_one(&mut self) -> PResult<Pattern> {
         let start = self.span();
         let kind = match self.kind() {
             TokenKind::Wildcard => {

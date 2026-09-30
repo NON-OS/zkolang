@@ -5,7 +5,7 @@
 
 /*! A literal pattern: an integer, possibly negative, or a boolean. */
 
-use super::parser::{PResult, Parser};
+use super::super::parser::{PResult, Parser};
 use crate::compiler::syntax::ast::{Lit, PatKind, Pattern};
 use crate::compiler::syntax::keyword::Keyword;
 use crate::compiler::syntax::lex::{int_literal, IntLit};
@@ -13,7 +13,7 @@ use crate::compiler::syntax::token::TokenKind;
 
 impl<'a> Parser<'a> {
     /** A literal pattern: an integer, possibly negative, or `true` or `false` if `bools`. */
-    pub(super) fn literal_pattern(&mut self, bools: bool) -> PResult<Pattern> {
+    pub(in crate::compiler::syntax::parse) fn literal_pattern(&mut self, bools: bool) -> PResult<Pattern> {
         let start = self.span();
         let negative = self.eat(TokenKind::Minus);
         let lit = match self.kind() {

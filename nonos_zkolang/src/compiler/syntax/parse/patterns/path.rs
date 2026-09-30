@@ -7,14 +7,14 @@
 
 use alloc::vec::Vec;
 
-use super::parser::{PResult, Parser};
-use super::types::PathMode;
+use super::super::parser::{PResult, Parser};
+use super::super::types::PathMode;
 use crate::compiler::syntax::ast::PatKind;
 use crate::compiler::syntax::token::TokenKind;
 
 impl<'a> Parser<'a> {
     /** A pattern that starts with a path: `P(..)`, `P { .. }`, a binding, or a path. */
-    pub(super) fn pattern_path(&mut self) -> PResult<PatKind> {
+    pub(in crate::compiler::syntax::parse) fn pattern_path(&mut self) -> PResult<PatKind> {
         let path = if self.at_primitive_path() {
             self.primitive_path()?
         } else {
