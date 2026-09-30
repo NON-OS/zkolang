@@ -4,45 +4,51 @@
 */
 
 /*!
- * Registers: taking a free one, freeing one when none is. The value freed is one that
- * can be read again, a constant, an input or advice, if any can, else the one read
- * furthest ahead; a value that cannot be read again is first copied into the advice.
+ * Registers: taking a free one, freeing one when none is. Only a value that can be brought
+ * back is freed while it is still needed: a constant, written again, or a public input,
+ * whose every read the proof pins to the committed value. Of those, the one needed
+ * furthest ahead goes.
  */
 
 use super::machine::CodegenError;
-use super::state::{Cg, SCRATCH};
+use super::state::Cg;
 use crate::compiler::ssa::{Inst, V};
+use crate::isa::REGS;
 
 impl<'a> Cg<'a> {
-    /** Whether `v` can be read again: a constant, an input, or in the advice. */
-    pub(super) fn rereadable(&self, v: V) -> bool {
-        matches!(self.ssa.get(v), Some(Inst::Const(_) | Inst::Input(_)))
-            || self.slot.get(v.index()).is_some_and(|s| s.is_some())
+    /** Whether `v` can be brought back into a register after its register is taken. */
+    pub(super) fn recoverable(&self, v: V) -> bool {
+        match self.ssa.get(v) {
+            Some(Inst::Const(_)) => true,
+            Some(Inst::Input(k)) => *k < self.ssa.n_public,
+            _ => false,
+        }
     }
 
     /** A free register, freeing one if none is; never one that holds a value of `keep`. */
     pub(super) fn take_reg(&mut self, keep: &[V]) -> Result<u8, CodegenError> {
-        if let Some(r) = (0..SCRATCH).find(|&r| self.holder[usize::from(r)].is_none()) {
+        let regs = 0..u8::try_from(REGS).unwrap_or(u8::MAX);
+        if let Some(r) = regs
+            .clone()
+            .find(|&r| self.holder[usize::from(r)].is_none())
+        {
             return Ok(r);
         }
-        let mut best: Option<((bool, u32), u8)> = None;
-        for r in 0..SCRATCH {
+        let mut best: Option<(u32, u8)> = None;
+        for r in regs {
             let Some(v) = self.holder[usize::from(r)] else {
                 continue;
             };
-            if keep.contains(&v) {
+            if keep.contains(&v) || !self.recoverable(v) {
                 continue;
             }
-            let key = (self.rereadable(v), self.next_use(v).unwrap_or(u32::MAX));
-            if best.is_none_or(|(k, _)| key > k) {
-                best = Some((key, r));
+            let next = self.next_use(v).unwrap_or(u32::MAX);
+            if best.is_none_or(|(n, _)| next > n) {
+                best = Some((next, r));
             }
         }
-        let (_, r) = best.ok_or(CodegenError::Lost(V(u32::MAX)))?;
+        let (_, r) = best.ok_or(CodegenError::Pressure(self.at))?;
         if let Some(v) = self.holder[usize::from(r)] {
-            if !self.rereadable(v) && self.next_use(v).is_some() {
-                self.spill(v, r)?;
-            }
             self.release(v);
         }
         Ok(r)

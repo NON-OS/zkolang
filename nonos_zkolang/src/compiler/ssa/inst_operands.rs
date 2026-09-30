@@ -34,7 +34,7 @@ impl Inst {
     /** The values the instruction's hint reads, if it has one. */
     pub fn hint_operands(&self) -> impl Iterator<Item = V> {
         let vs = match *self {
-            Inst::Advice(Hint::Bit(a, _) | Hint::Copy(a)) => [Some(a), None, None, None],
+            Inst::Advice(Hint::Bit(a, _)) => [Some(a), None, None, None],
             Inst::Advice(Hint::Quot(a, b) | Hint::Rem(a, b)) => [Some(a), Some(b), None, None],
             Inst::Advice(Hint::Div64 { a, b, .. }) => [Some(a.0), Some(a.1), Some(b.0), Some(b.1)],
             _ => [None, None, None, None],

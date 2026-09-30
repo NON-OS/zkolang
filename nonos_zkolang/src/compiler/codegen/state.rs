@@ -12,9 +12,6 @@ use super::machine::Machine;
 use crate::compiler::ssa::{Inst, Ssa, V};
 use crate::isa::REGS;
 
-/** The register kept free for checking spilled copies. */
-pub(super) const SCRATCH: u8 = (REGS - 1) as u8;
-
 /** The walk: the program so far, what each register holds, and where each value is. */
 pub(super) struct Cg<'a> {
     pub(super) ssa: &'a Ssa,
@@ -23,11 +20,15 @@ pub(super) struct Cg<'a> {
     pub(super) reg: Vec<Option<u8>>,
     /** The value each register holds. */
     pub(super) holder: [Option<V>; REGS],
-    /** Each value's advice slot: its own for an advice value, else its copy's, if any. */
+    /** Each advice value's slot. */
     pub(super) slot: Vec<Option<u16>>,
+    /** Whether each value has been computed or read. */
+    pub(super) emitted: Vec<bool>,
     /** The positions of each value's register reads, and how many have passed. */
     pub(super) uses: Vec<Vec<u32>>,
     pub(super) passed: Vec<usize>,
+    /** The instruction being written, named when registers run out. */
+    pub(super) at: V,
 }
 
 impl<'a> Cg<'a> {
@@ -51,6 +52,7 @@ impl<'a> Cg<'a> {
         let out = Machine {
             advice,
             n_inputs: ssa.n_inputs(),
+            n_public: usize::from(ssa.n_public),
             ..Machine::default()
         };
         Cg {
@@ -59,14 +61,10 @@ impl<'a> Cg<'a> {
             reg: vec![None; n],
             holder: [None; REGS],
             slot,
+            emitted: vec![false; n],
             uses,
             passed: vec![0; n],
+            at: V(0),
         }
-    }
-
-    /** The next position `v` is read at, if any. */
-    pub(super) fn next_use(&self, v: V) -> Option<u32> {
-        let (u, p) = (self.uses.get(v.index())?, *self.passed.get(v.index())?);
-        u.get(p).copied()
     }
 }

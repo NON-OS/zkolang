@@ -39,6 +39,7 @@ mod iteration;
 pub(crate) mod layout;
 mod lit;
 mod locals;
+mod lockstep;
 mod loop_const;
 mod loop_for;
 mod loops;

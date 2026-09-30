@@ -7,7 +7,8 @@
  * Value numbering: an instruction equal to an earlier one, operands in a canonical order
  * for the commutative ones, is that one. Every instruction is a function of its operands,
  * a hint included, so the earlier one's value is the later one's; a repeated constraint
- * or output is dropped, since it holds or fails with the first.
+ * or output is dropped, since it holds or fails with the first. Advice values are the
+ * exception: each stays its own, read where it is needed.
  */
 
 use alloc::collections::BTreeMap;
@@ -22,7 +23,10 @@ pub fn cse(ssa: &Ssa) -> Ssa {
     let mut seen: BTreeMap<Inst, V> = BTreeMap::new();
     for inst in &ssa.insts {
         let inst = canonical(inst.map(&mut |v| map.get(v.index()).copied().unwrap_or(v)));
-        let v = match seen.get(&inst) {
+        /* An advice value is kept apart from an equal one, since one read of it would be
+         * held in a register from the first place it is needed to the last. */
+        let apart = matches!(inst, Inst::Advice(_));
+        let v = match seen.get(&inst).filter(|_| !apart) {
             Some(&v) => v,
             None => {
                 let v = b.emit(inst);

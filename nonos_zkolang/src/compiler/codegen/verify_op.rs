@@ -8,27 +8,22 @@
 use alloc::vec::Vec;
 
 use super::machine::Machine;
-use crate::compiler::ssa::{Hint, Inst, Ssa, V};
+use crate::compiler::ssa::{Inst, Ssa, V};
 use crate::isa::{Op, REGS};
 
-/** The replay: what each register holds, which values are done, which copies hold. */
+/** The replay: what each register holds, which values are done, which slots were read. */
 pub(super) struct Replay<'a> {
     pub(super) ssa: &'a Ssa,
     pub(super) m: &'a Machine,
     pub(super) regs: [Option<V>; REGS],
     pub(super) done: Vec<bool>,
-    pub(super) copies: Vec<bool>,
-    /** A spill being checked: its value, slot, register and how far it got. */
-    pub(super) spill: Option<(V, usize, u8, u8)>,
+    /** Whether each input and advice slot has been read. */
+    pub(super) read: Vec<bool>,
     /** Each advice value's slot: how many advice values precede it. */
     pub(super) own: Vec<Option<usize>>,
 }
 
 impl<'a> Replay<'a> {
-    pub(super) fn holds(&self, r: u8, v: V) -> bool {
-        self.regs.get(usize::from(r)).copied().flatten() == Some(v)
-    }
-
     pub(super) fn set(&mut self, r: u8, v: Option<V>) {
         if let Some(slot) = self.regs.get_mut(usize::from(r)) {
             *slot = v;
@@ -45,27 +40,16 @@ impl<'a> Replay<'a> {
         self.own.get(v.index()).copied().flatten()
     }
 
-    /** Whether `op` reads `v` again into a register, and which. */
-    fn reads_again(&self, op: Op, v: V) -> Option<u8> {
+    /** Whether `op` reads `v` into a register, and which. */
+    pub(super) fn reads(&self, op: Op, v: V) -> Option<u8> {
         match (self.ssa.get(v)?, op) {
             (Inst::Const(c), Op::Imm { d, v: f }) if f.value() == *c => Some(d),
             (Inst::Input(k), Op::Inp { d, idx }) if idx == *k => Some(d),
-            (Inst::Advice(_), Op::Inp { d, idx }) if self.slot(idx) == self.own_slot(v) => Some(d),
-            (_, Op::Inp { d, idx }) => {
-                let s = self.slot(idx)?;
-                let copy = self.m.advice.get(s) == Some(&Hint::Copy(v));
-                (copy && self.copies.get(s).copied().unwrap_or(false)).then_some(d)
+            (Inst::Advice(_), Op::Inp { d, idx }) => {
+                let own = self.own_slot(v)?;
+                (self.slot(idx) == Some(own)).then_some(d)
             }
             _ => None,
         }
-    }
-
-    /** A reload of `v`. */
-    pub(super) fn reload(&mut self, op: Op, v: V) -> Result<(), &'static str> {
-        let d = self
-            .reads_again(op, v)
-            .ok_or("a reload that does not read the value")?;
-        self.set(d, Some(v));
-        Ok(())
     }
 }

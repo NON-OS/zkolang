@@ -12,49 +12,51 @@
 use alloc::vec::Vec;
 
 use super::rewrite::Rebuild;
-use crate::compiler::ssa::{Hint, Inst, V};
+use crate::compiler::ssa::{Inst, V};
+
+/**
+ * How far apart in the old program two uses of the bits of one value may be and still
+ * share a decomposition. Its bits are held in registers from one to the other; further
+ * apart, the value is decomposed again, which costs rows but no registers.
+ */
+pub(super) const NEAR: usize = 64;
 
 impl Rebuild {
     /** The bits of `v`, least significant first, which must make up `v < 2^n`. */
     pub(super) fn decompose(&mut self, v: V, n: u8) -> Vec<V> {
-        if let Some(bits) = self.bits.get(&(v, n)) {
-            return bits.clone();
+        match self.bits.get(&(v, n)) {
+            Some((bits, at)) if self.at.saturating_sub(*at) <= NEAR => return bits.clone(),
+            _ => {}
         }
+        let bits = self.fresh(v, n);
+        self.bits.insert((v, n), (bits.clone(), self.at));
+        bits
+    }
+
+    /** Check `v < 2^n`, with bits of its own unless nearby ones already check it. */
+    pub(super) fn range_check(&mut self, v: V, n: u8) {
+        match self.bits.get(&(v, n)) {
+            Some((_, at)) if self.at.saturating_sub(*at) <= NEAR => {}
+            _ => {
+                self.fresh(v, n);
+            }
+        }
+    }
+
+    /** A new decomposition of `v` into `n` bits. */
+    fn fresh(&mut self, v: V, n: u8) -> Vec<V> {
         if n >= 64 {
             /* Outside the gadget's range: the semantics fails, and so does this. */
             let one = self.b.konst(1);
             self.b.emit(Inst::AssertZero(one));
             return Vec::new();
         }
-        let bits = self.advice_bits(v, 0..n);
-        let diff = match self.horner(&bits) {
+        let (bits, sum) = self.read_bits(v, 0..n);
+        let diff = match sum {
             Some(sum) => self.b.sub(sum, v),
             None => v,
         };
         self.b.emit(Inst::AssertZero(diff));
-        self.bits.insert((v, n), bits.clone());
         bits
-    }
-
-    /** The advice bits `ks` of `v`, each constrained to 0 or 1. */
-    pub(super) fn advice_bits(&mut self, v: V, ks: core::ops::Range<u8>) -> Vec<V> {
-        let mut bits = Vec::with_capacity(ks.len());
-        for k in ks {
-            let b = self.b.emit(Inst::Advice(Hint::Bit(v, k)));
-            self.b.emit(Inst::AssertBool(b));
-            bits.push(b);
-        }
-        bits
-    }
-
-    /** `Σ 2^k bits[k]`, by doubling from the top bit down; `None` for no bits. */
-    pub(super) fn horner(&mut self, bits: &[V]) -> Option<V> {
-        let mut top = bits.iter().rev();
-        let mut acc = *top.next()?;
-        for &b in top {
-            let twice = self.b.add(acc, acc);
-            acc = self.b.add(twice, b);
-        }
-        Some(acc)
     }
 }

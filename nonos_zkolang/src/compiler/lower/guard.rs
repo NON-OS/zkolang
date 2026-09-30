@@ -38,6 +38,17 @@ impl<'p> Lower<'p> {
         self.b.sel(self.g, x, s)
     }
 
+    /**
+     * A count `k` that must be below `n`, as a gadget reads it: `k` itself if it is a
+     * constant below `n`, which cannot make the gadget fail, else guarded.
+     */
+    pub(super) fn count(&mut self, k: V, n: u64) -> V {
+        match self.b.ssa.insts.get(k.index()) {
+            Some(Inst::Const(c)) if *c < n => k,
+            _ => self.guarded(k, 0),
+        }
+    }
+
     /** `a && b` for booleans. */
     pub(super) fn and(&mut self, a: V, b: V) -> V {
         self.b.mul(a, b)

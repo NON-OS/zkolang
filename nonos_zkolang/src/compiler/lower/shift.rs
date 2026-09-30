@@ -22,7 +22,7 @@ impl<'p> Lower<'p> {
         let last = self.b.konst(i128::from(n - 1));
         let room = self.b.sub(last, k);
         self.require_below(room, log);
-        let kg = self.guarded(k, 0);
+        let kg = self.count(k, u64::from(n));
         let mut pow = self.b.konst(1);
         for j in 0..log {
             let bit = self.b.emit(Inst::Bit(kg, j as u8, log as u8));

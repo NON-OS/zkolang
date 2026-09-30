@@ -20,13 +20,10 @@ use crate::ssa_gen::program;
 #[test]
 fn the_machine_program_runs_as_the_ssa_program() {
     let mut r = Rng(0x0DDB_1A5E_5BAD_5EED);
-    let (mut accepted, mut spilled, mut problems) = (0, 0, Vec::new());
+    let (mut accepted, mut problems) = (0, Vec::new());
     for case in 0..300 {
         let ssa = program(&mut r, 20 + (case % 7) * 15);
         let compiled = backend(&ssa).unwrap_or_else(|e| panic!("case {case}: {e:?}"));
-        if compiled.machine.advice.len() > compiled.ssa.n_advice() {
-            spilled += 1;
-        }
         for run in 0..6 {
             let inputs = crate::ssa_gen::inputs(&mut r);
             let want = eval(&ssa, &inputs).map(|run| run.outputs);
@@ -58,5 +55,4 @@ fn the_machine_program_runs_as_the_ssa_program() {
         problems.len()
     );
     assert!(accepted > 600, "only {accepted} runs were accepted");
-    assert!(spilled > 3, "only {spilled} programs needed a spill");
 }

@@ -5,23 +5,15 @@
 
 /*! The machine instruction of an SSA instruction, given where its operands are. */
 
-use nonos_stark::field::Fp;
-
 use crate::compiler::ssa::{Inst, V};
 use crate::isa::Op;
 
 /**
- * The instruction computing `inst` into `d`, its operands in the registers `r` gives,
- * reading advice at `advice`; `None` for a gadget.
+ * The instruction computing `inst` into `d`, its operands in the registers `r` gives;
+ * `None` for a gadget, and for a constant, input or advice value, which is read instead.
  */
-pub(super) fn op_of(inst: Inst, d: u8, r: &dyn Fn(V) -> u8, advice: u16) -> Option<Op> {
+pub(super) fn op_of(inst: Inst, d: u8, r: &dyn Fn(V) -> u8) -> Option<Op> {
     Some(match inst {
-        Inst::Const(c) => Op::Imm {
-            d,
-            v: Fp::from_u64(c),
-        },
-        Inst::Input(idx) => Op::Inp { d, idx },
-        Inst::Advice(_) => Op::Inp { d, idx: advice },
         Inst::Add(a, b) => Op::Add {
             d,
             a: r(a),

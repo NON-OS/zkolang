@@ -13,7 +13,9 @@
 
 mod decompose;
 mod divide;
+mod expand;
 mod field_bits;
+mod read_bits;
 mod rewrite;
 
-pub use rewrite::{expand_bits, expand_division};
+pub use expand::{expand_bits, expand_division};

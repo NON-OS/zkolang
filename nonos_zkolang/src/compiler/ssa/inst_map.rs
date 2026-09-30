@@ -16,7 +16,6 @@ impl Inst {
                 Hint::Bit(a, k) => Hint::Bit(f(a), k),
                 Hint::Quot(a, b) => Hint::Quot(f(a), f(b)),
                 Hint::Rem(a, b) => Hint::Rem(f(a), f(b)),
-                Hint::Copy(a) => Hint::Copy(f(a)),
                 Hint::Div64 { a, b, part } => Hint::Div64 {
                     a: (f(a.0), f(a.1)),
                     b: (f(b.0), f(b.1)),

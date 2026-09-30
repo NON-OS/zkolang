@@ -20,7 +20,7 @@ codes! {
     INSTANTIATION_FAILED = "E0702", "A generic item did not type-check for these arguments. The note points at the template line.";
     /* Limits and registers. */
     TOO_MANY_ROWS = "E0800", "The program compiles to more than 2^16 rows, the largest trace the prover sizes.";
-    REGISTER_PRESSURE = "E0801", "More values are needed at once than the machine's 32 registers hold, and none of them can be recomputed or re-read. Restructure the computation so fewer values are live at the reported line.";
+    REGISTER_PRESSURE = "E0801", "More values are needed at once than the machine's 32 registers hold, and none of them can be written again or re-read: a secret input or advice value is read once and held until its last use. Restructure the computation so fewer values are needed at the same time.";
     TOO_MANY_IO = "E0802", "More inputs, outputs or advice values than the machine's sixteen-bit indices name.";
     /* Programs and packages. */
     NO_MAIN = "E0900", "Running a program needs `fn main` in the root module.";

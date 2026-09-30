@@ -3,7 +3,11 @@
  AGPL-3.0-or-later
 */
 
-/*! The allocation walk: each instruction's operands brought into registers, then it. */
+/*!
+ * The allocation walk: each instruction's operands brought into registers, then it. A
+ * constant, input or advice value is read where it is first used, not where it stands,
+ * so its register is taken for no longer than it must be.
+ */
 
 use alloc::vec::Vec;
 
@@ -18,21 +22,17 @@ pub fn codegen(ssa: &Ssa) -> Result<Machine, CodegenError> {
     let mut cg = Cg::new(ssa);
     for (i, &inst) in ssa.insts.iter().enumerate() {
         let v = V(u32::try_from(i).unwrap_or(u32::MAX));
+        cg.at = v;
         if inst.is_gadget() {
             return Err(CodegenError::Unexpanded(v));
         }
+        let read = matches!(inst, Inst::Const(_) | Inst::Input(_) | Inst::Advice(_));
         /* A value no register reads, which cannot fail, is for the witness alone. */
         let pure = matches!(
             inst,
-            Inst::Const(_)
-                | Inst::Input(_)
-                | Inst::Advice(_)
-                | Inst::Add(..)
-                | Inst::Sub(..)
-                | Inst::Mul(..)
-                | Inst::Eq(..)
+            Inst::Add(..) | Inst::Sub(..) | Inst::Mul(..) | Inst::Eq(..)
         );
-        if pure && cg.uses.get(i).is_none_or(|u| u.is_empty()) {
+        if read || pure && cg.uses.get(i).is_none_or(|u| u.is_empty()) {
             continue;
         }
         let operands: Vec<V> = inst.operands().collect();
@@ -55,10 +55,8 @@ pub fn codegen(ssa: &Ssa) -> Result<Machine, CodegenError> {
             true => 0,
             false => cg.take_reg(&[])?,
         };
-        let slot = cg.slot.get(i).copied().flatten().unwrap_or(0);
-        let advice = cg.index(slot)?;
         let r = |x: V| regs.iter().find(|(o, _)| *o == x).map_or(0, |(_, r)| *r);
-        let op = op_of(inst, d, &r, advice).ok_or(CodegenError::Unexpanded(v))?;
+        let op = op_of(inst, d, &r).ok_or(CodegenError::Unexpanded(v))?;
         cg.push(op, Origin::Def(v));
         if !inst.is_effect() {
             cg.bind(v, d);

@@ -848,10 +848,13 @@ may be set in the manifest's `[cost]` table.
 
 ### 15.4 Registers
 
-The machine has 32 registers and no memory. When the values a program needs at one point
-cannot fit, compilation fails with an error naming the function and source line of the
-peak and the values live there. The compiler never emits a program that is wrong because
-of register pressure.
+The machine has 32 registers and no memory. A row that reads a secret input or an advice
+value is pinned to no value by the proof, so two reads of one such slot could differ: the
+compiler reads each once and holds it in a register until its last use. A constant is
+written again and a public input read again when needed. The compiler orders the
+program's instructions to keep few values held at once. When the values a program needs
+at one point still cannot fit, compilation fails with E0801. The compiler never emits a
+program that is wrong because of register pressure.
 
 ## 16. Tests
 

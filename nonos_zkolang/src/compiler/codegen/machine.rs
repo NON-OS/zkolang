@@ -15,10 +15,8 @@ use crate::isa::Op;
 pub enum Origin {
     /** Computes the value, or applies the constraint or output, of the instruction. */
     Def(V),
-    /** Reads the value again into a register. */
+    /** Brings a constant or a public input into a register again. */
     Reload(V),
-    /** One of the three instructions that constrain a copy of the value in the advice. */
-    Spill(V),
     Halt,
 }
 
@@ -27,10 +25,11 @@ pub enum Origin {
 pub struct Machine {
     pub ops: Vec<Op>,
     pub origins: Vec<Origin>,
-    /** The hint of each advice slot, in order: the program's advice, then the copies. */
+    /** The hint of each advice slot, in order. */
     pub advice: Vec<Hint>,
-    /** How many input slots come before the advice. */
+    /** How many input slots come before the advice, and how many of those are public. */
     pub n_inputs: usize,
+    pub n_public: usize,
 }
 
 /** Why code generation stopped. */
@@ -38,8 +37,13 @@ pub struct Machine {
 pub enum CodegenError {
     /** A gadget-level instruction was not expanded. */
     Unexpanded(V),
-    /** A value was needed that no register holds and nothing can read again. */
+    /** A value was needed that no register holds and that cannot be brought back. */
     Lost(V),
     /** The inputs and advice need more slots than a 16-bit index names. */
     TooManySlots,
+    /**
+     * More values must be kept at the instruction of this value than the registers hold,
+     * none of which can be recomputed.
+     */
+    Pressure(V),
 }

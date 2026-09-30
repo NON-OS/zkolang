@@ -4,10 +4,11 @@
 */
 
 /*!
- * `x.pow(k)` (sections 7.1 and 7.2) by squaring. A `field` exponent is a constant. An
- * integer power is checked at each step it needs: a square `x^(2^j)` only where `k` has
- * a bit at `j` or above, since only then does `x^k` exceed it in size; so a power that
- * fits never fails for a square it does not use.
+ * `x.pow(k)` (sections 7.1 and 7.2) by squaring. A `field` exponent is a constant. A
+ * variable integer exponent is read from its top bit down, squaring and then multiplying
+ * by `x` where the bit is set, so each value made is `x^e` for some `e <= k`, and each is
+ * checked. For `|x| >= 2` each such power is smaller in size than `x^k`, and for `|x| < 2`
+ * each fits, so a power that fits never fails for one of them.
  */
 
 use super::cx::Lower;
@@ -35,12 +36,6 @@ impl<'p> Lower<'p> {
             ))?;
             return Ok(self.power(x, n as u64, None));
         };
-        let check = |lw: &mut Self, v: V, under: V| {
-            let g = lw.g;
-            lw.g = lw.and(g, under);
-            lw.check_int(v, t);
-            lw.g = g;
-        };
         if let Some(n) = known {
             return Ok(self.power(x, n as u64, Some(t)));
         }
@@ -50,24 +45,17 @@ impl<'p> Lower<'p> {
             .copied()
             .ok_or(LowerError::Unsupported("an exponent", k.span))?;
         let kg = self.guarded(kv, 0);
-        let bits: alloc::vec::Vec<V> = (0..32).map(|j| self.b.emit(Inst::Bit(kg, j, 32))).collect();
-        let mut above = alloc::vec![self.b.konst(0); 33];
-        for j in (0..32).rev() {
-            let (a, b) = (above[j + 1], bits[j]);
-            let ab = self.b.mul(a, b);
-            let s = self.b.add(a, b);
-            above[j] = self.b.sub(s, ab);
-        }
-        let (mut acc, mut sq) = (self.b.konst(1), x);
-        for j in 0..32 {
-            if j > 0 {
-                sq = self.b.mul(sq, sq);
-                check(self, sq, above[j]);
+        let mut acc = self.b.konst(1);
+        for j in (0..32u8).rev() {
+            let bit = self.b.emit(Inst::Bit(kg, j, 32));
+            if j < 31 {
+                acc = self.b.mul(acc, acc);
+                self.check_int(acc, t);
             }
             let one = self.b.konst(1);
-            let factor = self.b.sel(bits[j], sq, one);
+            let factor = self.b.sel(bit, x, one);
             acc = self.b.mul(acc, factor);
-            check(self, acc, self.g);
+            self.check_int(acc, t);
         }
         Ok(acc)
     }

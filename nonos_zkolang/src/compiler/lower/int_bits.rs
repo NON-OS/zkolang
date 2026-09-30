@@ -16,17 +16,25 @@ use crate::compiler::ssa::{Inst, V};
 use crate::compiler::syntax::IntTy;
 
 impl<'p> Lower<'p> {
-    /** The `N` bits of the pattern of `x`, of type `t`, least significant first. */
-    pub(super) fn pattern_bits(&mut self, x: V, t: IntTy) -> Vec<V> {
-        let n = t.bits();
+    /**
+     * The pattern of `x`, of type `t`, as an unsigned integer with the top bit flipped if
+     * signed, `x + 2^(N-1)`; 0 where the guard is off.
+     */
+    pub(super) fn pattern_offset(&mut self, x: V, t: IntTy) -> V {
         let off = match t.signed() {
             true => {
-                let half = self.b.konst(1i128 << (n - 1));
+                let half = self.b.konst(1i128 << (t.bits() - 1));
                 self.b.add(x, half)
             }
             false => x,
         };
-        let off = self.guarded(off, 0);
+        self.guarded(off, 0)
+    }
+
+    /** The `N` bits of the pattern of `x`, of type `t`, least significant first. */
+    pub(super) fn pattern_bits(&mut self, x: V, t: IntTy) -> Vec<V> {
+        let n = t.bits();
+        let off = self.pattern_offset(x, t);
         let mut bits: Vec<V> = (0..n)
             .map(|k| self.b.emit(Inst::Bit(off, k as u8, n as u8)))
             .collect();

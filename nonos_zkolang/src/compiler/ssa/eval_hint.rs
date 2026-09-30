@@ -19,7 +19,6 @@ pub fn hint(h: Hint, values: &[Fp]) -> Option<Fp> {
             let (a, b) = (get(a)?, get(b)?);
             a.checked_rem(b).unwrap_or(a)
         }
-        Hint::Copy(a) => get(a)?,
         Hint::Div64 { a, b, part } => {
             let wide = |lo: u64, hi: u64| (lo & 0xFFFF_FFFF) | (hi << 32);
             let (x, y) = (wide(get(a.0)?, get(a.1)?), wide(get(b.0)?, get(b.1)?));

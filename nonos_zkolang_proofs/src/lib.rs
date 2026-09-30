@@ -28,11 +28,17 @@ mod block_propagation_tests;
 #[cfg(test)]
 mod block_tests;
 #[cfg(test)]
+mod codegen_reads_tests;
+#[cfg(test)]
 mod commit_tests;
 #[cfg(test)]
 mod comparison_tests;
 #[cfg(test)]
 mod compile_field_tests;
+#[cfg(test)]
+mod compile_pinned_tests;
+#[cfg(test)]
+mod compile_pow_tests;
 #[cfg(test)]
 mod compile_prop_tests;
 #[cfg(test)]
@@ -238,9 +244,11 @@ mod ssa_gen_step;
 #[cfg(test)]
 mod ssa_mutate;
 #[cfg(test)]
-mod ssa_small;
+mod ssa_pressure_tests;
 #[cfg(test)]
-mod ssa_spill_tests;
+mod ssa_pressure_wide_tests;
+#[cfg(test)]
+mod ssa_small;
 #[cfg(test)]
 mod stdlib_tests;
 #[cfg(test)]

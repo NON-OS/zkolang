@@ -6,10 +6,10 @@
 /*!
  * Translation validation. The machine program is replayed with each register holding the
  * SSA value it stands for: every instruction must compute the value it claims from
- * registers holding the right operands, every read of the advice must read the value's
- * own slot or a copy already constrained equal to it, and every constraint, output,
- * inverse and selection of the SSA program must appear. What passes enforces exactly the
- * SSA program's constraints, plus copies equal to their values.
+ * registers holding the right operands, every read of an input or advice value must read
+ * its own slot, no secret input or advice slot may be read twice, and every constraint,
+ * output, inverse and selection of the SSA program must appear. What passes enforces
+ * exactly the SSA program's constraints.
  */
 
 use alloc::vec;
@@ -33,10 +33,11 @@ pub fn verify(ssa: &Ssa, m: &Machine) -> Result<(), VerifyError> {
         Inst::Advice(h) => Some(*h),
         _ => None,
     });
-    if !own.eq(m.advice.iter().copied().take(ssa.n_advice())) || m.ops.len() != m.origins.len() {
+    let layout = m.n_inputs == ssa.n_inputs() && m.advice.len() == ssa.n_advice();
+    if !layout || !own.eq(m.advice.iter().copied()) || m.ops.len() != m.origins.len() {
         return Err(VerifyError {
             op: 0,
-            why: "the advice or the origins do not match the program",
+            why: "the inputs, advice or origins do not match the program",
         });
     }
     let mut rp = Replay {
@@ -44,8 +45,7 @@ pub fn verify(ssa: &Ssa, m: &Machine) -> Result<(), VerifyError> {
         m,
         regs: [None; REGS],
         done: vec![false; ssa.insts.len()],
-        copies: vec![false; m.advice.len()],
-        spill: None,
+        read: vec![false; m.n_inputs + m.advice.len()],
         own: own_slots(ssa),
     };
     for (k, (&op, &origin)) in m.ops.iter().zip(&m.origins).enumerate() {
@@ -53,7 +53,6 @@ pub fn verify(ssa: &Ssa, m: &Machine) -> Result<(), VerifyError> {
         match origin {
             Origin::Def(v) => rp.def(op, v).map_err(fail)?,
             Origin::Reload(v) => rp.reload(op, v).map_err(fail)?,
-            Origin::Spill(v) => rp.spill_step(op, v).map_err(fail)?,
             Origin::Halt if k + 1 == m.ops.len() && matches!(op, Op::Halt) => {}
             Origin::Halt => return Err(fail("a halt that does not end the program")),
         }

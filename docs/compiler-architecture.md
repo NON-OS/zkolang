@@ -45,12 +45,13 @@ nonos_zkolang/src/compiler/
   tir/        the typed IR: monomorphic, resolved, desugared; its printer
   interp/     the reference interpreter over the TIR (the oracle), also the constant
               evaluator
-  ssa/        the SSA IR, TIR to SSA lowering (scalarisation, guards, if-conversion),
-              its printer and its interpreter (the witness generator)
-  opt/        the SSA passes and the pass manager
+  ssa/        the SSA IR, its printer and its interpreter (the witness generator)
+  lower/      TIR to SSA lowering (scalarisation, guards, if-conversion, unrolling)
+  opt/        the SSA passes
   gadget/     expansion of high-level SSA constraints into machine-level SSA
-  alloc/      scheduling, liveness, rematerialisation, register allocation
-  codegen/    machine instructions, input and advice layout, the program verifier
+  schedule/   the order of the machine-level SSA, chosen for register pressure
+  codegen/    register allocation, machine instructions, input and advice layout,
+              and the program verifier
   cost/       the cost report
   fmt/        the formatter
   driver/     the pipeline: compile, witness, run, prove
@@ -184,30 +185,33 @@ limb arithmetic each have a gadget. Every gadget is in the constraint ledger
 ### Register allocation
 
 The machine has 32 registers and no memory. Allocation is where a wrong program is most
-easily produced, so it is built to be checked.
+easily produced, so it is built to be checked. One fact about the proof shapes it: the
+step AIR pins a row that reads a public input to the committed value, but a row that
+reads a secret input or an advice slot holds whatever the prover writes there. Two reads
+of one such slot could differ, so each is read at most once, and a value that must be
+read again is held in a register or recomputed.
 
-1. **Scheduling.** The machine SSA is a DAG plus an order among constraints and outputs
-   that must be preserved only for readability, not semantics, since constraints commute.
-   A bottom-up list scheduler orders instructions to reduce the number of simultaneously
-   live values: it prefers the instruction that frees the most registers, places each
-   input read and constant load immediately before its first use, and keeps the rest in
-   source order.
-2. **Rematerialisation.** A constant is reloaded with `Imm` instead of being held. A public
-   input is re-read with `Inp`, which is sound because the step AIR pins every public
-   `Inp` row to the committed value. A secret input or an advice value is never re-read:
-   the AIR does not pin those rows, so two reads could differ. Pure instructions whose
-   operands are all rematerialisable are recomputed when that lowers the peak.
-3. **Allocation.** Linear scan over the schedule assigns each value a register for its
-   live range. If more than 32 values are live at some point after scheduling and
-   rematerialisation, compilation stops with an error naming the function and line of the
-   peak and the live values there.
-4. **Verification.** An independent checker symbolically executes the emitted
-   instructions, tracking which machine SSA value each register holds, and confirms that
-   every operand of every instruction is the value the machine SSA says it should be, that
-   no register is read before it is written, that every instruction is well formed, that
-   inputs and advice are read inside their regions, and that outputs are written once each
-   in order. A failure of this checker is an internal compiler error, reported and never
-   emitted.
+1. **Scheduling.** Gadget expansion and lowering emit bit-level work in lockstep, each
+   operand's bits read from the top down together with the sums that check them, so that
+   one bit of each is held at a time. The scheduler then tries two orders, the program's
+   own and one evaluating every constraint and output depth first, the operand needing
+   the most registers first, and keeps the one holding fewer values at once. In both, a
+   constant, input or advice value is placed only where it is first needed; a
+   constraint or output as soon as its operands are; and an operation as soon as its
+   operands are when it is the last reader of a held operand.
+2. **Rematerialisation.** A constant is written again with `Imm` and a public input read
+   again with `Inp` when its register was taken. Nothing else is: a secret input or an
+   advice value is never read twice, and a computed value is kept.
+3. **Allocation.** One walk over the schedule assigns each value a register from where it
+   is placed to its last use; when none is free, the constant or public input needed
+   furthest ahead gives up its register. If every register holds a value that cannot be
+   brought back, compilation stops with E0801.
+4. **Verification.** An independent checker replays the emitted instructions, tracking
+   which machine SSA value each register holds, and confirms that every operand of every
+   instruction is the value the machine SSA says it should be, that every read of an
+   input or advice value reads its own slot, that no secret input or advice slot is read
+   twice, and that every constraint, output, inverse and selection appears. A failure of
+   this checker is an internal compiler error, reported and never emitted.
 
 ### Witness, run and prove
 

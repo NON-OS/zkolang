@@ -19,12 +19,15 @@ use crate::compiler::ssa::{Inst, V};
 impl Rebuild {
     /** The 64 bits of `v`, least significant first. */
     pub(super) fn field_bits(&mut self, v: V) -> Vec<V> {
-        if let Some(bits) = self.bits.get(&(v, 64)) {
-            return bits.clone();
+        if let Some((bits, at)) = self.bits.get(&(v, 64)) {
+            if self.at.saturating_sub(*at) <= super::decompose::NEAR {
+                return bits.clone();
+            }
         }
-        let bits = self.advice_bits(v, 0..64);
-        let (low, high) = bits.split_at(32);
-        let (Some(lo), Some(hi)) = (self.horner(low), self.horner(high)) else {
+        let (high, hi) = self.read_bits(v, 32..64);
+        let (mut bits, lo) = self.read_bits(v, 0..32);
+        bits.extend(high);
+        let (Some(lo), Some(hi)) = (lo, hi) else {
             return bits;
         };
         let shift = self.b.konst(1 << 32);
@@ -36,7 +39,7 @@ impl Rebuild {
         let at_top = self.b.emit(Inst::Eq(hi, top));
         let both = self.b.mul(at_top, lo);
         self.b.emit(Inst::AssertZero(both));
-        self.bits.insert((v, 64), bits.clone());
+        self.bits.insert((v, 64), (bits.clone(), self.at));
         bits
     }
 }
