@@ -130,13 +130,15 @@ int_suffix = "u8" | "u16" | "u32" | "u64" | "i8" | "i16" | "i32" | "i64" | "usiz
 bool_lit   = "true" | "false" ;
 str_lit    = '"' { str_char | escape } '"' ;
 escape     = "\\" ( '"' | "\\" | "n" | "t" | "0" ) ;
+str_char   = any character except '"', "\\", line feed and carriage return ;
 ```
 
 An integer literal denotes a non-negative mathematical integer; its type is given by its
 suffix or inferred (section 5.6). A literal whose value does not fit its type is an
 error; in particular a `field` literal must be less than `p` (there is no silent
-reduction). A literal's digits must include at least one digit after the prefix. String
-literals appear only in `assert` messages and attributes; there is no string type.
+reduction). A radix prefix is followed directly by a digit. A string literal ends on the
+line it starts. String literals appear only in `assert` messages and attributes; there
+is no string type.
 
 ### 2.4 Punctuation and operators
 
