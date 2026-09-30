@@ -27,6 +27,8 @@ pub(crate) enum Key<'n> {
 impl<'s, 'a> FnCx<'s, 'a> {
     /** The index and type of field `key` of a value of type `ty`; `None` once reported. */
     pub(crate) fn field_of(&mut self, ty: TyId, key: Key<'_>, at: Span) -> Option<(u32, TyId)> {
+        /* A variant's payload may still be a variable bound to the struct. */
+        let ty = self.resolve(ty);
         let shown = match key {
             Key::Pos(i) => format!("{i}"),
             Key::Name(n) => alloc::string::String::from(n),
