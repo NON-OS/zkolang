@@ -13,6 +13,7 @@
 use alloc::vec::Vec;
 
 use super::parser::Parser;
+use crate::compiler::syntax::keyword::Keyword;
 use crate::compiler::syntax::token::TokenKind;
 
 /** The closer an opening bracket is owed, if the token opens one. */
@@ -50,6 +51,11 @@ impl<'a> Parser<'a> {
         while !owed.is_empty() {
             let k = self.kind();
             if k == TokenKind::Eof {
+                return;
+            }
+            /* A statement cannot go on inside a parenthesis or bracket left open. */
+            let open_paren = matches!(owed.last(), Some(TokenKind::RParen | TokenKind::RBracket));
+            if open_paren && matches!(k, TokenKind::Semi | TokenKind::Kw(Keyword::Let)) {
                 return;
             }
             if let Some(c) = closer(k) {

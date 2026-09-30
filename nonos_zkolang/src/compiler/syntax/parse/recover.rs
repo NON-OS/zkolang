@@ -47,14 +47,13 @@ impl<'a> Parser<'a> {
     /**
      * Recover inside a block from an error in the statement that began at token `from`:
      * close what it opened, then skip past the next `;` at this depth, or stop before the
-     * closing `}`.
+     * closing `}` or before a token that starts the next statement or an item.
      */
     pub(super) fn recover_stmt(&mut self, from: usize) {
         self.pay_owed(from);
-        let start = self.pos;
-        self.skip_until(&[TokenKind::Semi]);
+        self.skip_stmt_rest();
         if !self.eat(TokenKind::Semi)
-            && self.pos == start
+            && self.pos == from
             && !matches!(self.kind(), TokenKind::RBrace | TokenKind::Eof)
         {
             /* A stray closing bracket: step over it so the block loop makes progress. */

@@ -33,12 +33,27 @@ impl<'a> Parser<'a> {
             TokenKind::Ident => format!("`{}`", self.text_of(t)),
             k => String::from(k.describe()),
         };
-        self.diags.push(Diagnostic::error(
-            Code::UNEXPECTED_TOKEN,
-            format!("expected {expected}, found {found}"),
-            t.span,
-            format!("expected {expected}"),
-        ));
+        let message = format!("expected {expected}, found {found}");
+        /*
+         * What is missing at the end of a line belongs after the line's last token, so the
+         * report points there and marks the token found on a later line as a second label.
+         */
+        let d = match self.line_end_before(t.span) {
+            Some(end) => Diagnostic::error(
+                Code::UNEXPECTED_TOKEN,
+                message,
+                end,
+                format!("expected {expected} after this"),
+            )
+            .with_label(t.span, format!("found {found}")),
+            None => Diagnostic::error(
+                Code::UNEXPECTED_TOKEN,
+                message,
+                t.span,
+                format!("expected {expected}"),
+            ),
+        };
+        self.diags.push(d);
         Reported
     }
 
