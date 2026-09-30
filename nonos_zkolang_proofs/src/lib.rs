@@ -74,6 +74,12 @@ mod front_fuzz_tests;
 #[cfg(test)]
 mod front_lex_tests;
 #[cfg(test)]
+mod front_render_check;
+#[cfg(test)]
+mod front_render_tests;
+#[cfg(test)]
+mod front_render_text_tests;
+#[cfg(test)]
 mod front_source_tests;
 #[cfg(test)]
 mod fuzz_tests;

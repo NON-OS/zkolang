@@ -15,15 +15,20 @@
  *    |
  *    = help: ...
  * ```
+ *
+ * The primary label's file comes first, introduced by `-->`; any other file a label
+ * points into follows, introduced by `:::`.
  */
 
 use alloc::format;
 use alloc::string::String;
 use alloc::vec::Vec;
 
-use super::diagnostic::{Diagnostic, Label, Severity};
-use super::render_snippet::push_snippet;
-use super::render_text::digits;
+use super::diagnostic::{Diagnostic, Severity};
+use super::display::visible;
+use super::render_file::push_files;
+use super::render_gutter::Gutter;
+use super::render_placed::Placed;
 use crate::compiler::source::SourceMap;
 
 /** Render one diagnostic over the source map. */
@@ -32,36 +37,24 @@ pub fn render(map: &SourceMap, d: &Diagnostic) -> String {
         Severity::Error => "error",
         Severity::Warning => "warning",
     };
-    let mut out = format!("{kind}[{}]: {}\n", d.code.0, d.message);
-    let mut labels: Vec<&Label> = d.labels.iter().collect();
-    labels.sort_by_key(|l| (!l.primary, l.span.file, l.span.lo));
-    let gutter = labels
+    let mut out = format!("{kind}[{}]: {}\n", d.code.0, visible(&d.message));
+    let mut placed: Vec<Placed> = d
+        .labels
         .iter()
-        .filter_map(|l| map.locate(l.span).map(|(_, line, _)| digits(line)))
-        .max()
-        .unwrap_or(1);
-    let pad = " ".repeat(gutter);
-    let mut current_file = None;
-    for l in &labels {
-        let Some(file) = map.file(l.span.file) else {
-            continue;
-        };
-        let (line, col) = file.line_col(l.span.lo);
-        if current_file != Some(l.span.file) {
-            out.push_str(&format!("{pad}--> {}:{line}:{col}\n", file.name));
-            out.push_str(&format!("{pad} |\n"));
-            current_file = Some(l.span.file);
-        }
-        push_snippet(&mut out, file, l, (line, col), &pad);
-    }
+        .filter_map(|l| Placed::new(map, l))
+        .collect();
+    placed.sort_by_key(|p| !p.label.primary);
+    let max_line = placed.iter().map(|p| p.end_line).max().unwrap_or(1);
+    let g = Gutter::new(max_line, placed.iter().any(Placed::is_multiline));
+    push_files(&mut out, &placed, &g);
     if !d.notes.is_empty() || d.help.is_some() {
-        out.push_str(&format!("{pad} |\n"));
+        g.rule(&mut out);
     }
     for n in &d.notes {
-        out.push_str(&format!("{pad} = note: {n}\n"));
+        out.push_str(&format!("{} = note: {}\n", g.pad, visible(n)));
     }
     if let Some(h) = &d.help {
-        out.push_str(&format!("{pad} = help: {h}\n"));
+        out.push_str(&format!("{} = help: {}\n", g.pad, visible(h)));
     }
     out
 }
