@@ -8,14 +8,15 @@
  * variable integer exponent is read from its top bit down, squaring and then multiplying
  * by `x` where the bit is set, so each value made is `x^e` for some `e <= k`, and each is
  * checked. For `|x| >= 2` each such power is smaller in size than `x^k`, and for `|x| < 2`
- * each fits, so a power that fits never fails for one of them.
+ * each fits, so a power that fits never fails for one of them. Only the bits a power that
+ * fits can use are read (`pow_var.rs`).
  */
 
 use super::cx::Lower;
 use super::error::{LowerError, L};
 use crate::compiler::interp::Interp;
 use crate::compiler::sema::ty::TyKind;
-use crate::compiler::ssa::{Inst, V};
+use crate::compiler::ssa::V;
 use crate::compiler::tir::TExpr;
 
 impl<'p> Lower<'p> {
@@ -44,19 +45,6 @@ impl<'p> Lower<'p> {
             .first()
             .copied()
             .ok_or(LowerError::Unsupported("an exponent", k.span))?;
-        let kg = self.guarded(kv, 0);
-        let mut acc = self.b.konst(1);
-        for j in (0..32u8).rev() {
-            let bit = self.b.emit(Inst::Bit(kg, j, 32));
-            if j < 31 {
-                acc = self.b.mul(acc, acc);
-                self.check_int(acc, t);
-            }
-            let one = self.b.konst(1);
-            let factor = self.b.sel(bit, x, one);
-            acc = self.b.mul(acc, factor);
-            self.check_int(acc, t);
-        }
-        Ok(acc)
+        Ok(self.pow_var(x, kv, t))
     }
 }

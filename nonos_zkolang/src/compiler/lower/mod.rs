@@ -54,6 +54,7 @@ mod place_access;
 mod place_index;
 mod place_write;
 mod pow;
+mod pow_var;
 mod power;
 mod shift;
 mod unary;

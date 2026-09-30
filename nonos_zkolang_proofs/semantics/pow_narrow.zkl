@@ -1,0 +1,55 @@
+/* Powers of integers of 8 to 32 bits with an exponent known only at run time (section 7.2), checked. */
+
+fn p8(x: u8, k: u32) -> u8 {
+    x.pow(k)
+}
+
+fn s8(x: i8, k: u32) -> i8 {
+    x.pow(k)
+}
+
+fn s16(x: i16, k: u32) -> i16 {
+    x.pow(k)
+}
+
+fn p32(x: u32, k: u32) -> u32 {
+    x.pow(k)
+}
+
+#[test]
+fn a_power_that_fits_is_exact() {
+    assert p8(2, 7) == 128 && p8(3, 5) == 243 && p8(0, 0) == 1;
+    assert s8(-2, 7) == -128 && s16(-2, 15) == -32768 && s16(7, 5) == 16807;
+    assert p32(2, 31) == 2147483648 && p32(65535, 2) == 4294836225;
+}
+
+#[test]
+fn a_large_exponent_fits_only_for_small_bases() {
+    assert p8(1, 1000000) == 1 && p8(0, 8) == 0 && p8(0, 1000000) == 0;
+    assert s8(-1, 9) == -1 && s8(-1, 8) == 1 && s8(-1, 1000001) == -1;
+    assert p32(1, 4000000000) == 1;
+}
+
+#[test]
+#[should_fail]
+fn an_unsigned_overflow_fails() {
+    let _v = p8(2, 8);
+}
+
+#[test]
+#[should_fail]
+fn a_signed_overflow_fails() {
+    let _v = s8(2, 7);
+}
+
+#[test]
+#[should_fail]
+fn a_large_exponent_fails_for_a_large_base() {
+    let _v = p32(2, 40);
+}
+
+#[test]
+#[should_fail]
+fn the_least_value_squared_fails() {
+    let _v = s16(-2, 16);
+}
