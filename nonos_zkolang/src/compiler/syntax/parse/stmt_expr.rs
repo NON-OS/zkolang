@@ -9,7 +9,7 @@ use super::block_like::block_like;
 use super::parser::{starts_item, PResult, Parser};
 use super::stmt::StmtOrTail;
 use crate::compiler::source::Span;
-use crate::compiler::syntax::ast::{Stmt, StmtKind};
+use crate::compiler::syntax::ast::{ExprKind, Stmt, StmtKind};
 use crate::compiler::syntax::keyword::Keyword;
 use crate::compiler::syntax::token::TokenKind;
 
@@ -26,7 +26,8 @@ impl<'a> Parser<'a> {
          * A block-shaped expression at the start of a statement stands alone: `if c {} - 1`
          * is not a subtraction.
          */
-        let e = if self.at_block_like() {
+        let started_block_like = self.at_block_like();
+        let e = if started_block_like {
             let e = self.nested(|p| p.primary())?;
             self.after_block_like(e)?
         } else {
@@ -36,7 +37,9 @@ impl<'a> Parser<'a> {
         if !semi && matches!(self.kind(), TokenKind::RBrace | TokenKind::Eof) {
             return Ok(Some(StmtOrTail::Tail(e)));
         }
-        if !semi && !block_like(&e) {
+        /* A form reported and skipped whole, as `while let`, stands where a block-like one would. */
+        let skipped = started_block_like && e.kind == ExprKind::Error;
+        if !semi && !block_like(&e) && !skipped {
             return Err(self.unexpected("`;`"));
         }
         let span = if semi {

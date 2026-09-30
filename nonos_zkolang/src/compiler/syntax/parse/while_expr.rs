@@ -21,7 +21,9 @@ impl<'a> Parser<'a> {
         let start = self.span();
         self.bump();
         if self.at_kw(Keyword::Let) {
-            return Err(self.while_let());
+            /* Reported and skipped whole, so the statements after it parse as usual. */
+            self.while_let();
+            return Ok(self.mk(ExprKind::Error, start.to(self.prev_span())));
         }
         let cond = self.restricted(true, |p| p.expr())?;
         let limit = if !self.eat_kw(Keyword::Limit) {

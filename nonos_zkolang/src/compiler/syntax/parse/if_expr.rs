@@ -24,7 +24,9 @@ impl<'a> Parser<'a> {
         loop {
             self.bump();
             if self.at_kw(Keyword::Let) {
-                return Err(self.if_let());
+                /* Reported and skipped whole, so the statements after it parse as usual. */
+                self.if_let();
+                return Ok(self.mk(ExprKind::Error, start.to(self.prev_span())));
             }
             let cond = self.restricted(true, |p| p.expr())?;
             let block = self.body_block()?;

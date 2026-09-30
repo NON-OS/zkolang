@@ -44,12 +44,7 @@ impl<'a> Parser<'a> {
             TokenKind::Kw(Keyword::Enum) => ItemKind::Enum(self.enum_decl()?),
             TokenKind::Kw(Keyword::Type) => ItemKind::TypeAlias(self.type_alias()?),
             TokenKind::Kw(Keyword::Mod) => ItemKind::Mod(self.mod_decl()?),
-            TokenKind::Kw(Keyword::Use) => {
-                self.bump();
-                let tree = self.use_tree()?;
-                self.expect(TokenKind::Semi)?;
-                ItemKind::Use(tree)
-            }
+            TokenKind::Kw(Keyword::Use) => ItemKind::Use(self.use_item()?),
             TokenKind::Kw(Keyword::Impl) => ItemKind::Impl(self.impl_decl()?),
             _ if self.at_include() => {
                 self.skip_include();

@@ -20,6 +20,10 @@ impl<'a> Parser<'a> {
     /** One statement, or the expression that may be the block's tail. */
     pub(super) fn stmt(&mut self) -> PResult<Option<StmtOrTail>> {
         self.stmt_attrs()?;
+        /* Attributes just before the block's end, reported, stand before nothing. */
+        if self.at(TokenKind::RBrace) {
+            return Ok(None);
+        }
         let start = self.span();
         if self.skip_reserved_stmt() {
             return Ok(None);
