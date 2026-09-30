@@ -26,19 +26,19 @@ use super::render_window::Window;
 /** Show the label `p`, which spans lines. */
 pub(super) fn push_multi(out: &mut String, p: &Placed, g: &Gutter) {
     let (lo, _) = p.within(p.line);
-    let first = Window::around(p.file.line_text(p.line), lo);
+    let first = Window::around(p.file.line_text(p.line), lo, &[lo]);
     g.source(out, p.line, g.plain(), &first.shown);
     let start = first.col(lo);
     g.mark(out, " ", &connector(start, p.mark(), ""));
     if p.end_line == p.line + 2 {
         let text = p.file.line_text(p.line + 1);
-        g.source(out, p.line + 1, "| ", &Window::around(text, 0).shown);
+        g.source(out, p.line + 1, "| ", &Window::around(text, 0, &[]).shown);
     } else if p.end_line > p.line + 2 {
         g.elision(out);
     }
     let (_, hi) = p.within(p.end_line);
     let last_char = hi.saturating_sub(1);
-    let last = Window::around(p.file.line_text(p.end_line), last_char);
+    let last = Window::around(p.file.line_text(p.end_line), last_char, &[]);
     g.source(out, p.end_line, "| ", &last.shown);
     let end = last.col(last_char);
     g.mark(

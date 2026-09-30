@@ -9,20 +9,27 @@
  */
 
 use alloc::string::String;
+use alloc::vec::Vec;
 
-use super::display::visible;
+use super::display::{columns, visible};
 use super::render_gutter::Gutter;
 use super::render_placed::Placed;
 use super::render_window::Window;
 
-/** Labels further apart than this on one line are shown in separate windows. */
-const NEAR: usize = 60;
+/**
+ * The columns from the start of one label to the end of another shown with it. With the
+ * lead-in before the first, they fit in a window.
+ */
+const NEAR: usize = 50;
 
 /** Whether `b`, which starts no earlier than `a` on the same line, is shown with it. */
 pub(super) fn near(a: &Placed, b: &Placed) -> bool {
-    b.line == a.line
-        && !b.is_multiline()
-        && b.label.span.lo.saturating_sub(a.label.span.lo) as usize <= NEAR
+    if b.line != a.line || b.is_multiline() {
+        return false;
+    }
+    let ((lo, _), (_, hi)) = (a.within(a.line), b.within(a.line));
+    let text = a.file.line_text(a.line);
+    hi.saturating_sub(lo) <= 4 * NEAR && text.get(lo..hi).is_some_and(|s| columns(s) <= NEAR)
 }
 
 /** Show line `ls[0].line` and a row for each of `ls`, which all lie on it. */
@@ -32,7 +39,8 @@ pub(super) fn push_line(out: &mut String, ls: &[&Placed], g: &Gutter) {
     };
     let line = first.line;
     let text = first.file.line_text(line);
-    let w = Window::around(text, first.within(line).0);
+    let subjects: Vec<usize> = ls.iter().map(|p| p.within(line).0).collect();
+    let w = Window::around(text, first.within(line).0, &subjects);
     g.source(out, line, g.plain(), &w.shown);
     for p in ls {
         let (lo, hi) = p.within(line);
@@ -55,7 +63,12 @@ pub(super) fn push_gap(out: &mut String, p: &Placed, last: Option<usize>, g: &Gu
     };
     if p.line == last + 2 {
         let text = p.file.line_text(last + 1);
-        g.source(out, last + 1, g.plain(), &Window::around(text, 0).shown);
+        g.source(
+            out,
+            last + 1,
+            g.plain(),
+            &Window::around(text, 0, &[]).shown,
+        );
     } else if p.line > last + 2 {
         g.elision(out);
     }

@@ -12,6 +12,8 @@
 use alloc::format;
 use alloc::string::String;
 
+use crate::compiler::diag::has_form;
+
 /** A character's Unicode name and the ASCII character it looks like, if any. */
 const NAMED: &[(char, &str, Option<char>)] = &[
     ('\0', "NULL", None),
@@ -55,7 +57,7 @@ pub(super) fn describe(c: char) -> String {
     let code = format!("U+{:04X}", c as u32);
     match NAMED.iter().find(|n| n.0 == c) {
         Some((_, name, _)) => format!("{code} {name}"),
-        None if !c.is_control() && !c.is_whitespace() => format!("`{c}` ({code})"),
+        None if has_form(c) && !c.is_whitespace() => format!("`{c}` ({code})"),
         None => code,
     }
 }

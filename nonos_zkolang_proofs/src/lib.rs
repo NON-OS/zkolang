@@ -92,6 +92,10 @@ mod front_render_tests;
 #[cfg(test)]
 mod front_render_text_tests;
 #[cfg(test)]
+mod front_render_width_tests;
+#[cfg(test)]
+mod front_render_window_tests;
+#[cfg(test)]
 mod front_source_tests;
 #[cfg(test)]
 mod fuzz_tests;

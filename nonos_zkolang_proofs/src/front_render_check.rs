@@ -19,3 +19,9 @@ pub(crate) fn show(text: &str, primary: (u32, u32, &str), others: &[(u32, u32, &
     }
     render(&map, &d)
 }
+
+/** The source row and the mark row of a rendered snippet with one line. */
+pub(crate) fn rows(got: &str) -> (String, String) {
+    let lines: Vec<&str> = got.lines().collect();
+    (String::from(lines[3]), String::from(lines[4]))
+}
