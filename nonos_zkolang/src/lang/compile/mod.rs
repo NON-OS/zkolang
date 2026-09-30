@@ -19,6 +19,7 @@ mod const_table;
 mod count_inputs;
 mod count_secrets;
 mod duplicates;
+mod entry;
 mod expr;
 mod live;
 mod lower;
@@ -28,4 +29,4 @@ mod same_expr;
 mod stmt;
 
 pub use compiled::{Advice, Compiled};
-pub use lower::{compile, compile_full, compile_unoptimized};
+pub use entry::{compile, compile_full, compile_unoptimized};

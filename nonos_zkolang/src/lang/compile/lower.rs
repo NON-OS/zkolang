@@ -4,8 +4,8 @@
 */
 
 /*!
- * Lowering entry points: count the inputs, walk the statements with the liveness table
- * that frees dead bindings, and finish the program with its advice plan.
+ * Lowering: count the inputs, walk the statements with the liveness table that frees
+ * dead bindings, and finish the program with its advice plan.
  */
 
 use alloc::string::String;
@@ -13,9 +13,7 @@ use alloc::vec::Vec;
 
 use super::compiled::Compiled;
 use super::compiler::Compiler;
-use super::name_check::check_names;
 use super::{count_inputs, count_secrets, live};
-use crate::isa::Op;
 use crate::lang::parse::Ast;
 use crate::lang::CompileError;
 
@@ -24,7 +22,7 @@ use crate::lang::CompileError;
  * first, through any loops, so secrets index after the public prefix and comparison advice
  * indexes after the secrets.
  */
-fn lower(ast: &Ast) -> Result<Compiled, CompileError> {
+pub(super) fn lower(ast: &Ast) -> Result<Compiled, CompileError> {
     let n_public =
         u16::try_from(count_inputs::count_inputs(&ast.stmts)).map_err(|_| CompileError::IoLimit)?;
     let n_secret = u16::try_from(count_secrets::count_secrets(&ast.stmts))
@@ -50,21 +48,4 @@ fn lower(ast: &Ast) -> Result<Compiled, CompileError> {
         c.free_dead(&reads_after[i + 1]);
     }
     Ok(c.finish())
-}
-
-/** Lower an AST into a VM program with its advice plan, optimizing first. */
-pub fn compile_full(ast: &Ast) -> Result<Compiled, CompileError> {
-    check_names(ast)?;
-    lower(&crate::lang::optimize::optimize(ast))
-}
-
-/** Lower an AST into a VM program ending in `Halt`. */
-pub fn compile(ast: &Ast) -> Result<Vec<Op>, CompileError> {
-    compile_full(ast).map(|c| c.ops)
-}
-
-/** Lower an AST without the optimizer, to check that optimization preserves behavior. */
-pub fn compile_unoptimized(ast: &Ast) -> Result<Vec<Op>, CompileError> {
-    check_names(ast)?;
-    lower(ast).map(|c| c.ops)
 }

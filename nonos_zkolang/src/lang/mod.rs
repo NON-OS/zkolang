@@ -16,6 +16,7 @@ mod lex;
 mod name_error;
 mod optimize;
 mod parse;
+mod resource;
 
 pub use compile::{compile, compile_full, compile_unoptimized, Advice, Compiled};
 pub use diagnostic::render as render_error;
