@@ -12,14 +12,14 @@ use super::prepare::compiled;
 use crate::line::Line;
 use crate::out::paint;
 
-const USAGE: &str = "usage: zkolang check <file> [--edition 2025|2026] [--json]";
+const USAGE: &str = "usage: zkolang check <file> [--edition 2025|2026] [--json] [--declassify]";
 
 /**
  * Compile the program, and refuse one the prover cannot size a trace for, as `run` and
  * `key` refuse it, rather than report as fine a program that can never be proven.
  */
 pub(crate) fn check(args: &[String]) -> Result<(), String> {
-    let line = Line::parse_with(args, (&["--edition"], &["--json"]), USAGE)?;
+    let line = Line::parse_with(args, (&["--edition"], &["--json", "--declassify"]), USAGE)?;
     if modern(&line)? {
         return super::check_2026::check(&line);
     }
