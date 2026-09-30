@@ -6,6 +6,7 @@
 /*! Type inference in a body: its type variables, unifying types, and resolving them. */
 
 mod occurs;
+mod poison;
 mod unify;
 mod unify_adt;
 mod vars;

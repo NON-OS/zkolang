@@ -35,7 +35,7 @@ impl<'s, 'a> FnCx<'s, 'a> {
             self.sema.types.kind(a).clone(),
             self.sema.types.kind(b).clone(),
         ) {
-            (TyKind::Error, _) | (_, TyKind::Error) => true,
+            (TyKind::Error, _) | (_, TyKind::Error) => self.poison(a, b),
             (TyKind::Var(x) | TyKind::Infer(x), TyKind::Var(y) | TyKind::Infer(y)) => {
                 self.vars.join(x, y);
                 true

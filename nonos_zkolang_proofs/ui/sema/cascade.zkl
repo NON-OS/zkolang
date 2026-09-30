@@ -1,0 +1,11 @@
+/* A type that already failed is not reported again as a type nothing settles. */
+#![allow(unused)]
+fn f() {
+    let r: Optoin<u32> = None; /*~ E0200 */
+    let s: (Nope, u8) = (None, 1); /*~ E0200 */
+    let t: [Nope; 2] = [None, None]; /*~ E0200 */
+    let u: Option<Nope> = Some(None); /*~ E0200 */
+    g(None);
+}
+
+fn g(x: Nope) {} /*~ E0200 */
