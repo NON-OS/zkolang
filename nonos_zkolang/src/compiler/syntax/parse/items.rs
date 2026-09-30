@@ -23,7 +23,7 @@ impl<'a> Parser<'a> {
                 TokenKind::Eof => break,
                 TokenKind::RBrace if in_block => break,
                 _ if self.at_stray_between_items() => {
-                    self.skip_stray_run();
+                    self.skip_stray_run(!in_block);
                     continue;
                 }
                 _ => {}

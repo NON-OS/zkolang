@@ -36,7 +36,7 @@ impl<'a> Parser<'a> {
                     return Err(Reported);
                 }
                 TokenKind::RParen | TokenKind::RBracket => {
-                    self.skip_stray_run();
+                    self.skip_stray_run(false);
                     continue;
                 }
                 _ if self.at_outer_item(false) => {

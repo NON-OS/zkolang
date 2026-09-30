@@ -4,13 +4,14 @@
 */
 
 /*!
- * Stray tokens between items: a `;`, or a closer no bracket is owed. A run of the same
- * one, as `;;;` or `)))`, is one mistake and is reported once.
+ * Stray tokens between items: a `;`, or a closer no bracket is owed. A run of them, as
+ * `;;;`, `)))` or `)]`, is one mistake and is reported once.
  */
 
 use alloc::format;
+use alloc::string::String;
 
-use super::super::parser::{Parser, Reported};
+use super::super::parser::Parser;
 use crate::compiler::diag::{Code, Diagnostic};
 use crate::compiler::syntax::token::TokenKind;
 
@@ -24,44 +25,37 @@ impl<'a> Parser<'a> {
     }
 
     /**
-     * Report that no item follows what an item began with, such as `pub` or attributes. A
-     * stray token found there is reported here, and not again by the run it begins.
+     * Report and skip the run of stray tokens that starts at the current one, whatever
+     * their kinds, unless the item before it has reported its first token. A `}` joins
+     * the run only when `braces`: inside a module or block, it closes that.
      */
-    pub(in crate::compiler::syntax::parse) fn no_item(&mut self) -> Reported {
-        let e = self
-            .unexpected("an item: `fn`, `struct`, `enum`, `type`, `const`, `mod`, `use` or `impl`");
-        if self.at_stray_between_items() {
-            self.stray_reported = Some(self.pos);
-        }
-        e
-    }
-
-    /**
-     * Report and skip the run of stray tokens that starts at the current one, unless the
-     * item before it has reported its first token.
-     */
-    pub(in crate::compiler::syntax::parse) fn skip_stray_run(&mut self) {
+    pub(in crate::compiler::syntax::parse) fn skip_stray_run(&mut self, braces: bool) {
         let k = self.kind();
         let reported = self.stray_reported == Some(self.pos);
         let first = self.bump().span;
-        while self.at(k) {
+        let mut mixed = false;
+        while self.at_stray_between_items() && (braces || !self.at(TokenKind::RBrace)) {
+            mixed |= self.kind() != k;
             self.bump();
         }
         if reported {
             return;
         }
-        let at = first.to(self.prev_span());
-        let label = if k == TokenKind::Semi {
-            "no item ends here"
-        } else {
-            "no bracket to close here"
+        let (message, label) = match (mixed, k) {
+            (false, TokenKind::Semi) => {
+                (format!("unexpected {}", k.describe()), "no item ends here")
+            }
+            (false, _) => (
+                format!("unexpected {}", k.describe()),
+                "no bracket to close here",
+            ),
+            (true, _) => (
+                String::from("unexpected closing brackets"),
+                "no bracket to close here",
+            ),
         };
-        let d = Diagnostic::error(
-            Code::UNEXPECTED_TOKEN,
-            format!("unexpected {}", k.describe()),
-            at,
-            label,
-        );
+        let at = first.to(self.prev_span());
+        let d = Diagnostic::error(Code::UNEXPECTED_TOKEN, message, at, label);
         self.diags.push(d);
     }
 }

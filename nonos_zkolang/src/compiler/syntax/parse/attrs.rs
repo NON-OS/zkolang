@@ -16,7 +16,15 @@ impl<'a> Parser<'a> {
         if inner {
             self.expect(TokenKind::Bang)?;
         }
-        self.expect(TokenKind::LBracket)?;
+        if !self.at(TokenKind::LBracket) {
+            let e = self.unexpected("`[`");
+            /* A run of `#`, as `###`, is one mistake. */
+            while self.at(TokenKind::Pound) {
+                self.bump();
+            }
+            return Err(e);
+        }
+        self.bump();
         let name = self.ident()?;
         let mut args = None;
         let mut value = None;
