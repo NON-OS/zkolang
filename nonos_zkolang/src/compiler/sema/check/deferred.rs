@@ -5,7 +5,8 @@
 
 /*!
  * Checks that wait until every type is known: an operator applied to a literal whose type
- * is still open may turn out to be undefined on it once the literal takes its default.
+ * is still open may turn out to be undefined on it once the literal takes its default, and
+ * a cast of one is allowed or not by the type it ends with.
  */
 
 use crate::compiler::sema::ty::TyId;
@@ -24,4 +25,6 @@ pub enum Deferred {
     Negatable { ty: TyId, span: Span },
     /** The bounds of a `for` range, which must be integers. */
     RangeInt { ty: TyId, span: Span },
+    /** `e as to` where the type `ty` of `e` was still open. */
+    Cast { ty: TyId, to: TyId, span: Span },
 }

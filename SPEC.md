@@ -430,8 +430,10 @@ reported at the instantiating use, with a note at the offending line of the temp
 An unsuffixed integer literal takes its type from context: the expected type in a checked
 position, else the type it is unified with by the operators and calls it flows into,
 else a default. The default is `usize` for an array length, a repeat count, an index,
-a `for` range bound and a `limit`, and `field` everywhere else. A literal whose value does
-not fit the type so determined is an error.
+a `for` range bound and a `limit`, and `field` everywhere else. An `as` gives its operand
+no type, except that a literal type nothing else fixes, converted with `as` to an integer
+type, takes that type. The conversion is checked against the type the operand ends with.
+A literal whose value does not fit the type so determined is an error.
 
 ### 5.7 No implicit conversion
 

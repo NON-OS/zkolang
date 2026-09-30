@@ -17,6 +17,7 @@ mod body_const;
 mod call;
 mod call_report;
 mod cast;
+mod cast_report;
 mod compound;
 mod constness;
 
@@ -28,6 +29,7 @@ mod exits;
 mod expr;
 mod field;
 mod finish;
+mod finish_checks;
 mod for_array;
 mod for_range;
 mod helpers;

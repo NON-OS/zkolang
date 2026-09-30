@@ -51,3 +51,15 @@ fn bool_from_two_fails() {
     let two: u8 = 2;
     let _b = bool::checked_from(two);
 }
+
+#[test]
+fn a_cast_leaves_a_literal_its_own_type() {
+    let mut t: field = 0;
+    for i in 0..4 {
+        t = t + i as field;
+    }
+    assert t == 6;
+    let n = 3;
+    let w: u64 = n as u64 + 18446744073709551610;
+    assert w == 18446744073709551613;
+}
