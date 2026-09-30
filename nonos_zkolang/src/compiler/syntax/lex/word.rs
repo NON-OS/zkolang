@@ -7,6 +7,7 @@
 
 use alloc::format;
 
+use super::reserved_help::instead;
 use crate::compiler::diag::{Code, Diagnostic, Diagnostics};
 use crate::compiler::source::Span;
 use crate::compiler::syntax::keyword::{Keyword, RESERVED};
@@ -34,7 +35,7 @@ pub(super) fn word(
      * `include "file";` is the edition 2025 textual include, which the parser reports with
      * its replacement; every other use of the word is a reserved word used as a name.
      */
-    let textual_include = w == "include" && text[end..].trim_start().starts_with('"');
+    let textual_include = w == "include" && next_is_string(&text[end..]);
     if RESERVED.contains(&w) && !textual_include {
         let d = Diagnostic::error(
             Code::RESERVED_WORD,
@@ -50,14 +51,16 @@ pub(super) fn word(
     TokenKind::Ident
 }
 
-/** What to write instead of a reserved word that names a Rust feature. */
-fn instead(w: &str) -> Option<&'static str> {
-    Some(match w {
-        "loop" => "every loop is bounded: write `while cond limit N { ... }` or `for i in a..b`",
-        "static" => "write a constant with `const`",
-        "trait" => "functions on a type go in an `impl Type { ... }` block",
-        "ref" => "a binding pattern binds by value; drop `ref`",
-        "where" => "there are no bounds to state: generic functions are checked per use",
-        _ => return None,
-    })
+/** Whether the next token in `rest`, after whitespace and comments, is a string literal. */
+fn next_is_string(mut rest: &str) -> bool {
+    loop {
+        rest = rest.trim_start();
+        if let Some(r) = rest.strip_prefix("//") {
+            rest = r.find(['\n', '\r']).map_or("", |i| &r[i..]);
+        } else if let Some(r) = rest.strip_prefix("/*") {
+            rest = r.find("*/").map_or("", |i| &r[i + 2..]);
+        } else {
+            return rest.starts_with('"');
+        }
+    }
 }

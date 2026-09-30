@@ -18,6 +18,8 @@ pub(super) fn doc_text(text: &str) -> String {
     if let Some(body) = text.strip_prefix("/*") {
         let body = body.get(1..).unwrap_or("");
         let body = body.strip_suffix("*/").unwrap_or(body);
+        /* Every line ending an editor shows ends a line of the text (spec section 2.1). */
+        let body = body.replace("\r\n", "\n").replace('\r', "\n");
         let mut lines: Vec<&str> = body
             .lines()
             .map(|l| {

@@ -31,6 +31,10 @@ impl<'a> Parser<'a> {
                     items,
                 });
             }
+            if self.at_include() {
+                self.skip_include();
+                continue;
+            }
             if self.at_non_fn_item() {
                 continue;
             }

@@ -52,3 +52,9 @@ fn taking_docs_is_linear() {
     assert!(parse(&src).1.is_empty());
     assert!(t.elapsed() < Duration::from_secs(20), "{:?}", t.elapsed());
 }
+
+#[test]
+fn a_block_doc_with_carriage_returns_loses_its_gutter() {
+    let (ast, _) = parse("/**\r * One.\r * Two.\r */\rfn f() {}");
+    assert_eq!(ast.items[0].doc.as_deref(), Some("One.\nTwo."));
+}

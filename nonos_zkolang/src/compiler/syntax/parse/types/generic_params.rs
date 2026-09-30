@@ -23,7 +23,7 @@ impl<'a> Parser<'a> {
         if !self.eat(TokenKind::Lt) {
             return Ok(params);
         }
-        if self.at(TokenKind::Gt) {
+        if self.at(TokenKind::Gt) && !self.after_stray() {
             self.empty_generics(open.to(self.span()));
         }
         while !self.at(TokenKind::Gt) {

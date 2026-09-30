@@ -13,6 +13,7 @@ mod bad_signature;
 mod block_errors;
 mod bracket_end;
 mod impl_items;
+mod include;
 mod indent;
 mod owed;
 mod recover;

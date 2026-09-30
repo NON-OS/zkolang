@@ -18,7 +18,7 @@ impl<'a> Parser<'a> {
     /** `<arg, ...>`, the opening `<` current. */
     pub(in crate::compiler::syntax::parse) fn generic_args(&mut self) -> PResult<Vec<GenericArg>> {
         let open = self.expect(TokenKind::Lt)?;
-        if self.at_generic_close() {
+        if self.at_generic_close() && !self.after_stray() {
             self.empty_generics(open.span.to(self.span()));
         }
         self.nested(|p| {

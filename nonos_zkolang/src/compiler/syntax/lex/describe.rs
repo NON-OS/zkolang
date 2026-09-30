@@ -64,3 +64,8 @@ pub(super) fn describe(c: char) -> String {
 pub(super) fn looks_like(c: char) -> Option<char> {
     NAMED.iter().find(|n| n.0 == c).and_then(|n| n.2)
 }
+
+/** Whether every character of `s` looks like a space: text a reader takes for whitespace. */
+pub(super) fn space_like(s: &str) -> bool {
+    !s.is_empty() && s.chars().all(|c| looks_like(c) == Some(' '))
+}

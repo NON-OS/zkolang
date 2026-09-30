@@ -9,7 +9,6 @@
  */
 
 use super::super::parser::Parser;
-use crate::compiler::diag::{Code, Diagnostic};
 use crate::compiler::syntax::keyword::RESERVED;
 use crate::compiler::syntax::token::TokenKind;
 
@@ -19,31 +18,6 @@ impl<'a> Parser<'a> {
         self.at(TokenKind::Ident)
             && RESERVED.contains(&self.text_of(self.tok()))
             && !self.at_include()
-    }
-
-    /** Whether the current token begins a textual include: `include "file"`. */
-    pub(in crate::compiler::syntax::parse) fn at_include(&self) -> bool {
-        self.at(TokenKind::Ident)
-            && self.text_of(self.tok()) == "include"
-            && matches!(self.peek(1), TokenKind::Str | TokenKind::Error)
-    }
-
-    /** Report a textual include and skip it with the `;` after it, if any. */
-    pub(in crate::compiler::syntax::parse) fn skip_include(&mut self) {
-        let start = self.bump().span;
-        let file = self.bump().span;
-        self.diags.push(
-            Diagnostic::error(
-                Code::INCLUDE_REMOVED,
-                "`include` is not part of edition 2026",
-                start.to(file),
-                "textual include",
-            )
-            .with_help(
-                "declare the file as a module with `mod name;` and import its items with `use`",
-            ),
-        );
-        self.eat(TokenKind::Semi);
     }
 
     /**

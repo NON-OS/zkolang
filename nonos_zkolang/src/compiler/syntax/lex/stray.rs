@@ -41,9 +41,18 @@ pub(super) fn stray(
     }
     let span = Span::new(file, start as u32, end as u32);
     diags.push(stray_error(first, count, span));
-    let like = looks_like(first).filter(|_| count == 1);
-    let read_as = like.and_then(|a| scan_punct(&[a as u8], 0, 1));
-    (read_as.map(|(k, _)| k), end)
+    let Some(like) = looks_like(first).filter(|&a| count == 1 && a != ' ') else {
+        return (None, end);
+    };
+    /* Read the look-alike as its ASCII character, joined with what follows: `−=` is `-=`. */
+    let mut buf = [like as u8, 0, 0];
+    let tail = text.as_bytes().get(end..len).unwrap_or(&[]);
+    let n = 1 + tail.iter().take(2).take_while(|c| c.is_ascii()).count();
+    buf[1..n].copy_from_slice(&tail[..n - 1]);
+    match scan_punct(&buf, 0, n) {
+        Some((k, used)) => (Some(k), end + used - 1),
+        None => (None, end),
+    }
 }
 
 /** Whether `c`, at byte `i`, begins no token and is not whitespace. */

@@ -8,6 +8,7 @@
 use super::number_token::number;
 use super::punct::scan_punct;
 use super::quote_char::quote_char;
+use super::raw_ident::raw_ident;
 use super::stray::stray;
 use super::string_scan::scan_string;
 use super::word::word;
@@ -35,6 +36,11 @@ pub(super) fn scan_token(
         let mut i = start;
         while i < len && (b[i].is_ascii_alphanumeric() || b[i] == b'_') {
             i += 1;
+        }
+        if &text[start..i] == "r" && b.get(i) == Some(&b'#') {
+            if let Some(end) = raw_ident(text, start, i + 1, len, file, diags) {
+                return (Some(TokenKind::Ident), end);
+            }
         }
         let kind = if c.is_ascii_digit() {
             number(&text[start..i], span(start, i), diags)

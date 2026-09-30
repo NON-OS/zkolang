@@ -31,6 +31,7 @@ impl<'a> Parser<'a> {
                 let span = path.span;
                 Ok(self.mk(ExprKind::Path(path), span))
             }
+            _ if self.at_include() => Ok(self.include_expr()),
             _ if self.at_path_start() => self.path_expr(),
             TokenKind::LParen => self.paren_or_tuple(),
             TokenKind::LBracket => self.array(),
