@@ -25,8 +25,7 @@ impl<'a> Parser<'a> {
             });
         }
         let open = self.expect(TokenKind::LBrace)?;
-        let inner_doc = self.take_inner_doc(open.span.hi, self.span().lo);
-        let inner_attrs = self.inner_attrs()?;
+        let (inner_doc, inner_attrs) = self.inner_doc_and_attrs(open.span.hi)?;
         let items = self.nested(|p| Ok(p.items(true)))?;
         if !self.at(TokenKind::RBrace) {
             self.diags.push(Diagnostic::error(

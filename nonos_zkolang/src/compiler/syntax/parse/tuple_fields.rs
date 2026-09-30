@@ -19,7 +19,7 @@ impl<'a> Parser<'a> {
         let mut fields = Vec::new();
         while !self.at(TokenKind::RParen) {
             let start = self.span();
-            let attrs = self.outer_attrs()?;
+            let (doc, attrs) = self.doc_and_attrs()?;
             let vis = if self.eat_kw(Keyword::Pub) {
                 Visibility::Public
             } else {
@@ -29,7 +29,7 @@ impl<'a> Parser<'a> {
             fields.push(FieldDecl {
                 attrs,
                 vis,
-                doc: None,
+                doc,
                 name: None,
                 ty,
                 span: start.to(self.prev_span()),

@@ -14,8 +14,7 @@ impl<'a> Parser<'a> {
     /** One item, or `None` for a construct that was reported and skipped. */
     pub(super) fn item(&mut self) -> PResult<Option<Item>> {
         let start = self.span();
-        let doc = self.take_doc(start.lo);
-        let attrs = self.outer_attrs()?;
+        let (doc, attrs) = self.doc_and_attrs()?;
         let vis = if self.eat_kw(Keyword::Pub) {
             Visibility::Public
         } else {

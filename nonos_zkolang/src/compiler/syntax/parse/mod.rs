@@ -16,6 +16,7 @@ mod construct;
 mod consts;
 mod consume;
 mod cursor;
+mod doc_attrs;
 mod doc_text;
 mod docs;
 mod dot;

@@ -19,14 +19,8 @@ use crate::compiler::syntax::lex::CommentKind;
 impl<'a> Parser<'a> {
     /** The outer doc comments directly before offset `before`: those after the previous token. */
     pub(super) fn take_doc(&mut self, before: u32) -> Option<String> {
-        let after = if self.pos == 0 {
-            0
-        } else {
-            self.tokens
-                .get(self.pos - 1)
-                .map(|t| t.span.hi)
-                .unwrap_or(0)
-        };
+        let prev = self.pos.checked_sub(1).and_then(|i| self.tokens.get(i));
+        let after = prev.map_or(0, |t| t.span.hi);
         self.take_comments(CommentKind::DocOuter, after, before)
     }
 
@@ -37,8 +31,13 @@ impl<'a> Parser<'a> {
 
     fn take_comments(&mut self, kind: CommentKind, after: u32, before: u32) -> Option<String> {
         let mut out: Option<String> = None;
-        for (i, c) in self.comments.iter().enumerate() {
-            if c.kind != kind || c.span.lo < after || c.span.lo >= before {
+        /* Comments are in source order: find the first after `after`, and stop at `before`. */
+        let first = self.comments.partition_point(|c| c.span.lo < after);
+        for (i, c) in self.comments.iter().enumerate().skip(first) {
+            if c.span.lo >= before {
+                break;
+            }
+            if c.kind != kind {
                 continue;
             }
             if let Some(used) = self.doc_used.get_mut(i) {
@@ -63,7 +62,7 @@ impl<'a> Parser<'a> {
             let doc = matches!(c.kind, CommentKind::DocOuter | CommentKind::DocInner);
             if doc && !self.doc_used.get(i).copied().unwrap_or(true) {
                 self.diags.push(
-                    Diagnostic::warning(Code::MISPLACED_DOC, "doc comment documents nothing", c.span, "")
+                    Diagnostic::warning(Code::MISPLACED_DOC, "doc comment documents nothing", c.span, "no item follows it")
                         .with_help("`/** */` and `///` document the item after them, `/*! */` and `//!` the module they open; use `/* */` or `//` for other comments"),
                 );
             }

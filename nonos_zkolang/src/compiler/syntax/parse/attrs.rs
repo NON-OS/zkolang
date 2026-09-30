@@ -12,24 +12,6 @@ use crate::compiler::syntax::ast::{Attr, AttrArg};
 use crate::compiler::syntax::token::TokenKind;
 
 impl<'a> Parser<'a> {
-    /** `#[...]` attributes before an item or field. */
-    pub(super) fn outer_attrs(&mut self) -> PResult<Vec<Attr>> {
-        let mut attrs = Vec::new();
-        while self.at(TokenKind::Pound) && self.peek(1) != TokenKind::Bang {
-            attrs.push(self.attr(false)?);
-        }
-        Ok(attrs)
-    }
-
-    /** `#![...]` attributes at the start of a module. */
-    pub(super) fn inner_attrs(&mut self) -> PResult<Vec<Attr>> {
-        let mut attrs = Vec::new();
-        while self.at(TokenKind::Pound) && self.peek(1) == TokenKind::Bang {
-            attrs.push(self.attr(true)?);
-        }
-        Ok(attrs)
-    }
-
     /** `#[name]`, `#[name = lit]`, `#[name(args)]`, or the same with `#!`. */
     pub(super) fn attr(&mut self, inner: bool) -> PResult<Attr> {
         let start = self.expect(TokenKind::Pound)?.span;

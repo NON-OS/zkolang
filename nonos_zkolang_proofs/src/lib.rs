@@ -70,6 +70,8 @@ mod front_check;
 #[cfg(test)]
 mod front_deep_tests;
 #[cfg(test)]
+mod front_doc_tests;
+#[cfg(test)]
 mod front_fuzz_tests;
 #[cfg(test)]
 mod front_lex_tests;

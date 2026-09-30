@@ -16,7 +16,7 @@ use nonos_zkolang::compiler::syntax::lex::lex;
 use nonos_zkolang::compiler::syntax::parse::parse_file;
 
 /** The tree and the codes of every diagnostic for one source. */
-fn parse(src: &str) -> (SourceAst, Vec<&'static str>) {
+pub(crate) fn parse(src: &str) -> (SourceAst, Vec<&'static str>) {
     let mut map = SourceMap::new();
     let id = map.add(String::from("t.zkl"), String::from(src));
     let mut diags = Diagnostics::new();
