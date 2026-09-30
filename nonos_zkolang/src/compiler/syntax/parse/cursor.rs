@@ -49,12 +49,13 @@ impl<'a> Parser<'a> {
 
     /** The span of the token just consumed, or the current one at the start. */
     pub(super) fn prev_span(&self) -> Span {
-        if self.pos == 0 {
+        let Some(prev) = self.pos.checked_sub(1).and_then(|i| self.tokens.get(i)) else {
             return self.span();
+        };
+        /* While a `>>`, `>=` or `>>=` is split, only its first `>` has been consumed. */
+        match self.split {
+            Some(rest) => Span::new(prev.span.file, prev.span.lo, rest.span.lo),
+            None => prev.span,
         }
-        self.tokens
-            .get(self.pos - 1)
-            .map(|t| t.span)
-            .unwrap_or_else(|| self.span())
     }
 }

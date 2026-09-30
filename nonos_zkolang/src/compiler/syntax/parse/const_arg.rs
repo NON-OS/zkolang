@@ -9,6 +9,7 @@ use alloc::boxed::Box;
 
 use super::parser::{PResult, Parser};
 use super::paths::PathMode;
+use crate::compiler::diag::{Code, Diagnostic};
 use crate::compiler::syntax::ast::ConstArg;
 use crate::compiler::syntax::lex::int_literal;
 use crate::compiler::syntax::token::TokenKind;
@@ -19,9 +20,10 @@ impl<'a> Parser<'a> {
         match self.kind() {
             TokenKind::Int => {
                 let t = self.bump();
-                let value = int_literal(self.text_of(t)).map(|l| l.value).unwrap_or(0);
+                let lit = int_literal(self.text_of(t)).ok();
                 Ok(ConstArg::Lit {
-                    value,
+                    value: lit.map_or(0, |l| l.value),
+                    suffix: lit.and_then(|l| l.suffix),
                     span: t.span,
                 })
             }
@@ -31,7 +33,21 @@ impl<'a> Parser<'a> {
                 self.expect(TokenKind::RBrace)?;
                 Ok(ConstArg::Expr(Box::new(e)))
             }
-            _ if self.at_path_start() => Ok(ConstArg::Path(self.path(PathMode::Plain)?)),
+            TokenKind::Ident if self.peek(1) != TokenKind::ColonColon => {
+                Ok(ConstArg::Path(self.path(PathMode::Plain)?))
+            }
+            _ if self.at_path_start() => {
+                let p = self.path(PathMode::Plain)?;
+                let d = Diagnostic::error(
+                    Code::UNEXPECTED_TOKEN,
+                    "a constant path here goes in braces",
+                    p.span,
+                    "a path where a name or `{ expression }` is expected",
+                )
+                .with_help("write `{ a::B }`");
+                self.diags.push(d);
+                Ok(ConstArg::Path(p))
+            }
             _ => Err(self.unexpected("a constant: a literal, a name, or `{ expression }`")),
         }
     }

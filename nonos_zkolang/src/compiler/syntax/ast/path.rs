@@ -35,7 +35,7 @@ pub struct PathSegment {
     pub generics: Option<Vec<GenericArg>>,
 }
 
-/** A path such as `std::hash::mimc::permute` or `Point::<u8>::new`. */
+/** A path such as `std::hash::mimc::permute`, or `size_of::<u8>` with generic arguments at its end. */
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Path {
     pub root: PathRoot,

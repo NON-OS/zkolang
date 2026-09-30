@@ -5,26 +5,30 @@
 
 /*! Positional fields, as in a tuple struct or a tuple variant. */
 
+use alloc::format;
 use alloc::vec::Vec;
 
 use super::parser::{PResult, Parser};
+use crate::compiler::diag::{Code, Diagnostic};
+use crate::compiler::source::Span;
 use crate::compiler::syntax::ast::{FieldDecl, Fields, Visibility};
 use crate::compiler::syntax::keyword::Keyword;
 use crate::compiler::syntax::token::TokenKind;
 
 impl<'a> Parser<'a> {
-    /** `(T, pub U)` */
-    pub(super) fn tuple_fields(&mut self) -> PResult<Fields> {
+    /** `(T, pub U)`; in a variant, `(T, U)`, whose fields take no `pub` or attributes. */
+    pub(super) fn tuple_fields(&mut self, in_variant: bool) -> PResult<Fields> {
         self.expect(TokenKind::LParen)?;
         let mut fields = Vec::new();
         while !self.at(TokenKind::RParen) {
             let start = self.span();
             let (doc, attrs) = self.doc_and_attrs()?;
-            let vis = if self.eat_kw(Keyword::Pub) {
-                Visibility::Public
-            } else {
-                Visibility::Private
-            };
+            if in_variant {
+                if let Some(a) = attrs.first() {
+                    self.not_in_variant(a.span, "an attribute");
+                }
+            }
+            let vis = self.field_vis(in_variant);
             let ty = self.ty()?;
             fields.push(FieldDecl {
                 attrs,
@@ -40,5 +44,29 @@ impl<'a> Parser<'a> {
         }
         self.expect_list_end(TokenKind::RParen)?;
         Ok(Fields::Tuple(fields))
+    }
+
+    /** The visibility of a field; `pub` is reported in a variant, whose fields have none. */
+    pub(super) fn field_vis(&mut self, in_variant: bool) -> Visibility {
+        let at = self.span();
+        if !self.eat_kw(Keyword::Pub) {
+            return Visibility::Private;
+        }
+        if in_variant {
+            self.not_in_variant(at, "`pub`");
+        }
+        Visibility::Public
+    }
+
+    /** Report `what`, at `at`, on a variant's field. */
+    fn not_in_variant(&mut self, at: Span, what: &str) {
+        let d = Diagnostic::error(
+            Code::UNEXPECTED_TOKEN,
+            format!("{what} on a variant's field"),
+            at,
+            "not allowed here",
+        )
+        .with_help("a variant's fields have its enum's visibility and take no attributes");
+        self.diags.push(d);
     }
 }

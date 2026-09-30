@@ -1,0 +1,17 @@
+/* Types, paths and items outside the grammar: each is reported once. */
+type T1 = public secret u8; /*~ E0100 */
+type T2 = (u8); /*~ E0100 */
+type T3 = a::B<u8>::C; /*~ E0100 */
+type T4 = [u8; a::B]; /*~ E0100 */
+type T5 = C<>; /*~ E0100 */
+use ::*; /*~ E0100 */
+use ::{a, b}; /*~ E0100 */
+enum E { A(pub u8), B = 3 } /*~ E0100 E0100 */
+struct R { a: &mut u8 } /*~ E0100 */
+impl S { fn g(&self) {} } /*~ E0100 */
+
+fn f(x: u8) -> u8 {
+    let y = x as secret u8; /*~ E0100 */
+    let S::<u8>(z) = y; /*~ E0100 */
+    y
+}

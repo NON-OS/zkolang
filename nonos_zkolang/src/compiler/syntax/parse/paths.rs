@@ -57,11 +57,15 @@ impl<'a> Parser<'a> {
             ident,
             generics: None
         }];
-        while self.eat(TokenKind::ColonColon) {
+        while self.at(TokenKind::ColonColon) && self.peek(1) == TokenKind::Ident {
+            self.bump();
             let ident = self.ident()?;
-            let generics = self.segment_generics(PathMode::Expr)?;
-            segments.push(PathSegment { ident, generics });
+            segments.push(PathSegment {
+                ident,
+                generics: None,
+            });
         }
+        self.path_generics(&mut segments, PathMode::Expr)?;
         Ok(Path {
             root: PathRoot::Plain,
             segments,

@@ -15,7 +15,7 @@ use crate::compiler::syntax::token::TokenKind;
 impl<'a> Parser<'a> {
     /** A pattern that starts with a path: `P(..)`, `P { .. }`, a binding, or a path. */
     pub(super) fn pattern_path(&mut self) -> PResult<PatKind> {
-        let path = self.path(PathMode::Expr)?;
+        let path = self.path(PathMode::Plain)?;
         if self.at(TokenKind::LParen) {
             self.bump();
             let mut elems = Vec::new();

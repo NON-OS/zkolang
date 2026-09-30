@@ -9,15 +9,15 @@ use alloc::vec::Vec;
 
 use super::parser::{PResult, Parser};
 use super::paths::PathMode;
-use crate::compiler::syntax::ast::{GenericArg, Path, PathRoot, PathSegment};
+use crate::compiler::syntax::ast::{Path, PathRoot, PathSegment};
 use crate::compiler::syntax::keyword::Keyword;
 use crate::compiler::syntax::token::TokenKind;
 
 impl<'a> Parser<'a> {
     /**
-     * A path. The first segment may be `crate`, `super`, `self` or `Self`; a primitive type
-     * name may start an expression path such as `u8::MAX`, which the caller passes as
-     * `first`.
+     * A path. The first segment may be `crate`, `super`, `self` or `Self`. Generic
+     * arguments, where the mode takes them, follow the whole path and are kept on its last
+     * segment.
      */
     pub(super) fn path(&mut self, mode: PathMode) -> PResult<Path> {
         let start = self.span();
@@ -31,8 +31,10 @@ impl<'a> Parser<'a> {
         };
         if root == PathRoot::Plain {
             let ident = self.ident()?;
-            let generics = self.segment_generics(mode)?;
-            segments.push(PathSegment { ident, generics });
+            segments.push(PathSegment {
+                ident,
+                generics: None,
+            });
         } else {
             self.bump();
         }
@@ -43,26 +45,17 @@ impl<'a> Parser<'a> {
         while self.at(TokenKind::ColonColon) && self.peek(1) == TokenKind::Ident {
             self.bump();
             let ident = self.ident()?;
-            let generics = self.segment_generics(mode)?;
-            segments.push(PathSegment { ident, generics });
+            segments.push(PathSegment {
+                ident,
+                generics: None,
+            });
         }
+        self.path_generics(&mut segments, mode)?;
         let span = start.to(self.prev_span());
         Ok(Path {
             root,
             segments,
             span,
         })
-    }
-
-    /** The generic arguments after a segment, if the mode allows them here. */
-    pub(super) fn segment_generics(&mut self, mode: PathMode) -> PResult<Option<Vec<GenericArg>>> {
-        match mode {
-            PathMode::Type if self.at(TokenKind::Lt) => Ok(Some(self.generic_args()?)),
-            PathMode::Expr if self.at(TokenKind::ColonColon) && self.peek(1) == TokenKind::Lt => {
-                self.bump();
-                Ok(Some(self.generic_args()?))
-            }
-            _ => Ok(None),
-        }
     }
 }

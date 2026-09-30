@@ -28,7 +28,7 @@ impl<'a> Parser<'a> {
         let mut e = self.unary()?;
         while self.eat_kw(Keyword::As) {
             self.enter()?;
-            let ty = self.ty()?;
+            let ty = self.cast_ty()?;
             let span = e.span.to(ty.span);
             e = self.mk(ExprKind::Cast(Box::new(e), ty), span);
         }

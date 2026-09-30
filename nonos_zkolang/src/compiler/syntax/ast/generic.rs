@@ -9,6 +9,7 @@ use alloc::boxed::Box;
 
 use super::{Expr, Path, Type};
 use crate::compiler::source::Span;
+use crate::compiler::syntax::IntTy;
 
 /** A generic argument: a type, or a constant. */
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -23,8 +24,12 @@ pub enum GenericArg {
  */
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum ConstArg {
-    /** An integer literal. */
-    Lit { value: u64, span: Span },
+    /** An integer literal, with its type suffix if it has one. */
+    Lit {
+        value: u64,
+        suffix: Option<IntTy>,
+        span: Span,
+    },
     /** A path: a constant or a constant generic parameter. */
     Path(Path),
     /** `{ expr }`, an arbitrary constant expression. */

@@ -8,8 +8,7 @@
 use alloc::vec::Vec;
 
 use super::parser::{PResult, Parser};
-use crate::compiler::syntax::ast::{FieldDecl, Fields, StructDecl, Visibility};
-use crate::compiler::syntax::keyword::Keyword;
+use crate::compiler::syntax::ast::{FieldDecl, Fields, StructDecl};
 use crate::compiler::syntax::token::TokenKind;
 
 impl<'a> Parser<'a> {
@@ -18,9 +17,9 @@ impl<'a> Parser<'a> {
         let name = self.ident()?;
         let generics = self.generic_params()?;
         let fields = match self.kind() {
-            TokenKind::LBrace => self.named_fields()?,
+            TokenKind::LBrace => self.named_fields(false)?,
             TokenKind::LParen => {
-                let f = self.tuple_fields()?;
+                let f = self.tuple_fields(false)?;
                 self.expect(TokenKind::Semi)?;
                 f
             }
@@ -37,18 +36,14 @@ impl<'a> Parser<'a> {
         })
     }
 
-    /** `{ a: T, pub b: U }` */
-    pub(super) fn named_fields(&mut self) -> PResult<Fields> {
+    /** `{ a: T, pub b: U }`; in a variant, whose fields take no `pub`, `{ a: T }`. */
+    pub(super) fn named_fields(&mut self, in_variant: bool) -> PResult<Fields> {
         self.expect(TokenKind::LBrace)?;
         let mut fields = Vec::new();
         while !self.at(TokenKind::RBrace) {
             let start = self.span();
             let (doc, attrs) = self.doc_and_attrs()?;
-            let vis = if self.eat_kw(Keyword::Pub) {
-                Visibility::Public
-            } else {
-                Visibility::Private
-            };
+            let vis = self.field_vis(in_variant);
             let name = self.ident()?;
             self.expect(TokenKind::Colon)?;
             let ty = self.ty()?;

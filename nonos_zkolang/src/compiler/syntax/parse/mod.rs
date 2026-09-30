@@ -7,6 +7,7 @@
 
 mod attr_lit;
 mod attrs;
+mod bare_types;
 mod binary;
 mod binary_node;
 mod binop;
@@ -36,8 +37,10 @@ mod line_end;
 mod match_expr;
 mod modules;
 mod nesting;
+mod params;
 mod parser;
 mod path;
+mod path_generics;
 mod paths;
 mod pattern_group;
 mod pattern_lit;
@@ -57,6 +60,7 @@ mod struct_lit;
 mod structs;
 mod tuple_fields;
 mod type_kinds;
+mod type_names;
 mod types;
 mod unary;
 mod uses;

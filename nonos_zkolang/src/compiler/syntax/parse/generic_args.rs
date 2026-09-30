@@ -17,7 +17,10 @@ use crate::compiler::syntax::token::{Token, TokenKind};
 impl<'a> Parser<'a> {
     /** `<arg, ...>`, the opening `<` current. */
     pub(super) fn generic_args(&mut self) -> PResult<Vec<GenericArg>> {
-        self.expect(TokenKind::Lt)?;
+        let open = self.expect(TokenKind::Lt)?;
+        if self.at_generic_close() {
+            self.empty_generics(open.span.to(self.span()));
+        }
         self.nested(|p| {
             let mut args = Vec::new();
             while !p.at_generic_close() {

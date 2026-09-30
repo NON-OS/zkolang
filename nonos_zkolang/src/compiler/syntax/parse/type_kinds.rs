@@ -9,25 +9,17 @@ use alloc::boxed::Box;
 
 use super::parser::{PResult, Parser};
 use super::paths::PathMode;
-use super::types::int_keyword;
-use crate::compiler::syntax::ast::{Label, TypeKind};
+use super::type_names::int_keyword;
+use crate::compiler::diag::{Code, Diagnostic};
+use crate::compiler::syntax::ast::TypeKind;
 use crate::compiler::syntax::keyword::Keyword;
 use crate::compiler::syntax::token::TokenKind;
 use crate::compiler::syntax::IntTy;
 
 impl<'a> Parser<'a> {
-    /** The kind of a type that does not open with `(`. */
-    pub(super) fn ty_kind(&mut self) -> PResult<TypeKind> {
+    /** The kind of a bare type that does not open with `(`; `&mut T` if `ref_mut_ok`. */
+    pub(super) fn ty_kind(&mut self, ref_mut_ok: bool) -> PResult<TypeKind> {
         let kind = match self.kind() {
-            TokenKind::Kw(Keyword::Public) | TokenKind::Kw(Keyword::Secret) => {
-                let label = if self.at_kw(Keyword::Public) {
-                    Label::Public
-                } else {
-                    Label::Secret
-                };
-                self.bump();
-                TypeKind::Labelled(label, Box::new(self.ty()?))
-            }
             TokenKind::Kw(Keyword::Field) => {
                 self.bump();
                 TypeKind::Field
@@ -49,9 +41,12 @@ impl<'a> Parser<'a> {
                 TypeKind::Array(Box::new(elem), len)
             }
             TokenKind::Amp => {
-                self.bump();
+                let amp = self.bump().span;
                 if !self.eat_kw(Keyword::Mut) {
                     return Err(self.unexpected("`mut`: the only reference type is `&mut T`"));
+                }
+                if !ref_mut_ok {
+                    self.ref_mut_misplaced(amp.to(self.prev_span()));
                 }
                 TypeKind::RefMut(Box::new(self.ty()?))
             }
@@ -64,5 +59,17 @@ impl<'a> Parser<'a> {
             _ => return Err(self.unexpected("a type")),
         };
         Ok(kind)
+    }
+
+    /** Report `&mut` at `at`, outside a parameter's type. */
+    fn ref_mut_misplaced(&mut self, at: crate::compiler::source::Span) {
+        let d = Diagnostic::error(
+            Code::UNEXPECTED_TOKEN,
+            "`&mut T` is a parameter type only",
+            at,
+            "a reference outside a parameter",
+        )
+        .with_help("a function takes `&mut T` to update its caller's place; elsewhere use `T`");
+        self.diags.push(d);
     }
 }

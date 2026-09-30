@@ -57,4 +57,6 @@ pub struct Parser<'a> {
      * and `for`.
      */
     pub(super) no_struct: bool,
+    /** Whether the type about to be parsed is a parameter's, where `&mut T` may stand. */
+    pub(super) ref_mut_ok: bool,
 }

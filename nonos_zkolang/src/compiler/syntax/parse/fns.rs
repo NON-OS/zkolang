@@ -8,8 +8,7 @@
 use alloc::vec::Vec;
 
 use super::parser::{PResult, Parser};
-use crate::compiler::syntax::ast::{FnDecl, Param};
-use crate::compiler::syntax::keyword::Keyword;
+use crate::compiler::syntax::ast::FnDecl;
 use crate::compiler::syntax::token::TokenKind;
 
 impl<'a> Parser<'a> {
@@ -40,32 +39,5 @@ impl<'a> Parser<'a> {
             ret,
             body,
         })
-    }
-
-    fn param(&mut self) -> PResult<Param> {
-        let start = self.span();
-        if self.at_kw(Keyword::SelfValue) {
-            self.bump();
-            return Ok(Param::SelfParam {
-                by_ref_mut: false,
-                span: start,
-            });
-        }
-        if self.at(TokenKind::Amp)
-            && self.peek(1) == TokenKind::Kw(Keyword::Mut)
-            && self.peek(2) == TokenKind::Kw(Keyword::SelfValue)
-        {
-            self.bump();
-            self.bump();
-            self.bump();
-            return Ok(Param::SelfParam {
-                by_ref_mut: true,
-                span: start.to(self.prev_span()),
-            });
-        }
-        let pat = self.pattern_no_alt()?;
-        self.expect(TokenKind::Colon)?;
-        let ty = self.ty()?;
-        Ok(Param::Typed { pat, ty })
     }
 }

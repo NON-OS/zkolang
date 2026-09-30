@@ -34,6 +34,7 @@ impl<'a> Parser<'a> {
             nesting_reported: false,
             split: None,
             no_struct: false,
+            ref_mut_ok: false,
         }
     }
 
