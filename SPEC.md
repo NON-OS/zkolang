@@ -58,8 +58,8 @@ normative, is the only one that describes the repository rather than the languag
   `main`'s inputs and result (section 12.2), and `zkolang check --declassify` lists each
   `declassify` (section 13.2); `zkolang check --cost` gives the cost report of section
   15.2; `docs/migration-2026.md` is the migration guide of section 20.3, each of its
-  pairs checked by a test to give the same outputs. The constraint ledger does not exist
-  yet.
+  pairs checked by a test to give the same outputs; `docs/audit/constraints.md` is the
+  constraint ledger of section 14.3.
 
 ## Contents
 
