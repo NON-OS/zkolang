@@ -23,24 +23,38 @@ impl<'a> Parser<'a> {
         if !self.eat(TokenKind::Lt) {
             return Ok(params);
         }
-        if self.at(TokenKind::Gt) && !self.after_stray() {
+        if self.at_generic_close() && !self.after_stray() {
             self.empty_generics(open.to(self.span()));
         }
-        while !self.at(TokenKind::Gt) {
-            if self.eat_kw(Keyword::Const) {
-                let name = self.ident()?;
-                self.expect(TokenKind::Colon)?;
-                let ty = self.ty()?;
-                params.push(GenericParam::Const { name, ty });
-            } else {
-                params.push(GenericParam::Type(self.ident()?));
+        while !self.at_generic_close() {
+            match self.generic_param() {
+                Ok(p) => params.push(p),
+                Err(e) if !self.skip_to_generic_close() => return Err(e),
+                Err(_) => break,
             }
             if !self.eat(TokenKind::Comma) {
                 break;
             }
         }
-        self.expect(TokenKind::Gt)?;
+        if !self.at_generic_close() {
+            let e = self.generic_list_end(false);
+            if !self.skip_to_generic_close() {
+                return Err(e);
+            }
+        }
+        self.close_generics()?;
         Ok(params)
+    }
+
+    /** `T`, or `const N: T`. */
+    fn generic_param(&mut self) -> PResult<GenericParam> {
+        if !self.eat_kw(Keyword::Const) {
+            return Ok(GenericParam::Type(self.ident()?));
+        }
+        let name = self.ident()?;
+        self.expect(TokenKind::Colon)?;
+        let ty = self.ty()?;
+        Ok(GenericParam::Const { name, ty })
     }
 
     /** Report an empty generic list `<>` at `at`. */

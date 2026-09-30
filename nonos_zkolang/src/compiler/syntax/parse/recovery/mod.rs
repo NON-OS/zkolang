@@ -12,6 +12,7 @@
 mod bad_signature;
 mod block_errors;
 mod bracket_end;
+mod generic_skip;
 mod impl_items;
 mod include;
 mod indent;

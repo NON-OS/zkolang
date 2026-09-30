@@ -1,0 +1,14 @@
+/* An error in a generic list is reported once, and the parse goes on after its `>`. */
+type T1 = C<u8; 3>; /*~ E0100 */
+type T2 = C<u8 u16>; /*~ E0100 */
+fn f<T U>() { let x = ; } /*~ E0100 E0100 */
+type A<T>= u8;
+const X: C<u8>= 1;
+type T3 = C<D<u8; 2>>; /*~ E0100 */
+type T4 = C<(u8, u8) 3, [u8; 2]>; /*~ E0100 */
+struct S<T, const N usize> { a: [T; N] } /*~ E0100 */
+impl<T P<T> { /*~ E0100 */
+    fn a() { let x = 1 + ; } /*~ E0100 */
+}
+type T5 = C<u8 /*~ E0100 */
+fn g() { let y = ; } /*~ E0100 */

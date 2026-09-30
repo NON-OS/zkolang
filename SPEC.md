@@ -156,7 +156,9 @@ is no string type.
 .  ..  ..=  ,  ;  :  ::  ->  =>  #  (  )  [  ]  {  }
 ```
 
-The lexer is maximal munch.
+The lexer is maximal munch. Where a generic list may close, the first `>` of a `>>`, `>=`
+or `>>=` closes it and the rest is read as the next token, so `C<D<u8>>` and
+`type A<T>= u8;` parse.
 
 ## 3. Grammar
 

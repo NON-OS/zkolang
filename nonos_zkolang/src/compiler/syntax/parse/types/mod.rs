@@ -8,6 +8,7 @@
 mod bare_types;
 mod const_arg;
 mod generic_args;
+mod generic_close;
 mod generic_params;
 mod path;
 mod path_colons;

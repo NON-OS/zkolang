@@ -3,16 +3,13 @@
  AGPL-3.0-or-later
 */
 
-/*!
- * Generic argument lists, `<arg, ...>`, including the split of a `>>`, `>=` or `>>=` whose
- * first `>` closes the list.
- */
+/*! Generic argument lists, `<arg, ...>`. */
 
 use alloc::vec::Vec;
 
 use super::super::parser::{PResult, Parser};
 use crate::compiler::syntax::ast::GenericArg;
-use crate::compiler::syntax::token::{Token, TokenKind};
+use crate::compiler::syntax::token::TokenKind;
 
 impl<'a> Parser<'a> {
     /** `<arg, ...>`, the opening `<` current. */
@@ -24,9 +21,19 @@ impl<'a> Parser<'a> {
         /* Each argument is a type or constant, which spends its own nesting level. */
         let mut args = Vec::new();
         while !self.at_generic_close() {
-            args.push(self.generic_arg()?);
+            match self.generic_arg() {
+                Ok(a) => args.push(a),
+                Err(e) if !self.skip_to_generic_close() => return Err(e),
+                Err(_) => break,
+            }
             if !self.eat(TokenKind::Comma) {
                 break;
+            }
+        }
+        if !self.at_generic_close() {
+            let e = self.generic_list_end(true);
+            if !self.skip_to_generic_close() {
+                return Err(e);
             }
         }
         self.close_generics()?;
@@ -38,37 +45,5 @@ impl<'a> Parser<'a> {
             return Ok(GenericArg::Const(self.const_arg()?));
         }
         Ok(GenericArg::Type(self.ty()?))
-    }
-
-    /**
-     * Whether the current token closes a generic argument list, possibly as the first half
-     * of a `>>`, `>=` or `>>=`.
-     */
-    fn at_generic_close(&self) -> bool {
-        matches!(
-            self.kind(),
-            TokenKind::Gt | TokenKind::Shr | TokenKind::Ge | TokenKind::ShrEq
-        )
-    }
-
-    /** Consume one `>`, splitting a `>>`, `>=` or `>>=` and leaving its rest current. */
-    fn close_generics(&mut self) -> PResult<()> {
-        let t = self.tok();
-        let rest = match t.kind {
-            TokenKind::Gt => {
-                self.bump();
-                return Ok(());
-            }
-            TokenKind::Shr => TokenKind::Gt,
-            TokenKind::Ge => TokenKind::Eq,
-            TokenKind::ShrEq => TokenKind::Ge,
-            _ => return Err(self.unexpected("`>`")),
-        };
-        self.bump();
-        let lo = t.span.lo.saturating_add(1);
-        let mut span = t.span;
-        span.lo = lo.min(t.span.hi);
-        self.split = Some(Token { kind: rest, span });
-        Ok(())
     }
 }
