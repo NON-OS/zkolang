@@ -24,10 +24,18 @@ impl Compiler {
         self.close_params(saved, &args, &[result.reg]);
         let mut temp = result.temp;
         for a in &args {
-            if let Arg::Scalar(v) = a {
-                if v.temp && v.reg == result.reg {
-                    temp = true;
+            match a {
+                Arg::Scalar(v) if v.temp && v.reg == result.reg => temp = true,
+                /*
+                 * An element of an array built for this call belongs to nothing once the
+                 * call returns, unless a binding of the caller holds that register too.
+                 */
+                Arg::Array { regs, owned: true }
+                    if regs.contains(&result.reg) && !self.reg_in_use(result.reg) =>
+                {
+                    temp = true
                 }
+                _ => {}
             }
         }
         Ok(Val {

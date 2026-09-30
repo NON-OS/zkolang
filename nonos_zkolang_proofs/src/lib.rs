@@ -122,6 +122,8 @@ mod optimize_tests;
 #[cfg(test)]
 mod optimizer_gate_tests;
 #[cfg(test)]
+mod owned_element_tests;
+#[cfg(test)]
 mod python_guard_tests;
 #[cfg(test)]
 mod recipes_tests;
