@@ -67,4 +67,6 @@ pub struct Parser<'a> {
     pub(super) unclosed_reported: bool,
     /** Where lines start, and whether the file's braces balance. */
     pub(super) layout: Layout,
+    /** The token at which a stray closer or `;` has been reported already. */
+    pub(super) stray_reported: Option<usize>,
 }

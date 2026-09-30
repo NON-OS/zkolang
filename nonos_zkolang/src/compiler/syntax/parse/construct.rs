@@ -39,6 +39,7 @@ impl<'a> Parser<'a> {
             item_indent: 0,
             unclosed_reported: false,
             layout: Layout::new(text, &lexed.tokens),
+            stray_reported: None,
         }
     }
 

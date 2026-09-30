@@ -11,31 +11,25 @@ use crate::compiler::syntax::keyword::Keyword;
 use crate::compiler::syntax::token::TokenKind;
 
 impl<'a> Parser<'a> {
-    /** Report and skip an item other than a function, which an impl block cannot hold. */
+    /**
+     * Report and skip an item other than a function, which an impl block cannot hold,
+     * with the attributes and `pub` before it.
+     */
     pub(in crate::compiler::syntax::parse) fn at_non_fn_item(&mut self) -> bool {
-        let pubbed = self.at_kw(Keyword::Pub);
-        let (k, next) = if pubbed {
-            (self.peek(1), self.peek(2))
-        } else {
-            (self.kind(), self.peek(1))
+        let Some((i, k, next)) = self.item_keyword_at() else {
+            return false;
         };
         let non_fn = match k {
             TokenKind::Kw(Keyword::Const) => next != TokenKind::Kw(Keyword::Fn),
-            TokenKind::Kw(
-                Keyword::Type
-                | Keyword::Struct
-                | Keyword::Enum
-                | Keyword::Mod
-                | Keyword::Use
-                | Keyword::Impl,
-            ) => true,
-            _ => false,
+            TokenKind::Kw(Keyword::Fn) => false,
+            _ => true,
         };
         if non_fn {
+            let at = self.tokens.get(i).map_or(self.span(), |t| t.span);
             let d = Diagnostic::error(
                 Code::UNEXPECTED_TOKEN,
                 "an impl block holds only functions",
-                self.span(),
+                at,
                 "not a function",
             )
             .with_help("declare it at module level");

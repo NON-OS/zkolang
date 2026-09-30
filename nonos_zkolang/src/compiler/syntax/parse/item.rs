@@ -55,11 +55,7 @@ impl<'a> Parser<'a> {
                 self.skip_include();
                 return Ok(None);
             }
-            _ => {
-                return Err(self.unexpected(
-                    "an item: `fn`, `struct`, `enum`, `type`, `const`, `mod`, `use` or `impl`",
-                ))
-            }
+            _ => return Err(self.no_item()),
         };
         let span = start.to(self.prev_span());
         Ok(Some(Item {

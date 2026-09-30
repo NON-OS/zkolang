@@ -20,6 +20,13 @@ impl<'a> Parser<'a> {
     pub(in crate::compiler::syntax::parse) fn item_keyword_ahead(
         &self,
     ) -> Option<(TokenKind, TokenKind)> {
+        self.item_keyword_at().map(|(_, k, next)| (k, next))
+    }
+
+    /** As `item_keyword_ahead`, with the index of the keyword's token. */
+    pub(in crate::compiler::syntax::parse) fn item_keyword_at(
+        &self,
+    ) -> Option<(usize, TokenKind, TokenKind)> {
         let kind = |i: usize| self.tokens.get(i).map_or(TokenKind::Eof, |t| t.kind);
         let mut i = self.pos;
         let limit = self.pos + ATTR_TOKENS;
@@ -56,7 +63,7 @@ impl<'a> Parser<'a> {
             ) => true,
             _ => false,
         };
-        item.then_some((k, next))
+        item.then_some((i, k, next))
     }
 
     /** Whether an item starts at the current token, first on its line. */
