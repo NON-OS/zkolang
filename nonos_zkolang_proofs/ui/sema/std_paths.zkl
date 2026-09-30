@@ -1,0 +1,23 @@
+/* Paths into the crate `std` (section 4.4): from any module, after the names a module binds itself. */
+#![allow(unused)]
+use std::option::Nothing; /*~ E0200 */
+
+fn f() -> u8 {
+    std::option::Option::Some(1u8).unwrap_or(0)
+}
+
+mod inner {
+    fn g() -> bool {
+        std::option::Option::Some(true).is_some()
+    }
+}
+
+mod shadow {
+    mod std {
+        pub fn x() -> u8 { 7 }
+    }
+
+    fn h() -> u8 {
+        std::x()
+    }
+}

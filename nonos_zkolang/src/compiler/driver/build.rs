@@ -40,7 +40,7 @@ pub fn build(
     if diags.has_errors() {
         return Err(diags);
     }
-    let (program, more) = check(&ast);
+    let (program, more) = check(map, &ast);
     diags.extend(more);
     if diags.has_errors() {
         return Err(diags);

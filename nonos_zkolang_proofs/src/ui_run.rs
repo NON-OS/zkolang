@@ -30,7 +30,7 @@ pub(crate) fn report(name: &str, src: &str) -> Reported {
     let ast = parse_file(id, src, &lexed, &mut diags, &mut next_id);
     /* A program under `sema/` that parses is checked too. */
     if name.starts_with("sema") && !diags.has_errors() {
-        diags.extend(check(&ast).1);
+        diags.extend(check(&mut map, &ast).1);
     }
     let mut lines = Vec::new();
     let mut rendered = String::new();

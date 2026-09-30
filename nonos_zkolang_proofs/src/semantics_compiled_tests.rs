@@ -43,7 +43,7 @@ fn every_semantics_test_runs_compiled_as_it_does_interpreted() {
         let mut diags = Diagnostics::new();
         let lexed = lex(id, &src, &mut diags);
         let ast = parse_file(id, &src, &lexed, &mut diags, &mut 0);
-        let (program, _) = check_tests(&ast);
+        let (program, _) = check_tests(&mut map, &ast);
         for &(f, should_fail) in &program.tests {
             let test = program
                 .fns

@@ -41,7 +41,7 @@ pub(crate) fn crate_problems(name: &str, dir: &Path) -> String {
         &mut map,
         &mut diags,
     );
-    let (program, more) = check_tests(&ast);
+    let (program, more) = check_tests(&mut map, &ast);
     diags.extend(more);
     let (got, want) = (reported(&map, &diags), stated(&map));
     if got != want {

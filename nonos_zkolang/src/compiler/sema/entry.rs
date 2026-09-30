@@ -13,27 +13,37 @@ use super::cx::{Sema, State};
 use super::defs::{DefId, DefKind, Defs};
 use super::lints::drop_allowed;
 use crate::compiler::diag::Diagnostics;
+use crate::compiler::source::SourceMap;
+use crate::compiler::std_crate::load_std;
 use crate::compiler::syntax::ast::SourceAst;
 use crate::compiler::tir::{ConstId, FnId, TProgram};
 
-/** Check the program `ast`, a crate whose modules are inline or loaded (`syntax::load`). */
-pub fn check(ast: &SourceAst) -> (TProgram, Diagnostics) {
-    check_mode(ast, false)
+/**
+ * Check the program `ast`, a crate whose modules are inline or loaded (`syntax::load`),
+ * beside the standard library, which is loaded into `map`.
+ */
+pub fn check(map: &mut SourceMap, ast: &SourceAst) -> (TProgram, Diagnostics) {
+    check_mode(map, ast, false)
 }
 
 /** Check `ast` for its tests: items marked `#[cfg(test)]` are compiled too. */
-pub fn check_tests(ast: &SourceAst) -> (TProgram, Diagnostics) {
-    check_mode(ast, true)
+pub fn check_tests(map: &mut SourceMap, ast: &SourceAst) -> (TProgram, Diagnostics) {
+    check_mode(map, ast, true)
 }
 
-fn check_mode(ast: &SourceAst, testing: bool) -> (TProgram, Diagnostics) {
+fn check_mode(map: &mut SourceMap, ast: &SourceAst, testing: bool) -> (TProgram, Diagnostics) {
     let mut sema = Sema::default();
+    let std = load_std(map, &mut sema.diags);
     sema.check_attrs(&ast.items, &ast.inner_attrs, ast.span);
-    let (defs, imports) = Defs::collect_with(ast, testing, &mut sema.diags);
+    sema.check_attrs(&std.items, &std.inner_attrs, std.span);
+    let (defs, imports) = Defs::collect_with(ast, Some(&std), testing, &mut sema.diags);
     sema.defs = defs;
     sema.defs.resolve_imports(&imports, &mut sema.diags);
     sema.register();
-    sema.impls(&ast.items, DefId(0));
+    sema.impls(&ast.items, Defs::ROOT);
+    if let Some(root) = sema.defs.std {
+        sema.impls(&std.items, root);
+    }
     sema.check_main();
     sema.structs();
     for (i, d) in sema.defs.defs.clone().iter().enumerate() {

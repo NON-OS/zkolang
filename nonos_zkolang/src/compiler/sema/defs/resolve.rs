@@ -6,7 +6,7 @@
 /*!
  * Resolving an item path (section 4.4): its root picks the module to start at, each
  * segment but the last names a module, and every name must be visible from where the
- * path is written.
+ * path is written. A first name the module does not bind may name a crate.
  */
 
 use super::{BindingKind, DefId, DefKind, Defs};
@@ -32,7 +32,7 @@ impl<'a> Defs<'a> {
     pub fn resolve(&self, from: DefId, root: PathRoot, segs: &[&str]) -> Result<DefId, PathError> {
         let mut module = match root {
             PathRoot::Plain | PathRoot::SelfModule => from,
-            PathRoot::Crate => Defs::ROOT,
+            PathRoot::Crate => self.crate_of(from),
             PathRoot::Super => self.parent(from).ok_or(PathError::BadRoot)?,
             PathRoot::SelfType => return Err(PathError::BadRoot),
         };
@@ -51,11 +51,12 @@ impl<'a> Defs<'a> {
                 }
                 module = def;
             }
-            let b = self
-                .modules
-                .get(&module)
-                .and_then(|m| m.names.get(*name))
-                .ok_or(PathError::Unresolved(i))?;
+            let found = self.modules.get(&module).and_then(|m| m.names.get(*name));
+            let Some(b) = found else {
+                let crate_root = (i == 0 && root == PathRoot::Plain).then(|| self.outside(name));
+                def = crate_root.flatten().ok_or(PathError::Unresolved(i))?;
+                continue;
+            };
             if b.kind == BindingKind::Ambiguous {
                 return Err(PathError::Ambiguous(i));
             }

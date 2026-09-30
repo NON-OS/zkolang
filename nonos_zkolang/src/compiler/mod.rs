@@ -19,5 +19,6 @@ pub mod schedule;
 pub mod sema;
 pub mod source;
 pub mod ssa;
+pub mod std_crate;
 pub mod syntax;
 pub mod tir;

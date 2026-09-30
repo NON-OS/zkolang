@@ -17,6 +17,8 @@ pub struct Defs<'a> {
     pub modules: BTreeMap<DefId, Module>,
     /** Whether items marked `#[cfg(test)]` are compiled (section 16). */
     pub testing: bool,
+    /** The root of the crate `std`, when the standard library is loaded. */
+    pub std: Option<DefId>,
 }
 
 impl<'a> Defs<'a> {

@@ -22,7 +22,10 @@ It checks a program in one file, structs, enums, `match`, `impl` blocks, methods
 blocks. `syntax::load` loads a crate from its root file: each `mod name;` is given the
 items of `name.zkl` or `name/mod.zkl`, read through a `Files` source (the filesystem for
 the command line, a table in tests), so the checker sees every module inline and each
-span names the file it is in. A function of a generic `impl` block is a template whose parameters are the
+span names the file it is in. The checker loads the standard library, the zKølang
+sources under `std/` built in with `include_str!`, into the same source map and collects
+it as a second crate root, `std`, which a path's first name reaches when its module binds
+no such name. A function of a generic `impl` block is a template whose parameters are the
 block's then its own; a method call matches the block's written type against the
 receiver's type to give the block's parameters their arguments. A generic function is a template: a call checks against its signature
 with a variable per type parameter, and once the caller's types settle the call is given

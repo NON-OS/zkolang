@@ -29,7 +29,7 @@ fn run_file(name: &str, src: &str) -> (String, usize) {
     let mut diags = Diagnostics::new();
     let lexed = lex(id, src, &mut diags);
     let ast = parse_file(id, src, &lexed, &mut diags, &mut 0);
-    let (program, more) = check_tests(&ast);
+    let (program, more) = check_tests(&mut map, &ast);
     diags.extend(more);
     if !diags.items().is_empty() {
         let shown: String = diags.items().iter().map(|d| render(&map, d)).collect();

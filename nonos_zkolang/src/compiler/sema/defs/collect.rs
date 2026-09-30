@@ -9,7 +9,7 @@ use alloc::string::String;
 use alloc::vec::Vec;
 
 use super::PendingImport;
-use super::{Def, DefKind, Defs, Module};
+use super::{Def, DefId, DefKind, Defs, Module};
 use crate::compiler::diag::Diagnostics;
 use crate::compiler::syntax::ast::{SourceAst, Visibility};
 
@@ -22,12 +22,16 @@ impl<'a> Defs<'a> {
         ast: &'a SourceAst,
         diags: &mut Diagnostics,
     ) -> (Defs<'a>, Vec<PendingImport<'a>>) {
-        Defs::collect_with(ast, false, diags)
+        Defs::collect_with(ast, None, false, diags)
     }
 
-    /** As `collect`, with the items marked `#[cfg(test)]` too when `testing`. */
+    /**
+     * As `collect`, with the items marked `#[cfg(test)]` too when `testing`, and the crate
+     * `std` from `std` beside it.
+     */
     pub fn collect_with(
         ast: &'a SourceAst,
+        std: Option<&'a SourceAst>,
         testing: bool,
         diags: &mut Diagnostics,
     ) -> (Defs<'a>, Vec<PendingImport<'a>>) {
@@ -35,17 +39,32 @@ impl<'a> Defs<'a> {
             testing,
             ..Defs::default()
         };
-        let root = defs.push(Def {
+        let mut imports = Vec::new();
+        defs.collect_crate("crate", ast, &mut imports, diags);
+        if let Some(std) = std {
+            defs.std = Some(defs.collect_crate("std", std, &mut imports, diags));
+        }
+        (defs, imports)
+    }
+
+    /** Collect the crate `ast` as a root named `name`, returning the root. */
+    fn collect_crate(
+        &mut self,
+        name: &str,
+        ast: &'a SourceAst,
+        imports: &mut Vec<PendingImport<'a>>,
+        diags: &mut Diagnostics,
+    ) -> DefId {
+        let root = self.push(Def {
             kind: DefKind::Mod,
-            name: String::from("crate"),
+            name: String::from(name),
             span: ast.span,
             parent: None,
             vis: Visibility::Public,
             item: None,
         });
-        defs.modules.insert(root, Module::default());
-        let mut imports = Vec::new();
-        defs.collect_items(root, &ast.items, &mut imports, diags);
-        (defs, imports)
+        self.modules.insert(root, Module::default());
+        self.collect_items(root, &ast.items, imports, diags);
+        root
     }
 }

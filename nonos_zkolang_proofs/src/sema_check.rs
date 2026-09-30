@@ -20,7 +20,7 @@ pub(crate) fn checked(src: &str) -> (TProgram, Vec<&'static str>) {
     let mut diags = Diagnostics::new();
     let lexed = lex(id, src, &mut diags);
     let ast = parse_file(id, src, &lexed, &mut diags, &mut 0);
-    let (program, more) = check(&ast);
+    let (program, more) = check(&mut map, &ast);
     diags.extend(more);
     (program, diags.items().iter().map(|d| d.code.0).collect())
 }

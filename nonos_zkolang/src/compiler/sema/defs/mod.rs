@@ -12,6 +12,7 @@
 mod bind;
 mod collect;
 mod collect_items;
+mod crates;
 mod def;
 mod imports;
 mod imports_apply;
