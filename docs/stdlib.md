@@ -4,6 +4,94 @@
 
 The standard library of zKølang, edition 2026 (section 18), written in zKølang.
 
+## `std::array`
+
+Arrays (section 18.2): folds and searches over an array of any length `N`. A function
+whose element type `T` must add, multiply or compare is checked for each `T` it is
+called with (section 5.5), so it takes the integer types and `field` where they allow it.
+
+### `pub fn sum<T, const N: usize>(a: [T; N]) -> T`
+
+The sum of the elements of `a`; the run fails if an integer sum overflows `T`.
+
+### `pub fn product<T, const N: usize>(a: [T; N]) -> T`
+
+The product of the elements of `a`; the run fails if an integer product overflows `T`.
+
+### `pub fn dot<T, const N: usize>(a: [T; N], b: [T; N]) -> T`
+
+The sum of the products of the elements of `a` and `b` at each index.
+
+### `pub fn position<T, const N: usize>(a: [T; N], x: T) -> Option<usize>`
+
+The index of the first element of `a` equal to `x`, if one is.
+
+### `pub fn contains<T, const N: usize>(a: [T; N], x: T) -> bool`
+
+Whether an element of `a` equals `x`.
+
+### `pub fn reverse<T, const N: usize>(a: [T; N]) -> [T; N]`
+
+The elements of `a`, last first.
+
+## `std::cmp`
+
+Comparisons (section 18.2) of two or three values of one integer type `T`, checked for
+each `T` a program calls them with (section 5.5).
+
+### `pub fn clamp<T>(x: T, lo: T, hi: T) -> T`
+
+`x` held within `lo..=hi`; the run fails if `lo` is above `hi`.
+
+### `pub fn within<T>(x: T, lo: T, hi: T) -> bool`
+
+Whether `x` lies within `lo..=hi`.
+
+### `pub fn abs_diff<T>(a: T, b: T) -> T`
+
+The larger of `a` and `b` less the smaller; the run fails if that does not fit `T`.
+
+## `std::curve`
+
+Elliptic curves y² = x³ + a·x + b over `field` (section 18.2), in affine coordinates,
+`None` the point at infinity, by the formulas of the edition 2025 library's `curve.zkl`.
+
+### `pub struct Curve`
+
+The curve y² = x³ + a·x + b.
+
+- `pub a: field`
+- `pub b: field`
+
+### `impl Curve`
+
+#### `pub fn contains(self, p: Point) -> bool`
+
+Whether `p` lies on the curve.
+
+#### `pub fn add(self, p: Option<Point>, q: Option<Point>) -> Option<Point>`
+
+The sum of the points `p` and `q` of the curve.
+
+#### `pub fn double(self, p: Point) -> Option<Point>`
+
+Twice the point `p` of the curve.
+
+#### `pub fn mul<const N: usize>(self, p: Option<Point>, k: [bool; N]) -> Option<Point>`
+
+`k` times the point `p`, `k` given by its bits, least significant first.
+
+### `pub struct Point`
+
+A point of a curve other than the point at infinity.
+
+- `pub x: field`
+- `pub y: field`
+
+### `pub fn neg(p: Option<Point>) -> Option<Point>`
+
+The negation of the point `p`.
+
 ## `std::hash`
 
 MiMC over `field` (section 18.2): the sixteen round permutation and the compressions
@@ -88,6 +176,15 @@ This option if it holds a value, else `other`.
 #### `pub fn xor(self, other: Option<T>) -> Option<T>`
 
 The option that holds a value, if exactly one of the two does.
+
+## `std::poly`
+
+Polynomials (section 18.2), each given by its coefficients, lowest degree first.
+
+### `pub fn eval<T, const N: usize>(c: [T; N], x: T) -> T`
+
+The value at `x` of the polynomial with coefficients `c`, by Horner's rule; for an
+integer type, the run fails if a step overflows `T`.
 
 ## `std::prelude`
 

@@ -1,0 +1,27 @@
+/* The standard library's array functions (section 18.2) over integers and fields. */
+use std::array::{contains, dot, position, product, reverse, sum};
+
+#[test]
+fn folds_add_and_multiply_the_elements() {
+    assert sum([1u8, 2, 3, 4]) == 10;
+    assert product([2u32, 3, 7]) == 42;
+    assert dot([1u16, 2, 3], [4, 5, 6]) == 32;
+    assert sum([-1, -1]) == -2;
+    let empty: [u8; 0] = [];
+    assert sum(empty) == 0 && product(empty) == 1;
+}
+
+#[test]
+#[should_fail]
+fn an_integer_sum_that_overflows_fails() {
+    assert sum([200u8, 100]) == 44;
+}
+
+#[test]
+fn searches_find_the_first_equal_element() {
+    assert position([4u8, 7, 7], 7).unwrap() == 1;
+    assert position([4u8, 7, 7], 9).is_none();
+    assert contains([3, 5], 5) && !contains([3, 5], 4);
+    let r = reverse([1u8, 2, 3]);
+    assert r[0] == 3 && r[1] == 2 && r[2] == 1;
+}

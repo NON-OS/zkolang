@@ -26,9 +26,13 @@ impl Files for Std {
     fn read(&self, path: &str) -> Option<String> {
         let text = match path {
             "std/lib.zkl" => include_str!("../../../std/lib.zkl"),
+            "std/array.zkl" => include_str!("../../../std/array.zkl"),
+            "std/cmp.zkl" => include_str!("../../../std/cmp.zkl"),
+            "std/curve.zkl" => include_str!("../../../std/curve.zkl"),
             "std/hash.zkl" => include_str!("../../../std/hash.zkl"),
             "std/merkle.zkl" => include_str!("../../../std/merkle.zkl"),
             "std/option.zkl" => include_str!("../../../std/option.zkl"),
+            "std/poly.zkl" => include_str!("../../../std/poly.zkl"),
             "std/prelude.zkl" => include_str!("../../../std/prelude.zkl"),
             "std/result.zkl" => include_str!("../../../std/result.zkl"),
             _ => return None,

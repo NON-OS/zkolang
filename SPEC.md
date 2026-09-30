@@ -38,9 +38,11 @@ normative, is the only one that describes the repository rather than the languag
   file's edition from `--edition`, else from the manifest that governs it, and otherwise
   compiles edition 2025, where section 4.1 says 2026. The
   standard library, written in zKølang under `std/` and built into the compiler, is
-  loaded beside every crate as the crate `std`; so far it holds `std::hash` (the MiMC
-  permutation and compressions of the edition 2025 library), `std::merkle`, `std::option`,
-  `std::result` and the prelude, `std::prelude` (section 18.1). The
+  loaded beside every crate as the crate `std`; so far it holds `std::array`,
+  `std::cmp`, `std::curve` (short Weierstrass curves over `field`), `std::hash` (the
+  MiMC permutation and compressions of the edition 2025 library), `std::merkle`,
+  `std::option`, `std::poly`, `std::result` and the prelude, `std::prelude` (section
+  18.1). The
   back end compiles the typed IR of such a
   program to the machine: lowering to SSA, the passes, gadget expansion, scheduling, register allocation
   and a check of the machine program against the SSA. `compiler::driver::build` and

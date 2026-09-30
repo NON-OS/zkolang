@@ -1,0 +1,36 @@
+/* The standard library's elliptic curves (section 18.2), against points an independent model of the field computes. */
+use std::curve::{neg, Curve, Point};
+
+const C: Curve = Curve { a: 3, b: 7 };
+
+fn g() -> Option<Point> {
+    Some(Point { x: 5, y: 1970324836057088 })
+}
+
+fn is(p: Option<Point>, x: field, y: field) -> bool {
+    match p {
+        Some(p) => p.x == x && p.y == y,
+        None => false,
+    }
+}
+
+#[test]
+fn the_group_law_matches_the_model() {
+    let two = C.add(g(), g());
+    assert is(two, 3764641646819302923, 5916327457864194114);
+    assert C.contains(two.unwrap());
+    assert is(C.add(two, g()), 15580941031853177291, 5570185309671532784);
+    assert is(C.add(g(), two), 15580941031853177291, 5570185309671532784);
+    assert is(C.add(None, g()), 5, 1970324836057088);
+    assert C.add(g(), neg(g())).is_none();
+    assert C.double(Point { x: 1, y: 0 }).is_none();
+}
+
+#[test]
+fn a_multiple_is_reached_by_its_bits() {
+    assert is(C.mul(g(), [true, false, true]), 15754710650923688313, 640079071022221523);
+    assert is(C.mul(g(), [true, false, true, true]), 15977180344283257508, 1375478534770126911);
+    let k = 200u8.to_le_bits();
+    assert is(C.mul(g(), k), 5150912510368292519, 10187759426848427411);
+    assert C.mul(g(), [false, false]).is_none();
+}

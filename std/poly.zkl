@@ -1,0 +1,13 @@
+/*! Polynomials (section 18.2), each given by its coefficients, lowest degree first. */
+
+/**
+ * The value at `x` of the polynomial with coefficients `c`, by Horner's rule; for an
+ * integer type, the run fails if a step overflows `T`.
+ */
+pub fn eval<T, const N: usize>(c: [T; N], x: T) -> T {
+    let mut acc: T = 0;
+    for i in 0..N {
+        acc = acc * x + c[N - 1 - i];
+    }
+    acc
+}

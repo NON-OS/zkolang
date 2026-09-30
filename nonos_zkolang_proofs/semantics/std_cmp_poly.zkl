@@ -1,0 +1,26 @@
+/* The standard library's comparisons and polynomials (section 18.2). */
+use std::cmp::{abs_diff, clamp, within};
+use std::poly::eval;
+
+#[test]
+fn clamp_holds_a_value_within_bounds() {
+    assert clamp(5u8, 1, 3) == 3 && clamp(0u8, 1, 3) == 1 && clamp(2u8, 1, 3) == 2;
+    assert clamp(-7i8, -5, 5) == -5;
+    assert within(3u16, 3, 4) && !within(5u16, 3, 4);
+    assert abs_diff(3u8, 10) == 7 && abs_diff(10u8, 3) == 7;
+}
+
+#[test]
+#[should_fail]
+fn clamp_with_crossed_bounds_fails() {
+    assert clamp(1u8, 3, 2) == 2;
+}
+
+#[test]
+fn a_polynomial_is_evaluated_by_horner() {
+    assert eval([1u32, 2, 3], 2) == 17;
+    let c: [field; 3] = [5, 0, 1];
+    assert eval(c, -1) == 6;
+    let none: [u8; 0] = [];
+    assert eval(none, 9) == 0;
+}
