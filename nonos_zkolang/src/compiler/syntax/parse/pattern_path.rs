@@ -9,13 +9,17 @@ use alloc::vec::Vec;
 
 use super::parser::{PResult, Parser};
 use super::types::PathMode;
-use crate::compiler::syntax::ast::{FieldPat, PatKind};
+use crate::compiler::syntax::ast::PatKind;
 use crate::compiler::syntax::token::TokenKind;
 
 impl<'a> Parser<'a> {
     /** A pattern that starts with a path: `P(..)`, `P { .. }`, a binding, or a path. */
     pub(super) fn pattern_path(&mut self) -> PResult<PatKind> {
-        let path = self.path(PathMode::Plain)?;
+        let path = if self.at_primitive_path() {
+            self.primitive_path()?
+        } else {
+            self.path(PathMode::Plain)?
+        };
         if self.at(TokenKind::LParen) {
             self.bump();
             let mut elems = Vec::new();
@@ -39,35 +43,5 @@ impl<'a> Parser<'a> {
         } else {
             Ok(PatKind::Path(path))
         }
-    }
-
-    /** The fields of a struct pattern after its `{`, and whether it ends in `..`. */
-    fn field_patterns(&mut self) -> PResult<(Vec<FieldPat>, bool)> {
-        let mut fields = Vec::new();
-        let mut rest = false;
-        while !self.at(TokenKind::RBrace) {
-            if self.eat(TokenKind::DotDot) {
-                rest = true;
-                self.eat(TokenKind::Comma);
-                break;
-            }
-            let start = self.span();
-            let name = self.ident()?;
-            let pat = if self.eat(TokenKind::Colon) {
-                Some(self.pattern()?)
-            } else {
-                None
-            };
-            fields.push(FieldPat {
-                name,
-                pat,
-                span: start.to(self.prev_span()),
-            });
-            if !self.eat(TokenKind::Comma) {
-                break;
-            }
-        }
-        self.expect_list_end(TokenKind::RBrace)?;
-        Ok((fields, rest))
     }
 }

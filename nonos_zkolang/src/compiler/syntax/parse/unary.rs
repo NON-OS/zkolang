@@ -25,7 +25,12 @@ impl<'a> Parser<'a> {
     }
 
     fn cast_links(&mut self) -> PResult<Expr> {
-        let mut e = self.unary()?;
+        let e = self.unary()?;
+        self.cast_rest(e)
+    }
+
+    /** The casts that follow `e`. */
+    pub(super) fn cast_rest(&mut self, mut e: Expr) -> PResult<Expr> {
         while self.eat_kw(Keyword::As) {
             self.enter()?;
             let ty = self.cast_ty()?;

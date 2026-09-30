@@ -17,14 +17,7 @@ use crate::compiler::syntax::token::TokenKind;
 impl<'a> Parser<'a> {
     /** Report and skip `if let pat = e { .. } else ..`, the `let` current. */
     pub(in crate::compiler::syntax::parse) fn if_let(&mut self) -> Reported {
-        let d = Diagnostic::error(
-            Code::UNEXPECTED_TOKEN,
-            "`if let` is not part of the language",
-            self.span(),
-            "a pattern test",
-        )
-        .with_help("test the value with `match`, which checks that every case is handled");
-        self.diags.push(d);
+        self.pattern_test("`if let` is not part of the language");
         loop {
             if !self.skip_to_brace() {
                 return Reported;
@@ -34,6 +27,26 @@ impl<'a> Parser<'a> {
                 return Reported;
             }
         }
+    }
+
+    /** Report and skip `while let pat = e { .. }`, the `let` current. */
+    pub(in crate::compiler::syntax::parse) fn while_let(&mut self) -> Reported {
+        self.pattern_test("`while let` is not part of the language");
+        if self.skip_to_brace() {
+            self.skip_until(&[TokenKind::RBrace]);
+        }
+        Reported
+    }
+
+    fn pattern_test(&mut self, message: &str) {
+        let d = Diagnostic::error(
+            Code::UNEXPECTED_TOKEN,
+            message,
+            self.span(),
+            "a pattern test",
+        )
+        .with_help("test the value with `match`, which checks that every case is handled");
+        self.diags.push(d);
     }
 
     /**

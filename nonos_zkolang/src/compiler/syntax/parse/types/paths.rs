@@ -12,10 +12,7 @@
  * type and name resolution reads it as whichever it names.
  */
 
-use alloc::string::String;
-
-use super::super::parser::{PResult, Parser};
-use crate::compiler::syntax::ast::{Ident, Path, PathRoot, PathSegment};
+use super::super::parser::Parser;
 use crate::compiler::syntax::keyword::Keyword;
 use crate::compiler::syntax::token::TokenKind;
 
@@ -41,35 +38,5 @@ impl<'a> Parser<'a> {
                 | TokenKind::Kw(Keyword::SelfValue)
                 | TokenKind::Kw(Keyword::SelfType)
         )
-    }
-
-    /**
-     * A one-segment path over a primitive type keyword, for `u8::MAX` and
-     * `field::from_le_bits`.
-     */
-    pub(in crate::compiler::syntax::parse) fn primitive_path(&mut self) -> PResult<Path> {
-        let t = self.bump();
-        let ident = Ident {
-            name: String::from(self.text_of(t)),
-            span: t.span,
-        };
-        let mut segments = alloc::vec![PathSegment {
-            ident,
-            generics: None
-        }];
-        while self.at(TokenKind::ColonColon) && self.peek(1) == TokenKind::Ident {
-            self.bump();
-            let ident = self.ident()?;
-            segments.push(PathSegment {
-                ident,
-                generics: None,
-            });
-        }
-        self.path_generics(&mut segments, PathMode::Expr)?;
-        Ok(Path {
-            root: PathRoot::Plain,
-            segments,
-            span: t.span.to(self.prev_span()),
-        })
     }
 }

@@ -12,6 +12,7 @@ mod generic_params;
 mod path;
 mod path_generics;
 mod paths;
+mod primitive_path;
 mod ty;
 mod type_kinds;
 mod type_names;

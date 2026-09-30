@@ -26,12 +26,20 @@ impl<'a> Parser<'a> {
             | TokenKind::Kw(Keyword::Break)
             | TokenKind::Kw(Keyword::Continue)
             | TokenKind::Error => self.primary_token(),
-            TokenKind::Kw(k) if self.peek(1) == TokenKind::ColonColon && primitive(k) => {
+            _ if self.at_primitive_path() => {
                 let path = self.primitive_path()?;
                 let span = path.span;
                 Ok(self.mk(ExprKind::Path(path), span))
             }
             _ if self.at_include() => Ok(self.include_expr()),
+            _ if self.at_reserved()
+                && matches!(
+                    self.peek(1),
+                    TokenKind::LBrace | TokenKind::Ident | TokenKind::Int | TokenKind::LParen
+                ) =>
+            {
+                self.reserved_expr()
+            }
             _ if self.at_path_start() => self.path_expr(),
             TokenKind::LParen => self.paren_or_tuple(),
             TokenKind::LBracket => self.array(),
@@ -51,22 +59,4 @@ impl<'a> Parser<'a> {
             _ => self.primary_keyword(),
         }
     }
-}
-
-/** Whether a keyword names a primitive type that can start an expression path. */
-fn primitive(k: Keyword) -> bool {
-    matches!(
-        k,
-        Keyword::Field
-            | Keyword::Bool
-            | Keyword::U8
-            | Keyword::U16
-            | Keyword::U32
-            | Keyword::U64
-            | Keyword::I8
-            | Keyword::I16
-            | Keyword::I32
-            | Keyword::I64
-            | Keyword::Usize
-    )
 }

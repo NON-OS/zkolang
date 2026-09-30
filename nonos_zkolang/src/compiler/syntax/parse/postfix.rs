@@ -31,16 +31,17 @@ impl<'a> Parser<'a> {
 
     /**
      * A block-like expression `e` that stands where it would end a statement or an arm,
-     * continued if a `.` follows it: `match x { .. }.len()`.
+     * continued if a `.` follows it, through any operators after: `match x { .. }.len() + 1`.
      */
     pub(super) fn after_block_like(&mut self, e: Expr) -> PResult<Expr> {
         if !self.at(TokenKind::Dot) {
             return Ok(e);
         }
         let base = self.depth;
-        let r = self.postfix_on(e);
+        let r = self.postfix_on(e).and_then(|e| self.cast_rest(e));
+        let r = r.and_then(|e| self.binary_rest(e, 0));
         self.depth = base;
-        r
+        self.assign_rest(r?)
     }
 
     /** The calls, indexing, fields and method calls after `e`. */

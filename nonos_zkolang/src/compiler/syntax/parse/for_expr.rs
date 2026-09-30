@@ -45,7 +45,11 @@ impl<'a> Parser<'a> {
                 }
             };
             p.bump();
-            let hi = p.expr()?;
+            let hi = if p.at(TokenKind::LBrace) {
+                p.range_without_end()
+            } else {
+                p.expr()?
+            };
             Ok(ForIter::Range {
                 lo: Box::new(first),
                 hi: Box::new(hi),

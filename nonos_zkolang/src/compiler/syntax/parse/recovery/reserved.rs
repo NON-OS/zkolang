@@ -8,7 +8,8 @@
  * the parser does not report it a second time, and skips the construct it begins.
  */
 
-use super::super::parser::Parser;
+use super::super::parser::{PResult, Parser};
+use crate::compiler::syntax::ast::{Expr, ExprKind};
 use crate::compiler::syntax::keyword::RESERVED;
 use crate::compiler::syntax::token::TokenKind;
 
@@ -40,5 +41,20 @@ impl<'a> Parser<'a> {
             self.eat(TokenKind::Semi);
         }
         true
+    }
+
+    /**
+     * An expression a reserved word begins, which the lexer reported: `loop { .. }` or
+     * `async { .. }` skipped whole as an error expression, `await x` or `move x` read as
+     * the operand after the word.
+     */
+    pub(in crate::compiler::syntax::parse) fn reserved_expr(&mut self) -> PResult<Expr> {
+        let start = self.bump().span;
+        if !self.at(TokenKind::LBrace) {
+            return self.primary();
+        }
+        self.skip_until(&[TokenKind::RBrace]);
+        let span = start.to(self.prev_span());
+        Ok(self.mk(ExprKind::Error, span))
     }
 }

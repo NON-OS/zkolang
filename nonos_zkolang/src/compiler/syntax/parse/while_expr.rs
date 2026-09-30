@@ -7,53 +7,45 @@
 
 use alloc::boxed::Box;
 
-use super::parser::{PResult, Parser, Reported};
+use super::parser::{PResult, Parser};
 use crate::compiler::diag::{Code, Diagnostic};
-use crate::compiler::syntax::ast::{Expr, ExprKind};
+use crate::compiler::syntax::ast::{ConstArg, Expr, ExprKind};
 use crate::compiler::syntax::keyword::Keyword;
-use crate::compiler::syntax::token::TokenKind;
 
 impl<'a> Parser<'a> {
-    /** `while cond limit N { .. }`. */
+    /**
+     * `while cond limit N { .. }`. A missing bound is reported and the body still read,
+     * with an error expression standing for the bound.
+     */
     pub(super) fn while_expr(&mut self) -> PResult<Expr> {
         let start = self.span();
         self.bump();
-        let cond = self.restricted(true, |p| p.expr())?;
-        let limit_ok = self.at(TokenKind::Kw(Keyword::Limit));
-        if !limit_ok {
-            let d = Diagnostic::error(
-                Code::UNEXPECTED_TOKEN,
-                "a `while` loop needs a bound",
-                self.span(),
-                "expected `limit N` here",
-            )
-            .with_help("every loop unrolls at compile time: write `while cond limit 32 { ... }`");
-            self.diags.push(d);
-            return Err(Reported);
+        if self.at_kw(Keyword::Let) {
+            return Err(self.while_let());
         }
-        self.bump();
-        if self.limit_without_bound() {
-            let d = Diagnostic::error(
-                Code::UNEXPECTED_TOKEN,
+        let cond = self.restricted(true, |p| p.expr())?;
+        let limit = if !self.eat_kw(Keyword::Limit) {
+            self.no_bound("a `while` loop needs a bound", "expected `limit N` here")
+        } else if self.limit_without_bound() {
+            self.no_bound(
                 "`limit` needs a bound",
-                self.span(),
                 "the loop's body, with no bound before it",
             )
-            .with_help("write the most iterations the loop may take: `limit 32`");
-            self.diags.push(d);
-            self.skip_until(&[TokenKind::RBrace]);
-            return Err(Reported);
-        }
-        let limit = self.const_arg()?;
+        } else {
+            self.const_arg()?
+        };
         let body = self.body_block()?;
         let span = start.to(self.prev_span());
-        Ok(self.mk(
-            ExprKind::While {
-                cond: Box::new(cond),
-                limit,
-                body: Box::new(body),
-            },
-            span,
-        ))
+        let (cond, body) = (Box::new(cond), Box::new(body));
+        Ok(self.mk(ExprKind::While { cond, limit, body }, span))
+    }
+
+    /** Report a loop with no bound, and the error expression that stands for it. */
+    fn no_bound(&mut self, message: &str, label: &str) -> ConstArg {
+        let at = self.span();
+        let d = Diagnostic::error(Code::UNEXPECTED_TOKEN, message, at, label)
+            .with_help("every loop unrolls at compile time: write `while cond limit 32 { ... }`");
+        self.diags.push(d);
+        ConstArg::Expr(Box::new(self.mk(ExprKind::Error, at)))
     }
 }

@@ -47,6 +47,11 @@ impl<'a> Parser<'a> {
     /** `binary [ assign_op expr ]`: assignment, which groups to the right. */
     pub(super) fn assign_expr(&mut self) -> PResult<Expr> {
         let place = self.binary(0)?;
+        self.assign_rest(place)
+    }
+
+    /** An assignment to `place`, if an assignment operator follows it. */
+    pub(super) fn assign_rest(&mut self, place: Expr) -> PResult<Expr> {
         let Some(op) = assign_op(self.kind()) else {
             return Ok(place);
         };
