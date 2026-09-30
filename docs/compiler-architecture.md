@@ -10,17 +10,22 @@ correctness first, then for the size of the trace, then for compile speed.
 
 ## Status
 
-This is the design the compiler is being built to. So far `source/`, `diag/` and `syntax/`
-exist, and they make up the front end. The lexer and the parser read a file into a syntax
-tree; after an error the parser recovers, so that one run reports each independent
-mistake once, and a placement check reports statement forms where they cannot stand.
-Diagnostics render as text or JSON. The programs in `nonos_zkolang_proofs/ui/syntax`,
-each of which states the diagnostics it expects, and the `front_*` tests of
-`nonos_zkolang_proofs` pin this behaviour. Nothing checks types or compiles the tree
-yet. The compiler lands in stages, in this order:
-the front end; types and secret flow; the typed IR, the SSA IR, its passes, allocation and code generation;
-structs, enums, `match` and generics; packages and the standard library; the tools; and
-the Lean development. This section is updated as each stage lands.
+This is the design the compiler is being built to. So far `source/`, `diag/`, `syntax/`,
+`sema/`, `tir/` and `interp/` exist. The front end reads a file into a syntax tree; after
+an error the parser recovers, so that one run reports each independent mistake once, and
+a placement check reports statement forms where they cannot stand. Diagnostics render as
+text or JSON. The checker resolves names, checks types and constants, reports recursion,
+checks secret flow and lowers the program to the typed IR, which the reference
+interpreter runs. It checks a program in one file, and reports each form it does not
+check yet (structs, enums, `match`, generics, `impl` blocks, methods on user types,
+`Self`, and modules in their own files) as E0904. The programs in
+`nonos_zkolang_proofs/ui/syntax` and `ui/sema`, each of which states the diagnostics it
+expects, and the `front_*` and `sema_*` tests of `nonos_zkolang_proofs` pin this
+behaviour. Nothing compiles the typed IR to the machine yet. The compiler lands in
+stages, in this order: the front end; types and secret flow; the SSA IR, its passes,
+allocation and code generation; structs, enums, `match` and generics; packages and the
+standard library; the tools; and the Lean development. This section is updated as each
+stage lands.
 
 ## Where it lives
 
@@ -91,18 +96,22 @@ a note at the template line.
 
 Constant evaluation runs the reference interpreter on the TIR of the constant expression,
 with a step budget. Exhaustiveness uses the usual pattern-matrix usefulness algorithm over
-the finite types. The secret-flow check runs on the instantiated TIR (section 13 of the
-spec): because every call is inlined, each instantiation has concrete labels and the
-analysis is a single forward pass, with guards threaded through branches.
+the finite types. The secret-flow check runs on the TIR (section 13 of the
+spec). It walks each function once, callees first, and writes a summary in terms of the
+labels of its parameters' parts: the labels of the result and of each `&mut` parameter's
+final value, and the parts that must be public. A call applies the callee's summary to
+its arguments' labels. The walk threads the guard's label through branches, short-circuit
+operands and early exits, and iterates each loop to a fixed point.
 
 ### TIR
 
-The typed IR is the checked program with every name resolved, every generic
-instantiated, every method call made direct, and sugar removed (compound assignment,
-`while`, `for` over arrays, `&&`/`||`, `?:`-like forms). It keeps structured control
-flow, so the reference interpreter evaluates it directly with the semantics of the spec:
-only the taken branch, loops iterating, integers as mathematical integers bounded by `i128`
-(every operation's operands and results of the language fit it), fields modulo `p`.
+The typed IR is the checked program with every name resolved to a local, constant or
+function id, every type settled, integer literals checked and folded with their sign, and
+built-in methods made direct operations. It keeps structured control flow, compound
+assignment and `&&`/`||` as operators of a chain, so the reference interpreter evaluates it
+directly with the semantics of the spec: only the taken branch, loops iterating, integers
+as mathematical integers bounded by `i128` (every operation's operands and results of the
+language fit it), fields modulo `p`.
 
 ### SSA
 

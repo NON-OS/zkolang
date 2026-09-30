@@ -24,9 +24,12 @@ normative, is the only one that describes the repository rather than the languag
 - The compiler that ships, `compile_source` in `nonos_zkolang` and the `zkolang`
   command line, compiles edition 2025.
 - Of edition 2026, the front end exists, in `nonos_zkolang/src/compiler`: the lexer, the
-  parser with its error recovery, the placement check and the diagnostics. It checks
-  syntax only. The rest of the compiler is being built in the stages
-  `docs/compiler-architecture.md` describes.
+  parser with its error recovery, the placement check and the diagnostics. So do the
+  checker of sections 4 to 13 and the reference interpreter of the typed IR, for a
+  program in one file. The checker reports each form it does not check yet (structs,
+  enums, `match`, generics, `impl` blocks, methods on user types, `Self`, and modules in
+  their own files) as E0904. Nothing compiles the typed IR to the machine yet. The rest of
+  the compiler is being built in the stages `docs/compiler-architecture.md` describes.
 - The tools this document names (`zkolang abi`, `zkolang test`, `zkolang doc`,
   `zkolang explain`, and `zkolang check` with `--cost` or `--declassify`), the
   standard library `std` and its reference, the migration guide and the constraint ledger
@@ -755,9 +758,21 @@ parameter trustworthy inside the program whoever supplied it.*
 Every value has a label, `public` or `secret`, ordered `public < secret`. The label of a
 `main` parameter is its qualifier. Literals and constants are `public`. The label of every
 other value is the least upper bound of the labels of the values it is computed from, and
-of the labels of the guards (8.4) under which it is computed or assigned. *Note: the
-second clause is what catches a secret that leaks through a branch: `if s { 1 } else { 0 }`
-is secret.*
+of the labels of the guards (8.4) that decide it: the conditions of an `if` its value
+comes from, the guard under which a variable is assigned, the guards of the `return`s
+that may give a function's result or a `&mut` parameter's final value, and, for a
+variable a loop changes, the guards of the loop's `break`, `continue` and `return` and of
+its `while` condition. *Note: this is what catches a secret that leaks through a branch:
+`if s { 1 } else { 0 }` is secret.*
+
+A variable or parameter declared with a qualified type keeps its qualifier: every value
+assigned to a `public` part must be `public`, and a `secret` part stays `secret`.
+
+A function is checked once. The label of each part of an unqualified parameter is the
+label of that part of the argument (section 5.4): a tuple's fields have their own labels,
+and an array's elements share one. *Note: the compiler follows the labels of the first
+128 scalar parts of a function's parameters apart; it takes the parts after them as
+`secret`, which can only add errors.*
 
 ### 13.2 Checked positions
 
@@ -881,6 +896,7 @@ language does not depend on it: every construct of this document is built in.
 Integer types: `wrapping_add wrapping_sub wrapping_mul wrapping_neg to_le_bits pow
 min max` and the associated functions `checked_from wrapping_from from_le_bits MIN
 MAX BITS`. `field`: `inv pow to_le_bits` and `from_le_bits`. Arrays: `len enumerate`.
+`a.len()` is the length of `a`'s array type, a constant; `a` is not evaluated.
 
 ## 19. Diagnostics
 
