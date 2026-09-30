@@ -27,7 +27,7 @@ codes! {
     BAD_MAIN = "E0901", "`main` may not be generic and must return a value the public output can hold.";
     MANIFEST = "E0902", "The package manifest `zkolang.toml` is malformed or names something that does not exist.";
     BAD_ATTRIBUTE = "E0903", "An unknown attribute, or a known one used where it does not apply.";
-    UNSUPPORTED = "E0904", "A form this build of the compiler does not check or compile yet. Generic items, and modules in their own files, are checked from a later build on; a form that is checked but not compiled yet is named in the message.";
+    UNSUPPORTED = "E0904", "A form this build of the compiler does not check or compile yet; the message names it.";
     RUN_FAILED = "E0905", "The program fails on these inputs where its run reaches the marked operation: an `assert` of `false`, an overflow, a division by zero, or another failure of section 14.1. A failing run has no proof.";
     BAD_INPUTS = "E0906", "The values given do not fit `main`: the wrong number of values for its public or secret parameters, or a value outside its type. Each scalar of a parameter, in order, takes one value.";
     /* Internal. */

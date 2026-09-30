@@ -9,7 +9,7 @@ use alloc::format;
 use alloc::string::String;
 
 use super::abi::AbiError;
-use super::build::Built;
+use super::built::Built;
 use super::run::RunFailure;
 use crate::compiler::diag::{Code, Diagnostic};
 use crate::compiler::source::Span;

@@ -32,4 +32,5 @@ codes! {
     MODULE_AMBIGUOUS = "E0204", "Both `name.zkl` and `name/mod.zkl` exist for one module; remove one.";
     WRONG_KIND = "E0205", "A name that resolves to the wrong kind of item for this position, such as a function used as a type.";
     ALIAS_CYCLE = "E0206", "A type alias that stands for itself, directly or through other aliases.";
+    MODULE_DEPTH = "E0207", "Modules nested more than 64 deep, as a directory that holds itself makes them.";
 }

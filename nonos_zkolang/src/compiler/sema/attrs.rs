@@ -24,6 +24,11 @@ impl<'a> Sema<'a> {
             self.check_attr(a, None, span);
         }
         for item in items {
+            /* A module's attributes cover its body, which for a loaded one is its file. */
+            let cover = match &item.kind {
+                ItemKind::Mod(m) => m.file.unwrap_or(item.span),
+                _ => item.span,
+            };
             for (i, a) in item.attrs.iter().enumerate() {
                 let earlier = item.attrs.get(..i).unwrap_or(&[]);
                 if a.name.name != "allow" && earlier.iter().any(|b| b.name.name == a.name.name) {
@@ -32,11 +37,11 @@ impl<'a> Sema<'a> {
                     self.diags.push(d);
                     continue;
                 }
-                self.check_attr(a, Some(item), item.span);
+                self.check_attr(a, Some(item), cover);
             }
             if let ItemKind::Mod(m) = &item.kind {
                 if let Some(body) = &m.body {
-                    self.check_attrs(body, &m.inner_attrs, item.span);
+                    self.check_attrs(body, &m.inner_attrs, cover);
                 }
             }
         }

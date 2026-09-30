@@ -1,0 +1,7 @@
+/* A module in its own file, in a program checked as one text, has no file loaded (E0203). */
+#![allow(unused)]
+mod elsewhere; /*~ E0203 */
+
+mod inline {
+    pub fn here() -> u8 { 1 }
+}

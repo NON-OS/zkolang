@@ -13,6 +13,7 @@ mod backend;
 mod build;
 mod build_diag;
 mod build_lower;
+mod built;
 mod execute;
 mod leaves;
 mod run;
@@ -26,7 +27,8 @@ mod values;
 mod witness;
 
 pub use backend::{backend, BackendError, Compiled, MIN_ROWS};
-pub use build::{build, Built, MAX_ROWS};
+pub use build::{build, MAX_ROWS};
+pub use built::Built;
 pub use run::{prove, run, Proved, RunFailure};
 pub use run_diag::diagnose;
 pub use seed::{seed_of, SEED_BYTES};

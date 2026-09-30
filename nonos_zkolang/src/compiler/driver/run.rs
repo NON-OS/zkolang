@@ -14,7 +14,7 @@ use nonos_stark::air::RATE;
 use nonos_stark::field::Fp;
 
 use super::abi::AbiError;
-use super::build::Built;
+use super::built::Built;
 use super::execute::execute;
 use crate::compiler::interp::Failure;
 use crate::driver::{prove_program_hidden, Report, RunError};

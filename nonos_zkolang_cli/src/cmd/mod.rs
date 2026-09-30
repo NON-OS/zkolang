@@ -8,6 +8,7 @@
 mod build;
 mod check;
 mod check_2026;
+mod disk;
 mod edition;
 mod fee;
 mod key;

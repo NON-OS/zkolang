@@ -5,7 +5,8 @@
 
 /*!
  * The forms this build does not check yet (E0904): each is reported, so none passes as
- * checked. The code goes when the stage that checks them lands.
+ * checked. The code goes when the stage that checks them lands. A module whose file was
+ * never loaded is reported too (E0203).
  */
 
 use alloc::format;
@@ -13,7 +14,7 @@ use alloc::format;
 use super::cx::Sema;
 use crate::compiler::diag::{Code, Diagnostic};
 use crate::compiler::source::Span;
-use crate::compiler::syntax::ast::{Item, ItemKind};
+use crate::compiler::syntax::ast::{Ident, Item, ItemKind};
 
 impl<'a> Sema<'a> {
     /** Report `what`, a form this build does not check, at `at` (E0904). */
@@ -31,7 +32,7 @@ impl<'a> Sema<'a> {
     pub(crate) fn not_yet(&mut self, item: &Item) {
         let (what, at): (&str, Span) = match &item.kind {
             ItemKind::Fn(f) => ("generic functions", f.name.span),
-            ItemKind::Mod(m) => ("modules in their own files", m.name.span),
+            ItemKind::Mod(m) => ("this module", m.name.span),
             ItemKind::Impl(_) => ("generic impl blocks", item.span),
             ItemKind::Const(c) => ("this constant", c.name.span),
             ItemKind::Use(_) => ("this import", item.span),
@@ -40,5 +41,13 @@ impl<'a> Sema<'a> {
             }
         };
         self.not_checked(what, at);
+    }
+
+    /** Report the module `name`, declared `mod name;` but loaded from no file (E0203). */
+    pub(crate) fn unloaded(&mut self, name: &Ident) {
+        let what = format!("no file is loaded for module `{}`", name.name);
+        let d = Diagnostic::error(Code::MODULE_NOT_FOUND, what, name.span, "declared here")
+            .with_help("a crate of several files is loaded from its root file, which reads them");
+        self.diags.push(d);
     }
 }

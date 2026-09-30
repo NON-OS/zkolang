@@ -11,6 +11,7 @@ mod int_ty_range;
 mod keyword;
 mod keyword_macro;
 pub mod lex;
+pub mod load;
 pub mod parse;
 mod placement;
 mod token;

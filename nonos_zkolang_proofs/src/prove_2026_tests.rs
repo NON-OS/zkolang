@@ -15,12 +15,12 @@ use nonos_zkolang::compiler::driver::abi::AbiError;
 use nonos_zkolang::compiler::driver::{build, prove, Built, RunFailure};
 use nonos_zkolang::compiler::interp::FailKind;
 use nonos_zkolang::compiler::source::SourceMap;
+use nonos_zkolang::compiler::syntax::load::NoFiles;
 
 /** The program `src`, built. */
 pub(crate) fn built(src: &str) -> Built {
-    let mut map = SourceMap::new();
-    let id = map.add(String::from("p.zkl"), String::from(src));
-    build(id, src).unwrap_or_else(|d| panic!("{:?}", d.items()))
+    let root = ("p.zkl", String::from(src));
+    build(&mut SourceMap::new(), &NoFiles, root).unwrap_or_else(|d| panic!("{:?}", d.items()))
 }
 
 /** A blinding seed for tests; a real prover draws a fresh one per proof. */

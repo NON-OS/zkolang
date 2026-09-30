@@ -5,7 +5,8 @@
 
 /*!
  * What the edition 2026 commands share: the program built from the file the command line
- * names, its diagnostics rendered against the source, and typed input values.
+ * names and the module files it declares, its diagnostics rendered against the sources,
+ * and typed input values.
  */
 
 use std::fs;
@@ -14,6 +15,7 @@ use nonos_zkolang::compiler::diag::render;
 use nonos_zkolang::compiler::driver::{build, Built};
 use nonos_zkolang::compiler::source::SourceMap;
 
+use super::disk::Disk;
 use crate::line::Line;
 
 /**
@@ -23,8 +25,7 @@ use crate::line::Line;
 pub(super) fn built(line: &Line) -> Result<(SourceMap, Built), String> {
     let src = fs::read_to_string(line.file).map_err(|e| format!("read {}: {e}", line.file))?;
     let mut map = SourceMap::new();
-    let id = map.add(line.file.to_string(), src.clone());
-    let (built, diags) = match build(id, &src) {
+    let (built, diags) = match build(&mut map, &Disk, (line.file, src)) {
         Ok(b) => {
             let warnings = b.warnings.clone();
             (Some(b), warnings)

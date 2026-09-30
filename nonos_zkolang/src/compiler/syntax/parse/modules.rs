@@ -43,6 +43,7 @@ impl<'a> Parser<'a> {
                 body: None,
                 inner_attrs: Vec::new(),
                 inner_doc: None,
+                file: None,
             });
         }
         let (inner_doc, inner_attrs, items) = self.mod_body()?;
@@ -51,6 +52,7 @@ impl<'a> Parser<'a> {
             body: Some(items),
             inner_attrs,
             inner_doc,
+            file: None,
         })
     }
 

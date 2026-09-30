@@ -1,9 +1,0 @@
-/* Forms this build does not check yet are each reported once (E0904). */
-#![allow(unused)]
-mod elsewhere; /*~ E0904 */
-
-struct G<T> { x: T }
-
-impl<T> G<T> {
-    fn get(self) -> T { self.x }
-}

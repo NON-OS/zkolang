@@ -4,48 +4,39 @@
 */
 
 /*!
- * Building an edition 2026 program from source: lex, parse, check, lower, compile and
+ * Building an edition 2026 program from source: load its files, check, lower, compile and
  * verify, every failure a diagnostic. A built program carries its checked form, for the
  * reference run, and its ABI.
  */
 
 use alloc::format;
-use alloc::vec::Vec;
+use alloc::string::String;
 
-use super::abi::{abi_of, Leaf};
-use super::backend::{backend, Compiled};
+use super::abi::abi_of;
+use super::backend::backend;
 use super::build_diag::{backend_failure, one, too_large};
 use super::build_lower::lowering;
+use super::built::Built;
 use crate::compiler::diag::Diagnostics;
 use crate::compiler::lower::lower_program;
 use crate::compiler::sema::check;
-use crate::compiler::source::FileId;
-use crate::compiler::syntax::lex::lex;
-use crate::compiler::syntax::parse::parse_file;
-use crate::compiler::tir::TProgram;
+use crate::compiler::source::SourceMap;
+use crate::compiler::syntax::load::{load, Files};
 
 /** The most rows a provable trace holds (section 15.1). */
 pub const MAX_ROWS: usize = 1 << 16;
 
 /**
- * A built program: machine code, checked form, the leaves of its inputs and result, and
- * the warnings of checking it.
+ * Build the crate whose root file is `root`, a path and its text, reading its modules'
+ * files from `files` into `map`: the program, or why not.
  */
-#[derive(Clone, Debug)]
-pub struct Built {
-    pub compiled: Compiled,
-    pub program: TProgram,
-    pub public: Vec<Leaf>,
-    pub secret: Vec<Leaf>,
-    pub output: Vec<Leaf>,
-    pub warnings: Diagnostics,
-}
-
-/** Build the program `src`, the text of `file`: the program, or why not. */
-pub fn build(file: FileId, src: &str) -> Result<Built, Diagnostics> {
+pub fn build(
+    map: &mut SourceMap,
+    files: &dyn Files,
+    root: (&str, String),
+) -> Result<Built, Diagnostics> {
     let mut diags = Diagnostics::new();
-    let lexed = lex(file, src, &mut diags);
-    let ast = parse_file(file, src, &lexed, &mut diags, &mut 0);
+    let ast = load(files, root, map, &mut diags);
     if diags.has_errors() {
         return Err(diags);
     }

@@ -1,0 +1,17 @@
+/* A crate of several files (section 4.2): `name.zkl`, `name/mod.zkl`, an inline module
+   whose child is a file, and paths across them. */
+mod geometry;
+mod util;
+
+use geometry::shapes::Square;
+use util::deep::leaf::triple;
+
+#[test]
+fn items_of_module_files_are_found() {
+    let s = Square { side: 3 };
+    assert s.area() == 9;
+    assert util::double(4) == 8;
+    assert triple(5) == 15;
+    assert geometry::perimeter(s) == 12;
+    assert s.fence() == 12;
+}

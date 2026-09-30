@@ -29,8 +29,9 @@ normative, is the only one that describes the repository rather than the languag
   program in one file, structs, enums, `match`, `impl` blocks, methods and `Self`
   included, and generic structs, enums, aliases, functions, methods and `impl` blocks,
   with type and constant parameters, and constant `if` conditions.
-  The checker reports each form it does not check yet (modules in their own files) as
-  E0904. The back end compiles the typed IR of such a
+  A crate of several files is loaded from its root file, each `mod name;` from its own
+  file (section 4.2); `zkolang.toml` manifests and dependencies are not read yet. The
+  back end compiles the typed IR of such a
   program to the machine: lowering to SSA, the passes, gadget expansion, scheduling, register allocation
   and a check of the machine program against the SSA. `compiler::driver::build` and
   `prove` build a program and prove a run of it with the STARK, hiding the witness;

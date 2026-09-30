@@ -19,8 +19,10 @@ JSON. The checker resolves names, checks types and constants, reports recursion,
 secret flow and lowers the program to the typed IR, which the reference interpreter runs.
 It checks a program in one file, structs, enums, `match`, `impl` blocks, methods and
 `Self` included, and generic structs, enums, aliases, functions, methods and `impl`
-blocks, and reports each form it does not check yet (modules in their own files) as
-E0904. A function of a generic `impl` block is a template whose parameters are the
+blocks. `syntax::load` loads a crate from its root file: each `mod name;` is given the
+items of `name.zkl` or `name/mod.zkl`, read through a `Files` source (the filesystem for
+the command line, a table in tests), so the checker sees every module inline and each
+span names the file it is in. A function of a generic `impl` block is a template whose parameters are the
 block's then its own; a method call matches the block's written type against the
 receiver's type to give the block's parameters their arguments. A generic function is a template: a call checks against its signature
 with a variable per type parameter, and once the caller's types settle the call is given

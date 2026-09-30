@@ -170,6 +170,12 @@ mod match_rng;
 #[cfg(test)]
 mod match_witness;
 #[cfg(test)]
+mod modules_expect;
+#[cfg(test)]
+mod modules_run;
+#[cfg(test)]
+mod modules_tests;
+#[cfg(test)]
 mod name_check_tests;
 #[cfg(test)]
 mod native_compare_tests;

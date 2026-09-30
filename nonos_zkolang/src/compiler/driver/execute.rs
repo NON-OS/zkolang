@@ -15,7 +15,7 @@ use alloc::vec::Vec;
 use nonos_stark::field::Fp;
 
 use super::abi::{decode, encode};
-use super::build::Built;
+use super::built::Built;
 use super::leaves::leaves_of;
 use super::run::RunFailure;
 use super::values::{args_of, reference};

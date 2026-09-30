@@ -16,7 +16,7 @@ use crate::compiler::diag::Diagnostics;
 use crate::compiler::syntax::ast::SourceAst;
 use crate::compiler::tir::{ConstId, FnId, TProgram};
 
-/** Check the program `ast`, a crate of one file. */
+/** Check the program `ast`, a crate whose modules are inline or loaded (`syntax::load`). */
 pub fn check(ast: &SourceAst) -> (TProgram, Diagnostics) {
     check_mode(ast, false)
 }

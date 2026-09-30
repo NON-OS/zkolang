@@ -46,7 +46,11 @@ impl<'a> Sema<'a> {
                     self.const_of.insert(id, cid);
                 }
                 (ItemKind::TypeAlias(_) | ItemKind::Struct(_) | ItemKind::Enum(_), _) => {}
-                (ItemKind::Mod(m), _) if m.body.is_some() => {}
+                (ItemKind::Mod(m), _) => {
+                    if m.body.is_none() {
+                        self.unloaded(&m.name);
+                    }
+                }
                 _ => self.not_yet(item),
             }
         }

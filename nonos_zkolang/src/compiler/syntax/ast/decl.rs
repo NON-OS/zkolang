@@ -33,9 +33,11 @@ pub struct ModDecl {
     pub name: Ident,
     /** The inline body, or `None` for a module in its own file. */
     pub body: Option<Vec<Item>>,
-    /** Inner attributes of an inline module. */
+    /** Inner attributes of an inline module, or of the file of a loaded one. */
     pub inner_attrs: Vec<Attr>,
     pub inner_doc: Option<String>,
+    /** The whole of the module's own file, once loaded (`syntax::load`). */
+    pub file: Option<Span>,
 }
 
 /** A `use` tree. */

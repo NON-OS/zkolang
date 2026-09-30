@@ -11,7 +11,7 @@
 use alloc::vec::Vec;
 
 use super::abi::AbiError;
-use super::build::Built;
+use super::built::Built;
 use super::value_of::value_of;
 use crate::compiler::interp::{Failure, Interp, Value};
 use crate::compiler::sema::ty::TyId;

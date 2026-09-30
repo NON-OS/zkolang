@@ -1,0 +1,8 @@
+/* Module files that are missing, doubled, or wrong inside. */
+mod gone; /*~ E0203 */
+mod twice; /*~ E0204 */
+mod bad;
+
+fn f() -> u8 {
+    bad::g()
+}

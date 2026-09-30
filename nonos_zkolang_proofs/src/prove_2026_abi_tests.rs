@@ -46,8 +46,8 @@ fn forty_secret_values_needed_at_once_are_refused_with_e0801() {
     };
     let secret = src("secret");
     let mut map = nonos_zkolang::compiler::source::SourceMap::new();
-    let id = map.add(String::from("p.zkl"), secret.clone());
-    let codes = match nonos_zkolang::compiler::driver::build(id, &secret) {
+    let files = nonos_zkolang::compiler::syntax::load::NoFiles;
+    let codes = match nonos_zkolang::compiler::driver::build(&mut map, &files, ("p.zkl", secret)) {
         Err(d) => d.items().iter().map(|d| d.code.0).collect::<Vec<_>>(),
         Ok(_) => Vec::new(),
     };
