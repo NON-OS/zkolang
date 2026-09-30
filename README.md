@@ -66,11 +66,18 @@ with `match`, checked for exhaustiveness; `public` and `secret` labels, with a c
 refuses a secret reaching a public result unless it is `declassify`d; generic functions,
 types and `impl` blocks over types and constants; modules in their own files; packages
 with a `zkolang.toml` and path dependencies; and a standard library written in zKølang,
-with `Option`, `Some` and `None` in every module, `std::hash` and `std::merkle`.
+with `Option` and `Result` and their variants in every module, and `std::array`,
+`std::cmp`, `std::poly`, `std::curve` (elliptic curves over `field`), `std::hash` and
+`std::merkle`. [`docs/migration-2026.md`](docs/migration-2026.md) maps each edition 2025
+form to its edition 2026 form, each pair checked by a test to give the same outputs.
 
 ```
 zkolang check program.zkl --edition 2026          # check and compile, and count the rows
+zkolang check program.zkl --edition 2026 --cost   # the rows of each function and line
+zkolang check program.zkl --edition 2026 --declassify  # each place a secret is revealed
 zkolang test program.zkl                          # run each #[test], compiled on the machine
+zkolang abi program.zkl --edition 2026            # the layout of the inputs and result
+zkolang doc program.zkl                           # the reference from the doc comments
 zkolang check program.zkl --edition 2026 --json   # the diagnostics as a JSON array
 zkolang explain E0300                             # what a diagnostic code means
 ```

@@ -57,7 +57,9 @@ normative, is the only one that describes the repository rather than the languag
   test keeps equal to what `zkolang doc --std` makes; `zkolang abi` prints the layout of
   `main`'s inputs and result (section 12.2), and `zkolang check --declassify` lists each
   `declassify` (section 13.2); `zkolang check --cost` gives the cost report of section
-  15.2. The migration guide and the constraint ledger do not exist yet.
+  15.2; `docs/migration-2026.md` is the migration guide of section 20.3, each of its
+  pairs checked by a test to give the same outputs. The constraint ledger does not exist
+  yet.
 
 ## Contents
 
