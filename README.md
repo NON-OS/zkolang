@@ -33,9 +33,50 @@ outputs [729]
 steps 5  trace 2^3
 ```
 
-The tool has five verbs: `run` compiles and proves, `check` compiles only, `build` emits
-a native backend, `key` prints a circuit's registration key, and `fee` prices the
-pay-to-prove cost of a run in NOX.
+The tool's verbs: `run` compiles and proves, `check` compiles only, `build` emits a
+native backend, `key` prints a circuit's registration key, and `fee` prices the
+pay-to-prove cost of a run in NOX. For edition 2026, `test` runs a program's tests and
+`explain` prints what a diagnostic code means.
+
+## Edition 2026
+
+Edition 2026 is a typed language, specified in [`SPEC.md`](SPEC.md), whose compiler is
+being built in stages; the status section there says what exists. This program proves
+that a secret leaf lies in a Merkle tree under a public root, and reveals nothing else:
+
+```
+use std::merkle::root;
+
+fn main(r: public field, leaf: secret field, path: secret [field; 3], right: secret [bool; 3]) -> field {
+    assert root(leaf, path, right) == r, "not a member";
+    r
+}
+```
+
+```
+zkolang run member.zkl --edition 2026 --public 4974174274453454789 --secret 7,11,22,33,0,1,1
+verified
+outputs [4974174274453454789]
+rows 259  trace 2^9
+```
+
+A leaf that is not in the tree fails the run at the `assert`, and no proof is made. The
+edition has fixed-width integers, `bool` and `field`; tuples, arrays, structs, and enums
+with `match`, checked for exhaustiveness; `public` and `secret` labels, with a check that
+refuses a secret reaching a public result unless it is `declassify`d; generic functions,
+types and `impl` blocks over types and constants; modules in their own files; packages
+with a `zkolang.toml` and path dependencies; and a standard library written in zKølang,
+with `Option`, `Some` and `None` in every module, `std::hash` and `std::merkle`.
+
+```
+zkolang check program.zkl --edition 2026          # check and compile, and count the rows
+zkolang test program.zkl                          # run each #[test], compiled on the machine
+zkolang check program.zkl --edition 2026 --json   # the diagnostics as a JSON array
+zkolang explain E0300                             # what a diagnostic code means
+```
+
+A file that a `zkolang.toml` governs, in its directory or one above, is compiled in the
+manifest's edition without `--edition`.
 
 ## A first program
 
