@@ -21,6 +21,7 @@ mod cursor;
 mod doc_attrs;
 mod doc_text;
 mod docs;
+mod docs_unused;
 mod dot;
 mod entry;
 mod enums;

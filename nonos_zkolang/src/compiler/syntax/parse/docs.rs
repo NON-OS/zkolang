@@ -13,7 +13,6 @@ use alloc::string::String;
 
 use super::doc_text::doc_text;
 use super::parser::Parser;
-use crate::compiler::diag::{Code, Diagnostic};
 use crate::compiler::syntax::lex::CommentKind;
 
 impl<'a> Parser<'a> {
@@ -54,18 +53,5 @@ impl<'a> Parser<'a> {
             s.push_str(&doc_text(text));
         }
         out
-    }
-
-    /** Warn about every doc comment no item or module took. */
-    pub(super) fn warn_unused_docs(&mut self) {
-        for (i, c) in self.comments.iter().enumerate() {
-            let doc = matches!(c.kind, CommentKind::DocOuter | CommentKind::DocInner);
-            if doc && !self.doc_used.get(i).copied().unwrap_or(true) {
-                self.diags.push(
-                    Diagnostic::warning(Code::MISPLACED_DOC, "doc comment documents nothing", c.span, "no item follows it")
-                        .with_help("`/** */` and `///` document the item after them, `/*! */` and `//!` the module they open; use `/* */` or `//` for other comments"),
-                );
-            }
-        }
     }
 }

@@ -1,0 +1,16 @@
+/* A block of doc comments that documents nothing gets one warning, whatever its length. */
+fn f() {
+    /// one /*~ W0007 */
+    /// two
+    /// three
+    let x = 1;
+}
+
+/// Documents `g`, across a blank line.
+
+/// So does this.
+fn g() {}
+
+//! A late inner doc comment. /*~ W0007 */
+//! Still the same block.
+fn h() {}

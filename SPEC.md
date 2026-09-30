@@ -860,7 +860,8 @@ An unknown attribute is an error.
 
 An outer doc comment, `/** ... */` or `///`, documents the following item, and an inner
 one, `/*! ... */` or `//!`, the enclosing module. Doc comments are Markdown. `zkolang
-doc` renders them; a doc comment elsewhere is a warning.
+doc` renders them. A doc comment elsewhere is a warning, one for each block of adjacent
+doc comments, given only for a file that parses without errors.
 
 ## 18. The standard library and the prelude
 
