@@ -1,0 +1,30 @@
+/*!
+ * Merkle trees over MiMC (section 18.2): a node's two-to-one compression, one level of an
+ * authentication path, and the root a whole path climbs to, as the edition 2025 standard
+ * library's `merkle.zkl` builds them.
+ */
+
+use crate::hash::rounds;
+
+/** A node: `left` through four rounds, then `right` added, then four more. */
+pub fn compress2(left: field, right: field) -> field {
+    rounds::<4, 8>(rounds::<0, 4>(left) + right)
+}
+
+/**
+ * One level of a path: `node` and its sibling `sib`, ordered by `right`, which is true when
+ * `node` is the right child, then compressed.
+ */
+pub fn step(node: field, sib: field, right: bool) -> field {
+    let (l, r) = if right { (sib, node) } else { (node, sib) };
+    compress2(l, r)
+}
+
+/** The root that `leaf` climbs to along the siblings `path`, bottom first, placed by `right`. */
+pub fn root<const N: usize>(leaf: field, path: [field; N], right: [bool; N]) -> field {
+    let mut node = leaf;
+    for i in 0..N {
+        node = step(node, path[i], right[i]);
+    }
+    node
+}

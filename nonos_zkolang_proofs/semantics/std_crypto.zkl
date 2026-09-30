@@ -1,0 +1,25 @@
+/* The standard library's MiMC hash and Merkle trees (section 18.2), against values the edition 2025 standard library proves. */
+use std::hash::{compress_wide, permute};
+use std::merkle::{compress2, root, step};
+
+#[test]
+fn the_permutation_matches_edition_2025() {
+    assert permute(5) == 4393609822858488975;
+    assert permute(0) == 805098464081351370;
+    assert permute(-1) == 3787833481608859503;
+    assert compress_wide(1, 2) == 15420784231080021075;
+}
+
+#[test]
+fn a_merkle_path_climbs_to_the_root() {
+    assert compress2(1, 2) == 3668323114351397283;
+    let by_steps = step(step(step(7, 11, false), 22, true), 33, true);
+    assert by_steps == 4974174274453454789;
+    assert root(7, [11, 22, 33], [false, true, true]) == 4974174274453454789;
+}
+
+#[test]
+#[should_fail]
+fn a_wrong_path_does_not() {
+    assert root(7, [11, 22, 33], [true, true, true]) == 4974174274453454789;
+}

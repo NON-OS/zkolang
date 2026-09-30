@@ -32,8 +32,9 @@ normative, is the only one that describes the repository rather than the languag
   A crate of several files is loaded from its root file, each `mod name;` from its own
   file (section 4.2); `zkolang.toml` manifests and dependencies are not read yet. The
   standard library, written in zKølang under `std/` and built into the compiler, is
-  loaded beside every crate as the crate `std`; so far it holds `std::option` and the
-  prelude, `std::prelude` (section 18.1). The
+  loaded beside every crate as the crate `std`; so far it holds `std::hash` (the MiMC
+  permutation and compressions of the edition 2025 library), `std::merkle`, `std::option`
+  and the prelude, `std::prelude` (section 18.1). The
   back end compiles the typed IR of such a
   program to the machine: lowering to SSA, the passes, gadget expansion, scheduling, register allocation
   and a check of the machine program against the SSA. `compiler::driver::build` and

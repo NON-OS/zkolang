@@ -1,0 +1,38 @@
+/*!
+ * MiMC over `field` (section 18.2): the sixteen round permutation and the compressions
+ * built from it, the same functions as the edition 2025 standard library's `hash.zkl`.
+ */
+
+/** The round constants, in the order the rounds use them. */
+pub const MIMC_C: [field; 16] = [
+    11400714819323198485, 16088033396387240378, 18339175128185271363, 6250726733345258880,
+    860606576581593985, 211947541457481110, 4899937286522103119, 4031048130325877628,
+    11455035227444029741, 1701577562105719986, 2115931002410623643, 7476793921636051640,
+    3314512000073146649, 3439479947032908558, 17443250021448620071, 13023377555915530036,
+];
+
+/** One round: the state plus the round constant `c`, to the seventh power. */
+pub fn mimc_round(s: field, c: field) -> field {
+    let t = s + c;
+    let t2 = t * t;
+    t2 * t2 * t2 * t
+}
+
+/** The rounds whose constants are `MIMC_C[LO..HI]`, applied to `s` in order. */
+pub fn rounds<const LO: usize, const HI: usize>(s: field) -> field {
+    let mut x = s;
+    for i in LO..HI {
+        x = mimc_round(x, MIMC_C[i]);
+    }
+    x
+}
+
+/** The sixteen round MiMC permutation of `s`. */
+pub fn permute(s: field) -> field {
+    rounds::<0, 16>(s)
+}
+
+/** A two-to-one compression: `left` through the first eight rounds, then `right` added, then the last eight. */
+pub fn compress_wide(left: field, right: field) -> field {
+    rounds::<8, 16>(rounds::<0, 8>(left) + right)
+}
