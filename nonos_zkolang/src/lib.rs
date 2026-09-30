@@ -36,8 +36,8 @@ pub use driver::{
 };
 pub use isa::{Op, Program, REGS};
 pub use lang::{
-    compile_source, compile_source_unoptimized, expand_includes, expand_includes_from,
-    render_error, CompileError, Included, NameError,
+    compile_source, compile_source_full, compile_source_unoptimized, expand_includes,
+    expand_includes_from, render_error, Advice, CompileError, Compiled, Included, NameError,
 };
 pub use nox::{quote, Quote, MICRONOX_PER_NOX};
 pub use stdlib::{check, expand_with_stdlib, run, stdlib_source};

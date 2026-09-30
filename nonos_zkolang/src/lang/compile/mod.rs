@@ -27,5 +27,5 @@ mod recursion;
 mod same_expr;
 mod stmt;
 
-pub use compiled::Compiled;
+pub use compiled::{Advice, Compiled};
 pub use lower::{compile, compile_full, compile_unoptimized};

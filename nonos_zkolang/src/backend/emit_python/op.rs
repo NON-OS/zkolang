@@ -12,9 +12,10 @@
 use alloc::format;
 use alloc::string::String;
 
+use crate::backend::Plan;
 use crate::isa::Op;
 
-pub(super) fn emit_op(op: &Op) -> Option<String> {
+pub(super) fn emit_op(op: &Op, plan: &Plan) -> Option<String> {
     let line = match op {
         Op::Imm { d, v } => format!("r[{d}] = {}", v.value()),
         Op::Add { d, a, b } => format!("r[{d}] = _add(r[{a}], r[{b}])"),
@@ -25,7 +26,10 @@ pub(super) fn emit_op(op: &Op) -> Option<String> {
         Op::Eq { d, a, b } => format!("r[{d}] = 1 if r[{a}] == r[{b}] else 0"),
         Op::Bool { a } => format!("_check(r[{a}] in (0, 1), \"boolean constraint\")"),
         Op::Assert { a } => format!("_check(r[{a}] == 0, \"assertion\")"),
-        Op::Inp { d, idx } => format!("r[{d}] = inp[{idx}]"),
+        Op::Inp { d, idx } => match plan.bit(*idx) {
+            Some((v, k)) => format!("r[{d}] = (r[{v}] >> {k}) & 1"),
+            None => format!("r[{d}] = inp[{idx}]"),
+        },
         Op::Out { a, idx } => format!("out[{idx}] = r[{a}]"),
         Op::Halt => return None,
     };

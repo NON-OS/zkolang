@@ -19,7 +19,7 @@ const USAGE: &str = "usage: zkolang check <file>";
  */
 pub(crate) fn check(args: &[String]) -> Result<(), String> {
     let line = Line::parse(args, &[], USAGE)?;
-    let (_, ops) = compiled(&line)?;
+    let ops = compiled(&line)?.1.ops;
     if program_log_t(&ops).is_none() {
         let n = ops.len();
         return Err(format!(

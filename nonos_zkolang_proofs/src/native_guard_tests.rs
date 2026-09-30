@@ -13,13 +13,13 @@
 use std::path::PathBuf;
 use std::process::Command;
 
-use nonos_zkolang::{compile_source, evaluate, to_asm, to_c};
+use nonos_zkolang::{compile_source, compile_source_full, evaluate, to_asm, to_c};
 
 const SRC: &str = "input x;\ninput y;\noutput sel(y, 5, 7) + 1 / x;";
 
 /** Build the program for one target in its own directory and return the binary. */
 fn binary(target: &str) -> PathBuf {
-    let ops = compile_source(SRC).expect("compile");
+    let ops = compile_source_full(SRC).expect("compile");
     let (text, ext) = if target == "c" {
         (to_c(&ops), "c")
     } else {

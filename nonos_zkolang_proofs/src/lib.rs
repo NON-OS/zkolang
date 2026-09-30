@@ -100,6 +100,8 @@ mod match_default_tests;
 #[cfg(test)]
 mod name_check_tests;
 #[cfg(test)]
+mod native_compare_tests;
+#[cfg(test)]
 mod native_guard_tests;
 #[cfg(test)]
 mod nesting_tests;

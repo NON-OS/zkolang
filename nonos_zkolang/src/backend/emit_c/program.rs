@@ -10,8 +10,9 @@ use alloc::string::String;
 
 use super::op::emit_op;
 use super::prelude::PRELUDE;
-use crate::backend::{n_inputs, n_outputs};
-use crate::isa::{Op, REGS};
+use crate::backend::{n_outputs, Plan};
+use crate::isa::REGS;
+use crate::lang::Compiled;
 
 /** The C statement for an argument that is not a decimal number below the modulus. */
 const BAD_INPUT: &str =
@@ -19,11 +20,14 @@ const BAD_INPUT: &str =
 
 /**
  * Emit a program as a standalone C source file that runs as native code. It takes
- * exactly one argument per input, each a decimal number below the field modulus, and
- * returns 1 for any other command line.
+ * exactly one argument per public input and secret, each a decimal number below the
+ * field modulus, and returns 1 for any other command line. It computes the bits of each
+ * ordered comparison itself.
  */
-pub fn to_c(program: &[Op]) -> String {
-    let n_in = n_inputs(program);
+pub fn to_c(compiled: &Compiled) -> String {
+    let program = &compiled.ops;
+    let plan = Plan::of(compiled);
+    let n_in = plan.n_user;
     let n_out = n_outputs(program);
 
     let mut s = String::from(PRELUDE);
@@ -42,7 +46,7 @@ pub fn to_c(program: &[Op]) -> String {
     }
     for op in program {
         s.push_str("    ");
-        s.push_str(&emit_op(op));
+        s.push_str(&emit_op(op, &plan));
         s.push('\n');
     }
     if n_out > 0 {

@@ -14,6 +14,7 @@
 use alloc::format;
 use alloc::string::String;
 
+use crate::backend::Plan;
 use crate::isa::Op;
 
 fn call2(d: u8, a: u8, b: u8, f: &str) -> String {
@@ -21,7 +22,7 @@ fn call2(d: u8, a: u8, b: u8, f: &str) -> String {
     format!("    movq rf+{a}(%rip), %rdi\n    movq rf+{b}(%rip), %rsi\n    call {f}\n    movq %rax, rf+{d}(%rip)\n")
 }
 
-pub(super) fn emit_op(op: &Op, i: usize) -> String {
+pub(super) fn emit_op(op: &Op, i: usize, plan: &Plan) -> String {
     let off = |r: &u8| *r as usize * 8;
     match op {
         Op::Imm { d, v } => format!("    movabsq ${}, %rax\n    movq %rax, rf+{}(%rip)\n", v.value(), off(d)),
@@ -33,7 +34,10 @@ pub(super) fn emit_op(op: &Op, i: usize) -> String {
         Op::Eq { d, a, b } => format!("    movq rf+{}(%rip), %rax\n    xorl %ecx, %ecx\n    cmpq rf+{}(%rip), %rax\n    sete %cl\n    movq %rcx, rf+{}(%rip)\n", off(a), off(b), off(d)),
         Op::Bool { a } => format!("    movq rf+{}(%rip), %rax\n    cmpq $0, %rax\n    je .Lok{i}\n    cmpq $1, %rax\n    je .Lok{i}\n    movl $2, %edi\n    call SYM(exit)\n.Lok{i}:\n", off(a)),
         Op::Assert { a } => format!("    movq rf+{}(%rip), %rax\n    testq %rax, %rax\n    jz .Lok{i}\n    movl $3, %edi\n    call SYM(exit)\n.Lok{i}:\n", off(a)),
-        Op::Inp { d, idx } => format!("    movq in+{}(%rip), %rax\n    movq %rax, rf+{}(%rip)\n", *idx as usize * 8, off(d)),
+        Op::Inp { d, idx } => match plan.bit(*idx) {
+            Some((v, k)) => format!("    movq rf+{}(%rip), %rax\n    shrq ${k}, %rax\n    andl $1, %eax\n    movq %rax, rf+{}(%rip)\n", off(&v), off(d)),
+            None => format!("    movq in+{}(%rip), %rax\n    movq %rax, rf+{}(%rip)\n", *idx as usize * 8, off(d)),
+        },
         Op::Out { a, idx } => format!("    movq rf+{}(%rip), %rax\n    movq %rax, out+{}(%rip)\n", off(a), *idx as usize * 8),
         Op::Halt => String::from("    /* halt */\n"),
     }

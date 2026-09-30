@@ -12,11 +12,11 @@
 
 use std::process::Command;
 
-use nonos_zkolang::{compile_source, to_python};
+use nonos_zkolang::{compile_source_full, to_python};
 
 /** What `run(inputs)` returns or raises for each input list, under `python3 -O`. */
 fn results(src: &str, inputs: &[&str]) -> Vec<String> {
-    let ops = compile_source(src).expect("compile");
+    let ops = compile_source_full(src).expect("compile");
     let dir = std::env::temp_dir().join(format!("zkolang-py-{}", std::process::id()));
     std::fs::create_dir_all(&dir).expect("dir");
     std::fs::write(dir.join("m.py"), to_python(&ops)).expect("write");

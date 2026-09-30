@@ -15,7 +15,7 @@ const USAGE: &str = "usage: zkolang key <file>";
 
 pub(crate) fn key(args: &[String]) -> Result<(), String> {
     let line = Line::parse(args, &[], USAGE)?;
-    let (_, program) = compiled(&line)?;
+    let program = compiled(&line)?.1.ops;
     let vk = verifier_key(&program, REGISTRATION_RATE).map_err(|e| format!("key error: {e:?}"))?;
     println!("commit {}", hex(&commit(&program)));
     println!("vk     {}", hex(&vk));

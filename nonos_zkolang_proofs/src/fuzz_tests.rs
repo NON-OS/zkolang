@@ -12,7 +12,9 @@
 //! subtract, multiply, bindings, and small constants, so every program always runs and stays
 //! inside the register file, which isolates the transform under test as the only variable.
 
-use nonos_zkolang::{compile_source, compile_source_unoptimized, evaluate, to_asm, to_c};
+use nonos_zkolang::{
+    compile_source, compile_source_full, compile_source_unoptimized, evaluate, to_asm, to_c,
+};
 
 // A small deterministic generator, so a failure reproduces from the seed.
 struct Rng(u64);
@@ -133,7 +135,7 @@ fn the_optimizer_is_equivalent_under_loop_fuzzing() {
 // does, run it on the inputs, and parse the field outputs it prints. A divergence from the
 // VM is an emitter bug, because the native and the proven trace are the same op list.
 fn native_c(src: &str, inputs: &[u64], tag: usize) -> Vec<u64> {
-    let program = compile_source(src).expect("compile");
+    let program = compile_source_full(src).expect("compile");
     let c = to_c(&program);
     let dir = std::env::temp_dir();
     let cpath = dir.join(format!("zkfuzz_{tag}.c"));
@@ -187,7 +189,7 @@ fn the_c_backend_agrees_with_the_vm_under_fuzzing() {
 // parse the field outputs. The assembly emitter hand-writes the field arithmetic, so this is
 // where a reduction or carry bug the higher backends do not share would show.
 fn native_asm(src: &str, inputs: &[u64], tag: usize) -> Vec<u64> {
-    let program = compile_source(src).expect("compile");
+    let program = compile_source_full(src).expect("compile");
     let asm = to_asm(&program);
     let dir = std::env::temp_dir();
     let spath = dir.join(format!("zkfuzz_{tag}.S"));

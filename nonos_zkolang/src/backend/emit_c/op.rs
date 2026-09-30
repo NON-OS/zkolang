@@ -13,9 +13,10 @@
 use alloc::format;
 use alloc::string::String;
 
+use crate::backend::Plan;
 use crate::isa::Op;
 
-pub(super) fn emit_op(op: &Op) -> String {
+pub(super) fn emit_op(op: &Op, plan: &Plan) -> String {
     match op {
         Op::Imm { d, v } => format!("r[{d}] = {}ULL;", v.value()),
         Op::Add { d, a, b } => format!("r[{d}] = fadd(r[{a}], r[{b}]);"),
@@ -28,7 +29,10 @@ pub(super) fn emit_op(op: &Op) -> String {
         Op::Eq { d, a, b } => format!("r[{d}] = (r[{a}] == r[{b}]) ? 1ULL : 0ULL;"),
         Op::Bool { a } => format!("if (r[{a}] != 0ULL && r[{a}] != 1ULL) return 2;"),
         Op::Assert { a } => format!("if (r[{a}] != 0ULL) return 3;"),
-        Op::Inp { d, idx } => format!("r[{d}] = in[{idx}];"),
+        Op::Inp { d, idx } => match plan.bit(*idx) {
+            Some((v, k)) => format!("r[{d}] = (r[{v}] >> {k}) & 1ULL;"),
+            None => format!("r[{d}] = in[{idx}];"),
+        },
         Op::Out { a, idx } => format!("out[{idx}] = r[{a}];"),
         Op::Halt => String::from("/* halt */"),
     }

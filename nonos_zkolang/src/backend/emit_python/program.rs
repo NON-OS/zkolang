@@ -10,15 +10,19 @@ use alloc::string::String;
 
 use super::op::emit_op;
 use super::prelude::PRELUDE;
-use crate::backend::{n_inputs, n_outputs};
-use crate::isa::{Op, REGS};
+use crate::backend::{n_outputs, Plan};
+use crate::isa::REGS;
+use crate::lang::Compiled;
 
 /**
  * Emit a program as a Python module exposing `run(inputs)`. It takes exactly one
- * integer per input, each below the field modulus, and raises `ValueError` otherwise.
+ * integer per public input and secret, each below the field modulus, and raises
+ * `ValueError` otherwise. It computes the bits of each ordered comparison itself.
  */
-pub fn to_python(program: &[Op]) -> String {
-    let n_in = n_inputs(program);
+pub fn to_python(compiled: &Compiled) -> String {
+    let program = &compiled.ops;
+    let plan = Plan::of(compiled);
+    let n_in = plan.n_user;
     let n_out = n_outputs(program);
 
     let mut s = String::from(PRELUDE);
@@ -35,7 +39,7 @@ pub fn to_python(program: &[Op]) -> String {
         s.push_str(&format!("    out = [0] * {n_out}\n"));
     }
     for op in program {
-        if let Some(line) = emit_op(op) {
+        if let Some(line) = emit_op(op, &plan) {
             s.push_str("    ");
             s.push_str(&line);
             s.push('\n');

@@ -53,6 +53,11 @@ Keywords: `let`, `assert`, `input`, `secret`, `output`, `inv`, `sel`, `for`, `in
 From `nonos_zkolang` (`src/lib.rs`):
 
 - `compile_source(&str) -> Result<Vec<Op>, CompileError>`
+- `compile_source_full(&str) -> Result<Compiled, CompileError>`: the program with the
+  advice plan its ordered comparisons need
+- `to_c(&Compiled) -> String`, `to_asm(&Compiled) -> String`,
+  `to_python(&Compiled) -> String`: native targets that take the public inputs and
+  secrets and compute each comparison's bits themselves
 - `prove_source(&str) -> Result<Report, RunError>`
 - `prove_source_with_inputs(&str, &[u64]) -> Result<Report, RunError>`
 - `prove_source_with_witness(&str, &[u64] public, &[u64] secret) -> Result<Report, RunError>`

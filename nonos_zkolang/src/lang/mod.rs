@@ -17,7 +17,7 @@ mod name_error;
 mod optimize;
 mod parse;
 
-pub use compile::{compile, compile_full, compile_unoptimized, Compiled};
+pub use compile::{compile, compile_full, compile_unoptimized, Advice, Compiled};
 pub use diagnostic::render as render_error;
 pub use error::CompileError;
 pub use include::{expand_includes, expand_includes_from, Included};
