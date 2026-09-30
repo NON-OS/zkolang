@@ -90,6 +90,10 @@ mod flow_gen_stmt;
 #[cfg(test)]
 mod flow_tests;
 #[cfg(test)]
+mod fmt_tests;
+#[cfg(test)]
+mod fmt_tree_tests;
+#[cfg(test)]
 mod fn_tests;
 #[cfg(test)]
 mod fold_constraint_tests;

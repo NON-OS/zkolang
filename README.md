@@ -78,6 +78,7 @@ zkolang check program.zkl --edition 2026 --declassify  # each place a secret is 
 zkolang test program.zkl                          # run each #[test], compiled on the machine
 zkolang abi program.zkl --edition 2026            # the layout of the inputs and result
 zkolang doc program.zkl                           # the reference from the doc comments
+zkolang fmt program.zkl                           # lay out its lines; --check only reports
 zkolang check program.zkl --edition 2026 --json   # the diagnostics as a JSON array
 zkolang explain E0300                             # what a diagnostic code means
 ```

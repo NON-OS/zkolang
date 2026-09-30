@@ -57,7 +57,10 @@ normative, is the only one that describes the repository rather than the languag
   test keeps equal to what `zkolang doc --std` makes; `zkolang abi` prints the layout of
   `main`'s inputs and result (section 12.2), and `zkolang check --declassify` lists each
   `declassify` (section 13.2); `zkolang check --cost` gives the cost report of section
-  15.2; `docs/migration-2026.md` is the migration guide of section 20.3, each of its
+  15.2; `zkolang fmt` lays out a file's lines, keeping each line break: it indents each
+  line one level for each line that opened brackets still open around it and one more
+  where an expression goes on, leaves no trailing whitespace and at most one blank line,
+  and writes a layout only when it has the file's tokens and comments; `docs/migration-2026.md` is the migration guide of section 20.3, each of its
   pairs checked by a test to give the same outputs; `docs/audit/constraints.md` is the
   constraint ledger of section 14.3.
 
