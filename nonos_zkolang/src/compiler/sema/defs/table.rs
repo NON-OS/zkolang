@@ -15,6 +15,8 @@ use super::{Def, DefId, Module};
 pub struct Defs<'a> {
     pub defs: Vec<Def<'a>>,
     pub modules: BTreeMap<DefId, Module>,
+    /** Whether items marked `#[cfg(test)]` are compiled (section 16). */
+    pub testing: bool,
 }
 
 impl<'a> Defs<'a> {

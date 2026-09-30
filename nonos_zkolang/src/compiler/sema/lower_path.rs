@@ -36,6 +36,7 @@ impl<'a> Sema<'a> {
                 return Types::ERROR;
             }
         };
+        self.note_use(def, p);
         match self.defs.get(def).map(|d| d.kind) {
             Some(DefKind::Alias) => {
                 let (ty, own) = self.alias(def);

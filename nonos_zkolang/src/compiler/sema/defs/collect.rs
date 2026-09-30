@@ -22,7 +22,19 @@ impl<'a> Defs<'a> {
         ast: &'a SourceAst,
         diags: &mut Diagnostics,
     ) -> (Defs<'a>, Vec<PendingImport<'a>>) {
-        let mut defs = Defs::default();
+        Defs::collect_with(ast, false, diags)
+    }
+
+    /** As `collect`, with the items marked `#[cfg(test)]` too when `testing`. */
+    pub fn collect_with(
+        ast: &'a SourceAst,
+        testing: bool,
+        diags: &mut Diagnostics,
+    ) -> (Defs<'a>, Vec<PendingImport<'a>>) {
+        let mut defs = Defs {
+            testing,
+            ..Defs::default()
+        };
         let root = defs.push(Def {
             kind: DefKind::Mod,
             name: String::from("crate"),

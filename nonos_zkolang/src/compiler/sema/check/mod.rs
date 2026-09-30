@@ -64,6 +64,7 @@ mod stmt;
 mod unary;
 mod unify;
 mod unsupported;
+mod unused;
 mod vars;
 mod vars_join;
 mod zonk;

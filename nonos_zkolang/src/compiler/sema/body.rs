@@ -36,6 +36,7 @@ impl<'a> Sema<'a> {
                 cx.mismatch(at, sig.ret, ty);
             }
             cx.settle();
+            cx.warn_unused();
             cx.rewrite_block(&mut body);
             body.each_expr(&mut |e| cx.post(e));
             let locals = core::mem::take(&mut cx.locals);

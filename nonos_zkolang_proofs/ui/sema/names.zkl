@@ -1,4 +1,5 @@
 /* Names in code: each missing, private, misused or circular name reported once. */
+#![allow(unused)]
 mod m {
     fn hidden() -> u8 { 1 }
     pub const C: u8 = 2;

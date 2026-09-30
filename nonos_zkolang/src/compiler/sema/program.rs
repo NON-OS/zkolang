@@ -46,6 +46,7 @@ impl<'a> Sema<'a> {
             consts,
             values,
             main,
+            tests: Vec::new(),
         }
     }
 }

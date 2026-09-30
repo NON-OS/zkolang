@@ -867,10 +867,17 @@ when testing.
 | `#[test]` | fn | a test (section 16) |
 | `#[should_fail]` | test fn | the test must fail |
 | `#[cfg(test)]` | item | compiled only for tests |
-| `#[allow(lint, ...)]` | item, `#!` file | silence warnings: `unused`, `cost`, `unreachable`, `declassify` |
-| `#[deprecated = "..."]` | item | using it is a warning with the message |
+| `#[allow(lint, ...)]` | item, `#!` module | silence warnings: `unused`, `cost`, `unreachable`, `declassify` |
+| `#[deprecated = "..."]` | named item | using it is a warning with the message |
 
-An unknown attribute is an error.
+An unknown attribute, one where it does not apply, one with the wrong arguments, and one
+given twice on an item are errors. A test takes no parameters and returns `()`.
+
+`unused` covers W0001 and W0002, `unreachable` W0003 and W0004, `declassify` W0006, and
+`cost` W0100 to W0102. A variable is unused (W0001) when no expression reads its value:
+assigning to it is not a read, and passing it as `&mut` or updating it with `op=` is. A
+`&mut` parameter counts as read, since the caller reads its final value, and a name that
+starts with `_` is never reported.
 
 ### 17.2 Doc comments
 

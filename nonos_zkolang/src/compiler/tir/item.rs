@@ -68,4 +68,6 @@ pub struct TProgram {
     pub values: Vec<crate::compiler::interp::Value>,
     /** The root module's `fn main`, if it declares one. */
     pub main: Option<super::FnId>,
+    /** Each `#[test]` function, and whether it is marked `#[should_fail]`. */
+    pub tests: Vec<(super::FnId, bool)>,
 }

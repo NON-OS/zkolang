@@ -15,6 +15,7 @@ use alloc::vec::Vec;
 use crate::compiler::diag::Diagnostics;
 use crate::compiler::sema::defs::{DefId, Defs};
 use crate::compiler::sema::ty::{TyId, Types};
+use crate::compiler::source::Span;
 use crate::compiler::tir::{ConstId, FnId, Labels};
 
 pub use super::info::{ConstInfo, FnInfo};
@@ -52,4 +53,6 @@ pub struct Sema<'a> {
     pub aliases: BTreeMap<DefId, State<(TyId, Labels)>>,
     /** How many on-demand checks are open, one inside another. */
     pub depth: u32,
+    /** Each span a lint is allowed in (section 17.1). */
+    pub allowed: Vec<(Span, &'static str)>,
 }

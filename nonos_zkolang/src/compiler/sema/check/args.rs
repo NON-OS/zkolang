@@ -18,7 +18,11 @@ impl<'s, 'a> FnCx<'s, 'a> {
             return TArg::Value(self.infer(a, None));
         };
         match (&a.kind, by_ref) {
-            (ExprKind::RefMut(place), true) => TArg::Place(self.place(place, Some(ty))),
+            (ExprKind::RefMut(place), true) => {
+                let p = self.place(place, Some(ty));
+                self.read_local(p.root);
+                TArg::Place(p)
+            }
             (ExprKind::RefMut(_), false) => {
                 let d = Diagnostic::error(
                     Code::MISMATCHED_TYPES,

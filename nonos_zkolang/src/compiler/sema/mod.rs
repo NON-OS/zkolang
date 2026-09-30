@@ -9,6 +9,9 @@
  */
 
 mod alias;
+pub(crate) mod attr_query;
+mod attr_rules;
+mod attrs;
 mod body;
 mod calls;
 pub mod check;
@@ -20,12 +23,15 @@ mod const_ty;
 mod consts;
 pub mod cx;
 pub mod defs;
+mod deprecated;
 mod entry;
 mod env;
 mod eval;
 mod info;
+mod lints;
 mod lower;
 mod lower_path;
+mod main_check;
 mod no_generics;
 mod not_checked;
 mod path_report;
@@ -38,8 +44,9 @@ mod register;
 mod scc;
 pub mod secret;
 mod signature;
+mod tests;
 pub mod ty;
 mod uses;
 mod within;
 
-pub use entry::check;
+pub use entry::{check, check_tests};

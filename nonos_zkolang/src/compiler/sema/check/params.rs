@@ -6,7 +6,7 @@
 /*!
  * Binding a function's parameters. A parameter that is a name is that name's local; any
  * other pattern takes the argument in a local of its own and is taken apart from it. A
- * `&mut` parameter is a name, whose final value goes back to the caller.
+ * `&mut` parameter is a name, whose final value the caller reads.
  */
 
 use alloc::vec::Vec;
@@ -42,6 +42,9 @@ impl<'s, 'a> FnCx<'s, 'a> {
             };
             if let PatKind::Bind { name, mutable } = &pat.kind {
                 let local = self.declare(&name.name, ty, *mutable || by_ref, labels, name.span);
+                if by_ref {
+                    self.read_local(local);
+                }
                 out.push(TParam {
                     local,
                     pat: TPat::Bind(local),

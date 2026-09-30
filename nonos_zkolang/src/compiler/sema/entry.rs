@@ -4,25 +4,37 @@
 */
 
 /*!
- * Checking a program: its items and imports, every constant and function, then the checks
- * over the whole program. The result is the typed program and every diagnostic; a
- * program with errors is not run.
+ * Checking a program: its attributes, items and imports, every constant and function,
+ * then the checks over the whole program. The result is the typed program and every
+ * diagnostic; a program with errors is not run.
  */
 
-use super::cx::Sema;
+use super::cx::{Sema, State};
 use super::defs::{DefId, DefKind, Defs};
+use super::lints::drop_allowed;
 use crate::compiler::diag::Diagnostics;
-use crate::compiler::syntax::ast::{Item, ItemKind, SourceAst};
+use crate::compiler::syntax::ast::SourceAst;
 use crate::compiler::tir::{ConstId, FnId, TProgram};
 
 /** Check the program `ast`, a crate of one file. */
 pub fn check(ast: &SourceAst) -> (TProgram, Diagnostics) {
+    check_mode(ast, false)
+}
+
+/** Check `ast` for its tests: items marked `#[cfg(test)]` are compiled too. */
+pub fn check_tests(ast: &SourceAst) -> (TProgram, Diagnostics) {
+    check_mode(ast, true)
+}
+
+fn check_mode(ast: &SourceAst, testing: bool) -> (TProgram, Diagnostics) {
     let mut sema = Sema::default();
-    let (defs, imports) = Defs::collect(ast, &mut sema.diags);
+    sema.check_attrs(&ast.items, &ast.inner_attrs, ast.span);
+    let (defs, imports) = Defs::collect_with(ast, testing, &mut sema.diags);
     sema.defs = defs;
     sema.defs.resolve_imports(&imports, &mut sema.diags);
     sema.register();
     sema.impls(&ast.items);
+    sema.check_main();
     for (i, d) in sema.defs.defs.clone().iter().enumerate() {
         if d.kind == DefKind::Alias {
             sema.alias(DefId(u32::try_from(i).unwrap_or(u32::MAX)));
@@ -36,30 +48,14 @@ pub fn check(ast: &SourceAst) -> (TProgram, Diagnostics) {
     }
     sema.check_const_fns();
     sema.check_recursion();
-    let program = sema.program();
+    let mut program = sema.program();
+    program.tests = sema.tests();
     let ok: alloc::vec::Vec<bool> = sema
         .fns
         .iter()
-        .map(|f| matches!(f.body, super::cx::State::Done(_)))
+        .map(|f| matches!(f.body, State::Done(_)))
         .collect();
     let mut diags = core::mem::take(&mut sema.diags);
     crate::compiler::sema::secret::check_program(&program, &ok, &mut diags);
-    (program, diags)
-}
-
-impl<'a> Sema<'a> {
-    /** Report every impl block of `items` and the modules inside them (E0904). */
-    fn impls(&mut self, items: &'a [Item]) {
-        for item in items {
-            match &item.kind {
-                ItemKind::Impl(_) => self.not_yet(item),
-                ItemKind::Mod(m) => {
-                    if let Some(body) = &m.body {
-                        self.impls(body);
-                    }
-                }
-                _ => {}
-            }
-        }
-    }
+    (program, drop_allowed(diags, &sema.allowed))
 }

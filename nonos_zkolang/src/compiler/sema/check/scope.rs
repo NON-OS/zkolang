@@ -34,6 +34,7 @@ impl<'s, 'a> FnCx<'s, 'a> {
             labels,
             span,
         });
+        self.read.push(false);
         if name != "_" {
             self.names.entry(String::from(name)).or_default().push(id);
             if let Some(s) = self.scopes.last_mut() {

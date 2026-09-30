@@ -43,6 +43,7 @@ fn main(a: public u32, w: secret u32) -> public u32 {
     let hidden = w * 2;
     let shown = declassify(hidden > 10);
     assert back == a, "bits round trip";
+    assert g == f, "3^2 / 3 is 3";
     bump(&mut acc, 1);
     acc = acc + p - q + total([1, 2, 3, 4]) + arr[0] + k;
     if shown { acc } else { acc + u32::checked_from(wide) - u32::checked_from(wide) }

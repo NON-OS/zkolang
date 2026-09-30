@@ -25,6 +25,8 @@ pub struct FnCx<'s, 'a> {
     pub(crate) sema: &'s mut Sema<'a>,
     pub(crate) module: DefId,
     pub(crate) locals: Vec<TLocal>,
+    /** For each local, whether its value is read somewhere. */
+    pub(super) read: Vec<bool>,
     /** Each name in scope and the locals it has named, the innermost last. */
     pub(super) names: BTreeMap<String, Vec<LocalId>>,
     /** The names each open block declared, the innermost last. */
@@ -44,6 +46,7 @@ impl<'s, 'a> FnCx<'s, 'a> {
             sema,
             module,
             locals: Vec::new(),
+            read: Vec::new(),
             names: BTreeMap::new(),
             scopes: alloc::vec![Vec::new()],
             vars: IntVars::default(),

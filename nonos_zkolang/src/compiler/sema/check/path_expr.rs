@@ -22,6 +22,7 @@ impl<'s, 'a> FnCx<'s, 'a> {
     pub(crate) fn path_expr(&mut self, p: &'a Path, at: Span) -> TExpr {
         if let Some(id) = p.as_ident() {
             if let Some(l) = self.lookup(&id.name) {
+                self.read_local(l);
                 let ty = self.locals.get(l.0 as usize).map_or(Types::ERROR, |x| x.ty);
                 return TExpr {
                     kind: TExprKind::Local(l),
@@ -42,6 +43,7 @@ impl<'s, 'a> FnCx<'s, 'a> {
                 return self.error(at);
             }
         };
+        self.sema.note_use(def, p);
         let kind = self.sema.defs.get(def).map(|d| d.kind);
         match (kind, self.sema.const_of.get(&def).copied()) {
             (Some(DefKind::Const), Some(c)) => {

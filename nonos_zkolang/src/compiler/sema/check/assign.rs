@@ -32,6 +32,7 @@ impl<'s, 'a> FnCx<'s, 'a> {
         let (op, value) = match op {
             AssignOp::Assign => (None, self.expr(value, Some(p.ty))),
             AssignOp::Compound(b) => {
+                self.read_local(p.root);
                 let want = if matches!(b, BinOp::Shl | BinOp::Shr) {
                     Types::int(IntTy::U32)
                 } else {

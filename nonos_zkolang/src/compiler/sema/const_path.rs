@@ -28,6 +28,7 @@ impl<'a> Sema<'a> {
                 return None;
             }
         };
+        self.note_use(def, p);
         let Some(c) = self.const_of.get(&def).copied() else {
             let kind = self.defs.get(def).map_or("item", |d| d.kind.describe());
             self.diags.push(Diagnostic::error(

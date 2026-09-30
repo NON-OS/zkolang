@@ -1,4 +1,5 @@
 /* Forms this build does not check yet are each reported once (E0904). */
+#![allow(unused)]
 struct P { x: u8 } /*~ E0904 */
 enum E { A, B } /*~ E0904 */
 fn id<T>(x: T) -> T { x } /*~ E0904 */

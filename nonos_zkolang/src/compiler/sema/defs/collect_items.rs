@@ -3,13 +3,17 @@
  AGPL-3.0-or-later
 */
 
-/*! Collecting the items of one module, and of the modules inline in it. */
+/*!
+ * Collecting the items of one module, and of the modules inline in it. An item marked
+ * `#[cfg(test)]` is left out unless testing.
+ */
 
 use alloc::vec::Vec;
 
 use super::use_flatten::{flatten, Prefix};
 use super::{Binding, BindingKind, Def, DefId, DefKind, Defs, Module, PendingImport};
 use crate::compiler::diag::Diagnostics;
+use crate::compiler::sema::attr_query::cfg_test;
 use crate::compiler::syntax::ast::{Item, ItemKind, PathRoot};
 
 impl<'a> Defs<'a> {
@@ -21,6 +25,9 @@ impl<'a> Defs<'a> {
         diags: &mut Diagnostics,
     ) {
         for item in items {
+            if !self.testing && cfg_test(&item.attrs) {
+                continue;
+            }
             let kind = match &item.kind {
                 ItemKind::Use(tree) => {
                     let prefix = Prefix {
