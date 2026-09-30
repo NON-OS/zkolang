@@ -32,6 +32,10 @@ mod commit_tests;
 #[cfg(test)]
 mod comparison_tests;
 #[cfg(test)]
+mod compile_prop_tests;
+#[cfg(test)]
+mod compile_run;
+#[cfg(test)]
 mod const_index_tests;
 #[cfg(test)]
 mod const_table_tests;
@@ -199,6 +203,8 @@ mod sema_defs_check;
 mod sema_defs_tests;
 #[cfg(test)]
 mod sema_run_tests;
+#[cfg(test)]
+mod semantics_compiled_tests;
 #[cfg(test)]
 mod semantics_tests;
 #[cfg(test)]

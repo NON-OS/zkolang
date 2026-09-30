@@ -22,4 +22,9 @@ pub enum Hint {
     Rem(V, V),
     /** `v` itself: a value kept in the advice while no register holds it. */
     Copy(V),
+    /**
+     * A 32-bit half of the quotient (`part` 0 low, 1 high) or remainder (2 low, 3 high) of
+     * the 64-bit integers `a_lo + 2^32 a_hi` and `b_lo + 2^32 b_hi`; 0 and `a` when `b = 0`.
+     */
+    Div64 { a: (V, V), b: (V, V), part: u8 },
 }

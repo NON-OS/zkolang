@@ -17,6 +17,11 @@ impl Inst {
                 Hint::Quot(a, b) => Hint::Quot(f(a), f(b)),
                 Hint::Rem(a, b) => Hint::Rem(f(a), f(b)),
                 Hint::Copy(a) => Hint::Copy(f(a)),
+                Hint::Div64 { a, b, part } => Hint::Div64 {
+                    a: (f(a.0), f(a.1)),
+                    b: (f(b.0), f(b.1)),
+                    part,
+                },
             }),
             Inst::Add(a, b) => Inst::Add(f(a), f(b)),
             Inst::Sub(a, b) => Inst::Sub(f(a), f(b)),

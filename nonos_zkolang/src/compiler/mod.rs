@@ -13,6 +13,7 @@ pub mod diag;
 pub mod driver;
 pub mod gadget;
 pub mod interp;
+pub mod lower;
 pub mod opt;
 pub mod sema;
 pub mod source;

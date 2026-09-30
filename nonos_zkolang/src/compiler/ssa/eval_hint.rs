@@ -20,5 +20,19 @@ pub fn hint(h: Hint, values: &[Fp]) -> Option<Fp> {
             a.checked_rem(b).unwrap_or(a)
         }
         Hint::Copy(a) => get(a)?,
+        Hint::Div64 { a, b, part } => {
+            let wide = |lo: u64, hi: u64| (lo & 0xFFFF_FFFF) | (hi << 32);
+            let (x, y) = (wide(get(a.0)?, get(a.1)?), wide(get(b.0)?, get(b.1)?));
+            let (q, r) = match y {
+                0 => (0, x),
+                _ => (x / y, x % y),
+            };
+            let v = if part < 2 { q } else { r };
+            if part % 2 == 0 {
+                v & 0xFFFF_FFFF
+            } else {
+                v >> 32
+            }
+        }
     }))
 }
