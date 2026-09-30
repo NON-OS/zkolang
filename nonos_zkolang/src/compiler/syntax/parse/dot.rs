@@ -24,7 +24,7 @@ impl<'a> Parser<'a> {
                 Ok(l)
                     if l.suffix.is_none()
                         && u32::try_from(l.value).is_ok()
-                        && !text.contains(['x', 'o', 'b', '_']) =>
+                        && !text.contains(['x', 'o', 'b']) =>
                 {
                     l.value as u32
                 }

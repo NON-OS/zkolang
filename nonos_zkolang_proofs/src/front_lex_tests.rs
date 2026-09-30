@@ -59,3 +59,8 @@ fn a_carriage_return_ends_a_string_line_and_stray_runs_are_one_error() {
     let run = format!("fn f() {{ let x = {}y; }}", "$".repeat(100_000));
     assert_eq!(parse(&run).1, vec!["E0001"]);
 }
+
+#[test]
+fn a_tuple_index_may_hold_underscores() {
+    assert_eq!(parse("fn f() { let x = t.1_0; }").1, Vec::<&str>::new());
+}
