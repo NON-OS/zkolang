@@ -23,9 +23,10 @@ normative, is the only one that describes the repository rather than the languag
 
 - The compiler that ships, `compile_source` in `nonos_zkolang` and the `zkolang`
   command line, compiles edition 2025.
-- Of edition 2026, the lexer, the parser and the diagnostics exist, in
-  `nonos_zkolang/src/compiler`; they check syntax only. The rest of the compiler is being
-  built in the stages `docs/compiler-architecture.md` describes.
+- Of edition 2026, the front end exists, in `nonos_zkolang/src/compiler`: the lexer, the
+  parser with its error recovery, the placement check and the diagnostics. It checks
+  syntax only. The rest of the compiler is being built in the stages
+  `docs/compiler-architecture.md` describes.
 - The tools this document names (`zkolang abi`, `zkolang test`, `zkolang doc`,
   `zkolang explain`, and `zkolang check` with `--cost` or `--declassify`), the
   standard library `std` and its reference, the migration guide and the constraint ledger

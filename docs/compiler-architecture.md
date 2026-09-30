@@ -11,8 +11,13 @@ correctness first, then for the size of the trace, then for compile speed.
 ## Status
 
 This is the design the compiler is being built to. So far `source/`, `diag/` and `syntax/`
-exist: the lexer and parser read a file into a syntax tree and report what is malformed,
-and nothing checks or compiles the tree yet. The compiler lands in stages, in this order:
+exist, and they make up the front end. The lexer and the parser read a file into a syntax
+tree; after an error the parser recovers, so that one run reports each independent
+mistake once, and a placement check reports statement forms where they cannot stand.
+Diagnostics render as text or JSON. The programs in `nonos_zkolang_proofs/ui/syntax`,
+each of which states the diagnostics it expects, and the `front_*` tests of
+`nonos_zkolang_proofs` pin this behaviour. Nothing checks types or compiles the tree
+yet. The compiler lands in stages, in this order:
 the front end; types and secret flow; the typed IR, the SSA IR, its passes, allocation and code generation;
 structs, enums, `match` and generics; packages and the standard library; the tools; and
 the Lean development. This section is updated as each stage lands.
