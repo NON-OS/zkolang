@@ -48,6 +48,7 @@ impl<'a> Parser<'a> {
         while !self.at(TokenKind::RBrace) {
             if self.eat(TokenKind::DotDot) {
                 rest = true;
+                self.eat(TokenKind::Comma);
                 break;
             }
             let start = self.span();

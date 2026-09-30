@@ -13,7 +13,7 @@ use crate::compiler::syntax::keyword::Keyword;
 use crate::compiler::syntax::token::TokenKind;
 
 /** Whether an expression is block-shaped, so as a statement it needs no `;`. */
-fn block_like(e: &Expr) -> bool {
+pub(super) fn block_like(e: &Expr) -> bool {
     matches!(
         e.kind,
         ExprKind::Block(_)
@@ -46,9 +46,10 @@ impl<'a> Parser<'a> {
                 | TokenKind::Kw(Keyword::For)
                 | TokenKind::Kw(Keyword::While)
         ) {
-            self.nested(|p| p.primary())?
+            let e = self.nested(|p| p.primary())?;
+            self.after_block_like(e)?
         } else {
-            self.expr_with_assign()?
+            self.expr()?
         };
         let semi = self.eat(TokenKind::Semi);
         if !semi && self.at(TokenKind::RBrace) {

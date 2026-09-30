@@ -11,5 +11,7 @@
 mod check;
 mod control;
 mod expr;
+mod items;
+mod types;
 
-pub(super) use check::check_items;
+pub(super) use items::check_items;

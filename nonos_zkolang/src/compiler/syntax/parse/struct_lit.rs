@@ -16,8 +16,13 @@ impl<'a> Parser<'a> {
     /** A path expression, a struct literal, or a call's callee. */
     pub(super) fn path_expr(&mut self) -> PResult<Expr> {
         let path = self.path(PathMode::Expr)?;
-        if self.at(TokenKind::LBrace) && !self.no_struct {
-            return self.struct_literal(path);
+        if self.at(TokenKind::LBrace) && (!self.no_struct || self.struct_literal_ahead()) {
+            let in_head = self.no_struct;
+            let e = self.struct_literal(path)?;
+            if in_head {
+                self.struct_in_head(e.span);
+            }
+            return Ok(e);
         }
         let span = path.span;
         Ok(self.mk(ExprKind::Path(path), span))

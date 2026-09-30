@@ -16,13 +16,13 @@ use super::parser::{PResult, Parser};
 use crate::compiler::syntax::ast::{BinOp, Expr};
 
 impl<'a> Parser<'a> {
-    /** An expression, without assignment. */
+    /** An expression, assignment included; where assignment may stand is checked later. */
     pub(super) fn expr(&mut self) -> PResult<Expr> {
-        self.nested(|p| p.binary(0))
+        self.nested(|p| p.assign_expr())
     }
 
     /** Operators binding at least as tightly as `min`. */
-    fn binary(&mut self, min: u8) -> PResult<Expr> {
+    pub(super) fn binary(&mut self, min: u8) -> PResult<Expr> {
         let base = self.depth;
         let r = self.binary_links(min);
         self.depth = base;

@@ -15,7 +15,6 @@ impl<'a> Parser<'a> {
     pub(super) fn pattern(&mut self) -> PResult<Pattern> {
         self.nested(|p| {
             let start = p.span();
-            p.eat(TokenKind::Pipe);
             let first = p.pattern_one()?;
             if !p.at(TokenKind::Pipe) {
                 return Ok(first);

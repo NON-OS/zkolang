@@ -10,7 +10,6 @@
  */
 
 use alloc::boxed::Box;
-use alloc::vec::Vec;
 
 use super::parser::{PResult, Parser};
 use crate::compiler::syntax::ast::{Expr, ExprKind};
@@ -26,7 +25,26 @@ impl<'a> Parser<'a> {
     }
 
     fn postfix_links(&mut self) -> PResult<Expr> {
-        let mut e = self.primary()?;
+        let e = self.primary()?;
+        self.postfix_on(e)
+    }
+
+    /**
+     * A block-like expression `e` that stands where it would end a statement or an arm,
+     * continued if a `.` follows it: `match x { .. }.len()`.
+     */
+    pub(super) fn after_block_like(&mut self, e: Expr) -> PResult<Expr> {
+        if !self.at(TokenKind::Dot) {
+            return Ok(e);
+        }
+        let base = self.depth;
+        let r = self.postfix_on(e);
+        self.depth = base;
+        r
+    }
+
+    /** The calls, indexing, fields and method calls after `e`. */
+    fn postfix_on(&mut self, mut e: Expr) -> PResult<Expr> {
         loop {
             match self.kind() {
                 TokenKind::LParen => {
@@ -52,23 +70,5 @@ impl<'a> Parser<'a> {
                 _ => return Ok(e),
             }
         }
-    }
-
-    /** A comma-separated argument list up to `close`, which it consumes. */
-    pub(super) fn args(&mut self, close: TokenKind) -> PResult<Vec<Expr>> {
-        self.restricted(false, |p| {
-            let mut out = Vec::new();
-            while !p.at(close) {
-                if p.at(TokenKind::Eof) {
-                    return Err(p.unexpected(close.describe()));
-                }
-                out.push(p.expr()?);
-                if !p.eat(TokenKind::Comma) {
-                    break;
-                }
-            }
-            p.expect_list_end(close)?;
-            Ok(out)
-        })
     }
 }

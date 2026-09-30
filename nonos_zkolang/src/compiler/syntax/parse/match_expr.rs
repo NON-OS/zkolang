@@ -9,6 +9,7 @@ use alloc::boxed::Box;
 use alloc::vec::Vec;
 
 use super::parser::{PResult, Parser};
+use super::stmt_expr::block_like;
 use crate::compiler::syntax::ast::{Arm, Expr, ExprKind};
 use crate::compiler::syntax::keyword::Keyword;
 use crate::compiler::syntax::token::TokenKind;
@@ -49,11 +50,13 @@ impl<'a> Parser<'a> {
             let body = if self.at(TokenKind::LBrace) {
                 let b = self.block()?;
                 let span = b.span;
-                self.mk(ExprKind::Block(Box::new(b)), span)
+                let e = self.mk(ExprKind::Block(Box::new(b)), span);
+                self.after_block_like(e)?
             } else {
                 self.expr()?
             };
-            let braced = matches!(body.kind, ExprKind::Block(_));
+            /* After a block-like body, as after a block statement, the comma may be left out. */
+            let braced = block_like(&body);
             arms.push(Arm {
                 pat,
                 guard,

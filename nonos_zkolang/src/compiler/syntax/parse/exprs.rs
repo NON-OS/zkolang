@@ -44,9 +44,9 @@ impl<'a> Parser<'a> {
         }
     }
 
-    /** An expression in statement position, where assignment is allowed. */
-    pub(super) fn expr_with_assign(&mut self) -> PResult<Expr> {
-        let place = self.expr()?;
+    /** `binary [ assign_op expr ]`: assignment, which groups to the right. */
+    pub(super) fn assign_expr(&mut self) -> PResult<Expr> {
+        let place = self.binary(0)?;
         let Some(op) = assign_op(self.kind()) else {
             return Ok(place);
         };

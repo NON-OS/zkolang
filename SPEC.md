@@ -299,7 +299,8 @@ field_pat     = ident [ ":" pattern ] ;
 ```
 
 `expr_no_struct` is `expr` with struct literals disallowed at its top level, so that
-`if x == S { .. } { .. }` is not ambiguous; parenthesise a struct literal there. An
+`if x == S { .. } { .. }` is not ambiguous; parenthesise a struct literal there. In a
+`match`, the comma after an arm may be left out when the arm's body is block-like. An
 `expr_stmt` whose expression is block-like may omit its semicolon only when its type is
 `()`. The assignment forms, `return`, `break` and `continue` are expressions of type `!`
 or `()` (section 8) but may appear only in statement position or as a block's tail;

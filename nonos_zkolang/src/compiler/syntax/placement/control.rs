@@ -6,8 +6,9 @@
 /*! The placement check inside blocks, branches and loops, whose bodies hold statements. */
 
 use super::check::{check_block, check_const, check_expr};
-use crate::compiler::diag::Diagnostics;
-use crate::compiler::syntax::ast::{Expr, ExprKind, ForIter};
+use super::expr::check_kind;
+use crate::compiler::diag::{Code, Diagnostic, Diagnostics};
+use crate::compiler::syntax::ast::{AssignOp, Expr, ExprKind, ForIter};
 
 /** Check a block, `if`, `match`, `for` or `while`. */
 pub(super) fn check_control(k: &ExprKind, diags: &mut Diagnostics) {
@@ -16,7 +17,7 @@ pub(super) fn check_control(k: &ExprKind, diags: &mut Diagnostics) {
         ExprKind::Block(b) => check_block(b, diags),
         ExprKind::If(branches, else_block) => {
             for b in branches {
-                check_expr(&b.cond, false, diags);
+                check_cond(&b.cond, diags);
                 check_block(&b.block, diags);
             }
             else_block.iter().for_each(|b| check_block(b, diags));
@@ -39,10 +40,32 @@ pub(super) fn check_control(k: &ExprKind, diags: &mut Diagnostics) {
             check_block(body, diags);
         }
         ExprKind::While { cond, limit, body } => {
-            sub(cond);
+            check_cond(cond, diags);
             check_const(limit, diags);
             check_block(body, diags);
         }
         _ => {}
     }
+}
+
+/** Check the condition of an `if` or `while`, where `x = y` is most likely `x == y`. */
+fn check_cond(e: &Expr, diags: &mut Diagnostics) {
+    if !matches!(
+        e.kind,
+        ExprKind::Assign {
+            op: AssignOp::Assign,
+            ..
+        }
+    ) {
+        return check_expr(e, false, diags);
+    }
+    let d = Diagnostic::error(
+        Code::MISPLACED_STATEMENT,
+        "an assignment is not a condition",
+        e.span,
+        "this assigns",
+    )
+    .with_help("compare with `==`");
+    diags.push(d);
+    check_kind(&e.kind, diags);
 }

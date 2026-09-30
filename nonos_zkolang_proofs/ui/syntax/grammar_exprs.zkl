@@ -1,0 +1,11 @@
+/* Expressions and patterns outside the grammar: each is reported once. */
+fn f(x: u8) -> u8 {
+    if x = 1 { } /*~ E0105 */
+    let v = x = 2; /*~ E0105 */
+    match x { | 1 => 0, _ => 1 } /*~ E0100 */
+    match x { true..=false => 0, _ => 1 } /*~ E0100 */
+    if x == P { a: 1 } { } /*~ E0106 */
+    x
+}
+
+fn h(n: [u8; { return 1 }]) {} /*~ E0105 */

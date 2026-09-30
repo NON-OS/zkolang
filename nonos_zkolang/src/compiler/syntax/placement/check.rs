@@ -10,26 +10,17 @@
  * parsed; its depth is bounded by the parser's nesting budget.
  */
 
+use super::types::check_type;
 use crate::compiler::diag::{Code, Diagnostic, Diagnostics};
-use crate::compiler::syntax::ast::{Block, ConstArg, Expr, Item, ItemKind, StmtKind};
-
-/** Report every statement form in a file that stands inside a larger expression. */
-pub(in crate::compiler::syntax) fn check_items(items: &[Item], diags: &mut Diagnostics) {
-    for item in items {
-        match &item.kind {
-            ItemKind::Fn(f) => check_block(&f.body, diags),
-            ItemKind::Const(c) => check_expr(&c.value, false, diags),
-            ItemKind::Mod(m) => check_items(m.body.as_deref().unwrap_or(&[]), diags),
-            ItemKind::Impl(i) => check_items(&i.items, diags),
-            _ => {}
-        }
-    }
-}
+use crate::compiler::syntax::ast::{Block, ConstArg, Expr, ExprKind, StmtKind};
 
 pub(super) fn check_block(b: &Block, diags: &mut Diagnostics) {
     for s in &b.stmts {
         match &s.kind {
-            StmtKind::Let { init, .. } => check_expr(init, false, diags),
+            StmtKind::Let { ty, init, .. } => {
+                ty.iter().for_each(|t| check_type(t, diags));
+                check_expr(init, false, diags);
+            }
             StmtKind::Assert { cond, .. } => check_expr(cond, false, diags),
             StmtKind::Expr { expr, .. } => check_expr(expr, true, diags),
             StmtKind::Empty => {}
@@ -60,4 +51,14 @@ pub(super) fn check_expr(e: &Expr, free: bool, diags: &mut Diagnostics) {
         );
     }
     super::expr::check_kind(&e.kind, diags);
+}
+
+impl ExprKind {
+    /** Whether this form may stand only as a statement: return, break, continue, assignment. */
+    pub(super) fn is_statement_form(&self) -> bool {
+        matches!(
+            self,
+            ExprKind::Return(_) | ExprKind::Break | ExprKind::Continue | ExprKind::Assign { .. }
+        )
+    }
 }
