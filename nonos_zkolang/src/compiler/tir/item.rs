@@ -70,4 +70,6 @@ pub struct TProgram {
     pub main: Option<super::FnId>,
     /** Each `#[test]` function, and whether it is marked `#[should_fail]`. */
     pub tests: Vec<(super::FnId, bool)>,
+    /** Whether the cost warnings are silent for each function (section 15.3). */
+    pub cost_quiet: Vec<bool>,
 }

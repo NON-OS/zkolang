@@ -17,6 +17,7 @@ mod built;
 mod cost;
 mod cost_charge;
 mod cost_rows;
+mod cost_warn;
 mod declassified;
 mod execute;
 mod leaves;

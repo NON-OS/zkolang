@@ -13,6 +13,7 @@ use alloc::vec::Vec;
 
 use super::cx::{Sema, State};
 use super::defs::Defs;
+use super::info::FnInfo;
 use super::program_failed::{failed_const, failed_fn};
 use crate::compiler::interp::Value;
 use crate::compiler::tir::{TConst, TProgram};
@@ -47,6 +48,21 @@ impl<'a> Sema<'a> {
             values,
             main,
             tests: Vec::new(),
+            cost_quiet: self.fns.iter().map(|info| self.cost_quiet(info)).collect(),
         }
+    }
+}
+
+impl<'a> Sema<'a> {
+    /**
+     * Whether the cost warnings (section 15.3) are silent for the function `info`: one
+     * outside the program's own crate, or inside an item that allows `cost`.
+     */
+    fn cost_quiet(&self, info: &FnInfo<'a>) -> bool {
+        let at = info.decl.name.span;
+        let allowed = self.allowed.iter().any(|(s, lint)| {
+            *lint == "cost" && s.file == at.file && s.lo <= at.lo && at.hi <= s.hi
+        });
+        allowed || self.defs.crate_of(info.module) != Defs::ROOT
     }
 }

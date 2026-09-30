@@ -16,6 +16,7 @@ use super::backend::backend;
 use super::build_diag::{backend_failure, one, too_large};
 use super::build_lower::lowering;
 use super::built::Built;
+use super::cost_warn::cost_warnings;
 use super::source::{crates_of, Source};
 use crate::compiler::diag::Diagnostics;
 use crate::compiler::lower::{lower_sited, LowerError};
@@ -56,7 +57,7 @@ pub fn build(
         return Err(one(too_large(&what, at)));
     }
     let (public, secret, output) = abi_of(&program);
-    Ok(Built {
+    let mut built = Built {
         compiled,
         program,
         public,
@@ -64,5 +65,8 @@ pub fn build(
         output,
         warnings: diags,
         sites,
-    })
+    };
+    let more = cost_warnings(&built);
+    built.warnings.extend(more);
+    Ok(built)
 }

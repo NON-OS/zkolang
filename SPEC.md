@@ -33,8 +33,8 @@ normative, is the only one that describes the repository rather than the languag
   file (section 4.2). A program that a manifest governs is loaded with the path
   dependencies of its package and theirs, each a crate that its dependents name by the
   key their manifests give it (section 4.1). The cost warnings W0100 and W0101 (section
-  15.3) are given at the thresholds the manifest's `[cost]` sets; W0102, which needs each
-  function's rows, is not given yet. The command line takes a
+  15.3) are given at the thresholds the manifest's `[cost]` sets, and W0102 when a program
+  builds. The command line takes a
   file's edition from `--edition`, else from the manifest that governs it, and otherwise
   compiles edition 2025, where section 4.1 says 2026. The
   standard library, written in zKølang under `std/` and built into the compiler, is
