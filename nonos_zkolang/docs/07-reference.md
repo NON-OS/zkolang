@@ -80,15 +80,20 @@ values a NOX proving market registers and challenges against. See
 
 Each failure is a typed value, never a panic.
 
-- `CompileError` (`src/lang/mod.rs`): `UnexpectedChar { at }`,
+- `CompileError` (`src/lang/error.rs`): `UnexpectedChar { at }`,
   `NumberTooLarge { at }`, `UnexpectedEof`, `UnexpectedToken`, `UnknownVariable`,
-  `TooManyRegisters`, `LoopTooLarge`, `UnknownFunction`, `ArityMismatch`,
-  `RecursionTooDeep`, `NotIndexable`, `UnknownConst`, `NonConstantIndex`,
-  `IndexOutOfBounds`, `ArrayNotScalar`.
+  `TooManyRegisters`, `LoopTooLarge`, `ProgramTooLong`, `UnknownFunction`,
+  `ArityMismatch`, `RecursionTooDeep`, `NotIndexable`, `UnknownConst`,
+  `NonConstantIndex`, `IndexOutOfBounds`, `ArrayNotScalar`, `TupleNotScalar`,
+  `TupleArity`, `IncludeNotFound`, `IncludeTooDeep`, `IoLimit`, `NestingTooDeep`,
+  `ExpressionTooLarge`, and `Name` carrying a `NameError`.
+- `NameError` (`src/lang/name_error.rs`): `Duplicate`, `ShadowsConstant`,
+  `ShadowsLoopVariable`, `Recursive`.
 - `ProveError` (`src/vm/`): `BadRegister`, `BadInput`, `NoHalt`,
   `Unprovable { step }`.
 - `BuildError` (`src/air/`): `NoHalt`, `TooLong`, `MissingPublicOutput`.
-- `RunError` (`src/driver/`): `Compile`, `Execute`, `Layout`, `ProgramTooLong`.
+- `RunError` (`src/driver/`): `Compile`, `Execute`, `Layout`, `ProgramTooLong`,
+  `InputCount`, `TraceTooSmallToHide`, `InputNotInField`.
 - `KeyError` (`src/vkey.rs`): `NoHalt`, `ProgramTooLong`.
 
 ## Limits
