@@ -148,6 +148,8 @@ mod vkey_tests;
 #[cfg(test)]
 mod vm_tests;
 #[cfg(test)]
+mod wildcard_env_tests;
+#[cfg(test)]
 mod wildcard_tests;
 #[cfg(test)]
 mod witness_tests;

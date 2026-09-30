@@ -24,7 +24,7 @@ pub(super) fn loop_bound(stmts: &[Stmt], set: &mut Vec<String>, in_loop: bool) {
                 }
             }
             Stmt::LetTuple(names, _) if in_loop => {
-                for n in names {
+                for n in names.iter().filter(|n| *n != "_") {
                     if !set.contains(n) {
                         set.push(n.clone());
                     }

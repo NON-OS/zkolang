@@ -51,13 +51,16 @@ pub(super) fn norm(e: &Expr, env: &Env) -> Expr {
 /**
  * Substitute through a block. Each local binding shadows the outer constants of its names
  * for the rest of the block, so a name a block rebinds is never replaced after that point.
+ * A `_` slot of a destructuring binds nothing, as in lowering.
  */
 fn subst_block(locals: &[(Vec<String>, Expr)], r: &Expr, env: &Env) -> Expr {
     let mut inner = env.clone();
     let mut out = Vec::with_capacity(locals.len());
     for (names, value) in locals {
         out.push((names.clone(), subst(value, &inner)));
-        inner.extend(names.iter().map(|n| (n.clone(), None)));
+        let tuple = names.len() > 1;
+        let bound = names.iter().filter(|n| !(tuple && *n == "_"));
+        inner.extend(bound.map(|n| (n.clone(), None)));
     }
     Expr::Block(out, bx(subst(r, &inner)))
 }

@@ -34,9 +34,12 @@ fn go(stmts: &[Stmt], env: &mut Env, depth: usize, varying: &[String]) -> Vec<St
         match s {
             Stmt::Let(name, e) => let_binding(name, e, env, depth != 0, varying, &mut out),
             Stmt::LetTuple(names, e) => {
-                // The destructured values are runtime, so their names are not constants.
+                /*
+                 * The destructured values are runtime, so their names are not constants. A
+                 * `_` slot binds nothing, as in lowering, and hides no earlier `_`.
+                 */
                 let e2 = norm(e, env);
-                for n in names {
+                for n in names.iter().filter(|n| *n != "_") {
                     env.push((n.clone(), None));
                 }
                 out.push(Stmt::LetTuple(names.clone(), e2));
