@@ -25,21 +25,20 @@ pub(super) fn quote_char(
 ) -> (Option<TokenKind>, usize) {
     let b = text.as_bytes();
     let rest = b.get(start + 1..).unwrap_or(&[]);
-    let word = rest
-        .iter()
-        .take_while(|c| c.is_ascii_alphanumeric() || **c == b'_')
-        .count();
+    let word_char = |c: &u8| c.is_ascii_alphanumeric() || *c == b'_';
+    let word = rest.iter().take_while(|c| word_char(c)).count();
     let line = rest
         .iter()
         .position(|&c| c == b'\n' || c == b'\r')
         .unwrap_or(rest.len());
+    /* A quote ends a string when no word follows it: after `'a u8, &'b`, the `'` begins `'b`. */
     let close = rest
         .get(..line)
-        .and_then(|l| l.iter().position(|&c| c == b'\''));
-    let lifetime = word > 0 && rest.get(word) != Some(&b'\'');
+        .and_then(|l| l.iter().position(|&c| c == b'\''))
+        .filter(|&c| !rest.get(c + 1).is_some_and(word_char));
     let (end, token, what) = match close {
-        Some(c) if !lifetime && c > 0 => (start + c + 2, Some(TokenKind::Error), Quoted::Value),
-        _ if word > 0 => {
+        Some(c) => (start + c + 2, Some(TokenKind::Error), Quoted::Value),
+        None if word > 0 => {
             let colon = rest.get(word) == Some(&b':') && rest.get(word + 1) != Some(&b':');
             (
                 start + 1 + word + usize::from(colon),
@@ -47,7 +46,7 @@ pub(super) fn quote_char(
                 Quoted::Lifetime,
             )
         }
-        _ => (start + 1, None, Quoted::Lone),
+        None => (start + 1, None, Quoted::Lone),
     };
     let span = Span::new(file, start as u32, end as u32);
     diags.push(quote_error(span, what));

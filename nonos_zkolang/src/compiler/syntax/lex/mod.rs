@@ -8,7 +8,10 @@
 mod block_comment;
 mod comment;
 mod describe;
+mod describe_names;
 mod dispatch;
+mod foreign_end;
+mod foreign_string;
 mod late_quote;
 mod lexed;
 mod number;

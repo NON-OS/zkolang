@@ -34,7 +34,11 @@ impl<'a> Parser<'a> {
      */
     pub(super) fn unexpected_diag(&self, expected: &str, after_line: bool) -> Option<Diagnostic> {
         let t = self.tok();
-        if t.kind == TokenKind::Error || self.at_reserved() || self.after_stray() {
+        if t.kind == TokenKind::Error
+            || self.at_reserved()
+            || self.after_stray()
+            || self.after_open_literal()
+        {
             return None;
         }
         let found = match t.kind {

@@ -5,6 +5,7 @@
 
 /*! One token, chosen by its first byte. */
 
+use super::foreign_string::foreign_string;
 use super::number_token::number;
 use super::punct::scan_punct;
 use super::quote_char::quote_char;
@@ -36,6 +37,9 @@ pub(super) fn scan_token(
         let mut i = start;
         while i < len && (b[i].is_ascii_alphanumeric() || b[i] == b'_') {
             i += 1;
+        }
+        if let Some(end) = foreign_string(text, start, i, len, file, diags) {
+            return (Some(TokenKind::Error), end);
         }
         if &text[start..i] == "r" && b.get(i) == Some(&b'#') {
             if let Some(end) = raw_ident(text, start, i + 1, len, file, diags) {
