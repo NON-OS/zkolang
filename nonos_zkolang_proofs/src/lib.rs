@@ -160,6 +160,26 @@ mod optimizer_gate_tests;
 #[cfg(test)]
 mod owned_element_tests;
 #[cfg(test)]
+mod prop_binary;
+#[cfg(test)]
+mod prop_expr;
+#[cfg(test)]
+mod prop_field;
+#[cfg(test)]
+mod prop_field_gen;
+#[cfg(test)]
+mod prop_field_tests;
+#[cfg(test)]
+mod prop_gen;
+#[cfg(test)]
+mod prop_gen_expr;
+#[cfg(test)]
+mod prop_model;
+#[cfg(test)]
+mod prop_print;
+#[cfg(test)]
+mod prop_tests;
+#[cfg(test)]
 mod python_guard_tests;
 #[cfg(test)]
 mod recipes_tests;

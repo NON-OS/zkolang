@@ -29,13 +29,18 @@ pub(crate) fn checked(src: &str) -> (TProgram, Vec<&'static str>) {
 pub(crate) fn run(src: &str, name: &str, args: Vec<Value>) -> Result<Value, Failure> {
     let (program, codes) = checked(src);
     assert!(codes.iter().all(|c| c.starts_with('W')), "{codes:?}");
+    call(&program, name, args)
+}
+
+/** Run the function `name` of a checked program on `args`. */
+pub(crate) fn call(program: &TProgram, name: &str, args: Vec<Value>) -> Result<Value, Failure> {
     let f = program
         .fns
         .iter()
         .position(|f| f.name == name)
         .expect("no such function");
     let span = program.fns[f].span;
-    Interp::new(&program, 100_000_000).call(FnId(f as u32), args, span)
+    Interp::new(program, 100_000_000).call(FnId(f as u32), args, span)
 }
 
 /** An integer value. */
