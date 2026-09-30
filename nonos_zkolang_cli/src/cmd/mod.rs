@@ -9,6 +9,7 @@ mod build;
 mod check;
 mod check_2026;
 mod disk;
+mod doc;
 mod edition;
 mod explain;
 mod fee;
@@ -23,6 +24,7 @@ mod values;
 
 pub(crate) use build::build;
 pub(crate) use check::check;
+pub(crate) use doc::doc;
 pub(crate) use explain::explain;
 pub(crate) use fee::fee;
 pub(crate) use key::key;

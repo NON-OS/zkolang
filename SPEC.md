@@ -50,10 +50,11 @@ normative, is the only one that describes the repository rather than the languag
 - `zkolang test` runs the tests of an edition 2026 crate (section 16), each compiled and
   run on the machine beside the reference interpreter; `zkolang explain CODE` prints a
   code's description (section 19); `zkolang check --json` prints an edition 2026
-  program's diagnostics as one JSON array. The other tools this document names
-  (`zkolang abi`, `zkolang doc`, and `zkolang check` with `--cost` or `--declassify`),
-  the reference of the standard library, the migration guide and the constraint ledger
-  do not exist yet.
+  program's diagnostics as one JSON array; `zkolang doc` renders a crate's reference from
+  its doc comments (section 17.2), and `docs/stdlib.md` is the standard library's, which a
+  test keeps equal to what `zkolang doc --std` makes. The other tools this document names
+  (`zkolang abi`, and `zkolang check` with `--cost` or `--declassify`), the migration
+  guide and the constraint ledger do not exist yet.
 
 ## Contents
 

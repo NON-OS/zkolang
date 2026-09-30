@@ -10,6 +10,7 @@
 
 pub mod codegen;
 pub mod diag;
+pub mod doc;
 pub mod driver;
 pub mod gadget;
 pub mod interp;
