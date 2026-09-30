@@ -29,17 +29,9 @@ impl<'a> Sema<'a> {
                 continue;
             };
             match (&item.kind, def.kind) {
-                (ItemKind::Fn(f), DefKind::Fn) if f.generics.is_empty() => {
+                (ItemKind::Fn(f), DefKind::Fn) => {
                     let fid = FnId(u32::try_from(self.fns.len()).unwrap_or(u32::MAX));
-                    self.fns.push(FnInfo {
-                        def: id,
-                        decl: f,
-                        module,
-                        owner: None,
-                        sig: None,
-                        body: State::Unchecked,
-                        clean: false,
-                    });
+                    self.fns.push(FnInfo::new(id, f, module, None));
                     self.fn_of.insert(id, fid);
                 }
                 (ItemKind::Const(c), DefKind::Const) => {

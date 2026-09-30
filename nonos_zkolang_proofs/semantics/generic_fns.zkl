@@ -1,0 +1,72 @@
+/* Generic functions (section 10.5): arguments written with `::<..>`, or inferred. */
+
+struct Pair<T> {
+    a: T,
+    b: T,
+}
+
+enum Maybe<T> {
+    Just(T),
+    Nothing,
+}
+
+fn id<T>(x: T) -> T {
+    x
+}
+
+fn swap<A, B>(p: (A, B)) -> (B, A) {
+    let (a, b) = p;
+    (b, a)
+}
+
+fn first<T>(p: Pair<T>) -> T {
+    id(p.a)
+}
+
+fn or<T>(m: Maybe<T>, d: T) -> T {
+    match m {
+        Maybe::Just(x) => x,
+        Maybe::Nothing => d,
+    }
+}
+
+fn none<T>() -> Maybe<T> {
+    Maybe::Nothing
+}
+
+const fn twice<T>(x: T) -> (T, T) {
+    (x, x)
+}
+
+const TWICE: (u8, u8) = twice(3u8);
+
+#[test]
+fn arguments_are_inferred_from_the_arguments() {
+    assert id(5u8) == 5;
+    assert id(true);
+    let (b, c) = swap((true, 40u32));
+    assert b == 40 && c;
+    assert first(Pair { a: -3i64, b: 8 }) == -3;
+}
+
+#[test]
+fn arguments_are_inferred_from_the_expected_type() {
+    let e: u16 = or(none(), 11);
+    assert e == 11;
+    let m: Maybe<bool> = none();
+    assert !or(m, false);
+}
+
+#[test]
+fn arguments_may_be_written() {
+    assert id::<u32>(7) + 1 == 8;
+    let p = swap::<u8, bool>((1, false));
+    assert !p.0 && p.1 == 1;
+    assert TWICE.0 + TWICE.1 == 6;
+}
+
+#[test]
+#[should_fail]
+fn an_instance_fails_like_any_function() {
+    let _x = id(255u8) + 1;
+}

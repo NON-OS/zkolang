@@ -2,7 +2,7 @@
 #![allow(unused)]
 struct P { x: u8 }
 struct G<T> { x: T }
-fn id<T>(x: T) -> T { x } /*~ E0904 */
+fn id<T>(x: T) -> T { x }
 impl P {
     fn get(self) -> u8 { 1 }
 }

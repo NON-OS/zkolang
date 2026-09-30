@@ -5,10 +5,11 @@
 
 /*!
  * Function bodies, each checked once, on first need: its parameters bound, its block
- * checked against the result type, then settled and rewritten.
+ * checked against the result type, then settled and rewritten. A generic function is
+ * checked in each instance, its generic parameters standing for the instance's
+ * arguments; its template is not checked alone.
  */
 
-use super::check::FnCx;
 use super::cx::{Sema, State};
 use crate::compiler::tir::{FnId, TFn};
 
@@ -19,47 +20,25 @@ impl<'a> Sema<'a> {
             return false;
         };
         match info.body {
+            _ if info.template => return false,
             State::Done(_) => return true,
             State::Failed | State::Checking => return false,
             State::Unchecked => {}
         }
-        let (m, decl, def, owner) = (info.module, info.decl, info.def, info.owner);
+        let (decl, owner, args, origin) = (info.decl, info.owner, info.args.clone(), info.origin);
         self.set_body(f, State::Checking);
-        let sig = self.sig(f);
-        let name = match owner {
-            Some(t) => alloc::format!("{}::{}", self.types.display(t), decl.name.name),
-            None => decl.name.name.clone(),
-        };
+        let generics = self.bind_generics(&decl.generics, &args);
+        let generics = generics.unwrap_or_else(|| self.generics.clone());
         let outer = core::mem::replace(&mut self.self_ty, owner);
         let errors = self.diags.error_count();
-        let out = self.within(decl.name.span, |s| {
-            let mut cx = FnCx::new(s, m, Some(sig.ret));
-            let params = cx.params(&decl.params, &sig);
-            let (mut body, ty) = cx.block(&decl.body, Some(sig.ret));
-            if !cx.fits(ty, sig.ret) {
-                let at = body.tail.as_ref().map_or(decl.body.span, |t| t.span);
-                cx.mismatch(at, sig.ret, ty);
-            }
-            cx.settle();
-            cx.warn_unused();
-            cx.rewrite_block(&mut body);
-            body.each_expr(&mut |e| cx.post(e));
-            let locals = core::mem::take(&mut cx.locals);
-            Some(TFn {
-                def,
-                name,
-                is_const: decl.is_const,
-                params,
-                ret: sig.ret,
-                ret_labels: sig.ret_labels.clone(),
-                body,
-                locals,
-                span: decl.name.span,
-            })
-        });
+        let out = self.within(decl.name.span, |s| s.body_of(f));
         self.self_ty = outer;
+        self.generics = generics;
         let ok = out.is_some();
         let clean = ok && self.diags.error_count() == errors;
+        if let (false, Some(origin)) = (clean, origin) {
+            self.instance_failed(f, origin);
+        }
         self.set_body(f, out.map_or(State::Failed, State::Done));
         if let Some(info) = self.fns.get_mut(f.0 as usize) {
             info.clean = clean;

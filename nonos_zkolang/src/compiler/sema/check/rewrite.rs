@@ -12,6 +12,7 @@ impl<'s, 'a> FnCx<'s, 'a> {
     /** Rewrite `e` and everything in it. */
     pub(crate) fn rewrite(&mut self, e: &mut TExpr) {
         e.ty = self.zonk(e.ty, true);
+        let span = e.span;
         self.fold_negation(e);
         if let TExprKind::Lit(TLit::Int(v)) = e.kind {
             let v = self.check_fits(v, e.ty, e.span);
@@ -28,10 +29,13 @@ impl<'s, 'a> FnCx<'s, 'a> {
                 self.rewrite(first);
                 links.iter_mut().for_each(|(_, l)| self.rewrite(l));
             }
-            TExprKind::Call(_, args) => args.iter_mut().for_each(|a| match a {
-                TArg::Value(v) => self.rewrite(v),
-                TArg::Place(p) => self.rewrite_place(&mut p.proj, &mut p.ty),
-            }),
+            TExprKind::Call(f, args) => {
+                args.iter_mut().for_each(|a| match a {
+                    TArg::Value(v) => self.rewrite(v),
+                    TArg::Place(p) => self.rewrite_place(&mut p.proj, &mut p.ty),
+                });
+                self.resolve_call(f, span);
+            }
             TExprKind::Builtin(_, es) | TExprKind::Tuple(es) | TExprKind::Array(es) => {
                 es.iter_mut().for_each(|x| self.rewrite(x))
             }

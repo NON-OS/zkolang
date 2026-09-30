@@ -18,9 +18,11 @@ check reports statement forms where they cannot stand. Diagnostics render as tex
 JSON. The checker resolves names, checks types and constants, reports recursion, checks
 secret flow and lowers the program to the typed IR, which the reference interpreter runs.
 It checks a program in one file, structs, enums, `match`, `impl` blocks, methods and
-`Self` included, and generic structs, enums and aliases, and reports each form it does
-not check yet (generic functions and `impl` blocks, and modules in their own files) as
-E0904. Each instance of a generic struct or enum is one entry of the type table; type
+`Self` included, and generic structs, enums, aliases and functions, and reports each form
+it does not check yet (generic `impl` blocks and generic methods, and modules in their own
+files) as E0904. A generic function is a template: a call checks against its signature
+with a variable per type parameter, and once the caller's types settle the call is given
+the instance for the arguments settled, which is checked like any function. Each instance of a generic struct or enum is one entry of the type table; type
 inference has general variables beside literal ones, unifies instances by their
 arguments, and resolves an instance whose arguments it settles. `sema/exhaust` decides whether a `match` covers every
 value, and which arms no value reaches, by the usefulness of its patterns over their

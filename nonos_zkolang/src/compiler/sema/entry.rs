@@ -45,8 +45,10 @@ fn check_mode(ast: &SourceAst, testing: bool) -> (TProgram, Diagnostics) {
     for c in 0..sema.consts.len() {
         sema.const_value(ConstId(u32::try_from(c).unwrap_or(u32::MAX)));
     }
-    for f in 0..sema.fns.len() {
+    let mut f = 0;
+    while f < sema.fns.len() {
         sema.check_body(FnId(u32::try_from(f).unwrap_or(u32::MAX)));
+        f += 1;
     }
     sema.check_const_fns();
     sema.check_recursion();

@@ -27,9 +27,9 @@ normative, is the only one that describes the repository rather than the languag
   parser with its error recovery, the placement check and the diagnostics. So do the
   checker of sections 4 to 13 and the reference interpreter of the typed IR, for a
   program in one file, structs, enums, `match`, `impl` blocks, methods and `Self`
-  included, and generic structs, enums and aliases. The checker reports each form it
-  does not check yet (generic functions and `impl` blocks, and modules in their own
-  files) as E0904. The back end compiles the typed IR of such a
+  included, and generic structs, enums, aliases and functions. The checker reports each
+  form it does not check yet (generic `impl` blocks and generic methods, and modules in
+  their own files) as E0904. The back end compiles the typed IR of such a
   program to the machine: lowering to SSA, the passes, gadget expansion, scheduling, register allocation
   and a check of the machine program against the SSA. `compiler::driver::build` and
   `prove` build a program and prove a run of it with the STARK, hiding the witness;
@@ -728,7 +728,11 @@ of a call is the cost of its body.*
 
 A generic function is instantiated per distinct list of type and constant arguments.
 Arguments may be written with a turbofish, `f::<u8, 4>(x)`, or inferred from the argument
-and expected result types. An instantiation that cannot be inferred is an error.
+and expected result types. An instantiation that cannot be inferred is an error (E0303);
+so is an instance whose body does not check (E0702, at the call that makes it, beside the
+errors in the body). The instances of one function nest at most 64 deep along the calls
+that make them, and an instance's type arguments take at most 1024 parts written out;
+a call past either is an error (E0700).
 
 ### 10.6 Recursion
 

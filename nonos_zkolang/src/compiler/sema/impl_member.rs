@@ -8,7 +8,7 @@
 use alloc::format;
 use alloc::string::String;
 
-use super::cx::{FnInfo, Sema, State};
+use super::cx::{FnInfo, Sema};
 use super::defs::{Def, DefId, DefKind};
 use crate::compiler::diag::{Code, Diagnostic};
 use crate::compiler::sema::ty::TyId;
@@ -42,15 +42,7 @@ impl<'a> Sema<'a> {
             item: Some(member),
         });
         let fid = FnId(u32::try_from(self.fns.len()).unwrap_or(u32::MAX));
-        self.fns.push(FnInfo {
-            def,
-            decl: f,
-            module: m,
-            owner: Some(ty),
-            sig: None,
-            body: State::Unchecked,
-            clean: false,
-        });
+        self.fns.push(FnInfo::new(def, f, m, Some(ty)));
         self.fn_of.insert(def, fid);
         self.assoc.insert(key, fid);
     }

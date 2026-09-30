@@ -18,8 +18,9 @@ use super::infer::IntVars;
 use super::matching::PatCx;
 use crate::compiler::sema::cx::Sema;
 use crate::compiler::sema::defs::DefId;
-use crate::compiler::sema::ty::TyId;
-use crate::compiler::tir::{LocalId, TLocal};
+use crate::compiler::sema::ty::{GenArg, TyId};
+use crate::compiler::source::Span;
+use crate::compiler::tir::{FnId, LocalId, TLocal};
 
 /** The check of one body. */
 pub struct FnCx<'s, 'a> {
@@ -39,6 +40,10 @@ pub struct FnCx<'s, 'a> {
     pub(crate) loops: u32,
     pub(crate) deferred: Vec<Deferred>,
     pub(crate) pats: PatCx,
+    /** The function whose body this is, if it is one. */
+    pub(crate) fn_id: Option<FnId>,
+    /** The generic arguments of each call of a generic function, by the call's span. */
+    pub(crate) pending: Vec<(Span, Vec<GenArg>)>,
 }
 
 impl<'s, 'a> FnCx<'s, 'a> {
@@ -56,6 +61,8 @@ impl<'s, 'a> FnCx<'s, 'a> {
             loops: 0,
             deferred: Vec::new(),
             pats: PatCx::default(),
+            fn_id: None,
+            pending: Vec::new(),
         }
     }
 }

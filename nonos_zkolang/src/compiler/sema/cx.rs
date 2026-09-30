@@ -61,6 +61,8 @@ pub struct Sema<'a> {
     pub structs: Lowered,
     /** The generic parameters in scope and what each stands for, where one is. */
     pub generics: Vec<(alloc::string::String, GenArg)>,
+    /** Each instance of a generic function, by its template and arguments. */
+    pub instances: BTreeMap<(FnId, Vec<GenArg>), FnId>,
     /** The functions of `impl` blocks, by the type and their name. */
     pub assoc: BTreeMap<(TyId, alloc::string::String), FnId>,
     /** The type `Self` names where a signature or body is being checked, if any. */

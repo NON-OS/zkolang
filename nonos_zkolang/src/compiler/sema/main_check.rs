@@ -5,7 +5,8 @@
 
 /*!
  * `main` (section 12.1): its parameters are the program's inputs, so each is a value,
- * not a `&mut` place (E0901). Their labels are checked with secret flow (E0601).
+ * not a `&mut` place, and `main` is not generic (E0901). Their labels are checked with
+ * secret flow (E0601).
  */
 
 use super::cx::Sema;
@@ -27,6 +28,18 @@ impl<'a> Sema<'a> {
         else {
             return;
         };
+        if let Some(g) = info.decl.generics.first() {
+            let d = Diagnostic::error(
+                Code::BAD_MAIN,
+                "`main` is not generic",
+                g.name().span,
+                "a generic parameter",
+            )
+            .with_help(
+                "the inputs of a program have fixed types; name them in `main`'s parameters",
+            );
+            self.diags.push(d);
+        }
         for p in &info.decl.params {
             let at = match p {
                 Param::Typed { ty, .. } if matches!(ty.kind, TypeKind::RefMut(_)) => ty.span,

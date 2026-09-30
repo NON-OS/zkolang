@@ -1,0 +1,23 @@
+/* Generic function mistakes: arguments that cannot be inferred, or are wrong, and bodies that fail. */
+#![allow(unused)]
+enum Maybe<T> { Just(T), Nothing }
+
+fn none<T>() -> Maybe<T> { Maybe::Nothing }
+fn id<T>(x: T) -> T { x }
+fn add<T>(a: T, b: T) -> T { a + b } /*~ E0301 */
+fn grow<T>(x: T) -> u8 { grow((x, x)) } /*~ E0700 */
+fn plain(x: u8) -> u8 { x }
+
+fn f(x: u8) -> u8 {
+    let n = none(); /*~ E0303 */
+    let a = id::<u8, u8>(1); /*~ E0701 */
+    let b = add(true, false); /*~ E0702 */
+    let c = grow(1u8);
+    let d = plain::<u8>(x); /*~ E0701 */
+    let e = add(1u8, 2u16); /*~ E0300 */
+    x
+}
+
+fn main<T>(x: public u8) -> u8 { /*~ E0901 */
+    x
+}

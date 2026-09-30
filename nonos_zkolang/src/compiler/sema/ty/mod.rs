@@ -12,6 +12,7 @@ mod kind;
 mod prim;
 mod types;
 mod types_adt;
+mod types_size;
 
 pub use adt::{Adt, AdtField, AdtId, AdtVariant, Form};
 pub use generic_arg::GenArg;

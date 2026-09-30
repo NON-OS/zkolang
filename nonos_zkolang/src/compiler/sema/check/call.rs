@@ -45,7 +45,6 @@ impl<'s, 'a> FnCx<'s, 'a> {
         if p.as_ident().is_some_and(|i| self.lookup(&i.name).is_some()) {
             return self.not_callable(f, args, "a variable is not a function", at);
         }
-        self.sema.no_generics(p);
         let names: Vec<&str> = p.segments.iter().map(|s| s.ident.name.as_str()).collect();
         let def = match self.sema.defs.resolve(self.module, p.root, &names) {
             Ok(d) => d,
@@ -54,16 +53,6 @@ impl<'s, 'a> FnCx<'s, 'a> {
                 return self.not_callable(f, args, "", at);
             }
         };
-        if self.sema.defs.get(def).map(|d| d.kind)
-            == Some(crate::compiler::sema::defs::DefKind::Struct)
-        {
-            return self.tuple_struct(p, args, at);
-        }
-        self.sema.note_use(def, p);
-        let Some(fid) = self.sema.fn_of.get(&def).copied() else {
-            let message = self.not_fn_message(def, p.last_name());
-            return self.not_callable(f, args, &message, at);
-        };
-        self.call_fn(fid, p.last_name(), args, at)
+        self.call_item(f, (p, def), args, at)
     }
 }
