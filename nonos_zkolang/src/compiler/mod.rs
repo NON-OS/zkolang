@@ -12,5 +12,6 @@ pub mod diag;
 pub mod interp;
 pub mod sema;
 pub mod source;
+pub mod ssa;
 pub mod syntax;
 pub mod tir;
