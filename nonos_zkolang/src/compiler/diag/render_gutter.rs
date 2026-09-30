@@ -54,11 +54,6 @@ impl Gutter {
     pub(super) fn rule(&self, out: &mut String) {
         out.push_str(&format!("{} |\n", self.pad));
     }
-
-    /** The row that stands for source lines left out. */
-    pub(super) fn elision(&self, out: &mut String) {
-        out.push_str("...\n");
-    }
 }
 
 /** The number of decimal digits of `n`. */

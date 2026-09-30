@@ -5,56 +5,50 @@
 
 /*!
  * A label that spans lines, drawn as rustc draws one: its first line with a connector
- * from the margin to where it starts, and its last line with a connector from the margin
- * to where it ends, followed by the message.
+ * from the margin to where it starts, the lines between with the connector beside them,
+ * and its last line with a connector to where it ends, followed by the message. Labels
+ * that start within its lines are drawn under their own lines, inside the connector.
  *
  * ```text
- * 2 |       let x = 1 + (return
- *   |  __________________^
- * 3 | |         5);
- *   | |__________^ inside a larger expression
+ * 2 |       let x = compute(
+ *   |  _____________^
+ * 3 | |         alpha,
+ *   | |         ----- inside
+ * 4 | |     );
+ *   | |_____^ this call spans lines
  * ```
  */
 
 use alloc::string::String;
+use alloc::vec::Vec;
 
-use super::display::visible;
+use super::render_gap::push_skipped;
 use super::render_gutter::Gutter;
+use super::render_line::{push_line, push_marks};
+use super::render_multi_end::{connector, push_end};
 use super::render_placed::Placed;
 use super::render_window::Window;
 
-/** Show the label `p`, which spans lines. */
-pub(super) fn push_multi(out: &mut String, p: &Placed, g: &Gutter) {
+/** Show the label `p`, which spans lines, and `inner`, the labels that start within it. */
+pub(super) fn push_multi(out: &mut String, p: &Placed, inner: &[&Placed], g: &Gutter) {
+    let on = |l: usize| -> Vec<&Placed> { inner.iter().filter(|q| q.line == l).copied().collect() };
+    let heads = on(p.line);
     let (lo, _) = p.within(p.line);
-    let first = Window::around(p.file.line_text(p.line), lo, &[lo]);
+    let mut subjects: Vec<usize> = heads.iter().map(|q| q.within(p.line).0).collect();
+    subjects.push(lo);
+    let at = subjects.iter().copied().min().unwrap_or(lo);
+    let first = Window::around(p.file.line_text(p.line), at, &subjects);
     g.source(out, p.line, g.plain(), &first.shown);
-    let start = first.col(lo);
-    g.mark(out, " ", &connector(start, p.mark(), ""));
-    if p.end_line == p.line + 2 {
-        let text = p.file.line_text(p.line + 1);
-        g.source(out, p.line + 1, "| ", &Window::around(text, 0, &[]).shown);
-    } else if p.end_line > p.line + 2 {
-        g.elision(out);
+    push_marks(out, &first, &heads, g, g.plain());
+    g.mark(out, " ", &connector(first.col(lo), p.mark(), ""));
+    let mut shown = p.line;
+    for q in inner {
+        if q.line > shown && q.line < p.end_line {
+            push_skipped(out, p, shown, q.line, g);
+            push_line(out, &on(q.line), g, "| ");
+            shown = q.line;
+        }
     }
-    let (_, hi) = p.within(p.end_line);
-    let last_char = hi.saturating_sub(1);
-    let last = Window::around(p.file.line_text(p.end_line), last_char, &[]);
-    g.source(out, p.end_line, "| ", &last.shown);
-    let end = last.col(last_char);
-    g.mark(
-        out,
-        "|",
-        &connector(end, p.mark(), &visible(&p.label.message)),
-    );
-}
-
-/** A run of `_` from the connector column to display column `col`, the mark, a message. */
-fn connector(col: usize, mark: char, message: &str) -> String {
-    let mut s = "_".repeat(col + 1);
-    s.push(mark);
-    if !message.is_empty() {
-        s.push(' ');
-        s.push_str(message);
-    }
-    s
+    push_skipped(out, p, shown, p.end_line, g);
+    push_end(out, p, &on(p.end_line), g);
 }

@@ -32,18 +32,25 @@ pub(super) fn near(a: &Placed, b: &Placed) -> bool {
     hi.saturating_sub(lo) <= 4 * NEAR && text.get(lo..hi).is_some_and(|s| columns(s) <= NEAR)
 }
 
-/** Show line `ls[0].line` and a row for each of `ls`, which all lie on it. */
-pub(super) fn push_line(out: &mut String, ls: &[&Placed], g: &Gutter) {
+/**
+ * Show line `ls[0].line` and a row for each of `ls`, which all start on it, with `conn` in
+ * the connector column.
+ */
+pub(super) fn push_line(out: &mut String, ls: &[&Placed], g: &Gutter, conn: &str) {
     let Some(first) = ls.first() else {
         return;
     };
     let line = first.line;
-    let text = first.file.line_text(line);
     let subjects: Vec<usize> = ls.iter().map(|p| p.within(line).0).collect();
-    let w = Window::around(text, first.within(line).0, &subjects);
-    g.source(out, line, g.plain(), &w.shown);
+    let w = Window::around(first.file.line_text(line), first.within(line).0, &subjects);
+    g.source(out, line, conn, &w.shown);
+    push_marks(out, &w, ls, g, conn);
+}
+
+/** A row of marks and a message for each of `ls`, which start on the line `w` shows. */
+pub(super) fn push_marks(out: &mut String, w: &Window, ls: &[&Placed], g: &Gutter, conn: &str) {
     for p in ls {
-        let (lo, hi) = p.within(line);
+        let (lo, hi) = p.within(p.line);
         let start = w.col(lo);
         let end = w.col(hi).max(start + 1);
         let mut marks = " ".repeat(start);
@@ -52,24 +59,6 @@ pub(super) fn push_line(out: &mut String, ls: &[&Placed], g: &Gutter) {
             marks.push(' ');
             marks.push_str(&visible(&p.label.message));
         }
-        g.mark(out, g.plain(), &marks);
-    }
-}
-
-/** Show the one line of `file` between two shown lines, or mark the lines left out. */
-pub(super) fn push_gap(out: &mut String, p: &Placed, last: Option<usize>, g: &Gutter) {
-    let Some(last) = last else {
-        return;
-    };
-    if p.line == last + 2 {
-        let text = p.file.line_text(last + 1);
-        g.source(
-            out,
-            last + 1,
-            g.plain(),
-            &Window::around(text, 0, &[]).shown,
-        );
-    } else if p.line > last + 2 {
-        g.elision(out);
+        g.mark(out, conn, &marks);
     }
 }

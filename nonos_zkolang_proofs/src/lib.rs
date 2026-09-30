@@ -88,6 +88,8 @@ mod front_recovery_tests;
 #[cfg(test)]
 mod front_render_check;
 #[cfg(test)]
+mod front_render_multi_tests;
+#[cfg(test)]
 mod front_render_tests;
 #[cfg(test)]
 mod front_render_text_tests;

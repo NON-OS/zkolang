@@ -26,7 +26,7 @@ use alloc::vec::Vec;
 
 use super::diagnostic::{Diagnostic, Severity};
 use super::display::visible;
-use super::render_file::push_files;
+use super::render_files::push_files;
 use super::render_gutter::Gutter;
 use super::render_placed::Placed;
 use crate::compiler::source::SourceMap;
