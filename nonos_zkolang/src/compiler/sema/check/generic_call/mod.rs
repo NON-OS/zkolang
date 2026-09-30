@@ -13,3 +13,4 @@ mod call_resolve;
 mod call_template;
 mod const_bind;
 mod const_names;
+mod infer_generics;

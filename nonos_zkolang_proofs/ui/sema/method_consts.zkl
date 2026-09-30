@@ -1,0 +1,31 @@
+/* A generic method's constants come from its arguments; one none gives is reported once, and not after an argument in error. */
+#![allow(unused)]
+struct S {
+    k: u8,
+}
+
+impl S {
+    fn size<const N: usize>(self) -> usize {
+        N
+    }
+
+    fn sum<const N: usize>(self, a: [u8; N], b: u8) -> u8 {
+        b
+    }
+
+    fn make<const N: usize>(k: u8) -> S {
+        S { k }
+    }
+}
+
+fn h<const N: usize>(a: [u8; N]) {}
+
+fn f(s: S) {
+    let a = s.size(); /*~ E0303 */
+    let b = s.sum([1, 2], nope); /*~ E0200 */
+    let c = s.sum(nope2, 1); /*~ E0200 */
+    let d = S::make(1); /*~ E0303 */
+    let e = S::sum(s, [1u8], true); /*~ E0300 */
+    let g = s.sum([1, 2, 3], 4);
+    h(nope3); /*~ E0200 */
+}

@@ -774,7 +774,9 @@ Arguments may be written with a turbofish, `f::<u8, 4>(x)`, or inferred from the
 and expected result types. A constant parameter is inferred from the arguments: where a
 parameter's type names it as an array length or as a constant argument of a struct or
 enum, the argument's type gives its value, the first argument that gives one deciding it,
-and an argument whose type then disagrees is a mismatch (E0300). In a body, a constant
+and an argument whose type then disagrees is a mismatch (E0300). A function of an `impl`
+block, called as a method or through its type, infers its own constant parameters the
+same way, its block's arguments given by the type. In a body, a constant
 parameter is a `usize` value. An instantiation that cannot be inferred is an error (E0303);
 so is an instance whose body does not check (E0702, at the call that makes it, beside the
 errors in the body). The instances of one function nest at most 64 deep along the calls

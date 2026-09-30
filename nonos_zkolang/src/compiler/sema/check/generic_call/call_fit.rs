@@ -13,7 +13,7 @@ use alloc::vec::Vec;
 
 use super::super::cx::FnCx;
 use crate::compiler::diag::{Code, Diagnostic};
-use crate::compiler::sema::ty::TyId;
+use crate::compiler::sema::ty::{TyId, TyKind};
 use crate::compiler::source::Span;
 use crate::compiler::syntax::ast::Expr;
 use crate::compiler::tir::{Labels, TArg, TExpr};
@@ -42,10 +42,22 @@ impl<'s, 'a> FnCx<'s, 'a> {
         first: Vec<Option<TArg>>,
         at: Span,
     ) -> TExpr {
-        let what = format!("cannot infer the constant `{c}` of `{name}`");
-        let d = Diagnostic::error(Code::CANNOT_INFER, what, at, "no argument gives it")
-            .with_help(format!("write it: `{name}::<..>`"));
-        self.sema.diags.push(d);
+        /* An argument in error, reported already, gives no constant. */
+        let tys: Vec<TyId> = first
+            .iter()
+            .flatten()
+            .map(|a| match a {
+                TArg::Value(e) => e.ty,
+                TArg::Place(p) => p.ty,
+            })
+            .collect();
+        if !tys.into_iter().any(|t| self.kind(t) == TyKind::Error) {
+            let what = format!("cannot infer the constant `{c}` of `{name}`");
+            let d = Diagnostic::error(Code::CANNOT_INFER, what, at, "no argument gives it");
+            self.sema
+                .diags
+                .push(d.with_help(format!("write it: `{name}::<..>`")));
+        }
         for (i, a) in args.iter().enumerate() {
             if !matches!(first.get(i), Some(Some(_))) {
                 self.infer(a, None);

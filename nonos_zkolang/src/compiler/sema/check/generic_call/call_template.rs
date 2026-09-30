@@ -12,14 +12,14 @@
 use alloc::vec::Vec;
 
 use super::super::cx::FnCx;
-use crate::compiler::sema::ty::GenArg;
+use crate::compiler::sema::ty::{GenArg, TyId};
 use crate::compiler::source::Span;
 use crate::compiler::syntax::ast::Expr;
-use crate::compiler::tir::{FnId, TArg, TExpr, TExprKind};
+use crate::compiler::tir::{FnId, Labels, TArg, TExpr, TExprKind};
 
 impl<'s, 'a> FnCx<'s, 'a> {
     /** `call_template`, the arguments in `first` checked already. */
-    pub(super) fn call_template_with(
+    pub(crate) fn call_template_with(
         &mut self,
         t: FnId,
         (name, generics): (&str, Vec<GenArg>),
@@ -32,13 +32,7 @@ impl<'s, 'a> FnCx<'s, 'a> {
         let mut targs: Vec<TArg> = Vec::with_capacity(args.len());
         for (i, a) in args.iter().enumerate() {
             let param = sig.params.get(i);
-            targs.push(match first.get_mut(i).and_then(Option::take) {
-                Some(arg) => {
-                    self.fit_arg(&arg, param);
-                    arg
-                }
-                None => self.arg(a, param),
-            });
+            targs.push(self.arg_for(a, param, first.get_mut(i).and_then(Option::take)));
         }
         self.check_disjoint(&targs);
         self.pending.push((at, generics));
@@ -46,6 +40,22 @@ impl<'s, 'a> FnCx<'s, 'a> {
             kind: TExprKind::Call(t, targs),
             ty: sig.ret,
             span: at,
+        }
+    }
+
+    /** The argument `a` for `param`: `early`, checked already and fitted to it, or `a` checked now. */
+    pub(crate) fn arg_for(
+        &mut self,
+        a: &'a Expr,
+        param: Option<&(TyId, Labels, bool)>,
+        early: Option<TArg>,
+    ) -> TArg {
+        match early {
+            Some(arg) => {
+                self.fit_arg(&arg, param);
+                arg
+            }
+            None => self.arg(a, param),
         }
     }
 }

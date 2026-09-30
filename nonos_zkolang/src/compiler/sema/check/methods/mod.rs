@@ -17,6 +17,7 @@ mod impl_match_arg;
 mod impl_mentions;
 mod member;
 mod member_generics;
+mod member_infer;
 mod none;
 mod prim_assoc;
 mod self_value;

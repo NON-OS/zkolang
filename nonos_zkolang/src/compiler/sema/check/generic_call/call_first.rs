@@ -18,11 +18,14 @@ use crate::compiler::syntax::ast::{Expr, ExprKind, Param, TypeKind};
 use crate::compiler::tir::{FnId, Labels, TArg};
 
 impl<'s, 'a> FnCx<'s, 'a> {
-    /** Check the arguments of `t(args)` that give constants, binding them in `c`. */
+    /**
+     * Check the arguments of `t(args)` that give constants, binding them in `c`; `args`
+     * leave out the first `skip` parameters of `t`, a method's receiver.
+     */
     pub(super) fn args_first(
         &mut self,
         t: FnId,
-        args: &'a [Expr],
+        (args, skip): (&'a [Expr], usize),
         mut c: Consts<'_>,
     ) -> Vec<Option<TArg>> {
         let Some((m, decl)) = self.sema.fns.get(t.0 as usize).map(|i| (i.module, i.decl)) else {
@@ -30,7 +33,7 @@ impl<'s, 'a> FnCx<'s, 'a> {
         };
         let mut first = Vec::with_capacity(args.len());
         for (i, a) in args.iter().enumerate() {
-            let ty = match decl.params.get(i) {
+            let ty = match i.checked_add(skip).and_then(|k| decl.params.get(k)) {
                 Some(Param::Typed { ty, .. }) if names_const(ty, c.0) => ty,
                 _ => {
                     first.push(None);

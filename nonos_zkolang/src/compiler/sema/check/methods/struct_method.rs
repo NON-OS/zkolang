@@ -8,7 +8,7 @@
 use super::super::cx::FnCx;
 use crate::compiler::sema::ty::TyId;
 use crate::compiler::source::Span;
-use crate::compiler::syntax::ast::{Expr, GenericArg, Ident};
+use crate::compiler::syntax::ast::{Expr, GenericArg, Ident, Param};
 use crate::compiler::tir::TExpr;
 
 impl<'s, 'a> FnCx<'s, 'a> {
@@ -29,9 +29,19 @@ impl<'s, 'a> FnCx<'s, 'a> {
             });
             return self.error(at);
         };
-        let Some(generics) = self.member_generics((fid, impl_args), given, method.span) else {
-            return self.check_args_then_error(args, at);
+        let is_method = self
+            .sema
+            .fns
+            .get(fid.0 as usize)
+            .and_then(|f| f.decl.params.first());
+        if !matches!(is_method, Some(Param::SelfParam { .. })) {
+            return self.not_a_method(recv.2, method, args, at);
+        }
+        let found = (fid, impl_args);
+        let Some((g, first)) = self.member_call_generics(found, given, (args, 1), method.span)
+        else {
+            return self.error(at);
         };
-        self.user_method((fid, generics), recv, method, args, at)
+        self.user_method((fid, g, first), recv, method, args, at)
     }
 }

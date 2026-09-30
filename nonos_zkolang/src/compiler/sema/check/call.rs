@@ -37,12 +37,16 @@ impl<'s, 'a> FnCx<'s, 'a> {
             };
         }
         if let Some(found) = self.assoc_fn(p) {
-            let given = p.segments.last().and_then(|s| s.generics.as_deref());
-            let generics = found.and_then(|m| Some((m.0, self.member_generics(m, given, at)?)));
-            return match generics {
-                Some((fid, Some(g))) => self.call_template(fid, (p.last_name(), g), args, at),
-                Some((fid, None)) => self.call_fn(fid, p.last_name(), args, at),
-                None => self.not_callable(f, args, "", at),
+            let Some(m) = found else {
+                return self.not_callable(f, args, "", at);
+            };
+            let (fid, given) = (m.0, p.segments.last().and_then(|s| s.generics.as_deref()));
+            return match self.member_call_generics(m, given, (args, 0), at) {
+                Some((Some(g), first)) => {
+                    self.call_template_with(fid, (p.last_name(), g), args, first, at)
+                }
+                Some((None, _)) => self.call_fn(fid, p.last_name(), args, at),
+                None => self.error(at),
             };
         }
         if p.as_ident().is_some_and(|i| self.lookup(&i.name).is_some()) {
