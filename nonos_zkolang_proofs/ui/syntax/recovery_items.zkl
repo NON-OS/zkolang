@@ -1,0 +1,11 @@
+/* An error inside an item's brackets is reported once; the items after it still parse. */
+mod m {
+    fn broken(a: ) {} /*~ E0100 */
+    fn fine() {}
+}
+
+enum E { A(, B } /*~ E0100 */
+
+const X = 3; /*~ E0100 */
+
+fn after() -> u32 { 1 }

@@ -1,0 +1,10 @@
+/* An error inside a statement's brackets is reported once; the statements after it parse. */
+fn f(a: u32) -> u32 {
+    let z = match a { 1 => , _ => 2 }; /*~ E0100 */
+    let w = a + ; /*~ E0100 */
+    let v = (a * [1, 2]) + ; /*~ E0100 */
+    let u = f((a + 1) * ); /*~ E0100 */
+    a
+}
+
+fn g() -> u32 { 2 }

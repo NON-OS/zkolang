@@ -33,7 +33,7 @@ impl<'a> Parser<'a> {
             match self.impl_item() {
                 Ok(item) => items.push(item),
                 Err(_) => {
-                    self.recover_item();
+                    self.recover_item(before);
                     if self.pos == before {
                         self.bump();
                     }

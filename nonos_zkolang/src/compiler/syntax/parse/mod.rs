@@ -48,6 +48,7 @@ mod primary_kw;
 mod primary_token;
 mod recover;
 mod recover_item;
+mod recover_owed;
 mod stmt_expr;
 mod stmt_let;
 mod stmts;

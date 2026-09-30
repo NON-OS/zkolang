@@ -10,11 +10,14 @@ use crate::compiler::syntax::keyword::Keyword;
 use crate::compiler::syntax::token::TokenKind;
 
 impl<'a> Parser<'a> {
-    /** Recover at module level: skip to the next token that can begin an item. */
-    pub(super) fn recover_item(&mut self) {
-        self.split = None;
+    /**
+     * Recover at module level from an error in the item that began at token `from`: close
+     * what it opened, then skip to the next token that can begin an item. A closer left
+     * over belongs to the enclosing module or impl block, which takes it.
+     */
+    pub(super) fn recover_item(&mut self, from: usize) {
+        self.pay_owed(from);
         let mut depth: usize = 0;
-        let start = self.pos;
         loop {
             let k = self.kind();
             match k {
@@ -22,9 +25,6 @@ impl<'a> Parser<'a> {
                 TokenKind::LParen | TokenKind::LBracket | TokenKind::LBrace => depth += 1,
                 TokenKind::RParen | TokenKind::RBracket | TokenKind::RBrace => {
                     if depth == 0 {
-                        if self.pos == start {
-                            self.bump();
-                        }
                         return;
                     }
                     depth -= 1;
@@ -37,7 +37,7 @@ impl<'a> Parser<'a> {
                     self.bump();
                     return;
                 }
-                _ if depth == 0 && self.pos > start && starts_item(k) => return,
+                _ if depth == 0 && starts_item(k) => return,
                 _ => {}
             }
             self.bump();

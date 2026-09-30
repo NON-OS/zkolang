@@ -40,11 +40,12 @@ impl<'a> Parser<'a> {
                 TokenKind::Eof => return Err(self.block_unclosed(open)),
                 _ => {}
             }
+            let from = self.pos;
             match self.stmt() {
                 Ok(Some(StmtOrTail::Stmt(s))) => stmts.push(s),
                 Ok(Some(StmtOrTail::Tail(e))) => tail = Some(e),
                 Ok(None) => {}
-                Err(_) => self.recover_stmt(),
+                Err(_) => self.recover_stmt(from),
             }
         }
         let close = self.expect(TokenKind::RBrace)?;

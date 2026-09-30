@@ -40,7 +40,7 @@ impl<'a> Parser<'a> {
                 Ok(Some(item)) => items.push(item),
                 Ok(None) => {}
                 Err(_) => {
-                    self.recover_item();
+                    self.recover_item(before);
                     if self.pos == before {
                         self.bump();
                     }
