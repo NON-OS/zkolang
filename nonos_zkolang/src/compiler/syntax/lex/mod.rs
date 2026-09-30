@@ -9,6 +9,7 @@ mod block_comment;
 mod comment;
 mod describe;
 mod dispatch;
+mod late_quote;
 mod number;
 mod number_digits;
 #[cfg(test)]

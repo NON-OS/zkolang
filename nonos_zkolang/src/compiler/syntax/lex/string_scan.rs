@@ -10,7 +10,8 @@
  * run to it, so the one mistake is reported once and the text after it lexes as intended.
  */
 
-use super::string_report::{bad_escape, late_close, late_quote, unclosed};
+use super::late_quote::late_quote;
+use super::string_report::{bad_escape, late_close, unclosed};
 use crate::compiler::diag::Diagnostics;
 use crate::compiler::source::{FileId, Span};
 

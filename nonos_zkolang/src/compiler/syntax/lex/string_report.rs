@@ -3,10 +3,7 @@
  AGPL-3.0-or-later
 */
 
-/*!
- * Malformed string literals: where a string that runs past its line is taken to end, and
- * the diagnostics.
- */
+/*! The diagnostics for malformed string literals. */
 
 use alloc::format;
 use alloc::string::String;
@@ -51,18 +48,4 @@ pub(super) fn unclosed(open: Span) -> Diagnostic {
         "this string is never closed",
     )
     .with_help("close the string with `\"` on the line it starts")
-}
-
-/**
- * The offset of the quote on a later line that closes a string whose line ended at `at`:
- * the first quote after it, when what follows that quote ends a statement or argument.
- */
-pub(super) fn late_quote(b: &[u8], at: usize) -> Option<usize> {
-    let q = at + b.get(at..)?.iter().position(|&c| c == b'"')?;
-    let after = b.get(q + 1..)?.iter().find(|&&c| c != b' ' && c != b'\t');
-    let ends = matches!(
-        after,
-        None | Some(b';' | b',' | b')' | b']' | b'}' | b'\n' | b'\r')
-    );
-    ends.then_some(q)
 }
