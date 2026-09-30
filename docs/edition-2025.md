@@ -1,6 +1,6 @@
 <!-- NONOS. AGPL-3.0-or-later. -->
 
-# The zKølang language specification
+# The zKølang language specification, edition 2025
 
 zKølang is a language for verifiable computation. A program is straight-line: it reads
 public inputs and a private witness, computes over a finite field, and writes public
@@ -10,24 +10,26 @@ bounded cost in an execution trace. There is no heap, no general recursion, and 
 unbounded loop, because none of those has a fixed trace.
 
 This document specifies the language as the compiler implements it. It is normative
-where it states a rule and descriptive where it explains one.
+where it states a rule and descriptive where it explains one. Edition 2025 is frozen:
+the registered circuits are compiled by it, and their commitments depend on its exact
+output. The next edition is specified in [`SPEC.md`](../SPEC.md).
 
 ## 1. The field
 
 All values are elements of the Goldilocks field, the prime field of order
-`p = 2^64 - 2^32 + 1`. Arithmetic is modular. A numeric literal is reduced modulo `p`.
+`p = 2^64 - 2^32 + 1`. Arithmetic is modular. A numeric literal must be below `2^64` and is reduced modulo `p`.
 The field has two-adicity thirty two, which is what lets the prover build its evaluation
 domains, and it fits a machine word, which is what lets the same computation run as
 native code at the same cost budget.
 
 ## 2. Lexical structure
 
-- **Comment.** `//` to end of line. Whitespace separates tokens and is otherwise
-  insignificant.
+- **Comment.** `//` to the end of the line, which a line feed or a carriage return ends.
+  Whitespace separates tokens and is otherwise insignificant. A byte-order mark at the
+  start of a file is ignored.
 - **Identifier.** `[A-Za-z_][A-Za-z0-9_]*`, not equal to a keyword.
-- **Number.** `[0-9]+`, read as a field element modulo `p`.
-- **String.** `"` up to the next `"`, used only as an include path.
-- **Keywords.** `let const fn input secret output assert for in if else match inv sel include`.
+- **Number.** `[0-9]+`, below `2^64`, read as a field element modulo `p`.
+- **Keywords.** `let const fn input secret output assert for in if else match inv sel return`.
   Four have a second spelling with the same meaning, the language's own register:
   `public` for `input`, `witness` for `secret`, `reveal` for `output`, `prove` for
   `assert`. A program may use either spelling.
@@ -39,20 +41,20 @@ In EBNF. A program is a sequence of items.
 
 ```
 program     = { item } ;
-item        = include | const_def | fn_def | statement ;
+item        = const_def | fn_def | statement ;
 
-include     = "include" string ";" ;
 const_def   = "const" ident "=" ( number | array ) ";" ;
-fn_def      = "fn" ident "(" [ ident { "," ident } ] ")" "=" expr ";" ;
+fn_def      = "fn" ident "(" [ ident { "," ident } ] ")" ( "=" expr ";" | block ) ;
 
 statement   = let_stmt | input_stmt | secret_stmt
             | output_stmt | assert_stmt | for_stmt ;
-let_stmt    = "let" ident "=" expr ";" ;
+let_stmt    = "let" names "=" expr ";" ;
+names       = ident | "(" ident { "," ident } ")" ;
 input_stmt  = "input" ident ";" ;
 secret_stmt = "secret" ident ";" ;
 output_stmt = "output" expr ";" ;
 assert_stmt = "assert" expr ";" ;
-for_stmt    = "for" ident "in" expr ".." expr "{" { statement } "}" ;
+for_stmt    = "for" ident "in" number ".." number "{" { statement } "}" ;
 
 expr        = or ;
 or          = and { "||" and } ;
@@ -61,8 +63,11 @@ equality    = sum [ ( "==" | "!=" | "<" | "<=" | ">" | ">=" ) sum ] ;
 sum         = product { ( "+" | "-" ) product } ;
 product     = unary { ( "*" | "/" ) unary } ;
 unary       = ( "-" | "!" ) unary | primary ;
-primary     = number | array | inv | sel | if_expr | match_expr
-            | call | index | ident | "(" expr ")" ;
+primary     = atom { "[" expr "]" } ;
+atom        = number | array | tuple | block | inv | sel | if_expr | match_expr
+            | call | ident | "(" expr ")" ;
+tuple       = "(" expr "," expr { "," expr } ")" ;
+block       = "{" { "let" names "=" expr ";" } ( "return" expr ";" | expr [ ";" ] ) "}" ;
 match_expr  = "match" expr "{" { number "=>" expr "," } "_" "=>" expr [ "," ] "}" ;
 
 array       = "[" [ expr { "," expr } ] "]" ;
@@ -70,8 +75,12 @@ inv         = "inv" "(" expr ")" ;
 sel         = "sel" "(" expr "," expr "," expr ")" ;
 if_expr     = "if" expr "{" expr "}" "else" "{" expr "}" ;
 call        = ident "(" [ expr { "," expr } ] ")" ;
-index       = ident "[" expr "]" ;
 ```
+
+An include is not part of this grammar. A line holding only `include "path";`, where
+whitespace must follow `include`, the semicolon may be left out and a `//` comment may
+follow, is replaced by the file it names before the program is lexed. The command line
+splices each file in once, however its path is spelled.
 
 Equality does not chain: a comparison yields a bit, and comparing that bit to a third
 value is almost never meant, so it is a syntax error rather than a silent surprise.
@@ -81,15 +90,24 @@ value is almost never meant, so it is a syntax error rather than a silent surpri
 - **`input`** and **`secret`** declare a scalar read from the run's inputs in
   declaration order. A public input enters the proven statement; a secret is a private
   witness that feeds the run without being revealed.
-- **`let`** binds an expression to a name. A later `let` of the same name shadows the
-  earlier binding; there is no mutation, only rebinding, which keeps the trace linear.
+- **`let`** binds an expression to a name, or destructures a tuple into several names,
+  where `_` binds nothing. A later `let` of the same name shadows the earlier binding;
+  there is no mutation, only rebinding, which keeps the trace linear.
 - **`const`** binds either a scalar, `const N = 5;`, read by name, or a table,
   `const T = [1, 2, 3];`, read by a constant index. The bracket after `=` selects which.
-- **`fn`** defines a function as a single expression. A call is inlined at compile time
-  with its arguments substituted, so functions cost nothing beyond the arithmetic they
-  name and cannot recurse.
+- **`fn`** defines a function as a single expression or a block. A call is inlined at
+  compile time with its arguments substituted, so functions cost nothing beyond the
+  arithmetic they name. A function that calls itself, directly or through others, is an
+  error whether or not anything calls it, as is a parameter named twice.
 - **`include`** textually resolves another source file once, so a program can draw on a
   standard library. Includes are resolved to a bounded depth.
+
+Names resolve innermost first: a loop variable, then a parameter or a local of a block,
+then a constant. Some names are refused because their meaning would be unclear: a
+second function or constant of one name, unless it repeats the first word for word; a
+top-level `let`, `input` or `secret` named like a constant; and a binding in a loop body
+named like the loop's variable. A scalar hides an array or table of its name, so
+indexing it is an error.
 
 ## 5. Statements and control
 
@@ -98,8 +116,8 @@ value is almost never meant, so it is a syntax error rather than a silent surpri
   are the equality forms. An assertion that does not hold makes the trace unprovable, so
   a program with a false assertion has no proof.
 - **`for i in a .. b`** is a counted loop over a constant range, unrolled at compile
-  time. The bound expressions must fold to constants, and the loop variable `i` is a
-  compile-time constant inside the body, usable in arithmetic and as an index. There is
+  time. The bounds are integer literals, and the loop variable `i` is a compile-time
+  constant inside the body, usable in arithmetic and as an index. There is
   no runtime loop, so the trace length is fixed before the program runs.
 
 ## 6. Expressions
@@ -120,9 +138,11 @@ unprovable, and `/` is multiplication by an inverse with the same rule. `sel(c, 
 is a branchless select returning `a` when `c` is one and `b` when `c` is zero, with `c`
 constrained boolean. `if c { a } else { b }` is the same select in a familiar shape, and
 both arms are evaluated. `match e { v => a, ..., _ => d }` compares the scrutinee to each
-value and falls through to the required default `_`, desugared to a nested select, so it
-too evaluates every arm. An array literal is a vector; `name[i]` reads a constant
-table or an array at a constant index, which must be in bounds.
+value and falls through to the default `_`, which is required, comes last and appears
+once. It is desugared to a nested select, so it too evaluates every arm. An array
+literal is a vector; `name[i]` reads a constant table or an array at an index that
+folds from literals and loop variables, which must be in bounds. A block binds locals
+visible only inside it and yields its last expression, or the one after `return`.
 
 ## 7. Compilation and the machine
 
