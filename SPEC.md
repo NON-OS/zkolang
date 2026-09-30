@@ -403,7 +403,12 @@ of a type are found through that type (`Type::name`, `value.name(...)`).
 
 `use` imports a name into the current module. Imports are not re-exported unless marked
 `pub use`. Import cycles among globs are resolved to a fixed point; a name that cannot
-be resolved is an error that names the closest candidates.
+be resolved is an error that names the closest candidates. They are taken from the names
+usable where it stands: items, imports, crates and the prelude, and for a first name also
+the generic parameters, the locals where a variable is read, and the primitive types where
+a type stands. A candidate is at most a third of the name's length of edits away, and at
+least one, where an edit inserts, removes or changes a letter or swaps two neighbouring
+ones. A name that differs only in case is the closest; at most three are named.
 
 ## 5. Types
 

@@ -51,6 +51,7 @@ mod lower_path;
 mod main_check;
 mod no_generics;
 mod not_checked;
+mod path_near;
 mod path_report;
 mod prepare;
 mod program;

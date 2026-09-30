@@ -40,7 +40,9 @@ impl<'s, 'a> FnCx<'s, 'a> {
         let def = match self.sema.defs.resolve(self.module, p.root, &names) {
             Ok(d) => d,
             Err(e) => {
-                self.sema.report_path(p, e);
+                let names = self.names.iter().filter(|(_, v)| !v.is_empty());
+                let locals: Vec<&str> = names.map(|(n, _)| n.as_str()).collect();
+                self.sema.report_path(self.module, p, e, &locals);
                 return self.error(at);
             }
         };

@@ -180,6 +180,8 @@ mod modules_tests;
 #[cfg(test)]
 mod name_check_tests;
 #[cfg(test)]
+mod name_near_tests;
+#[cfg(test)]
 mod native_compare_tests;
 #[cfg(test)]
 mod native_guard_tests;

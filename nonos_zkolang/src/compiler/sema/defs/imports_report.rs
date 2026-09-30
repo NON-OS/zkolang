@@ -7,9 +7,10 @@
 
 use alloc::format;
 use alloc::string::String;
+use alloc::vec::Vec;
 
 use super::{Defs, PathError, PendingImport};
-use crate::compiler::diag::{Code, Diagnostic, Diagnostics};
+use crate::compiler::diag::{did_you_mean, Code, Diagnostic, Diagnostics};
 
 impl<'a> Defs<'a> {
     /** Report why `imp` does not resolve. */
@@ -50,6 +51,20 @@ impl<'a> Defs<'a> {
         };
         let at = at.map_or(imp.span, |s| s.span);
         let message = message.unwrap_or_else(|| String::from("unresolved import"));
-        diags.push(Diagnostic::error(code, message, at, "unresolved import"));
+        let d = Diagnostic::error(code, message, at, "unresolved import");
+        diags.push(match e {
+            PathError::Unresolved(i) => match self.import_near(imp, i) {
+                Some(h) => d.with_help(h),
+                None => d,
+            },
+            _ => d,
+        });
+    }
+
+    /** Help naming what segment `i` of `imp` may have meant. */
+    fn import_near(&self, imp: &PendingImport<'a>, i: usize) -> Option<String> {
+        let segs: Vec<&str> = imp.segs.iter().map(|s| s.name.as_str()).collect();
+        let near = self.names_near(imp.module, imp.root, &segs, i);
+        did_you_mean(segs.get(i)?, near)
     }
 }

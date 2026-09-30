@@ -32,7 +32,7 @@ impl<'a> Sema<'a> {
         let def = match self.defs.resolve(m, p.root, &names) {
             Ok(d) => d,
             Err(e) => {
-                self.report_path(p, e);
+                self.report_path(m, p, e, &[]);
                 return None;
             }
         };

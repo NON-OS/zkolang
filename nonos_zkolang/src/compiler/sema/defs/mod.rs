@@ -19,6 +19,7 @@ mod imports_apply;
 mod imports_bind;
 mod imports_report;
 mod module;
+mod near;
 mod pending;
 mod resolve;
 mod table;

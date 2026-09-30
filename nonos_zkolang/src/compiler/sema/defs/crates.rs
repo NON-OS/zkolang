@@ -51,7 +51,7 @@ impl<'a> Defs<'a> {
     }
 
     /** The prelude, the module `std::prelude`, when the standard library is loaded. */
-    fn prelude(&self) -> Option<&Module> {
+    pub(super) fn prelude(&self) -> Option<&Module> {
         let std = self.modules.get(&self.std?)?;
         self.modules.get(&std.names.get("prelude")?.def)
     }

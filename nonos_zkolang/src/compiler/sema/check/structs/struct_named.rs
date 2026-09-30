@@ -41,7 +41,7 @@ impl<'s, 'a> FnCx<'s, 'a> {
         let def = match self.sema.defs.resolve(self.module, p.root, &names) {
             Ok(d) => d,
             Err(e) => {
-                self.sema.report_path(p, e);
+                self.sema.report_path(self.module, p, e, &[]);
                 return None;
             }
         };

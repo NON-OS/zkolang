@@ -10,6 +10,7 @@ use alloc::vec::Vec;
 
 use super::cx::Sema;
 use super::defs::DefId;
+use super::path_near::primitive_types;
 use crate::compiler::diag::{Code, Diagnostic};
 use crate::compiler::syntax::ast::Path;
 
@@ -30,7 +31,7 @@ impl<'a> Sema<'a> {
                 Some(d)
             }
             Err(e) => {
-                self.report_path(p, e);
+                self.report_path(m, p, e, &primitive_types());
                 None
             }
         }

@@ -9,14 +9,17 @@ use alloc::format;
 use alloc::string::String;
 
 use super::cx::Sema;
-use super::defs::PathError;
+use super::defs::{DefId, PathError};
 use crate::compiler::diag::{Code, Diagnostic};
 use crate::compiler::source::Span;
 use crate::compiler::syntax::ast::Path;
 
 impl<'a> Sema<'a> {
-    /** Report why the path `p` does not resolve. */
-    pub(crate) fn report_path(&mut self, p: &Path, e: PathError) {
+    /**
+     * Report why the path `p`, written in module `m`, does not resolve; `more` are names
+     * the place adds to those in scope that a misspelt first name may have meant.
+     */
+    pub(crate) fn report_path(&mut self, m: DefId, p: &Path, e: PathError, more: &[&str]) {
         let seg = |i: usize| {
             p.segments
                 .get(i)
@@ -57,7 +60,14 @@ impl<'a> Sema<'a> {
             ),
         };
         let at = at.map_or(p.span, |s| s.1);
-        self.diags
-            .push(Diagnostic::error(code, message, at, "unresolved"));
+        let d = Diagnostic::error(code, message, at, "unresolved");
+        let help = match e {
+            PathError::Unresolved(i) => self.path_near(m, p, i, more),
+            _ => None,
+        };
+        self.diags.push(match help {
+            Some(h) => d.with_help(h),
+            None => d,
+        });
     }
 }
