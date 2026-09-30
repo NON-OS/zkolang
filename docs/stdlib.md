@@ -97,3 +97,46 @@ exports stand as lone names.
 
 ### `pub use crate::option::Option`
 
+### `pub use crate::result::Result`
+
+## `std::result`
+
+Results (section 18.1): a `Result<T, E>` holds a value `T`, or an error `E` saying why not.
+
+### `pub enum Result<T, E>`
+
+A value of type `T`, or the error of type `E` that stands for it.
+
+- `Ok(T)`
+- `Err(E)`
+
+### `impl<T, E> Result<T, E>`
+
+#### `pub fn is_ok(self) -> bool`
+
+Whether the result holds a value.
+
+#### `pub fn is_err(self) -> bool`
+
+Whether the result holds an error.
+
+#### `pub fn unwrap(self) -> T`
+
+The value held; the run fails if the result holds an error.
+
+#### `pub fn unwrap_err(self) -> E`
+
+The error held; the run fails if the result holds a value.
+
+#### `pub fn unwrap_or(self, default: T) -> T`
+
+The value held, or `default`.
+
+#### `pub fn ok(self) -> Option<T>`
+
+The value held, as an option.
+
+#### `pub fn err(self) -> Option<E>`
+
+The error held, as an option.
+

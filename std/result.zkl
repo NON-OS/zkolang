@@ -1,0 +1,68 @@
+/*! Results (section 18.1): a `Result<T, E>` holds a value `T`, or an error `E` saying why not. */
+
+use crate::option::Option;
+
+/** A value of type `T`, or the error of type `E` that stands for it. */
+pub enum Result<T, E> {
+    Ok(T),
+    Err(E),
+}
+
+impl<T, E> Result<T, E> {
+    /** Whether the result holds a value. */
+    pub fn is_ok(self) -> bool {
+        match self {
+            Result::Ok(_) => true,
+            Result::Err(_) => false,
+        }
+    }
+
+    /** Whether the result holds an error. */
+    pub fn is_err(self) -> bool {
+        !self.is_ok()
+    }
+
+    /** The value held; the run fails if the result holds an error. */
+    pub fn unwrap(self) -> T {
+        match self {
+            Result::Ok(x) => x,
+            Result::Err(_) => {
+                assert false, "`unwrap` of `Err`";
+            }
+        }
+    }
+
+    /** The error held; the run fails if the result holds a value. */
+    pub fn unwrap_err(self) -> E {
+        match self {
+            Result::Ok(_) => {
+                assert false, "`unwrap_err` of `Ok`";
+            }
+            Result::Err(e) => e,
+        }
+    }
+
+    /** The value held, or `default`. */
+    pub fn unwrap_or(self, default: T) -> T {
+        match self {
+            Result::Ok(x) => x,
+            Result::Err(_) => default,
+        }
+    }
+
+    /** The value held, as an option. */
+    pub fn ok(self) -> Option<T> {
+        match self {
+            Result::Ok(x) => Option::Some(x),
+            Result::Err(_) => Option::None,
+        }
+    }
+
+    /** The error held, as an option. */
+    pub fn err(self) -> Option<E> {
+        match self {
+            Result::Ok(_) => Option::None,
+            Result::Err(e) => Option::Some(e),
+        }
+    }
+}

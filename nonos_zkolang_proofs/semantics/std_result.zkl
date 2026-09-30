@@ -1,0 +1,35 @@
+/* The standard library's `Result` (section 18.1), its variants named alone through the prelude. */
+
+fn halve(x: u8) -> Result<u8, bool> {
+    if x % 2 == 0 {
+        Ok(x / 2)
+    } else {
+        Err(x == 1)
+    }
+}
+
+#[test]
+fn a_result_holds_a_value_or_an_error() {
+    assert halve(8).is_ok() && halve(7).is_err();
+    assert halve(8).unwrap() == 4;
+    assert halve(7).unwrap_or(9) == 9;
+    assert halve(1).unwrap_err() && !halve(3).unwrap_err();
+    assert halve(6).ok().unwrap() == 3 && halve(6).err().is_none();
+    let v = match halve(10) {
+        Ok(h) => h,
+        Err(_) => 0,
+    };
+    assert v == 5;
+}
+
+#[test]
+#[should_fail]
+fn unwrap_of_an_error_fails() {
+    assert halve(5).unwrap() == 0;
+}
+
+#[test]
+#[should_fail]
+fn unwrap_err_of_a_value_fails() {
+    assert halve(4).unwrap_err();
+}

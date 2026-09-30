@@ -39,8 +39,8 @@ normative, is the only one that describes the repository rather than the languag
   compiles edition 2025, where section 4.1 says 2026. The
   standard library, written in zKølang under `std/` and built into the compiler, is
   loaded beside every crate as the crate `std`; so far it holds `std::hash` (the MiMC
-  permutation and compressions of the edition 2025 library), `std::merkle`, `std::option`
-  and the prelude, `std::prelude` (section 18.1). The
+  permutation and compressions of the edition 2025 library), `std::merkle`, `std::option`,
+  `std::result` and the prelude, `std::prelude` (section 18.1). The
   back end compiles the typed IR of such a
   program to the machine: lowering to SSA, the passes, gadget expansion, scheduling, register allocation
   and a check of the machine program against the SSA. `compiler::driver::build` and
@@ -984,9 +984,9 @@ doc comments, given only for a file that parses without errors.
 
 The prelude is the module `std::prelude`. Every module names what it exports without an
 import, after the names the module binds itself and after `std` (section 4.4); it
-exports `std::option::Option`. The variants of an enum it exports are named alone, in
-expressions (section 7.11) and patterns (section 9.1), where no item of that name is in
-scope: `Some(x)` and `None`.
+exports `std::option::Option` and `std::result::Result`. The variants of an enum it
+exports are named alone, in expressions (section 7.11) and patterns (section 9.1), where
+no item of that name is in scope: `Some(x)`, `None`, `Ok(x)` and `Err(e)`.
 
 ### 18.2 `std`
 

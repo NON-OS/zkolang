@@ -30,6 +30,7 @@ impl Files for Std {
             "std/merkle.zkl" => include_str!("../../../std/merkle.zkl"),
             "std/option.zkl" => include_str!("../../../std/option.zkl"),
             "std/prelude.zkl" => include_str!("../../../std/prelude.zkl"),
+            "std/result.zkl" => include_str!("../../../std/result.zkl"),
             _ => return None,
         };
         Some(text.to_string())

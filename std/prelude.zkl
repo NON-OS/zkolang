@@ -5,3 +5,4 @@
  */
 
 pub use crate::option::Option;
+pub use crate::result::Result;
