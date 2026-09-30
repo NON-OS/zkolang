@@ -1,3 +1,4 @@
 /*! The standard library of zKølang, edition 2026 (section 18), written in zKølang. */
 
 pub mod option;
+pub mod prelude;

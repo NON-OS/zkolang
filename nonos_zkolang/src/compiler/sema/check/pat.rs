@@ -42,8 +42,7 @@ impl<'s, 'a> FnCx<'s, 'a> {
     ) -> TPat {
         let parts: Vec<(&'a Pattern, TyId, Option<u32>)> = match (&p.kind, self.kind(ty)) {
             (PatKind::Bind { name, mutable }, _) => {
-                let labels = sub_labels(labels, path);
-                return TPat::Bind(self.pat_bind(name, ty, *mutable, labels));
+                return self.lone_name_pat(p, (name, *mutable), ty, sub_labels(labels, path));
             }
             (PatKind::Wild | PatKind::Error, _) => return TPat::Wild,
             (PatKind::Tuple(ps), TyKind::Unit) if ps.is_empty() => Vec::new(),

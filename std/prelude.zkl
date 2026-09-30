@@ -1,0 +1,7 @@
+/*!
+ * The prelude (section 18.1): what every module names without importing it. Each name
+ * it exports stands after a module's own names and `std`; the variants of an enum it
+ * exports stand as lone names.
+ */
+
+pub use crate::option::Option;

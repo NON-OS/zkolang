@@ -27,6 +27,7 @@ impl Files for Std {
         let text = match path {
             "std/lib.zkl" => include_str!("../../../std/lib.zkl"),
             "std/option.zkl" => include_str!("../../../std/option.zkl"),
+            "std/prelude.zkl" => include_str!("../../../std/prelude.zkl"),
             _ => return None,
         };
         Some(text.to_string())

@@ -6,8 +6,8 @@
 /*!
  * Variants named through their enum (section 7.11): `E::V`, or `Self::V` inside an `impl`
  * block of an enum. Generic arguments written after the path, `E::V::<A>`, are the
- * enum's. A lone name never names a variant; it binds, or names a local. The enum is
- * instantiated only once the variant is found.
+ * enum's. A lone name names a variant only of the prelude's enums (section 18.1). The
+ * enum is instantiated only once the variant is found.
  */
 
 use alloc::format;
@@ -32,6 +32,9 @@ impl<'s, 'a> FnCx<'s, 'a> {
             let tag = adt.variants.iter().position(|v| v.name == last.ident.name);
             let tag = tag.and_then(|t| u32::try_from(t).ok());
             return Some(tag.map(|t| (ty, t)).ok_or(DefId(adt.def)));
+        }
+        if prefix.is_empty() && p.root == PathRoot::Plain {
+            return self.prelude_path(p);
         }
         if prefix.is_empty() || p.root == PathRoot::SelfType {
             return None;

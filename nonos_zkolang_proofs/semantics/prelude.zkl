@@ -1,0 +1,58 @@
+/* The prelude (section 18.1): `Option`, `Some` and `None` in every module, unimported. */
+
+fn half(x: u8) -> Option<u8> {
+    if x % 2 == 0 {
+        Some(x / 2)
+    } else {
+        None
+    }
+}
+
+fn describe(o: Option<u8>) -> u8 {
+    match o {
+        Some(v) => v,
+        None => 255,
+    }
+}
+
+mod inner {
+    pub fn wrap(x: bool) -> Option<bool> {
+        Some(x)
+    }
+}
+
+#[test]
+fn some_and_none_need_no_path() {
+    assert describe(half(10)) == 5;
+    assert describe(half(7)) == 255;
+    assert half(3).is_none();
+    assert inner::wrap(true).unwrap_or(false);
+}
+
+#[test]
+fn none_in_a_pattern_is_the_variant() {
+    let o: Option<u32> = None;
+    let n = match o {
+        None => 1,
+        Some(_) => 2,
+    };
+    assert n == 1;
+    let s: Option<u32> = Some(4);
+    let m = match s {
+        None => 1,
+        Some(_) => 2,
+    };
+    assert m == 2;
+    assert None::<u16>.is_none();
+}
+
+#[test]
+fn a_match_on_options_is_exhaustive() {
+    let pair = (Some(1u8), None::<u8>);
+    let v = match pair {
+        (Some(a), Some(b)) => a + b,
+        (Some(a), None) => a,
+        (None, _) => 0,
+    };
+    assert v == 1;
+}

@@ -32,8 +32,8 @@ normative, is the only one that describes the repository rather than the languag
   A crate of several files is loaded from its root file, each `mod name;` from its own
   file (section 4.2); `zkolang.toml` manifests and dependencies are not read yet. The
   standard library, written in zKølang under `std/` and built into the compiler, is
-  loaded beside every crate as the crate `std`; so far it holds `std::option`, and the
-  prelude (section 18.1) is not in place yet. The
+  loaded beside every crate as the crate `std`; so far it holds `std::option` and the
+  prelude, `std::prelude` (section 18.1). The
   back end compiles the typed IR of such a
   program to the machine: lowering to SSA, the passes, gadget expansion, scheduling, register allocation
   and a check of the machine program against the SSA. `compiler::driver::build` and
@@ -591,7 +591,8 @@ A variant of an enum `E` is built through its enum's path, in the form it is dec
 with named fields, the fields given as for a struct. Inside an `impl` block of `E`,
 `Self::V` names the same variant. Generic arguments written after the path, `E::V::<A>`,
 are the enum's. A variant's fields are visible wherever its enum is. A
-lone name never names a variant.
+lone name names a variant only of an enum the prelude exports (section 18.1): `Some(e)`
+and `None` where no item of that name is in scope.
 
 ### 7.12 `declassify`
 
@@ -686,10 +687,12 @@ A pattern is a wildcard `_`, a binding `x` or `mut x`, a literal (`bool`, intege
 `field` scrutinees), an inclusive literal range `lo..=hi` with `lo <= hi` (integer
 scrutinees), a tuple pattern, an array pattern of exactly the array's length, a struct or
 tuple-struct pattern (with `..` to ignore the remaining fields), an enum variant pattern
-written with its enum's path (`E::V`, `E::V(p, q)`, `E::V { f: p, .. }`, or `Self::V`), or
+written with its enum's path (`E::V`, `E::V(p, q)`, `E::V { f: p, .. }`, or `Self::V`) or,
+for an enum the prelude exports, with the variant's name alone (`Some(p)`, `None`), or
 an alternation `p | q` whose alternatives bind the same names at the same types and
-mutability. A pattern binds each name at most once. A lone name in a pattern always
-binds; a variant is never named by a lone name.
+mutability. A pattern binds each name at most once. A lone name in a pattern binds,
+unless it is the name of a unit variant of an enum the prelude exports and no item of
+that name is in scope; then it is that variant, as `None` is.
 
 ### 9.2 Irrefutability
 
@@ -956,7 +959,11 @@ doc comments, given only for a file that parses without errors.
 
 ### 18.1 The prelude
 
-Every module implicitly imports `std::option::Option` and its variants `Some` and `None`.
+The prelude is the module `std::prelude`. Every module names what it exports without an
+import, after the names the module binds itself and after `std` (section 4.4); it
+exports `std::option::Option`. The variants of an enum it exports are named alone, in
+expressions (section 7.11) and patterns (section 9.1), where no item of that name is in
+scope: `Some(x)` and `None`.
 
 ### 18.2 `std`
 
