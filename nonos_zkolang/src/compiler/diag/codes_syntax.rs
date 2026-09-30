@@ -31,4 +31,5 @@ codes! {
     MODULE_NOT_FOUND = "E0203", "`mod name;` names a file that does not exist: neither `name.zkl` nor `name/mod.zkl` beside the declaring file.";
     MODULE_AMBIGUOUS = "E0204", "Both `name.zkl` and `name/mod.zkl` exist for one module; remove one.";
     WRONG_KIND = "E0205", "A name that resolves to the wrong kind of item for this position, such as a function used as a type.";
+    ALIAS_CYCLE = "E0206", "A type alias that stands for itself, directly or through other aliases.";
 }

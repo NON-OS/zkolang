@@ -172,9 +172,13 @@ mod render_tests;
 #[cfg(test)]
 mod robustness_tests;
 #[cfg(test)]
+mod sema_check;
+#[cfg(test)]
 mod sema_defs_check;
 #[cfg(test)]
 mod sema_defs_tests;
+#[cfg(test)]
+mod sema_run_tests;
 #[cfg(test)]
 mod shield_key_kat;
 #[cfg(test)]

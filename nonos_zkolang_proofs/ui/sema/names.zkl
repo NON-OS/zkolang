@@ -1,0 +1,21 @@
+/* Names in code: each missing, private, misused or circular name reported once. */
+mod m {
+    fn hidden() -> u8 { 1 }
+    pub const C: u8 = 2;
+}
+type A = B; /*~ E0206 */
+type B = A;
+
+fn f(x: u8) -> u8 {
+    let a = y; /*~ E0200 */
+    let b = m::hidden(); /*~ E0202 */
+    let c = m::C;
+    let d = m; /*~ E0205 */
+    let e = f; /*~ E0205 */
+    let g = x(); /*~ E0205 */
+    let h: m = 1; /*~ E0205 */
+    let i = u8::NOPE; /*~ E0308 */
+    let j = u8::checked_from; /*~ E0205 */
+    let k = u8::MAX + u8::MIN + 1;
+    c
+}

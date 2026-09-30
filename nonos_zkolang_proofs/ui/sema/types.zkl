@@ -1,0 +1,47 @@
+/* Type errors: each reported once, at the expression at fault. */
+fn f(a: u8, b: u16, c: bool, x: field) -> u8 {
+    let d: u8 = b; /*~ E0300 */
+    let e = a + b; /*~ E0300 */
+    let g = c + c; /*~ E0301 */
+    let h = x % x; /*~ E0301 */
+    let i = x < x; /*~ E0301 */
+    let j: u8 = 256; /*~ E0302 */
+    let k: i8 = -128;
+    let l = -a; /*~ E0301 */
+    let m = a as u16;
+    let n = b as u8; /*~ E0304 */
+    let o = c as field;
+    let p = x as u8; /*~ E0304 */
+    let q = 5 % 3; /*~ E0301 */
+    let r = [1u8, 2, 3];
+    let s = r[3]; /*~ E0309 */
+    let t = a << 8; /*~ E0312 */
+    let u = (a, b).2; /*~ E0308 */
+    let v = a.foo(); /*~ E0308 */
+    let w = if c { 1u8 } else { true }; /*~ E0300 */
+    let y = []; /*~ E0303 */
+    let z = 3.pow(2); /*~ E0303 */
+    a
+}
+
+fn g(a: u8) -> u8 {
+    a = 1; /*~ E0306 */
+    3 = a; /*~ E0305 */
+    let mut b = a;
+    b += 1u16; /*~ E0300 */
+    f(b, 1, true) /*~ E0307 */
+}
+
+fn h() {
+    break; /*~ E0311 */
+    let x: bool = 1; /*~ E0300 */
+}
+
+fn swap(a: &mut u8, b: &mut u8) {}
+
+fn k(mut t: (u8, u8), mut arr: [u8; 2], i: usize) {
+    swap(&mut t.0, &mut t.1);
+    swap(&mut t.0, &mut t.0); /*~ E0310 */
+    swap(&mut arr[i], &mut arr[0]); /*~ E0310 */
+    swap(t.0, &mut t.1); /*~ E0300 */
+}

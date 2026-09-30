@@ -1,0 +1,32 @@
+/* Constants: each must be constant, evaluate, and not need itself. */
+const A: u8 = 200 + 100; /*~ E0501 */
+const B: u32 = C + 1; /*~ E0502 */
+const C: u32 = B + 1;
+const D: usize = 3;
+const E: [u8; D] = [1, 2, 3];
+const F: u8 = E[1];
+fn not_const() -> u8 { 1 }
+const G: u8 = not_const(); /*~ E0500 */
+const fn good(x: u8) -> u8 { x + 1 }
+const H: u8 = good(F);
+const fn bad(x: u8) -> u8 { not_const() + x } /*~ E0504 */
+const fn hides(x: u8) -> u8 { declassify(x) } /*~ E0504 */
+const fn labelled(x: secret u8) -> u8 { x } /*~ E0504 */
+const I: u8 = { 1 / 0 }; /*~ E0501 */
+/* A constant that uses code with an error is not run: only the error is reported. */
+const fn broken(x: u8) -> u8 { x + true } /*~ E0300 */
+const J: u8 = broken(1);
+const K: u8 = { let y: u8 = true; y }; /*~ E0300 */
+const L: u8 = K + 1;
+
+fn f(n: u32) -> u32 {
+    let mut s = 0;
+    for i in 0..n { /*~ E0500 */
+        s += i;
+    }
+    while s > 0 limit n { /*~ E0500 */
+        s -= 1;
+    }
+    let a = [0u8; D];
+    s + H as u32 + F as u32 + a.len() as u32
+}

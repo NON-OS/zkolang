@@ -3,9 +3,13 @@
  AGPL-3.0-or-later
 */
 
-/*! Run the edition 2026 front end over one source, as a `.zkl` test sees it. */
+/*!
+ * Run the edition 2026 front end over one source, as a `.zkl` test sees it, and the
+ * checker too for a program under `sema/`.
+ */
 
 use nonos_zkolang::compiler::diag::{render, Diagnostics};
+use nonos_zkolang::compiler::sema::check;
 use nonos_zkolang::compiler::source::SourceMap;
 use nonos_zkolang::compiler::syntax::lex::lex;
 use nonos_zkolang::compiler::syntax::parse::parse_file;
@@ -23,7 +27,11 @@ pub(crate) fn report(name: &str, src: &str) -> Reported {
     let mut diags = Diagnostics::new();
     let lexed = lex(id, src, &mut diags);
     let mut next_id = 0;
-    parse_file(id, src, &lexed, &mut diags, &mut next_id);
+    let ast = parse_file(id, src, &lexed, &mut diags, &mut next_id);
+    /* A program under `sema/` that parses is checked too. */
+    if name.starts_with("sema") && !diags.has_errors() {
+        diags.extend(check(&ast).1);
+    }
     let mut lines = Vec::new();
     let mut rendered = String::new();
     for d in diags.items() {

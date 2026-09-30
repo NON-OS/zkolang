@@ -1,0 +1,10 @@
+/* Every call is expanded, so a function that calls itself is an error. */
+fn fact(n: u32) -> u32 {
+    if n == 0 { 1 } else { n * fact(n - 1) } /*~ E0700 */
+}
+
+fn ping(n: u32) -> u32 { pong(n) } /*~ E0700 */
+fn pong(n: u32) -> u32 { ping(n) }
+
+fn fine(n: u32) -> u32 { fact_free(n) }
+fn fact_free(n: u32) -> u32 { n }

@@ -1,0 +1,49 @@
+/* A program that uses every form this build checks, with nothing to report. */
+const N: usize = 4;
+const LIMIT: usize = { N * 2 };
+const fn square(x: u32) -> u32 { x * x }
+const SQ: u32 = square(7);
+type Word = u32;
+
+mod util {
+    pub fn double(x: u32) -> u32 { x + x }
+    pub const ONE: u32 = 1;
+}
+
+use util::{double, ONE};
+
+fn bump(x: &mut u32, by: u32) { x += by; }
+
+fn total(xs: [u32; N]) -> u32 {
+    let mut s: Word = 0;
+    for x in xs {
+        s += x;
+    }
+    for (i, x) in xs.enumerate() {
+        if i == 0 { s += x; } else if i == 1 { s -= 0; } else { continue; }
+    }
+    s
+}
+
+fn main(a: public u32, w: secret u32) -> public u32 {
+    let mut acc = double(a) + ONE + SQ;
+    let t = (acc, a);
+    let (p, q) = t;
+    let arr = [0u32; LIMIT];
+    let mut k = 0;
+    while k < 3 limit LIMIT {
+        k += 1;
+    }
+    let bits = a.to_le_bits();
+    let back = u32::from_le_bits(bits);
+    let small = u8::wrapping_from(a);
+    let wide = small as u64;
+    let f: field = 3;
+    let g = f.pow(2) * f.inv();
+    let hidden = w * 2;
+    let shown = declassify(hidden > 10);
+    assert back == a, "bits round trip";
+    bump(&mut acc, 1);
+    acc = acc + p - q + total([1, 2, 3, 4]) + arr[0] + k;
+    if shown { acc } else { acc + u32::checked_from(wide) - u32::checked_from(wide) }
+}

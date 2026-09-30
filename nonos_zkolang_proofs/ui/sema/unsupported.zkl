@@ -1,0 +1,11 @@
+/* Forms this build does not check yet are each reported once (E0904). */
+struct P { x: u8 } /*~ E0904 */
+enum E { A, B } /*~ E0904 */
+fn id<T>(x: T) -> T { x } /*~ E0904 */
+impl P { /*~ E0904 */
+    fn get(self) -> u8 { 1 }
+}
+
+fn f(x: u8) -> u8 {
+    match x { _ => 1 } /*~ E0904 */
+}

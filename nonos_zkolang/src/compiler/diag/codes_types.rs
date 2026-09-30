@@ -20,6 +20,8 @@ codes! {
     NO_FIELD = "E0308", "A field or method that the type does not have.";
     INDEX_OUT_OF_BOUNDS = "E0309", "A constant index outside the array.";
     ALIASED_MUT = "E0310", "Two `&mut` arguments of one call that may refer to the same place.";
+    OUTSIDE_LOOP = "E0311", "`break` and `continue` stand only inside a loop.";
+    SHIFT_TOO_FAR = "E0312", "A shift by a constant count at least the width of the shifted type.";
     /* Patterns. */
     NON_EXHAUSTIVE = "E0400", "A `match` that does not cover every value of its scrutinee. The message names a missing pattern.";
     REFUTABLE_PATTERN = "E0401", "A `let` or a parameter takes only patterns that always match.";
@@ -30,4 +32,5 @@ codes! {
     CONST_CYCLE = "E0502", "Constants that depend on each other in a cycle.";
     CONST_BUDGET = "E0503", "Evaluating a constant took more than ten million steps.";
     NOT_CONST_FN = "E0504", "A `const fn` may call only `const fn`s and may not use secret or public types or `declassify`.";
+    CONST_DEPTH = "E0505", "Evaluating a constant needs constants and functions that need others in turn, more than 64 deep.";
 }

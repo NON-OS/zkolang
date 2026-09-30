@@ -27,6 +27,7 @@ codes! {
     BAD_MAIN = "E0901", "`main` may not be generic and must return a value the public output can hold.";
     MANIFEST = "E0902", "The package manifest `zkolang.toml` is malformed or names something that does not exist.";
     BAD_ATTRIBUTE = "E0903", "An unknown attribute, or a known one used where it does not apply.";
+    UNSUPPORTED = "E0904", "A form this build of the compiler does not check yet: structs, enums, `match`, generics, methods, and modules in their own files are checked from a later build on.";
     /* Internal. */
     INTERNAL = "E9999", "The compiler failed an internal check and refused to emit a program. This is a compiler bug; please report it with the input.";
 }
