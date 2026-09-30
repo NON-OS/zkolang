@@ -10,9 +10,10 @@ correctness first, then for the size of the trace, then for compile speed.
 
 ## Status
 
-This is the design the compiler is being built to. None of `nonos_zkolang/src/compiler`
-is in the repository yet. It lands in stages, in this order: the front end; types and
-secret flow; the typed IR, the SSA IR, its passes, allocation and code generation;
+This is the design the compiler is being built to. So far `source/`, `diag/` and `syntax/`
+exist: the lexer and parser read a file into a syntax tree and report what is malformed,
+and nothing checks or compiles the tree yet. The compiler lands in stages, in this order:
+the front end; types and secret flow; the typed IR, the SSA IR, its passes, allocation and code generation;
 structs, enums, `match` and generics; packages and the standard library; the tools; and
 the Lean development. This section is updated as each stage lands.
 

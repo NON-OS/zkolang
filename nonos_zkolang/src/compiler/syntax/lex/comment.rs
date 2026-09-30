@@ -1,0 +1,48 @@
+/*
+ zKølang by NØNOS
+ AGPL-3.0-or-later
+*/
+
+/*!
+ * Comments. They are not tokens, but the formatter and the documentation tool need them,
+ * so the lexer keeps each with its span and kind.
+ */
+
+use crate::compiler::source::{FileId, Span};
+
+/** What a comment is. */
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum CommentKind {
+    /** `// ...` */
+    Line,
+    /** `/* ... */`, possibly nested. */
+    Block,
+    /** `/// ...`, documenting the item that follows. */
+    DocOuter,
+    /** `//! ...`, documenting the enclosing module. */
+    DocInner,
+}
+
+/** A comment and where it is. */
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub struct Comment {
+    pub span: Span,
+    pub kind: CommentKind,
+}
+
+/** Scan a line comment starting at `i`, returning it and the offset of the line end. */
+pub(super) fn scan_line_comment(b: &[u8], i: usize, len: usize, file: FileId) -> (Comment, usize) {
+    let mut j = i;
+    while j < len && b[j] != b'\n' {
+        j += 1;
+    }
+    let kind = if b.get(i + 2) == Some(&b'/') && b.get(i + 3) != Some(&b'/') {
+        CommentKind::DocOuter
+    } else if b.get(i + 2) == Some(&b'!') {
+        CommentKind::DocInner
+    } else {
+        CommentKind::Line
+    };
+    let span = Span::new(file, i as u32, j as u32);
+    (Comment { span, kind }, j)
+}

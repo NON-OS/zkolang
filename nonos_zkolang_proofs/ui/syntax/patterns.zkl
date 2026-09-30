@@ -1,0 +1,16 @@
+/* Every pattern form, in `let`, in parameters and in `match` arms. */
+fn f(s: Shape<u32>, t: (u32, (bool, u8)), arr: [u32; 3]) -> u32 {
+    let (a, (flag, _)) = t;
+    let [x, y, z] = arr;
+    match s {
+        Shape::Circle { r } => r,
+        Shape::Square(side) if flag => side * side,
+        Shape::Square(_) => 0,
+        Shape::Empty => x + y + z,
+    }
+}
+
+fn g(p: Point) -> field {
+    let Point { x, .. } = p;
+    match -3 { -3 => x, -5..=-4 => 0, _ => 1 }
+}

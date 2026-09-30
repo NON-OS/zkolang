@@ -18,6 +18,7 @@ extern crate alloc;
 mod air;
 mod backend;
 mod commit;
+pub mod compiler;
 mod driver;
 mod isa;
 mod lang;

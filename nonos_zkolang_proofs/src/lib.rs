@@ -152,6 +152,12 @@ mod tuple_rebind_tests;
 #[cfg(test)]
 mod tuple_tests;
 #[cfg(test)]
+mod ui_expect;
+#[cfg(test)]
+mod ui_run;
+#[cfg(test)]
+mod ui_tests;
+#[cfg(test)]
 mod vkey_tests;
 #[cfg(test)]
 mod vm_tests;
