@@ -455,6 +455,10 @@ parameters of type `usize`. Generic items are *templates*: they are type-checked
 per distinct instantiation, after substitution. An instantiation is created by a use
 with concrete arguments, written or inferred. A type error in an instantiation is
 reported at the instantiating use, with a note at the offending line of the template.
+A generic function that no use instantiates is not checked, except for its names: a path
+in one of its expressions must name an item where the function is written (E0200), unless
+its first name is a generic parameter, `Self`, a primitive type or a name the function
+binds, or it names a member of a type, which an instance settles.
 In a type, a generic item is given every argument. In a body, a struct literal, a variant
 or a pattern that names a generic struct or enum without arguments has its type
 arguments inferred from what builds or meets it; a constant argument is written there. A

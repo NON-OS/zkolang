@@ -1,0 +1,50 @@
+/* A generic function no use instantiates has its names checked where it is written. */
+#![allow(unused)]
+mod shapes {
+    pub struct Point {
+        pub x: u8,
+    }
+
+    impl Point {
+        pub fn origin() -> Point {
+            Point { x: 0 }
+        }
+    }
+}
+
+use shapes::Point;
+
+fn last<T, const N: usize>(a: [T; N]) -> T {
+    let mut best = a[0];
+    for (i, x) in a.enumerate() {
+        if i == N - 1 {
+            best = x;
+        }
+    }
+    let p = Point::origin();
+    let q = shapes::Point { x: 1 };
+    let o: Option<T> = None;
+    let m = u8::MAX;
+    let c = T::zero();
+    bets /*~ E0200 */
+}
+
+fn other<T>(x: T) -> T {
+    let y = shapes::Pont { x: 1 }; /*~ E0200 */
+    let z = helper(x); /*~ E0200 */
+    x
+}
+
+struct Wrap<T> {
+    v: T,
+}
+
+impl<T> Wrap<T> {
+    fn get(self) -> T {
+        self.v
+    }
+
+    fn bad(self) -> T {
+        nope /*~ E0200 */
+    }
+}

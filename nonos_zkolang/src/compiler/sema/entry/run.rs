@@ -35,6 +35,7 @@ impl Sema<'_> {
             f += 1;
         }
         sema.check_const_fns();
+        sema.check_idle_templates();
         sema.check_recursion();
         let mut program = sema.program();
         program.tests = sema.tests();
