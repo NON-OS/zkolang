@@ -66,6 +66,12 @@ mod fold_constraint_tests;
 #[cfg(test)]
 mod fold_meaning_tests;
 #[cfg(test)]
+mod front_check;
+#[cfg(test)]
+mod front_deep_tests;
+#[cfg(test)]
+mod front_fuzz_tests;
+#[cfg(test)]
 mod front_lex_tests;
 #[cfg(test)]
 mod fuzz_tests;
