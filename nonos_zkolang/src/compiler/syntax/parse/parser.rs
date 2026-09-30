@@ -20,6 +20,7 @@ use crate::compiler::syntax::lex::Comment;
 use crate::compiler::syntax::token::Token;
 
 pub(super) use super::recovery::starts_item;
+use super::recovery::Layout;
 
 /** A diagnostic has been pushed; the caller recovers. */
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -64,4 +65,6 @@ pub struct Parser<'a> {
     pub(super) item_indent: usize,
     /** Whether an unclosed block has been reported since the current item began. */
     pub(super) unclosed_reported: bool,
+    /** Where lines start, and whether the file's braces balance. */
+    pub(super) layout: Layout,
 }

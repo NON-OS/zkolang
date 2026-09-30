@@ -16,6 +16,7 @@ impl<'a> Parser<'a> {
     pub(super) fn impl_item(&mut self) -> PResult<Item> {
         let saved = self.item_indent;
         self.item_indent = self.line_indent(self.span().lo);
+        self.unclosed_reported = false;
         let item = self.impl_item_inner();
         self.item_indent = saved;
         item

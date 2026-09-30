@@ -33,7 +33,7 @@ impl<'a> Parser<'a> {
                 TokenKind::Semi if depth == 0 => return false,
                 TokenKind::LParen | TokenKind::LBracket => depth += 1,
                 TokenKind::RParen | TokenKind::RBracket => depth = depth.saturating_sub(1),
-                _ if self.at_outer_item() => return false,
+                _ if self.item_starts_line() => return false,
                 _ => {}
             }
             self.bump();

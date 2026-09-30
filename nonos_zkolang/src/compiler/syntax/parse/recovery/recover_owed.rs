@@ -40,13 +40,18 @@ impl<'a> Parser<'a> {
         let before = owed.len();
         while owed.len() != 0 {
             let k = self.kind();
-            let left_open = owed.len() <= before
-                && matches!(owed.last(), Some(TokenKind::RParen | TokenKind::RBracket));
             let owes = owed.last().unwrap_or(TokenKind::Eof);
-            if k == TokenKind::Eof || (left_open && self.ends_bracket(k, owes)) {
+            let left_open = owed.len() <= before;
+            let paren = matches!(owes, TokenKind::RParen | TokenKind::RBracket);
+            if k == TokenKind::Eof
+                || (left_open && paren && self.ends_bracket(k))
+                || (left_open && owes == TokenKind::RBrace && self.at_outer_item(false))
+            {
                 return;
             }
-            if !owed.take(k) {
+            /* In a file with a `{` missing, a `}` where a `)` is owed stands for it. */
+            let stands_for = paren && k == TokenKind::RBrace && self.layout.missing_openers;
+            if !owed.take(if stands_for { owes } else { k }) {
                 return;
             }
             self.bump();

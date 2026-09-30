@@ -12,20 +12,28 @@
 
 use alloc::format;
 
-use super::super::parser::{starts_item, Parser};
+use super::super::parser::Parser;
 use crate::compiler::diag::{Code, Diagnostic};
 use crate::compiler::source::Span;
 use crate::compiler::syntax::keyword::Keyword;
 use crate::compiler::syntax::token::TokenKind;
 
 impl<'a> Parser<'a> {
-    /** Whether the current token begins an item that the open block cannot hold. */
-    pub(in crate::compiler::syntax::parse) fn at_outer_item(&self) -> bool {
-        let k = self.kind();
-        let is_item = starts_item(k)
-            && !(k == TokenKind::Kw(Keyword::Const) && self.peek(1) != TokenKind::Ident);
+    /**
+     * Whether the current token begins an item that the open block cannot hold: an item
+     * on its own line at or left of the indentation of the item being parsed, in a file
+     * with a `}` missing. In an impl block, `fns_belong` keeps a function in the block.
+     */
+    pub(in crate::compiler::syntax::parse) fn at_outer_item(&self, fns_belong: bool) -> bool {
+        if !self.layout.missing_closers {
+            return false;
+        }
+        let Some((k, next)) = self.item_keyword_ahead() else {
+            return false;
+        };
+        let is_fn = k == TokenKind::Kw(Keyword::Fn) || next == TokenKind::Kw(Keyword::Fn);
         let indent = self.indent_before(self.span().lo);
-        is_item && indent.is_some_and(|i| i <= self.item_indent)
+        !(fns_belong && is_fn) && indent.is_some_and(|i| i <= self.item_indent)
     }
 
     /** Report, once, that the `what` opened at `open` is never closed. */
@@ -34,8 +42,7 @@ impl<'a> Parser<'a> {
             return;
         }
         self.unclosed_reported = true;
-        if self.string_left_open_since(open) {
-            /* An unterminated string ran over the `}`; its own error explains this one. */
+        if self.left_open_since(open) {
             return;
         }
         let msg = format!("unclosed {what}");
@@ -54,15 +61,5 @@ impl<'a> Parser<'a> {
             )
         };
         self.diags.push(d);
-    }
-
-    /** Whether a string literal after `open` was left unterminated. */
-    fn string_left_open_since(&self, open: Span) -> bool {
-        let before = self.tokens.get(..self.pos).unwrap_or(&[]);
-        before
-            .iter()
-            .rev()
-            .take_while(|t| t.span.lo > open.lo)
-            .any(|t| t.kind == TokenKind::Error && self.text_of(*t).starts_with('"'))
     }
 }

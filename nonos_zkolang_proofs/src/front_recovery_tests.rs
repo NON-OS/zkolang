@@ -58,3 +58,11 @@ fn a_run_of_stray_tokens_is_one_error() {
     let items = format!("fn f() {{}}\n{}\nfn g() {{}}", ";".repeat(1_000));
     assert_eq!((reports(&block), reports(&items)), (1, 1));
 }
+
+#[test]
+fn many_items_on_one_line_parse_in_linear_time() {
+    let src = "fn f() {} ".repeat(100_000);
+    let t = Instant::now();
+    assert_eq!(reports(&src), 0);
+    assert!(t.elapsed() < Duration::from_secs(20), "{:?}", t.elapsed());
+}

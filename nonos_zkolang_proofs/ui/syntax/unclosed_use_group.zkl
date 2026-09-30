@@ -1,0 +1,4 @@
+/* An unclosed group in a `use` ends at the next item, which still parses. */
+use a::{b, c; /*~ E0100 */
+fn f() {}
+fn g() { let y = ; } /*~ E0100 */

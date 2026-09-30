@@ -1,0 +1,11 @@
+/* A body whose `{` is missing or late is reported once, and read as meant. */
+fn f(a: u32) -> u32 {
+    if (a > 1)) { return 1; } /*~ E0100 */
+    if a > 2 return 2; /*~ E0100 */
+    let mut i = 0;
+    while i < a limit N + 1 { i += 1; } /*~ E0100 */
+    let z = a + ; /*~ E0100 */
+    a
+}
+
+fn g(a: u32) -> u32 { a }

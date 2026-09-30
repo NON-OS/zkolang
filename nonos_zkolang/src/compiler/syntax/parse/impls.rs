@@ -23,7 +23,7 @@ impl<'a> Parser<'a> {
                 self.report_unclosed(open.span, "impl block");
                 return Err(super::parser::Reported);
             }
-            if self.at_outer_item() {
+            if self.at_outer_item(true) {
                 self.report_unclosed(open.span, "impl block");
                 return Ok(ImplDecl {
                     generics,

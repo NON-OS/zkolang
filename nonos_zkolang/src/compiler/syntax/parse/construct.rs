@@ -6,6 +6,7 @@
 /*! Building a parser over one file's tokens, and numbering the nodes it makes. */
 
 use super::parser::Parser;
+use super::recovery::Layout;
 use crate::compiler::diag::Diagnostics;
 use crate::compiler::source::FileId;
 use crate::compiler::syntax::ast::NodeId;
@@ -37,6 +38,7 @@ impl<'a> Parser<'a> {
             ref_mut_ok: false,
             item_indent: 0,
             unclosed_reported: false,
+            layout: Layout::new(text, &lexed.tokens),
         }
     }
 

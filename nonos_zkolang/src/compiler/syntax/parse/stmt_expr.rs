@@ -52,7 +52,7 @@ impl<'a> Parser<'a> {
             self.expr()?
         };
         let semi = self.eat(TokenKind::Semi);
-        if !semi && self.at(TokenKind::RBrace) {
+        if !semi && matches!(self.kind(), TokenKind::RBrace | TokenKind::Eof) {
             return Ok(Some(StmtOrTail::Tail(e)));
         }
         if !semi && !block_like(&e) {

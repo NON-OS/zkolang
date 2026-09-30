@@ -15,6 +15,9 @@ mod bracket_end;
 mod impl_items;
 mod include;
 mod indent;
+mod item_ahead;
+mod layout;
+mod left_open;
 mod owed;
 mod recover;
 mod recover_item;
@@ -26,4 +29,5 @@ mod stray_run;
 mod unclosed;
 mod unsupported;
 
+pub(super) use layout::Layout;
 pub(super) use recover_item::starts_item;

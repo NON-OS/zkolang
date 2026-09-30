@@ -26,11 +26,7 @@ impl<'a> Parser<'a> {
 
     /** The indentation of the line that holds `at`. */
     pub(in crate::compiler::syntax::parse) fn line_indent(&self, at: u32) -> usize {
-        let b = self.text.as_bytes().get(..at as usize).unwrap_or(&[]);
-        let start = b
-            .iter()
-            .rposition(|&c| c == b'\n' || c == b'\r')
-            .map_or(0, |i| i + 1);
+        let start = self.layout.line_start(at) as usize;
         let line = self.text.as_bytes().get(start..).unwrap_or(&[]);
         line.iter()
             .take_while(|&&c| c == b' ' || c == b'\t')

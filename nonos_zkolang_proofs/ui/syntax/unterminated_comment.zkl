@@ -1,0 +1,4 @@
+/* An unterminated comment that runs over a `}` is reported alone. */
+fn f() -> u8 {
+    1 /* c */ /* unterminated /*~ E0002 */
+}
