@@ -10,7 +10,7 @@
  * levels share and the recovery inside a block.
  */
 
-use super::parser::Parser;
+use super::super::parser::Parser;
 use crate::compiler::syntax::token::TokenKind;
 
 impl<'a> Parser<'a> {
@@ -19,7 +19,7 @@ impl<'a> Parser<'a> {
      * that would take the depth below zero. Brackets in between are skipped whole, without
      * recursion, so recovery costs no stack however deep the skipped text nests.
      */
-    pub(super) fn skip_until(&mut self, stops: &[TokenKind]) {
+    pub(in crate::compiler::syntax::parse) fn skip_until(&mut self, stops: &[TokenKind]) {
         self.split = None;
         let mut depth: usize = 0;
         loop {
@@ -49,7 +49,7 @@ impl<'a> Parser<'a> {
      * close what it opened, then skip past the next `;` at this depth, or stop before the
      * closing `}` or before a token that starts the next statement or an item.
      */
-    pub(super) fn recover_stmt(&mut self, from: usize) {
+    pub(in crate::compiler::syntax::parse) fn recover_stmt(&mut self, from: usize) {
         self.pay_owed(from);
         self.skip_stmt_rest();
         if !self.eat(TokenKind::Semi)

@@ -5,14 +5,14 @@
 
 /*! Errors inside a block: a block that is never closed, and an item written inside one. */
 
-use super::parser::{Parser, Reported};
+use super::super::parser::{Parser, Reported};
 use crate::compiler::diag::{Code, Diagnostic};
 use crate::compiler::source::Span;
 use crate::compiler::syntax::token::TokenKind;
 
 impl<'a> Parser<'a> {
     /** Report a block whose `{` at `open` is never closed. */
-    pub(super) fn block_unclosed(&mut self, open: Span) -> Reported {
+    pub(in crate::compiler::syntax::parse) fn block_unclosed(&mut self, open: Span) -> Reported {
         self.diags.push(Diagnostic::error(
             Code::UNCLOSED_DELIMITER,
             "unclosed block",
@@ -23,7 +23,7 @@ impl<'a> Parser<'a> {
     }
 
     /** Report an item written inside a block, starting at `start`, and skip it. */
-    pub(super) fn stmt_item_in_block(&mut self, start: Span) {
+    pub(in crate::compiler::syntax::parse) fn stmt_item_in_block(&mut self, start: Span) {
         self.diags.push(
             Diagnostic::error(
                 Code::UNEXPECTED_TOKEN,

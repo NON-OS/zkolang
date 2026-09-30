@@ -19,7 +19,7 @@ use crate::compiler::source::{FileId, Span};
 use crate::compiler::syntax::lex::Comment;
 use crate::compiler::syntax::token::Token;
 
-pub(super) use super::recover_item::starts_item;
+pub(super) use super::recovery::starts_item;
 
 /** A diagnostic has been pushed; the caller recovers. */
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]

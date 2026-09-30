@@ -5,7 +5,7 @@
 
 /*! Recovery at module level, and the tokens that can begin an item. */
 
-use super::parser::Parser;
+use super::super::parser::Parser;
 use crate::compiler::syntax::keyword::Keyword;
 use crate::compiler::syntax::token::TokenKind;
 
@@ -15,7 +15,7 @@ impl<'a> Parser<'a> {
      * what it opened, then skip to the next token that can begin an item. A closer left
      * over belongs to the enclosing module or impl block, which takes it.
      */
-    pub(super) fn recover_item(&mut self, from: usize) {
+    pub(in crate::compiler::syntax::parse) fn recover_item(&mut self, from: usize) {
         self.pay_owed(from);
         let mut depth: usize = 0;
         loop {
@@ -46,7 +46,7 @@ impl<'a> Parser<'a> {
 }
 
 /** Whether a token can begin an item. */
-pub(super) fn starts_item(k: TokenKind) -> bool {
+pub(in crate::compiler::syntax::parse) fn starts_item(k: TokenKind) -> bool {
     matches!(
         k,
         TokenKind::Pound

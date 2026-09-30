@@ -5,7 +5,7 @@
 
 /*! Skipping the rest of a statement that failed to parse. */
 
-use super::parser::Parser;
+use super::super::parser::Parser;
 use super::recover_item::starts_item;
 use crate::compiler::syntax::keyword::Keyword;
 use crate::compiler::syntax::token::TokenKind;
@@ -16,7 +16,7 @@ impl<'a> Parser<'a> {
      * enclosing block or before a token that starts the next statement or an item.
      * Brackets in between are skipped whole, without recursion.
      */
-    pub(super) fn skip_stmt_rest(&mut self) {
+    pub(in crate::compiler::syntax::parse) fn skip_stmt_rest(&mut self) {
         self.split = None;
         let mut depth: usize = 0;
         loop {

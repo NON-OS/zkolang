@@ -10,8 +10,8 @@
  * after it. So the skip first pays the closers the construct owes.
  */
 
+use super::super::parser::{starts_item, Parser};
 use super::owed::Owed;
-use super::parser::{starts_item, Parser};
 use crate::compiler::syntax::keyword::Keyword;
 use crate::compiler::syntax::token::TokenKind;
 
@@ -32,7 +32,7 @@ impl<'a> Parser<'a> {
      * parenthesis or bracket the error left open, a `;`, a `let` or an item keyword that
      * starts a line ends the skip: none of them can continue what the bracket began.
      */
-    pub(super) fn pay_owed(&mut self, from: usize) {
+    pub(in crate::compiler::syntax::parse) fn pay_owed(&mut self, from: usize) {
         self.split = None;
         if self.at(TokenKind::Eof) {
             return;

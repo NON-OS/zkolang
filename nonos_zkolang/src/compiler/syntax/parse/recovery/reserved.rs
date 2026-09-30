@@ -8,28 +8,28 @@
  * the parser does not report it a second time, and skips the construct it begins.
  */
 
-use super::parser::Parser;
+use super::super::parser::Parser;
 use crate::compiler::diag::{Code, Diagnostic};
 use crate::compiler::syntax::keyword::RESERVED;
 use crate::compiler::syntax::token::TokenKind;
 
 impl<'a> Parser<'a> {
     /** Whether the current token is a reserved word the lexer has reported. */
-    pub(super) fn at_reserved(&self) -> bool {
+    pub(in crate::compiler::syntax::parse) fn at_reserved(&self) -> bool {
         self.at(TokenKind::Ident)
             && RESERVED.contains(&self.text_of(self.tok()))
             && !self.at_include()
     }
 
     /** Whether the current token begins a textual include: `include "file"`. */
-    pub(super) fn at_include(&self) -> bool {
+    pub(in crate::compiler::syntax::parse) fn at_include(&self) -> bool {
         self.at(TokenKind::Ident)
             && self.text_of(self.tok()) == "include"
             && matches!(self.peek(1), TokenKind::Str | TokenKind::Error)
     }
 
     /** Report a textual include and skip it with the `;` after it, if any. */
-    pub(super) fn skip_include(&mut self) {
+    pub(in crate::compiler::syntax::parse) fn skip_include(&mut self) {
         let start = self.bump().span;
         let file = self.bump().span;
         self.diags.push(
@@ -50,7 +50,7 @@ impl<'a> Parser<'a> {
      * Skip a statement that a textual include or a reserved word begins, and say whether
      * there was one. After a reserved word the statement is a braced body, or runs to `;`.
      */
-    pub(super) fn skip_reserved_stmt(&mut self) -> bool {
+    pub(in crate::compiler::syntax::parse) fn skip_reserved_stmt(&mut self) -> bool {
         if self.at_include() {
             self.skip_include();
             return true;
