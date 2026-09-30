@@ -191,7 +191,8 @@ tuple_field   = { outer_attr } [ "pub" ] type ;
 enum_item     = "enum" ident [ generics ] "{" [ variant { "," variant } [ "," ] ] "}" ;
 variant       = { outer_attr } ident
                 [ "(" [ type { "," type } [ "," ] ] ")"
-                | "{" [ field_def { "," field_def } [ "," ] ] "}" ] ;
+                | "{" [ variant_field { "," variant_field } [ "," ] ] "}" ] ;
+variant_field = { outer_attr } ident ":" type ;      (* no "pub": section 4.3 *)
 
 type_alias    = "type" ident [ generics ] "=" type ";" ;
 const_item    = "const" ident ":" type "=" expr ";" ;

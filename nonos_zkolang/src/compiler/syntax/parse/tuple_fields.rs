@@ -23,7 +23,11 @@ impl<'a> Parser<'a> {
             let (doc, attrs) = p.doc_and_attrs()?;
             if in_variant {
                 if let Some(a) = attrs.first() {
-                    p.not_in_variant(a.span, "an attribute");
+                    p.not_in_variant(
+                        a.span,
+                        "an attribute",
+                        "a tuple variant's fields are types alone, with no attributes",
+                    );
                 }
             }
             let vis = p.field_vis(in_variant);
@@ -47,20 +51,24 @@ impl<'a> Parser<'a> {
             return Visibility::Private;
         }
         if in_variant {
-            self.not_in_variant(at, "`pub`");
+            self.not_in_variant(
+                at,
+                "`pub`",
+                "a variant's fields have the visibility of its enum",
+            );
         }
         Visibility::Public
     }
 
-    /** Report `what`, at `at`, on a variant's field. */
-    fn not_in_variant(&mut self, at: Span, what: &str) {
+    /** Report `what`, at `at`, on a variant's field, with `help` saying why it cannot be there. */
+    fn not_in_variant(&mut self, at: Span, what: &str, help: &str) {
         let d = Diagnostic::error(
             Code::UNEXPECTED_TOKEN,
             format!("{what} on a variant's field"),
             at,
             "not allowed here",
         )
-        .with_help("a variant's fields have its enum's visibility and take no attributes");
+        .with_help(help);
         self.diags.push(d);
     }
 }

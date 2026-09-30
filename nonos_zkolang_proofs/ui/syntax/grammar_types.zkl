@@ -7,6 +7,7 @@ type T5 = C<>; /*~ E0100 */
 use ::*; /*~ E0100 */
 use ::{a, b}; /*~ E0100 */
 enum E { A(pub u8), B = 3 } /*~ E0100 E0100 */
+enum F { A { pub r: u8 }, B { #[allow(unused)] w: u8 }, C(#[allow(unused)] u8) } /*~ E0100 E0100 */
 struct R { a: &mut u8 } /*~ E0100 */
 impl S { fn g(&self) {} } /*~ E0100 */
 
