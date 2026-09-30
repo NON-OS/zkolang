@@ -8,6 +8,8 @@
  * the typed IR a checked program lowers to.
  */
 
+mod adt;
+mod adt_fields;
 mod alias;
 pub(crate) mod attr_query;
 mod attr_rules;

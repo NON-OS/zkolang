@@ -33,8 +33,9 @@ impl<'p> Lower<'p> {
                     self.check_int(v, i);
                 }
             }
-            TyKind::Tuple(ts) => {
-                for (k, _) in ts.iter().enumerate() {
+            _ if types.record(t).is_some() => {
+                let n = types.record(t).map_or(0, |ts| ts.len());
+                for k in 0..n {
                     if let Some((at, e)) = field_at(types, t, k as u32) {
                         let n = slots(types, e);
                         self.check_input(e, vals.get(at..at + n).unwrap_or(&[]));

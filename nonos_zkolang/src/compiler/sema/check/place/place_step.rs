@@ -8,36 +8,15 @@
 use alloc::format;
 use alloc::vec::Vec;
 
-use super::cx::FnCx;
-use crate::compiler::diag::{Code, Diagnostic};
+use super::super::cx::FnCx;
+use super::super::structs::Key;
+
 use crate::compiler::sema::ty::{TyId, TyKind, Types};
 use crate::compiler::syntax::ast::{Expr, ExprKind};
 use crate::compiler::syntax::IntTy;
-use crate::compiler::tir::{LocalId, Proj, TPlace};
+use crate::compiler::tir::Proj;
 
 impl<'s, 'a> FnCx<'s, 'a> {
-    /** Report that `e` is not a place (E0305), and check it for its own errors. */
-    pub(super) fn not_a_place(&mut self, e: &'a Expr) -> TPlace {
-        let help =
-            "a place is a `let mut` variable, a `&mut` parameter, or a field or element of one";
-        let d = Diagnostic::error(
-            Code::NOT_A_PLACE,
-            "this is not a place",
-            e.span,
-            "cannot be assigned",
-        )
-        .with_help(help);
-        self.sema.diags.push(d);
-        self.infer(e, None);
-        let (root, proj, ty, span) = (LocalId(0), Vec::new(), Types::ERROR, e.span);
-        TPlace {
-            root,
-            proj,
-            ty,
-            span,
-        }
-    }
-
     /** Take the step `step` into a value of type `ty`. */
     pub(super) fn project(
         &mut self,
@@ -46,10 +25,18 @@ impl<'s, 'a> FnCx<'s, 'a> {
         mut proj: Vec<Proj>,
     ) -> (TyId, Vec<Proj>) {
         let next = match (&step.kind, self.kind(ty)) {
-            (ExprKind::TupleField(_, i, _), TyKind::Tuple(ts)) if (*i as usize) < ts.len() => {
-                proj.push(Proj::TupleField(*i));
-                ts.get(*i as usize).copied()
+            (ExprKind::TupleField(_, i, _), _) => {
+                self.field_of(ty, Key::Pos(*i), step.span).map(|(i, t)| {
+                    proj.push(Proj::TupleField(i));
+                    t
+                })
             }
+            (ExprKind::Field(_, name), _) => self
+                .field_of(ty, Key::Name(&name.name), step.span)
+                .map(|(i, t)| {
+                    proj.push(Proj::TupleField(i));
+                    t
+                }),
             (ExprKind::Index(_, i), TyKind::Array(el, _)) => {
                 proj.push(Proj::Index(self.expr(i, Some(Types::int(IntTy::Usize)))));
                 Some(el)

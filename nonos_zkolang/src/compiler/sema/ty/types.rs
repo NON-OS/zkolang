@@ -8,7 +8,7 @@
 use alloc::collections::BTreeMap;
 use alloc::vec::Vec;
 
-use super::{TyId, TyKind};
+use super::{Adt, TyId, TyKind};
 use crate::compiler::syntax::IntTy;
 
 /** Every type of one compilation. */
@@ -16,6 +16,7 @@ use crate::compiler::syntax::IntTy;
 pub struct Types {
     kinds: Vec<TyKind>,
     ids: BTreeMap<TyKind, TyId>,
+    pub(super) adts: Vec<Adt>,
 }
 
 impl Types {
@@ -24,6 +25,7 @@ impl Types {
         let mut t = Types {
             kinds: Vec::new(),
             ids: BTreeMap::new(),
+            adts: Vec::new(),
         };
         for k in [
             TyKind::Error,

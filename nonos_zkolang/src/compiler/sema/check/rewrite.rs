@@ -35,6 +35,7 @@ impl<'s, 'a> FnCx<'s, 'a> {
             TExprKind::Builtin(_, es) | TExprKind::Tuple(es) | TExprKind::Array(es) => {
                 es.iter_mut().for_each(|x| self.rewrite(x))
             }
+            TExprKind::Record(fs) => fs.iter_mut().for_each(|(_, x)| self.rewrite(x)),
             TExprKind::Index(a, i) => {
                 self.rewrite(a);
                 self.rewrite(i);

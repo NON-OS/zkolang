@@ -32,7 +32,7 @@ impl<'a> Sema<'a> {
     pub(crate) fn not_yet(&mut self, item: &Item) {
         let (what, at): (&str, Span) = match &item.kind {
             ItemKind::Fn(f) => ("generic functions", f.name.span),
-            ItemKind::Struct(s) => ("structs", s.name.span),
+            ItemKind::Struct(s) => ("generic structs", s.name.span),
             ItemKind::Enum(e) => ("enums", e.name.span),
             ItemKind::TypeAlias(t) => ("generic type aliases", t.name.span),
             ItemKind::Mod(m) => ("modules in their own files", m.name.span),

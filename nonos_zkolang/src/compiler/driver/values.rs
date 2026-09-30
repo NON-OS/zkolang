@@ -34,11 +34,13 @@ pub(super) fn args_of(p: &TProgram, f: FnId, public: &[i128], secret: &[i128]) -
 
 /** The value of type `t` whose leaves come next from `it`. */
 fn value_of(types: &Types, t: TyId, it: &mut dyn Iterator<Item = i128>) -> Value {
+    if let Some(ts) = types.record(t) {
+        return Value::Tuple(ts.iter().map(|&e| value_of(types, e, it)).collect());
+    }
     match types.kind(t) {
         TyKind::Bool => Value::Bool(it.next().unwrap_or(0) == 1),
         TyKind::Field => Value::Field(u64::try_from(it.next().unwrap_or(0)).unwrap_or(0)),
         TyKind::Int(_) => Value::Int(it.next().unwrap_or(0)),
-        TyKind::Tuple(ts) => Value::Tuple(ts.iter().map(|&e| value_of(types, e, it)).collect()),
         TyKind::Array(e, n) => Value::Array((0..*n).map(|_| value_of(types, *e, it)).collect()),
         _ => Value::Unit,
     }

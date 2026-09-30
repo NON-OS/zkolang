@@ -25,8 +25,10 @@ pub enum Shape {
 impl Shape {
     /** A value of type `ty` whose every part has label `t`. */
     pub fn of(ty: TyId, t: Taint, types: &Types) -> Shape {
+        if let Some(ts) = types.record(ty) {
+            return Shape::Tuple(ts.iter().map(|&e| Shape::of(e, t, types)).collect());
+        }
         match types.kind(ty) {
-            TyKind::Tuple(ts) => Shape::Tuple(ts.iter().map(|&e| Shape::of(e, t, types)).collect()),
             TyKind::Array(e, _) => Shape::Array(Box::new(Shape::of(*e, t, types))),
             _ => Shape::Leaf(t),
         }

@@ -14,7 +14,7 @@ use crate::compiler::ssa::V;
 use crate::compiler::tir::{TExpr, TExprKind};
 
 impl<'p> Lower<'p> {
-    /** The slots of the tuple, array, repeat or tuple field `e`. */
+    /** The slots of the tuple, struct literal, array, repeat or field `e`. */
     pub(super) fn compound(&mut self, e: &TExpr) -> L<Vec<V>> {
         Ok(match &e.kind {
             TExprKind::Tuple(es) | TExprKind::Array(es) => {
@@ -23,6 +23,17 @@ impl<'p> Lower<'p> {
                     out.extend(self.expr(x)?);
                 }
                 out
+            }
+            TExprKind::Record(fs) => {
+                let n = self.p.types.record(e.ty).map_or(0, |ts| ts.len());
+                let mut parts = alloc::vec![Vec::new(); n];
+                for (i, x) in fs {
+                    let v = self.expr(x)?;
+                    if let Some(p) = parts.get_mut(*i as usize) {
+                        *p = v;
+                    }
+                }
+                parts.concat()
             }
             TExprKind::Repeat(a, n) => {
                 let v = self.expr(a)?;

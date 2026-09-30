@@ -46,7 +46,7 @@ impl<'p> Lower<'p> {
             (Value::Bool(b), _) => alloc::vec![self.b.konst(i128::from(*b))],
             (Value::Int(x), _) => self.int_slots(*x, t),
             (Value::Field(x), _) => alloc::vec![self.b.konst(i128::from(*x))],
-            (Value::Tuple(parts), TyKind::Tuple(_)) => {
+            (Value::Tuple(parts), _) if types.record(t).is_some() => {
                 let tys: Vec<TyId> = (0..parts.len())
                     .filter_map(|k| field_at(types, t, k as u32).map(|(_, e)| e))
                     .collect();

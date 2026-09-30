@@ -30,6 +30,7 @@ impl TExpr {
                     f(x);
                 }
             }
+            TExprKind::Record(fs) => fs.iter().for_each(|(_, x)| f(x)),
             TExprKind::Index(a, i) => {
                 f(a);
                 f(i);

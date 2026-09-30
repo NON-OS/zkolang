@@ -54,6 +54,7 @@ impl<'s, 'a> FnCx<'s, 'a> {
                     span: at,
                 }
             }
+            (Some(DefKind::Struct), _) => self.unit_struct(p, at),
             (Some(k), _) => {
                 self.not_a_value(p, k, at);
                 self.error(at)

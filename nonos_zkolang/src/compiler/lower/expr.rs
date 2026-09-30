@@ -35,6 +35,7 @@ impl<'p> Lower<'p> {
             TExprKind::Call(f, args) => self.call(*f, args)?,
             TExprKind::Builtin(b, args) => self.builtin(*b, args, e)?,
             TExprKind::Tuple(_)
+            | TExprKind::Record(_)
             | TExprKind::Array(_)
             | TExprKind::Repeat(..)
             | TExprKind::TupleField(..) => self.compound(e)?,

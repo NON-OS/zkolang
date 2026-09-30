@@ -19,7 +19,7 @@ use crate::compiler::syntax::ast::Path;
 use crate::compiler::tir::Labels;
 
 impl<'a> Sema<'a> {
-    /** The type the path `p` names: an alias's. */
+    /** The type the path `p` names: an alias's or a struct's, with the labels it writes. */
     pub(super) fn lower_path(
         &mut self,
         m: DefId,
@@ -45,7 +45,14 @@ impl<'a> Sema<'a> {
                 }
                 ty
             }
-            Some(DefKind::Struct | DefKind::Enum) => Types::ERROR,
+            Some(DefKind::Struct) => {
+                let (ty, own) = self.struct_ty(def);
+                for (q, l) in own.0 {
+                    labels.0.push(([path, &q].concat(), l));
+                }
+                ty
+            }
+            Some(DefKind::Enum) => Types::ERROR,
             Some(k) => {
                 let d = Diagnostic::error(
                     Code::WRONG_KIND,

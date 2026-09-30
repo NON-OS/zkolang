@@ -35,6 +35,7 @@ fn check_mode(ast: &SourceAst, testing: bool) -> (TProgram, Diagnostics) {
     sema.register();
     sema.impls(&ast.items);
     sema.check_main();
+    sema.structs();
     for (i, d) in sema.defs.defs.clone().iter().enumerate() {
         if d.kind == DefKind::Alias {
             sema.alias(DefId(u32::try_from(i).unwrap_or(u32::MAX)));

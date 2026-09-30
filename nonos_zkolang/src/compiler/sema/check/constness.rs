@@ -27,6 +27,7 @@ impl<'a> Sema<'a> {
             TExprKind::Builtin(_, es) | TExprKind::Tuple(es) | TExprKind::Array(es) => {
                 es.iter().find_map(|x| self.not_const(x))
             }
+            TExprKind::Record(fs) => fs.iter().find_map(|(_, x)| self.not_const(x)),
             TExprKind::Index(a, i) => self.not_const(a).or_else(|| self.not_const(i)),
             TExprKind::Block(b) => self.block_not_const(b),
             TExprKind::If(branches, last) => branches

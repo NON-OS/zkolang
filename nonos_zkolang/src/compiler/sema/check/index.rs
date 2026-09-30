@@ -6,9 +6,9 @@
 /*! Tuple fields and array elements (sections 7.6 and 7.7). */
 
 use alloc::boxed::Box;
-use alloc::format;
 
 use super::cx::FnCx;
+use super::structs::Key;
 use crate::compiler::sema::ty::{TyKind, Types};
 use crate::compiler::source::Span;
 use crate::compiler::syntax::ast::Expr;
@@ -16,19 +16,12 @@ use crate::compiler::syntax::IntTy;
 use crate::compiler::tir::{TExpr, TExprKind};
 
 impl<'s, 'a> FnCx<'s, 'a> {
-    /** `a.i` on a tuple. */
+    /** `a.i` on a tuple or tuple struct. */
     pub(crate) fn tuple_field(&mut self, a: &'a Expr, i: u32, at: Span) -> TExpr {
         let a = self.infer(a, None);
-        let ty = match self.kind(a.ty) {
-            TyKind::Tuple(ts) if (i as usize) < ts.len() => {
-                ts.get(i as usize).copied().unwrap_or(Types::ERROR)
-            }
-            TyKind::Error => Types::ERROR,
-            _ => {
-                self.no_field(a.ty, &format!("{i}"), at);
-                Types::ERROR
-            }
-        };
+        let ty = self
+            .field_of(a.ty, Key::Pos(i), at)
+            .map_or(Types::ERROR, |f| f.1);
         TExpr {
             kind: TExprKind::TupleField(Box::new(a), i),
             ty,

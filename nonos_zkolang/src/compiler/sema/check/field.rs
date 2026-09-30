@@ -5,23 +5,30 @@
 
 /*! Named fields (section 7.7), which no type this build checks has, and the report of a missing field. */
 
+use alloc::boxed::Box;
 use alloc::format;
 
 use super::cx::FnCx;
 use crate::compiler::diag::{Code, Diagnostic};
-use crate::compiler::sema::ty::{TyId, TyKind};
+use crate::compiler::sema::ty::TyId;
 use crate::compiler::source::Span;
 use crate::compiler::syntax::ast::{Expr, Ident};
-use crate::compiler::tir::TExpr;
+use crate::compiler::tir::{TExpr, TExprKind};
+
+use super::structs::Key;
 
 impl<'s, 'a> FnCx<'s, 'a> {
-    /** `a.name`: no type this build checks has named fields. */
+    /** `a.name` on a struct with named fields. */
     pub(crate) fn named_field(&mut self, a: &'a Expr, name: &Ident, at: Span) -> TExpr {
         let a = self.infer(a, None);
-        if self.kind(a.ty) != TyKind::Error {
-            self.no_field(a.ty, &name.name, at);
+        let Some((i, ty)) = self.field_of(a.ty, Key::Name(&name.name), at) else {
+            return self.error(at);
+        };
+        TExpr {
+            kind: TExprKind::TupleField(Box::new(a), i),
+            ty,
+            span: at,
         }
-        self.error(at)
     }
 
     /** Report that type `t` has no field `name` (E0308). */

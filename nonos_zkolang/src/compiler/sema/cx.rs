@@ -51,6 +51,8 @@ pub struct Sema<'a> {
     pub const_of: BTreeMap<DefId, ConstId>,
     /** Each type alias lowered, or being lowered. */
     pub aliases: BTreeMap<DefId, State<(TyId, Labels)>>,
+    /** Each struct lowered, or being lowered. */
+    pub structs: BTreeMap<DefId, State<(TyId, Labels)>>,
     /** How many on-demand checks are open, one inside another. */
     pub depth: u32,
     /** Each span a lint is allowed in (section 17.1). */

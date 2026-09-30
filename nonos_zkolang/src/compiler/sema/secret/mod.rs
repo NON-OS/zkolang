@@ -21,6 +21,7 @@ mod flow_loop;
 mod flow_new;
 mod flow_params;
 mod flow_put;
+mod flow_record;
 mod flow_report;
 mod flow_values;
 mod flow_write;

@@ -39,11 +39,13 @@ pub enum AbiError {
 
 /** The leaves of type `t`, in order. */
 pub fn leaves(types: &Types, t: TyId, out: &mut Vec<Leaf>) {
+    if let Some(ts) = types.record(t) {
+        return ts.iter().for_each(|&e| leaves(types, e, out));
+    }
     match types.kind(t) {
         TyKind::Bool => out.push(Leaf::Bool),
         TyKind::Field => out.push(Leaf::Field),
         TyKind::Int(i) => out.push(Leaf::Int(*i)),
-        TyKind::Tuple(ts) => ts.iter().for_each(|&e| leaves(types, e, out)),
         TyKind::Array(e, n) => (0..*n).for_each(|_| leaves(types, *e, out)),
         _ => {}
     }

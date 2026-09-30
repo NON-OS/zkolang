@@ -36,6 +36,9 @@ impl Types {
             }
             TyKind::Array(e, n) => format!("[{}; {n}]", self.display(*e)),
             TyKind::Var(_) => String::from("{integer}"),
+            TyKind::Adt(_) => self
+                .adt(t)
+                .map_or_else(|| String::from("{unknown}"), |a| a.name.clone()),
         }
     }
 }

@@ -38,6 +38,11 @@ impl<'s, 'a> FnCx<'s, 'a> {
                 return self.not_callable(f, args, "", at);
             }
         };
+        if self.sema.defs.get(def).map(|d| d.kind)
+            == Some(crate::compiler::sema::defs::DefKind::Struct)
+        {
+            return self.tuple_struct(p, args, at);
+        }
         self.sema.note_use(def, p);
         let Some(fid) = self.sema.fn_of.get(&def).copied() else {
             let message = self.not_fn_message(def, p.last_name());

@@ -28,7 +28,8 @@ pub(super) fn update(
         (TyKind::Array(el, _), Labels::ELEMENT) => {
             Shape::Array(Box::new(update(v.elem(), *el, rest, types, f)))
         }
-        (TyKind::Tuple(ts), i) => {
+        (_, i) if types.record(ty).is_some() => {
+            let ts = types.record(ty).unwrap_or_default();
             let mut parts: Vec<Shape> = (0..ts.len()).map(|j| v.child(j)).collect();
             if let (Some(p), Some(&t)) = (parts.get_mut(i as usize), ts.get(i as usize)) {
                 let old = core::mem::replace(p, Shape::Leaf(Taint::PUBLIC));

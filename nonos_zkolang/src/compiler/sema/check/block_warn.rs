@@ -45,6 +45,7 @@ pub(super) fn discarded(e: &TExpr) -> bool {
             | TExprKind::Chain(..)
             | TExprKind::Cast(_)
             | TExprKind::Tuple(_)
+            | TExprKind::Record(_)
             | TExprKind::Array(_)
             | TExprKind::TupleField(..)
     )

@@ -44,6 +44,7 @@ impl<'e> Interp<'e> {
             TExprKind::Call(f, args) => self.eval_call(*f, args, at),
             TExprKind::Builtin(b, args) => self.builtin(*b, args, e),
             TExprKind::Tuple(es) => Ok(Value::Tuple(self.eval_all(es)?)),
+            TExprKind::Record(fs) => self.eval_record(fs, e.ty),
             TExprKind::Array(es) => Ok(Value::Array(self.eval_all(es)?)),
             TExprKind::Repeat(a, n) => self.eval_repeat(a, *n, at),
             TExprKind::TupleField(a, i) => self.eval_field(a, *i, at),

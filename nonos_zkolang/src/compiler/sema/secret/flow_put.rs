@@ -25,7 +25,8 @@ impl<'p> Flow<'p> {
             s => s,
         };
         match (step, types.kind(ty), old) {
-            (Proj::TupleField(i), TyKind::Tuple(ts), Shape::Tuple(mut parts)) => {
+            (Proj::TupleField(i), _, Shape::Tuple(mut parts)) if types.record(ty).is_some() => {
+                let ts = types.record(ty).unwrap_or_default();
                 let i = *i as usize;
                 if let (Some(p), Some(&t)) = (parts.get_mut(i), ts.get(i)) {
                     let cur = core::mem::replace(p, Shape::Leaf(Taint::PUBLIC));

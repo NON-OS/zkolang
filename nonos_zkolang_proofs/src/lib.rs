@@ -204,6 +204,8 @@ mod prop_tests;
 #[cfg(test)]
 mod prove_2026_abi_tests;
 #[cfg(test)]
+mod prove_2026_struct_tests;
+#[cfg(test)]
 mod prove_2026_tests;
 #[cfg(test)]
 mod python_guard_tests;

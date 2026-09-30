@@ -4,15 +4,14 @@
 */
 
 /*!
- * The patterns `let` and parameters bind (section 9.2): names, `_`, and tuples and arrays
- * of them. The labels a type annotation writes go with the parts they qualify.
+ * The patterns `let` and parameters bind (section 9.2): names, `_`, and tuples, arrays and
+ * structs of them. The labels a type annotation writes go with the parts they qualify.
  */
 
 use alloc::vec::Vec;
 
 use super::cx::FnCx;
 use super::labels::sub_labels;
-use crate::compiler::diag::{Code, Diagnostic};
 use crate::compiler::sema::ty::{TyId, TyKind, Types};
 use crate::compiler::syntax::ast::{PatKind, Pattern};
 use crate::compiler::tir::{Labels, TPat};
@@ -38,6 +37,9 @@ impl<'s, 'a> FnCx<'s, 'a> {
             (PatKind::Array(ps), TyKind::Array(el, n)) if u32::try_from(ps.len()) == Ok(n) => {
                 ps.iter().map(|p| (p, el, Some(Labels::ELEMENT))).collect()
             }
+            (PatKind::Struct { .. } | PatKind::TupleStruct(..), _) | (PatKind::Path(_), _) => {
+                return self.bind_struct(p, ty, labels, path);
+            }
             (PatKind::Tuple(ps) | PatKind::Array(ps), k) => {
                 if k != TyKind::Error {
                     self.pattern_mismatch(p, ps.len(), ty);
@@ -45,9 +47,7 @@ impl<'s, 'a> FnCx<'s, 'a> {
                 ps.iter().map(|p| (p, Types::ERROR, None)).collect()
             }
             _ => {
-                let d = Diagnostic::error(Code::REFUTABLE_PATTERN, "this pattern may not match", p.span, "a pattern that does not always match")
-                    .with_help("`let` and parameters take names, `_`, and tuples or arrays of them; test values with `if`");
-                self.sema.diags.push(d);
+                self.refutable(p);
                 return TPat::Wild;
             }
         };
@@ -58,18 +58,5 @@ impl<'s, 'a> FnCx<'s, 'a> {
             path.pop();
         }
         TPat::Tuple(out)
-    }
-
-    /** Report a pattern `p` of `n` parts for a value of type `ty` (E0402). */
-    fn pattern_mismatch(&mut self, p: &Pattern, n: usize, ty: TyId) {
-        let shown = self.show(ty);
-        let what = alloc::format!("a pattern of {n} parts for a value of type `{shown}`");
-        let d = Diagnostic::error(
-            Code::PATTERN_MISMATCH,
-            what,
-            p.span,
-            "does not fit the value",
-        );
-        self.sema.diags.push(d);
     }
 }

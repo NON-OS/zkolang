@@ -7,6 +7,7 @@
 
 use alloc::vec::Vec;
 
+use super::AdtId;
 use crate::compiler::syntax::IntTy;
 
 /** A type, as an index into the table of one compilation's types. */
@@ -32,4 +33,6 @@ pub enum TyKind {
     Array(TyId, u32),
     /** The type of an unsuffixed integer literal while it is not yet known (section 5.6). */
     Var(u32),
+    /** A struct or enum, an entry of the type table. */
+    Adt(AdtId),
 }

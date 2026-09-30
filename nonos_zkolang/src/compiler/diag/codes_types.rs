@@ -22,6 +22,9 @@ codes! {
     ALIASED_MUT = "E0310", "Two `&mut` arguments of one call that may refer to the same place.";
     OUTSIDE_LOOP = "E0311", "`break` and `continue` stand only inside a loop.";
     SHIFT_TOO_FAR = "E0312", "A shift by a constant count at least the width of the shifted type.";
+    RECURSIVE_TYPE = "E0313", "A struct or enum that contains itself, directly or through other types. Its values would take no finite number of slots.";
+    DUPLICATE_FIELD = "E0314", "A struct or variant declares a field twice, or a literal or pattern names a field twice.";
+    MISSING_FIELD = "E0315", "A struct literal or pattern leaves out a field. A literal gives every field exactly once; a pattern that ignores fields ends with `..`.";
     /* Patterns. */
     NON_EXHAUSTIVE = "E0400", "A `match` that does not cover every value of its scrutinee. The message names a missing pattern.";
     REFUTABLE_PATTERN = "E0401", "A `let` or a parameter takes only patterns that always match.";

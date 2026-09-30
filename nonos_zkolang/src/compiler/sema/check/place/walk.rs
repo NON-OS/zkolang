@@ -10,7 +10,7 @@
 
 use alloc::vec::Vec;
 
-use super::cx::FnCx;
+use super::super::cx::FnCx;
 use crate::compiler::sema::ty::{TyId, Types};
 use crate::compiler::syntax::ast::{Expr, ExprKind};
 use crate::compiler::tir::TPlace;
@@ -23,7 +23,9 @@ impl<'s, 'a> FnCx<'s, 'a> {
         let root = loop {
             match &at.kind {
                 ExprKind::Paren(inner) => at = inner,
-                ExprKind::TupleField(inner, _, _) | ExprKind::Index(inner, _) => {
+                ExprKind::TupleField(inner, _, _)
+                | ExprKind::Field(inner, _)
+                | ExprKind::Index(inner, _) => {
                     steps.push(at);
                     at = inner;
                 }

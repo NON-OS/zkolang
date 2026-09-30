@@ -1,0 +1,54 @@
+/* Structs (sections 5.2, 7.7, 7.11 and 9): building, reading, writing, taking apart. */
+
+struct Point {
+    x: u32,
+    y: u32,
+}
+
+struct Pair(u8, i8);
+
+struct Unit;
+
+struct Segment {
+    from: Point,
+    to: Point,
+    tag: Pair,
+}
+
+const ORIGIN: Point = Point { x: 0, y: 0 };
+
+fn manhattan(s: Segment) -> u32 {
+    let Segment { from, to, .. } = s;
+    let dx = if from.x > to.x { from.x - to.x } else { to.x - from.x };
+    let dy = if from.y > to.y { from.y - to.y } else { to.y - from.y };
+    dx + dy
+}
+
+#[test]
+fn fields_are_read_by_name_and_position() {
+    let y = 7;
+    let p = Point { y, x: 3 };
+    assert p.x == 3 && p.y == 7;
+    let q = Pair(200, -5);
+    assert q.0 == 200 && q.1 == -5;
+    let Pair(a, b) = q;
+    assert a == 200 && b == -5;
+}
+
+#[test]
+fn nested_structs_and_equality() {
+    let s = Segment { from: ORIGIN, to: Point { x: 4, y: 9 }, tag: Pair(1, 1) };
+    assert manhattan(s) == 13;
+    assert s.to == Point { x: 4, y: 9 };
+    assert s.from != s.to;
+    assert Unit == Unit;
+    let Segment { tag: Pair(t, _), to: Point { y: ty, .. }, .. } = s;
+    assert t == 1 && ty == 9;
+}
+
+#[test]
+#[should_fail]
+fn a_field_overflow_fails() {
+    let p = Point { x: 4294967295, y: 1 };
+    let _s = p.x + p.y;
+}

@@ -25,6 +25,11 @@ pub enum TExprKind {
     Call(FnId, Vec<TArg>),
     Builtin(Builtin, Vec<TExpr>),
     Tuple(Vec<TExpr>),
+    /**
+     * A struct literal: each field's index and value, in the order written, which is the
+     * order they are evaluated in.
+     */
+    Record(Vec<(u32, TExpr)>),
     Array(Vec<TExpr>),
     /** `[e; n]`, `e` evaluated once. */
     Repeat(Box<TExpr>, u32),

@@ -52,10 +52,11 @@ impl<'p> Flow<'p> {
             TPat::Wild => {}
             TPat::Tuple(ps) => {
                 let kind = self.program.types.kind(ty).clone();
+                let record = self.program.types.record(ty);
                 for (i, p) in ps.iter().enumerate() {
-                    let (part, part_ty) = match &kind {
-                        TyKind::Tuple(ts) => (v.child(i), ts.get(i).copied().unwrap_or(ty)),
-                        TyKind::Array(el, _) => (v.elem(), *el),
+                    let (part, part_ty) = match (&record, &kind) {
+                        (Some(ts), _) => (v.child(i), ts.get(i).copied().unwrap_or(ty)),
+                        (None, TyKind::Array(el, _)) => (v.elem(), *el),
                         _ => (v.clone(), ty),
                     };
                     self.bind(p, part, part_ty, at);

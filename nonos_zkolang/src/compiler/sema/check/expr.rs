@@ -66,7 +66,7 @@ impl<'s, 'a> FnCx<'s, 'a> {
             ExprKind::Index(a, i) => self.index(a, i, at),
             ExprKind::Assign { op, place, value } => self.assign(*op, place, value, at),
             ExprKind::RefMut(_) => self.misplaced_ref_mut(at),
-            ExprKind::Struct { .. } => self.unsupported("struct literals", at),
+            ExprKind::Struct { path, fields } => self.struct_lit(path, fields, at),
             ExprKind::Match { .. } => self.unsupported("`match`", at),
             ExprKind::Error => self.error(at),
         }

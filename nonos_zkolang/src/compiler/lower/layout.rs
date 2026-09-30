@@ -6,7 +6,8 @@
 /*!
  * Layout (section 6): every value is a fixed list of field-element slots. A `field`, a
  * `bool` and an integer of at most 32 bits take one; a 64-bit integer two, its low and
- * high 32-bit halves; a tuple its fields' in order; an array its elements' in order.
+ * high 32-bit halves; a tuple or struct its fields' in order; an array its elements' in
+ * order; an enum a tag and then the most any variant's fields take.
  */
 
 use crate::compiler::sema::ty::{TyId, TyKind, Types};
@@ -25,14 +26,23 @@ pub(crate) fn slots(types: &Types, t: TyId) -> usize {
         }
         TyKind::Tuple(ts) => ts.iter().map(|&e| slots(types, e)).sum(),
         TyKind::Array(e, n) => slots(types, *e).saturating_mul(*n as usize),
+        TyKind::Adt(_) => {
+            let Some(a) = types.adt(t) else {
+                return 0;
+            };
+            let payload = a
+                .variants
+                .iter()
+                .map(|v| v.fields.iter().map(|f| slots(types, f.ty)).sum());
+            let most: usize = payload.max().unwrap_or(0);
+            most + usize::from(a.is_enum)
+        }
     }
 }
 
-/** The first slot of field `i` of a tuple of type `t`, and the field's type. */
+/** The first slot of field `i` of a tuple or struct of type `t`, and the field's type. */
 pub(crate) fn field_at(types: &Types, t: TyId, i: u32) -> Option<(usize, TyId)> {
-    let TyKind::Tuple(ts) = types.kind(t) else {
-        return None;
-    };
+    let ts = types.record(t)?;
     let i = i as usize;
     let at = ts.get(..i)?.iter().map(|&e| slots(types, e)).sum();
     Some((at, *ts.get(i)?))

@@ -30,6 +30,19 @@ impl<'e> Interp<'e> {
         es.iter().map(|e| self.eval(e)).collect()
     }
 
+    /** A struct literal of type `ty`: its fields evaluated in the order written. */
+    pub(super) fn eval_record(&mut self, fs: &[(u32, TExpr)], ty: TyId) -> Eval {
+        let n = self.env.types().record(ty).map_or(0, |ts| ts.len());
+        let mut parts = vec![Value::Unit; n];
+        for (i, x) in fs {
+            let v = self.eval(x)?;
+            if let Some(p) = parts.get_mut(*i as usize) {
+                *p = v;
+            }
+        }
+        Ok(Value::Tuple(parts))
+    }
+
     /** `[a; n]`, `a` evaluated once. */
     pub(super) fn eval_repeat(&mut self, a: &TExpr, n: u32, at: Span) -> Eval {
         let v = self.eval(a)?;
