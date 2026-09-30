@@ -1,0 +1,36 @@
+/* An error in one parameter, field or variant is reported, and the list reads on. */
+struct S {
+    a: , /*~ E0100 */
+    b: u32,
+    c: u32 u32, /*~ E0100 */
+}
+
+struct T {
+    a: u8 /*~ E0100 */
+    b: u8,
+}
+
+struct U(u8, , pub u8 u8); /*~ E0100 E0100 */
+
+fn f(a: , b: u32 u32) -> u32 { /*~ E0100 E0100 */
+    let q = 1 + ; /*~ E0100 */
+    q
+}
+
+fn g(a: u8 /*~ E0100 */
+{
+    let r = 2 * ; /*~ E0100 */
+}
+
+enum E {
+    A(,), /*~ E0100 */
+    B,
+    C { x u32 }, /*~ E0100 */
+    D = 1 + , /*~ E0100 */
+    F /*~ E0100 */
+    G(u8)
+}
+
+enum V { A(, B } /*~ E0100 */
+
+fn after() -> u32 { let z = ; z } /*~ E0100 */

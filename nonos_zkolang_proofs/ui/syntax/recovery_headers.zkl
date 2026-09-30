@@ -1,0 +1,28 @@
+/* An error in the header of a function, impl block or module still lets its body parse. */
+fn f(a: u32) : u32 { /*~ E0100 */
+    let q = a * ; /*~ E0100 */
+    q
+}
+
+fn g(a: u32), b: u32) -> u32 { /*~ E0100 */
+    let z = a + ; /*~ E0100 */
+    z
+}
+
+impl Hash for P { /*~ E0100 */
+    fn hash(self) -> u32 { let q = 1 * ; q } /*~ E0100 */
+}
+
+impl { /*~ E0100 */
+    fn a() -> u32 { let w = 2 * ; w } /*~ E0100 */
+}
+
+mod type { /*~ E0100 */
+    fn b() { let v = ; } /*~ E0100 */
+}
+
+mod m fn kept() {} /*~ E0100 */
+
+fn no_arrow() u8 { 1 } /*~ E0100 */
+
+fn last() -> u32 { let y = 1 + ; y } /*~ E0100 */

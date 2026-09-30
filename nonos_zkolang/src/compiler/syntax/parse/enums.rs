@@ -5,8 +5,6 @@
 
 /*! Enum declarations and their variants. */
 
-use alloc::vec::Vec;
-
 use super::parser::{PResult, Parser};
 use crate::compiler::diag::{Code, Diagnostic};
 use crate::compiler::syntax::ast::{EnumDecl, Fields, Variant};
@@ -18,33 +16,7 @@ impl<'a> Parser<'a> {
         let name = self.ident()?;
         let generics = self.generic_params()?;
         self.expect(TokenKind::LBrace)?;
-        let mut variants = Vec::new();
-        while !self.at(TokenKind::RBrace) {
-            let start = self.span();
-            let (doc, attrs) = self.doc_and_attrs()?;
-            let vname = self.ident()?;
-            let fields = match self.kind() {
-                TokenKind::LParen => self.tuple_fields(true)?,
-                TokenKind::LBrace => self.named_fields(true)?,
-                TokenKind::Eq => {
-                    self.variant_value();
-                    Fields::Unit
-                }
-                _ => Fields::Unit,
-            };
-            variants.push(Variant {
-                id: self.id(),
-                attrs,
-                doc,
-                name: vname,
-                fields,
-                span: start.to(self.prev_span()),
-            });
-            if !self.eat(TokenKind::Comma) {
-                break;
-            }
-        }
-        self.expect_list_end(TokenKind::RBrace)?;
+        let variants = self.decl_list(TokenKind::RBrace, |p| p.variant())?;
         Ok(EnumDecl {
             name,
             generics,
@@ -52,10 +24,34 @@ impl<'a> Parser<'a> {
         })
     }
 
+    /** A variant: its name, and its fields if it has any. */
+    fn variant(&mut self) -> PResult<Variant> {
+        let start = self.span();
+        let (doc, attrs) = self.doc_and_attrs()?;
+        let name = self.ident()?;
+        let fields = match self.kind() {
+            TokenKind::LParen => self.tuple_fields(true)?,
+            TokenKind::LBrace => self.named_fields(true)?,
+            TokenKind::Eq => {
+                self.variant_value();
+                Fields::Unit
+            }
+            _ => Fields::Unit,
+        };
+        Ok(Variant {
+            id: self.id(),
+            attrs,
+            doc,
+            name,
+            fields,
+            span: start.to(self.prev_span()),
+        })
+    }
+
     /** Report and skip `= value` after a variant: a variant has no value of its own. */
     fn variant_value(&mut self) {
         let start = self.bump().span;
-        let _ = self.expr();
+        self.skip_elem(TokenKind::RBrace);
         let d = Diagnostic::error(
             Code::UNEXPECTED_TOKEN,
             "a variant takes no value",

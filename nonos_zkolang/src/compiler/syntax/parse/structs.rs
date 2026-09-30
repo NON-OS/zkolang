@@ -5,8 +5,6 @@
 
 /*! Struct declarations and named fields. */
 
-use alloc::vec::Vec;
-
 use super::parser::{PResult, Parser};
 use crate::compiler::syntax::ast::{FieldDecl, Fields, StructDecl};
 use crate::compiler::syntax::token::TokenKind;
@@ -39,27 +37,22 @@ impl<'a> Parser<'a> {
     /** `{ a: T, pub b: U }`; in a variant, whose fields take no `pub`, `{ a: T }`. */
     pub(super) fn named_fields(&mut self, in_variant: bool) -> PResult<Fields> {
         self.expect(TokenKind::LBrace)?;
-        let mut fields = Vec::new();
-        while !self.at(TokenKind::RBrace) {
-            let start = self.span();
-            let (doc, attrs) = self.doc_and_attrs()?;
-            let vis = self.field_vis(in_variant);
-            let name = self.ident()?;
-            self.expect(TokenKind::Colon)?;
-            let ty = self.ty()?;
-            fields.push(FieldDecl {
+        let fields = self.decl_list(TokenKind::RBrace, |p| {
+            let start = p.span();
+            let (doc, attrs) = p.doc_and_attrs()?;
+            let vis = p.field_vis(in_variant);
+            let name = p.ident()?;
+            p.expect(TokenKind::Colon)?;
+            let ty = p.ty()?;
+            Ok(FieldDecl {
                 attrs,
                 vis,
                 doc,
                 name: Some(name),
                 ty,
-                span: start.to(self.prev_span()),
-            });
-            if !self.eat(TokenKind::Comma) {
-                break;
-            }
-        }
-        self.expect_list_end(TokenKind::RBrace)?;
+                span: start.to(p.prev_span()),
+            })
+        })?;
         Ok(Fields::Named(fields))
     }
 }

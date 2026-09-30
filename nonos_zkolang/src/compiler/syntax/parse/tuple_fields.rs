@@ -6,7 +6,6 @@
 /*! Positional fields, as in a tuple struct or a tuple variant. */
 
 use alloc::format;
-use alloc::vec::Vec;
 
 use super::parser::{PResult, Parser};
 use crate::compiler::diag::{Code, Diagnostic};
@@ -19,30 +18,25 @@ impl<'a> Parser<'a> {
     /** `(T, pub U)`; in a variant, `(T, U)`, whose fields take no `pub` or attributes. */
     pub(super) fn tuple_fields(&mut self, in_variant: bool) -> PResult<Fields> {
         self.expect(TokenKind::LParen)?;
-        let mut fields = Vec::new();
-        while !self.at(TokenKind::RParen) {
-            let start = self.span();
-            let (doc, attrs) = self.doc_and_attrs()?;
+        let fields = self.decl_list(TokenKind::RParen, |p| {
+            let start = p.span();
+            let (doc, attrs) = p.doc_and_attrs()?;
             if in_variant {
                 if let Some(a) = attrs.first() {
-                    self.not_in_variant(a.span, "an attribute");
+                    p.not_in_variant(a.span, "an attribute");
                 }
             }
-            let vis = self.field_vis(in_variant);
-            let ty = self.ty()?;
-            fields.push(FieldDecl {
+            let vis = p.field_vis(in_variant);
+            let ty = p.ty()?;
+            Ok(FieldDecl {
                 attrs,
                 vis,
                 doc,
                 name: None,
                 ty,
-                span: start.to(self.prev_span()),
-            });
-            if !self.eat(TokenKind::Comma) {
-                break;
-            }
-        }
-        self.expect_list_end(TokenKind::RParen)?;
+                span: start.to(p.prev_span()),
+            })
+        })?;
         Ok(Fields::Tuple(fields))
     }
 

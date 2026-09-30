@@ -8,6 +8,7 @@
 use alloc::vec::Vec;
 
 use super::parser::{PResult, Parser};
+use super::recovery::starts_item;
 use crate::compiler::syntax::ast::{FnDecl, GenericParam, Ident, Param, Type};
 use crate::compiler::syntax::token::TokenKind;
 
@@ -25,6 +26,15 @@ impl<'a> Parser<'a> {
                 return Err(e);
             }
         };
+        if !self.at(TokenKind::LBrace) {
+            let expected = if ret.is_some() { "`{`" } else { "`->` or `{`" };
+            let e = self.report_unexpected(expected, true);
+            /* An item after the signature is the next one, not this one's body. */
+            if !starts_item(self.kind()) {
+                self.body_after_bad_signature();
+            }
+            return Err(e);
+        }
         let body = self.block()?;
         Ok(FnDecl {
             is_const,
@@ -41,14 +51,7 @@ impl<'a> Parser<'a> {
         let name = self.ident()?;
         let generics = self.generic_params()?;
         self.expect(TokenKind::LParen)?;
-        let mut params = Vec::new();
-        while !self.at(TokenKind::RParen) {
-            params.push(self.param()?);
-            if !self.eat(TokenKind::Comma) {
-                break;
-            }
-        }
-        self.expect_list_end(TokenKind::RParen)?;
+        let params = self.decl_list(TokenKind::RParen, |p| p.param())?;
         let ret = if self.eat(TokenKind::Arrow) {
             Some(self.ty()?)
         } else {
