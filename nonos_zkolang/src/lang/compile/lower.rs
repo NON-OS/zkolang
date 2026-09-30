@@ -8,6 +8,7 @@
  * dead bindings, and finish the program with its advice plan.
  */
 
+use alloc::collections::BTreeMap;
 use alloc::string::String;
 use alloc::vec::Vec;
 
@@ -29,23 +30,19 @@ pub(super) fn lower(ast: &Ast) -> Result<Compiled, CompileError> {
         .map_err(|_| CompileError::IoLimit)?;
     let mut c = Compiler::new(ast.consts.clone(), ast.fns.clone(), n_public, n_secret);
     /*
-     * reads_after[i] is the sorted set of names read by statements i onward, so after
-     * lowering statement i a binding is dead exactly when its name is absent from
-     * reads_after[i + 1]. Building it from the end keeps the whole pass linear.
+     * last_read maps each name to the last statement that reads it, so after lowering
+     * statement i a binding is dead exactly when no statement past i reads its name.
      */
     let stmts = &ast.stmts;
-    let mut reads_after: Vec<Vec<String>> = Vec::with_capacity(stmts.len() + 1);
-    reads_after.resize(stmts.len() + 1, Vec::new());
-    for i in (0..stmts.len()).rev() {
-        let mut names = reads_after[i + 1].clone();
-        live::reads_of_stmt(&stmts[i], &mut names);
-        names.sort_unstable();
-        names.dedup();
-        reads_after[i] = names;
+    let mut last_read: BTreeMap<String, usize> = BTreeMap::new();
+    for (i, s) in stmts.iter().enumerate() {
+        let mut names = Vec::new();
+        live::reads_of_stmt(s, &mut names);
+        last_read.extend(names.into_iter().map(|n| (n, i)));
     }
     for (i, s) in stmts.iter().enumerate() {
         c.stmt(s)?;
-        c.free_dead(&reads_after[i + 1]);
+        c.free_dead(|n| last_read.get(n).is_some_and(|&j| j > i));
     }
     Ok(c.finish())
 }
