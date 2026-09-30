@@ -25,8 +25,8 @@ impl<'a> Parser<'a> {
     /** Report that the current token is not what was expected. */
     pub(super) fn unexpected(&mut self, expected: &str) -> Reported {
         let t = self.tok();
-        if t.kind == TokenKind::Error || self.at_reserved() {
-            /* The lexer already reported this text. */
+        if t.kind == TokenKind::Error || self.at_reserved() || self.after_stray() {
+            /* The lexer already reported this text, or text just before it. */
             return Reported;
         }
         let found = match t.kind {

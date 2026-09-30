@@ -1,0 +1,15 @@
+/* Lexical mistakes: each is reported once, and what follows it still parses. */
+fn f(a: u32) -> u32 {
+    let x = $a; /*~ E0001 */
+    let y = @@@; /*~ E0001 */
+    let c = 'c'; /*~ E0001 */
+    let m = 1 − 2; /*~ E0001 */
+    assert a > 0, "\q and \w"; /*~ E0004 E0004 */
+    let h = 0x_1; /*~ E0005 */
+    'outer: for i in 0..3 { break 'outer; } /*~ E0001 E0001 */
+    assert a > 1, "a long /*~ E0003 */
+        message";
+    x
+}
+
+fn g() -> u32 { let z = ; z } /*~ E0100 */

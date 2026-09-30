@@ -18,6 +18,10 @@ pub(super) fn read_digits(bytes: &[u8]) -> Result<(u64, usize), IntLitError> {
         [b'0', b'b', ..] => (2, 2),
         _ => (10, 0),
     };
+    /* A radix prefix is followed by a digit: `0x_1` is malformed (spec section 2.3). */
+    if radix != 10 && bytes.get(2) == Some(&b'_') {
+        return Err(IntLitError::NoDigits);
+    }
     let mut value: u64 = 0;
     let mut digits = 0usize;
     while i < bytes.len() {

@@ -5,9 +5,9 @@
 
 /*!
  * The scanner: one pass over the bytes, dispatching on the first byte of each token. It is
- * total: any text produces a token stream ending in `Eof`, with every problem reported as
- * a diagnostic and represented by an `Error` token, so the parser always has something to
- * recover from and the lexer can never panic or loop.
+ * total: any text produces a token stream ending in `Eof`, with every problem reported. A
+ * malformed literal becomes an `Error` token, and text that stands for nothing is left out
+ * with its span kept, so the parser always has something to recover from.
  */
 
 use alloc::vec::Vec;
@@ -24,6 +24,8 @@ use crate::compiler::syntax::token::{Token, TokenKind};
 pub struct Lexed {
     pub tokens: Vec<Token>,
     pub comments: Vec<Comment>,
+    /** Text reported and left out of the token stream, in order. */
+    pub strays: Vec<Span>,
 }
 
 /** The longest source file the compiler reads, so every offset fits a span. */
@@ -43,14 +45,11 @@ pub fn lex(file: FileId, text: &str, diags: &mut Diagnostics) -> Lexed {
             i += 1;
             continue;
         }
-        if c == b'/' && b.get(i + 1) == Some(&b'/') {
-            let (comment, next) = scan_line_comment(b, i, len, file);
-            out.comments.push(comment);
-            i = next;
-            continue;
-        }
-        if c == b'/' && b.get(i + 1) == Some(&b'*') {
-            let (comment, next) = block_comment(b, i, len, file, diags);
+        if c == b'/' && matches!(b.get(i + 1), Some(b'/' | b'*')) {
+            let (comment, next) = match b.get(i + 1) {
+                Some(b'/') => scan_line_comment(b, i, len, file),
+                _ => block_comment(b, i, len, file, diags),
+            };
             out.comments.push(comment);
             i = next;
             continue;
@@ -58,10 +57,13 @@ pub fn lex(file: FileId, text: &str, diags: &mut Diagnostics) -> Lexed {
         let start = i;
         let (kind, next) = scan_token(text, start, len, file, diags);
         i = next;
-        out.tokens.push(Token {
-            kind,
-            span: span(start, i),
-        });
+        match kind {
+            Some(kind) => out.tokens.push(Token {
+                kind,
+                span: span(start, i),
+            }),
+            None => out.strays.push(span(start, i)),
+        }
     }
     out.tokens.push(Token {
         kind: TokenKind::Eof,

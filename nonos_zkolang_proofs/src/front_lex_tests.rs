@@ -48,3 +48,14 @@ fn block_doc_comments_document_items_and_modules() {
     let (_, codes) = parse("fn f() { /** nothing */ }");
     assert_eq!(codes, vec!["W0007"]);
 }
+
+#[test]
+fn a_carriage_return_ends_a_string_line_and_stray_runs_are_one_error() {
+    assert_eq!(parse("fn f() { assert true, \"a\rb\"; }").1, vec!["E0003"]);
+    assert_eq!(
+        parse("fn f() { assert true, \"a\rb; }\rfn g() {}").1,
+        vec!["E0003"]
+    );
+    let run = format!("fn f() {{ let x = {}y; }}", "$".repeat(100_000));
+    assert_eq!(parse(&run).1, vec!["E0001"]);
+}

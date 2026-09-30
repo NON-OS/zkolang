@@ -15,7 +15,7 @@
 use alloc::vec::Vec;
 
 use crate::compiler::diag::Diagnostics;
-use crate::compiler::source::FileId;
+use crate::compiler::source::{FileId, Span};
 use crate::compiler::syntax::lex::Comment;
 use crate::compiler::syntax::token::Token;
 
@@ -41,6 +41,8 @@ pub struct Parser<'a> {
     pub(super) text: &'a str,
     pub(super) tokens: &'a [Token],
     pub(super) comments: &'a [Comment],
+    /** Text the lexer reported and left out of the token stream, in order. */
+    pub(super) strays: &'a [Span],
     /** Which comments an item or module has taken as its documentation. */
     pub(super) doc_used: Vec<bool>,
     pub(super) pos: usize,

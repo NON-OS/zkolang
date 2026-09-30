@@ -24,7 +24,7 @@ pub fn parse_file(
     diags: &mut Diagnostics,
     next_id: &mut u32,
 ) -> SourceAst {
-    let mut p = Parser::new(file, text, &lexed.tokens, &lexed.comments, diags, next_id);
+    let mut p = Parser::new(file, text, lexed, diags, next_id);
     let first = p.span().lo;
     let inner_doc = p.take_inner_doc(0, first);
     let inner_attrs = p.inner_attrs().unwrap_or_default();
@@ -52,7 +52,7 @@ pub fn parse_expr(
     diags: &mut Diagnostics,
     next_id: &mut u32,
 ) -> Option<Expr> {
-    let mut p = Parser::new(file, text, &lexed.tokens, &lexed.comments, diags, next_id);
+    let mut p = Parser::new(file, text, lexed, diags, next_id);
     let e = p.expr().ok()?;
     if p.kind() != TokenKind::Eof {
         p.unexpected("the end of the expression");

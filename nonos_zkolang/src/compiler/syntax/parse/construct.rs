@@ -9,25 +9,24 @@ use super::parser::Parser;
 use crate::compiler::diag::Diagnostics;
 use crate::compiler::source::FileId;
 use crate::compiler::syntax::ast::NodeId;
-use crate::compiler::syntax::lex::Comment;
-use crate::compiler::syntax::token::Token;
+use crate::compiler::syntax::lex::Lexed;
 
 impl<'a> Parser<'a> {
     /** A parser at the first token, reporting into `diags` and numbering from `next_id`. */
     pub fn new(
         file: FileId,
         text: &'a str,
-        tokens: &'a [Token],
-        comments: &'a [Comment],
+        lexed: &'a Lexed,
         diags: &'a mut Diagnostics,
         next_id: &'a mut u32,
     ) -> Parser<'a> {
         Parser {
             file,
             text,
-            tokens,
-            comments,
-            doc_used: alloc::vec![false; comments.len()],
+            tokens: &lexed.tokens,
+            comments: &lexed.comments,
+            strays: &lexed.strays,
+            doc_used: alloc::vec![false; lexed.comments.len()],
             pos: 0,
             diags,
             next_id,

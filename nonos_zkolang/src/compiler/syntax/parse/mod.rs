@@ -58,6 +58,7 @@ mod skip_stmt;
 mod stmt_expr;
 mod stmt_let;
 mod stmts;
+mod stray_gap;
 mod struct_lit;
 mod structs;
 mod tuple_fields;
