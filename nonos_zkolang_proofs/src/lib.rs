@@ -74,6 +74,8 @@ mod front_fuzz_tests;
 #[cfg(test)]
 mod front_lex_tests;
 #[cfg(test)]
+mod front_recovery_tests;
+#[cfg(test)]
 mod front_render_check;
 #[cfg(test)]
 mod front_render_tests;
