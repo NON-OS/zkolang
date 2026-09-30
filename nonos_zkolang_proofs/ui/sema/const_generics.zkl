@@ -1,0 +1,22 @@
+/* Constant generic parameter mistakes: constants no argument gives, arguments of the wrong length, and type parameters used as values. */
+#![allow(unused)]
+fn len<const N: usize>(a: [u8; N]) -> usize { N }
+fn two<const N: usize>(a: [u8; N], b: [u8; N]) -> usize { N }
+fn make<const N: usize>() -> [u8; N] { [0; N] }
+fn value<T>(x: T) -> T { T } /*~ E0205 */
+fn down<const N: usize>() -> usize {
+    if N == 0 { return 0; }
+    down::<{ N - 1 }>() /*~ E0501 */
+}
+
+fn f(x: u8) -> usize {
+    let a = len([1, 2, 3]);
+    let b = two([1, 2], [3, 4, 5]); /*~ E0300 */
+    let c = make(); /*~ E0303 */
+    let d = len(x); /*~ E0303 */
+    let e = value(1u8); /*~ E0702 */
+    let g = down::<2>();
+    let h = if true { 1u8 } else { 1 + true };
+    let k = if (300 as u8) == 44 { 1u8 } else { 2 }; /*~ E0302 */
+    0
+}

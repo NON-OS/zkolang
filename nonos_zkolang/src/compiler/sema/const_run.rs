@@ -43,4 +43,15 @@ impl<'a> Sema<'a> {
             }
         }
     }
+
+    /**
+     * Run `e` as `const_eval` does, a failing run giving `None` unreported: a condition
+     * that fails here is left to the run, where it fails only if reached (section 14).
+     */
+    pub(crate) fn try_const_eval(&mut self, e: &TExpr, locals: usize) -> Option<Value> {
+        if !self.prepare(e) {
+            return None;
+        }
+        Interp::new(&*self, BUDGET).eval_const(e, locals).ok()
+    }
 }

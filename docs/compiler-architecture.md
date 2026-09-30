@@ -24,7 +24,11 @@ E0904. A function of a generic `impl` block is a template whose parameters are t
 block's then its own; a method call matches the block's written type against the
 receiver's type to give the block's parameters their arguments. A generic function is a template: a call checks against its signature
 with a variable per type parameter, and once the caller's types settle the call is given
-the instance for the arguments settled, which is checked like any function. Each instance of a generic struct or enum is one entry of the type table; type
+the instance for the arguments settled, which is checked like any function. A constant
+parameter not written is read off the types of the arguments that name it, checked
+first on their own. An `if` whose condition is a constant expression has the condition
+settled and evaluated where it stands, and only the block it selects is checked, so a
+recursion over a constant parameter ends at compile time. Each instance of a generic struct or enum is one entry of the type table; type
 inference has general variables beside literal ones, unifies instances by their
 arguments, and resolves an instance whose arguments it settles. `sema/exhaust` decides whether a `match` covers every
 value, and which arms no value reaches, by the usefulness of its patterns over their

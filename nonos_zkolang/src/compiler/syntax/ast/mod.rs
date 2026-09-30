@@ -25,6 +25,8 @@ mod parts;
 mod pat;
 mod path;
 mod ty;
+mod visit;
+mod visit_ops;
 
 pub use attr::{Attr, AttrArg};
 pub use block::{Block, Stmt, StmtKind};

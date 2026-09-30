@@ -1,0 +1,51 @@
+/* Constant `if` conditions (section 8.4) and the generic recursion they end (section 10.6). */
+
+fn pow<const N: usize>(x: u64) -> u64 {
+    if N == 0 {
+        1
+    } else {
+        x * pow::<{ N - 1 }>(x)
+    }
+}
+
+fn fib<const N: usize>() -> u64 {
+    if N < 2 {
+        N as u64
+    } else {
+        fib::<{ N - 1 }>() + fib::<{ N - 2 }>()
+    }
+}
+
+const LOUD: bool = false;
+
+#[test]
+fn recursion_ends_on_a_constant_condition() {
+    assert pow::<0>(7) == 1;
+    assert pow::<5>(3) == 243;
+    assert fib::<10>() == 55;
+}
+
+#[test]
+fn only_the_block_taken_is_checked() {
+    let v = if LOUD { 1 + true } else if 2u8 > 1 { 5u8 } else { false };
+    assert v == 5;
+}
+
+fn guarded(x: u8) -> u8 {
+    if x == 0 {
+        if 1u8 / 0 == 0 { 1 } else { 2 }
+    } else {
+        x
+    }
+}
+
+#[test]
+fn a_condition_that_fails_is_left_to_the_run() {
+    assert guarded(3) == 3;
+}
+
+#[test]
+#[should_fail]
+fn it_fails_where_it_is_reached() {
+    guarded(0);
+}

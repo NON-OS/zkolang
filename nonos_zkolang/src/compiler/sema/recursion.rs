@@ -4,9 +4,11 @@
 */
 
 /*!
- * Recursion (section 10.6). Every call is expanded where it stands, and no function this
- * build checks has a constant generic parameter to end a recursion, so a function that
- * calls itself, directly or through others, is an error (E0700).
+ * Recursion (section 10.6). Every call is expanded where it stands, so a function that
+ * calls itself, directly or through others, is an error (E0700). Each instance of a
+ * generic function is a function of its own: a recursion over a constant parameter goes
+ * from instance to instance and ends where a constant `if` (section 8.4) stops making new
+ * ones; the bound on nested instances (section 10.5) reports one that does not.
  */
 
 use alloc::format;

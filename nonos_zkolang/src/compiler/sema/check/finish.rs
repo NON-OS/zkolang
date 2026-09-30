@@ -17,14 +17,7 @@ impl<'s, 'a> FnCx<'s, 'a> {
     /** Give every free variable its type, and run the checks left for the end. */
     pub(crate) fn settle(&mut self) {
         let deferred = core::mem::take(&mut self.deferred);
-        for d in &deferred {
-            if let Deferred::Cast { ty, to, .. } = *d {
-                let open = matches!(self.kind(ty), TyKind::Var(_));
-                if open && matches!(self.kind(to), TyKind::Int(_)) {
-                    self.unify(ty, to);
-                }
-            }
-        }
+        deferred.iter().for_each(|d| self.settle_cast(d));
         for n in 0..self.vars.len() {
             let t = self.sema.types.intern(TyKind::Var(n));
             self.zonk(t, true);
@@ -37,6 +30,16 @@ impl<'s, 'a> FnCx<'s, 'a> {
             let z = self.zonk(t, true);
             if let Some(l) = self.locals.get_mut(i) {
                 l.ty = z;
+            }
+        }
+    }
+
+    /** A cast of a literal whose type is still open, to an integer type, gives it that type. */
+    pub(super) fn settle_cast(&mut self, d: &Deferred) {
+        if let Deferred::Cast { ty, to, .. } = *d {
+            let open = matches!(self.kind(ty), TyKind::Var(_));
+            if open && matches!(self.kind(to), TyKind::Int(_)) {
+                self.unify(ty, to);
             }
         }
     }

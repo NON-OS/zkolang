@@ -55,12 +55,8 @@ impl<'s, 'a> FnCx<'s, 'a> {
         }
         let mut out = Vec::with_capacity(params.len());
         for p in params {
-            let what = format!("the type `{}` of `{name}`", p.name().name);
             match p {
-                GenericParam::Type(_) => {
-                    let v = self.vars.fresh_general(&mut self.sema.types, at, what);
-                    out.push(GenArg::Type(v));
-                }
+                GenericParam::Type(t) => out.push(self.fresh_param(&t.name, &name, at)),
                 GenericParam::Const { name: c, .. } => {
                     let what = format!("cannot infer the constant `{}` of `{name}`", c.name);
                     let d = Diagnostic::error(Code::CANNOT_INFER, what, at, "not written")

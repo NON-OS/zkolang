@@ -27,7 +27,8 @@ normative, is the only one that describes the repository rather than the languag
   parser with its error recovery, the placement check and the diagnostics. So do the
   checker of sections 4 to 13 and the reference interpreter of the typed IR, for a
   program in one file, structs, enums, `match`, `impl` blocks, methods and `Self`
-  included, and generic structs, enums, aliases, functions, methods and `impl` blocks.
+  included, and generic structs, enums, aliases, functions, methods and `impl` blocks,
+  with type and constant parameters, and constant `if` conditions.
   The checker reports each form it does not check yet (modules in their own files) as
   E0904. The back end compiles the typed IR of such a
   program to the machine: lowering to SSA, the passes, gadget expansion, scheduling, register allocation
@@ -432,7 +433,8 @@ with concrete arguments, written or inferred. A type error in an instantiation i
 reported at the instantiating use, with a note at the offending line of the template.
 In a type, a generic item is given every argument. In a body, a struct literal, a variant
 or a pattern that names a generic struct or enum without arguments has its type
-arguments inferred from what builds or meets it; a constant argument is written. A type
+arguments inferred from what builds or meets it; a constant argument is written there. A
+call of a generic function infers its constant arguments too (10.5). A type or constant
 argument nothing settles is an error (E0303).
 
 ### 5.6 Integer literal inference
@@ -629,9 +631,16 @@ point's guard is true on the run. *Note: the compiler evaluates both arms and me
 their results with the machine's select; this rule is what makes that correct.
 Section 21.4 describes the lowering.*
 
-If the condition of an `if` is a constant expression (section 11), only the taken block
-is type-checked and compiled for that instantiation. This is how generic recursion
-terminates (10.6).
+If the condition of an `if` is a constant expression (section 11), it is evaluated where
+the `if` is checked, separately in each instance of a generic function, and if the
+evaluation does not fail, only the block it selects is type-checked and compiled: a false condition's block is left out, and
+a true condition's block ends the `if`, the branches after it left out. A block left out
+is not checked, and a local that a name in it could read counts as read (W0001). The `if`
+keeps the rule of its written form: without `else`, the block it takes must have type
+`()`. The code after the `if` is checked as always, so a recursion is written in the
+other branch's block, not after an `if` that returns. A condition whose evaluation
+fails is an ordinary condition, left to the run, where it fails only if reached (section
+14). This is how generic recursion terminates (10.6).
 
 ### 8.5 `match`
 
@@ -735,7 +744,11 @@ of a call is the cost of its body.*
 
 A generic function is instantiated per distinct list of type and constant arguments.
 Arguments may be written with a turbofish, `f::<u8, 4>(x)`, or inferred from the argument
-and expected result types. An instantiation that cannot be inferred is an error (E0303);
+and expected result types. A constant parameter is inferred from the arguments: where a
+parameter's type names it as an array length or as a constant argument of a struct or
+enum, the argument's type gives its value, the first argument that gives one deciding it,
+and an argument whose type then disagrees is a mismatch (E0300). In a body, a constant
+parameter is a `usize` value. An instantiation that cannot be inferred is an error (E0303);
 so is an instance whose body does not check (E0702, at the call that makes it, beside the
 errors in the body). The instances of one function nest at most 64 deep along the calls
 that make them, and an instance's type arguments take at most 1024 parts written out;
