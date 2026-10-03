@@ -8,12 +8,16 @@
 use nonos_zkolang::compiler::driver::declassified;
 
 use super::cost::print_cost;
+use super::library::library;
 use super::modern::built;
 use crate::line::Line;
 use crate::out::paint;
 
 /** Build the program `line` names and print its cost, unless `--json` asks for the diagnostics alone. */
 pub(super) fn check(line: &Line) -> Result<(), String> {
+    if library(line)? {
+        return Ok(());
+    }
     let (map, b) = built(line)?;
     if line.switch("--declassify") {
         for at in declassified(&b.program) {

@@ -547,7 +547,7 @@ the rows a trace can hold is warned about (W0102) where it is declared.
 | Command | What it does |
 |---|---|
 | `zkolang run <file> --public a,b --secret x,y` | compile, run, prove and verify; print the outputs |
-| `zkolang check <file>` | check and compile, and count the rows |
+| `zkolang check <file>` | check and compile, and count the rows; a crate with no `main` is checked as a library |
 | `zkolang check <file> --cost` | the rows of each function and line |
 | `zkolang check <file> --declassify` | each place a secret is revealed |
 | `zkolang check <file> --json` | the diagnostics as one JSON array, for editors and CI |
@@ -600,8 +600,6 @@ Stated so nobody has to find out by surprise:
   heap, and functions are inlined, so recursion is refused.
 - **The native backends** (`build --target c|asm|python`) and the editor grammars take
   edition 2025 only.
-- `zkolang check` on a library crate, one with no `main`, reports E0900; check it from the
-  package that uses it, or with `zkolang test`.
 
 ## How it is kept correct
 

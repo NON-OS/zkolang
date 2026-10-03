@@ -18,6 +18,7 @@ mod explain;
 mod fee;
 mod fmt;
 mod key;
+mod library;
 mod modern;
 mod prepare;
 mod run;
