@@ -24,7 +24,7 @@ const BOTH: &str = "fn main(a: public u32, b: public u32, s: secret u32) -> (u32
 fn ran(public: &[i128], secret: &[i128]) -> Traced {
     let src = Source::file("both.zkl", BOTH.into());
     let b = build(&mut SourceMap::new(), &NoFiles, src).expect("builds");
-    traced(&b, public, secret).expect("runs")
+    traced(&b, public, secret, 1).expect("runs")
 }
 
 #[test]

@@ -21,7 +21,7 @@ const SQUARE: &str = "fn main(x: public u32) -> u32 {\n    x * x\n}\n";
 fn the_tape_replays_to_a_real_programs_transition() {
     let src = Source::file("square.zkl", SQUARE.into());
     let b = build(&mut SourceMap::new(), &NoFiles, src).expect("builds");
-    let air = traced(&b, &[12], &[]).expect("runs").air;
+    let air = traced(&b, &[12], &[], 1).expect("runs").air;
     let t = record().expect("records");
     assert_eq!(t.n_frame, air.window_size() * air.trace_width());
     assert_eq!(t.outputs.len(), air.num_transition());

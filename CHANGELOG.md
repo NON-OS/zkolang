@@ -37,9 +37,10 @@ fixes below.
   against the SSA; each run of a compiled program beside the reference interpreter, a
   disagreement reported as a compiler bug.
 - Proofs that blind every trace column from a fresh seed.
-- `nonos_zkolang_format7`: a program's STARKs program image, the bytes the STARKs
-  verifiers read a circuit from, with the step AIR's transition recorded once as a tape
-  and kept only if it replays to the AIR's own.
+- `nonos_zkolang_format7`: a run proven in STARKs format 7 at shape A, every column
+  blinded, and verified by `nox_verify` against the program's image, the bytes the STARKs
+  verifiers read a circuit from. The step AIR's transition is recorded once as a tape and
+  kept only if it replays to the AIR's own.
 - The constraint ledger, `docs/audit/constraints.md`: every constraint the compiler writes,
   why it is sound, and the test that rejects a run breaking it.
 

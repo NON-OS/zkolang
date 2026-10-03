@@ -602,10 +602,12 @@ Stated so nobody has to find out by surprise:
 
 - **No external audit**, and no claim of full zero-knowledge: the trace columns are blinded,
   and the composition and FRI layers are not argued here ([SECURITY.md](SECURITY.md)).
-- **Proofs are checked by this repository's verifier.** Verifying a zKølang proof on chain,
-  or through the STARKs repository's `no_std` and browser verifiers, needs the proof in
-  STARKs format 7. [`nonos_zkolang_format7`](nonos_zkolang_format7) writes the program
-  image those verifiers read a circuit from; proving in format 7 is not wired yet.
+- **Format 7 reaches `nox_verify`, not yet the browser or the chain.** A run proves in
+  STARKs format 7 and `nox_verify`, the `no_std` verifier a STARKs gate links, accepts it
+  against the program's image ([`nonos_zkolang_format7`](nonos_zkolang_format7)). The
+  STARKs browser module is built for the statements it ships with, and an on-chain
+  verifier is generated from a statement's image in the contracts repository; neither is
+  built for a zKølang program yet.
 - **A trace holds at most 2^16 rows**, and there is no recursion that aggregates zKølang
   proofs yet.
 - **Bounded programs only:** loops are unrolled, `while` carries a `limit`, there is no
@@ -681,6 +683,16 @@ point STARKs calls `inner`. A program's verifier key is
 `keccak256(0x01 ‖ commit ‖ log2N ‖ trace_width ‖ rate ‖ periodic_root)`, printed by
 `zkolang key`.
 
+A run also proves in STARKs format 7, the format the STARKs verifiers read
+([`nonos_zkolang_format7`](nonos_zkolang_format7)): a Keccak transcript and Merkle trees,
+FRI folding by eight, STARKs' query shape A (19 queries after a 28-bit grind, with the
+DEEP and folding grinds of its launch transcript), and five extra blowup bits. The step
+AIR's 62 constraints are recorded once as a tape, kept only if it replays to the AIR's
+own, and a program's image carries that tape and the program's boundaries, each a value
+or a public word; the image and the periodic root are what a verifier pins. Every column
+is blinded, which needs a trace of at least 2^10 rows. The test that proves a program this
+way holds its proof under 96 KiB.
+
 The design of the compiler is in [docs/compiler-architecture.md](docs/compiler-architecture.md).
 
 ## Edition 2025
@@ -708,12 +720,17 @@ flowchart LR
     PROOFS["nonos_zkolang_proofs<br/>the test suite"]:::here
     STD["std<br/>the standard library"]:::here
     LEANN["lean<br/>the proofs"]:::here
+    F7["nonos_zkolang_format7<br/>STARKs format 7"]:::here
     STARK["nonos-stark<br/>STARKs repository, pinned"]:::there
+    NOXV["nox_verify<br/>STARKs repository, pinned"]:::there
 
     CLI --> LIB
     PROOFS --> LIB
+    F7 --> LIB
+    F7 --> NOXV
     LIB --> STD
     LIB --> STARK
+    NOXV --> STARK
     LEANN -. "checks the arguments of" .-> LIB
 ```
 
@@ -722,6 +739,7 @@ flowchart LR
 | [`nonos_zkolang`](nonos_zkolang) | the compiler, the machine, the step AIR and the prover binding |
 | [`nonos_zkolang_cli`](nonos_zkolang_cli) | the `zkolang` command |
 | [`nonos_zkolang_proofs`](nonos_zkolang_proofs) | the test suite: semantics, diagnostics, circuits, the README |
+| [`nonos_zkolang_format7`](nonos_zkolang_format7) | a program's STARKs image, its runs proven in format 7 and verified by `nox_verify` |
 | [`std`](std) | the standard library of edition 2026, in zKølang |
 | [`circuits`](circuits), [`examples`](examples), [`stdlib`](stdlib) | programs and the library of edition 2025 |
 | [`lean`](lean) | the Lean 4 proofs |

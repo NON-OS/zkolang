@@ -34,7 +34,7 @@ pub(super) fn run_and_prove(
     inputs: &[Fp],
     n_public: usize,
 ) -> Result<Report, RunError> {
-    let p = prepare(program, inputs, n_public)?;
+    let p = prepare(program, inputs, n_public, 1)?;
     let verified = prove_verify(&p.air, &p.flat, &p.publics);
     Ok(report(&p, program, verified))
 }
@@ -48,7 +48,7 @@ pub(super) fn run_and_prove_hidden(
     n_public: usize,
     seed: &[Fp; RATE],
 ) -> Result<Report, RunError> {
-    let p = prepare(program, inputs, n_public)?;
+    let p = prepare(program, inputs, n_public, 1)?;
     let verified = prove_verify_zk(&p.air, &p.flat, &p.publics, seed).ok_or(
         RunError::TraceTooSmallToHide {
             log_trace_len: p.log_trace_len,

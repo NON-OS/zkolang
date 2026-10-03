@@ -36,11 +36,21 @@ pub struct Traced {
     pub outputs: Vec<i128>,
 }
 
-/** Run `b` on `public` and `secret` leaf values and lay the run out for a prover. */
-pub fn traced(b: &Built, public: &[i128], secret: &[i128]) -> Result<Traced, RunFailure> {
+/**
+ * Run `b` on `public` and `secret` leaf values and lay the run out for a prover, the trace
+ * sized to at least `2^min_log_t` rows, as a prover that blinds more than this crate's
+ * own may need.
+ */
+pub fn traced(
+    b: &Built,
+    public: &[i128],
+    secret: &[i128],
+    min_log_t: u32,
+) -> Result<Traced, RunFailure> {
     let e = execute(b, public, secret)?;
     let ops = &b.compiled.machine.ops;
-    let (air, trace, publics) = laid_out(ops, &e.full, e.n_public).map_err(RunFailure::Prove)?;
+    let laid = laid_out(ops, &e.full, e.n_public, min_log_t);
+    let (air, trace, publics) = laid.map_err(RunFailure::Prove)?;
     Ok(Traced {
         air,
         trace,

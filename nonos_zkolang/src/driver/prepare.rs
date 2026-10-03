@@ -31,21 +31,24 @@ pub(super) struct Prepared {
 }
 
 /**
- * Run the program, size the trace, compile the AIR, and build the bound statement.
- * Everything up to the prove step, which the plain and hidden paths then do
- * differently.
+ * Run the program, size the trace to the fewest rows that hold it and at least
+ * `2^min_log_t`, compile the AIR, and build the bound statement. Everything up to the
+ * prove step, which the plain and hidden paths then do differently.
  */
 pub(super) fn prepare(
     program: &[Op],
     inputs: &[Fp],
     n_public: usize,
+    min_log_t: u32,
 ) -> Result<Prepared, RunError> {
     let mut vm = Vm::new();
     let trace = vm
         .run(program, inputs, n_public)
         .map_err(RunError::Execute)?;
     let steps = trace.rows.len();
-    let log_trace_len = choose_log_t(steps).ok_or(RunError::ProgramTooLong { steps })?;
+    let log_trace_len = choose_log_t(steps)
+        .map(|lg| lg.max(min_log_t))
+        .ok_or(RunError::ProgramTooLong { steps })?;
     let air = StepAir::compile(
         program,
         log_trace_len,

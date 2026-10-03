@@ -55,6 +55,10 @@ normative, is the only one that describes the repository rather than the languag
   C file and a Python script that compute its result natively: each advice value is found
   by its hint, and each constraint is checked, failing the run with status 3 where a
   proof would not exist.
+- A run of an edition 2026 program also proves in STARKs format 7
+  (`nonos_zkolang_format7`), which `nox_verify` verifies against the program's image and
+  periodic root. Its public words are the program commitment's four limbs, the trace
+  length, then the public input vector and the output vector of section 12.2.
 - `zkolang check` of an edition 2026 crate with no `fn main` checks it as a library and
   builds nothing; `run` of it reports E0900.
 - `zkolang test` runs the tests of an edition 2026 crate (section 16), each compiled and
