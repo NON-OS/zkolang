@@ -24,20 +24,33 @@ certificate rests on no axioms at all.
 - **Proof-system soundness core.** The grand-product accumulator, the
   boundary-quotient check, the FRI fold decomposition, and the s-box split are
   each proven sound.
+- **The compiler's constraint ledger.** The guards, bit decomposition, field
+  bits, division, and the bounds checks of an index and a shift
+  (`lean/Zkolang/Ledger`). `lean/Axioms.lean` lists every theorem with the axioms
+  it rests on.
 
 ## What is enforced by the test and CI gates
 
-- **The forgery suite.** Every binding in the shield circuit has a forgery that
-  violates exactly it while everything else stays honest, and the forgery must
-  reject. Double-spend, mint, burn, cross-asset, ownership, and the recursion
-  family are named required checks.
-- **128-bit settlement soundness.** The deployment parameters clear a 128-bit
-  floor, gated by a test so the money rate cannot silently regress. The
-  development rate is deliberately weaker and labelled so.
-- **Determinism.** The prover's output is held byte-for-byte against a frozen
-  digest, so a prover change that moves the bytes is caught.
+- **The compiled program and the reference run agree.** A run of an edition 2026
+  program runs the compiled machine program beside the reference interpreter of
+  the typed program, and a disagreement is reported as a compiler bug instead of
+  being proven. The fuzz target `build_run` searches for one on every change.
+- **The constraint ledger.** `docs/audit/constraints.md` lists every constraint
+  the edition 2026 compiler writes, its soundness argument, checked in Lean under
+  `lean/Zkolang/Ledger`, and a test that rejects a run breaking it. Over the
+  compiled programs of the suite, every advice value is checked to be pinned.
+- **The deployed note commitment.** `note_commit_deployed_tests` holds the note
+  commitment written in the language equal to the digest the STARKs repository
+  pins as deployed, and `shield_key_kat` holds the key hierarchy vector byte for
+  byte to the one that repository emits.
+- **Fuzzing.** Four cargo-fuzz targets, the front end, building and running, the
+  formatter and the edition 2025 compiler, run on every change and nightly.
 - **Supply chain and secrets.** `cargo-deny` (advisories, licenses, bans,
   sources) and a full-history secret scan run on every change and weekly.
+
+The prover, `nonos-stark`, and the shield circuits built on it are tested in the
+STARKs repository, which owns that code; this repository pins the commit it
+builds against.
 
 ## Privacy, stated precisely
 
@@ -46,10 +59,17 @@ notes are blinded before they are committed, and a nullifier reveals no note, so
 the ledger discloses none of it. This is the privacy that is there from day one,
 and it requires the wallet to draw fresh random blinding for every note.
 
-The proof itself is **not** full zero-knowledge. The STARK is not hiding, so a
-determined verifier could learn trace values from the query openings. Hiding the
-witness inside the proof is a further hardening, noted here rather than claimed.
-`nonos_zkolang/docs/07-reference.md` and the paper state the same boundary.
+The proof is **not** claimed to be fully zero-knowledge. An edition 2026 proof
+made by `zkolang run` blinds every trace column with a random polynomial expanded
+from a seed read fresh from the system, one random coefficient for each point the
+proof opens the column at, so the trace values the proof reveals are jointly
+uniform (`nonos_zkolang/src/driver/prover.rs`; the identities the blinding rests
+on are `Blinding.invisible_on_domain` and `Blinding.shift_off_domain` in Lean).
+A zero-knowledge argument that also covers the composition polynomial and the FRI
+layers is not made here. Edition 2025 proofs from `zkolang run` are not blinded:
+there a `secret` input is a private witness the statement leaves out, and the
+query openings can show trace values. `nonos_zkolang/docs/07-reference.md` states
+the same boundary.
 
 ## Parameters and deployment
 

@@ -254,6 +254,16 @@ mod prove_2026_tests;
 #[cfg(test)]
 mod python_guard_tests;
 #[cfg(test)]
+mod readme_blocks;
+#[cfg(test)]
+mod readme_claim;
+#[cfg(test)]
+mod readme_files;
+#[cfg(test)]
+mod readme_holds;
+#[cfg(test)]
+mod readme_tests;
+#[cfg(test)]
 mod recipes_tests;
 #[cfg(test)]
 mod recursion_tests;
