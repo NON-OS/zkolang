@@ -1,0 +1,67 @@
+name: fuzz
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    # Nightly, with the long budget; a change gets the short one.
+    - cron: '41 4 * * *'
+
+# Every job reads the repository and writes nothing back.
+permissions:
+  contents: read
+
+# A superseded run of the same kind dies; the nightly one is never cancelled.
+concurrency:
+  group: fuzz-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: ${{ github.event_name != 'schedule' }}
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  # Each target starts from the repository's own programs (fuzz/seed.py) and runs for
+  # two minutes on a change, thirty a night. A crash, a timeout or a run over the memory
+  # limit fails the job and its input is kept as an artifact, to become a test.
+  fuzz:
+    name: fuzz ${{ matrix.target }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [front_end, build_run, fmt, edition_2025]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      # The nightly the formatter is pinned to, so a fuzz build does not move with it.
+      - uses: dtolnay/rust-toolchain@7e38f4b43b4db5c8dd498af069a4f6196df1d067 # master
+        with:
+          toolchain: nightly-2026-01-16
+
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+        with:
+          workspaces: fuzz
+
+      - name: install cargo-fuzz
+        run: cargo install cargo-fuzz --locked
+
+      - name: seed the corpus
+        working-directory: fuzz
+        run: python3 seed.py --root .. --out corpus
+
+      - name: fuzz
+        working-directory: fuzz
+        run: |
+          secs=120
+          if [ "${{ github.event_name }}" = "schedule" ]; then secs=1800; fi
+          cargo fuzz run -O ${{ matrix.target }} corpus/${{ matrix.target }} -- \
+            -max_total_time=$secs -timeout=20 -rss_limit_mb=4096 -print_final_stats=1
+
+      - name: keep the failing input
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: fuzz-${{ matrix.target }}
+          path: fuzz/artifacts/${{ matrix.target }}
