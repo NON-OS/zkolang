@@ -43,7 +43,8 @@ pub fn prove(
     seed: &[Fp; RATE],
 ) -> Result<Proof, Error> {
     let t = traced(b, public, secret, min_log_t()).map_err(Error::Run)?;
-    let statement = of_air(&t.air, t.inputs, t.publics.len() - 5 - t.inputs)?;
+    let ops = &b.compiled.machine.ops;
+    let statement = of_air(ops, &t.air, (t.inputs, t.publics.len() - 5 - t.inputs))?;
     let air = Air7(&t.air);
     let params = ParamSet::of(&air, Q, G, E);
     let log_n = domain_params_blown(&air, E).0;

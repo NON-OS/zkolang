@@ -7,7 +7,7 @@
 
 use nonos_zkolang::compiler::driver::abi::{encode, AbiError};
 use nonos_zkolang::compiler::driver::Built;
-use nonos_zkolang::{commit_limbs, Pin};
+use nonos_zkolang::{commit_limbs, Op, Pin};
 
 use super::statement::Statement;
 
@@ -35,12 +35,22 @@ pub fn words(
     public: &[i128],
     outputs: &[i128],
 ) -> Result<Vec<u64>, AbiError> {
-    let limbs = commit_limbs(&b.compiled.machine.ops);
-    let mut w: Vec<u64> = limbs.iter().map(|f| f.value()).collect();
-    w.push(1u64 << st.log_t);
+    let mut w = head(&b.compiled.machine.ops, st.log_t).to_vec();
     let slots = encode(&b.public, public)?
         .into_iter()
         .chain(encode(&b.output, outputs)?);
     w.extend(slots.map(|f| f.value()));
     Ok(w)
+}
+
+/** The words every run of `ops` begins with: its commitment's limbs, then `2^log_t`. */
+pub(crate) fn head(ops: &[Op], log_t: u32) -> [u64; 5] {
+    let l = commit_limbs(ops);
+    [
+        l[0].value(),
+        l[1].value(),
+        l[2].value(),
+        l[3].value(),
+        1u64 << log_t,
+    ]
 }

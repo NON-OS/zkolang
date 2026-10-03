@@ -12,6 +12,7 @@
 use nonos_stark::air::{blinding_degree, blinding_fits, Air};
 use nonos_stark::fri::FRI_FOLD_LOG;
 use nonos_zkolang::{Op, StepAir};
+use nox_verify::Shape;
 
 /** Queries, and bits of query grind: STARKs shape A. */
 pub const QUERIES: usize = 19;
@@ -43,4 +44,17 @@ pub fn min_log_t() -> u32 {
     let (_, window, degree) = dims();
     let fits = |lg: &u32| blinding_fits(blind_degree(), degree, 1 << lg, window);
     (1..=24).find(fits).unwrap_or(24)
+}
+
+/** The numbers of a zKølang statement the image does not carry. */
+pub fn shape() -> Shape {
+    let (trace_width, window, constraint_degree) = dims();
+    Shape {
+        trace_width,
+        region_width: trace_width - 1,
+        window,
+        constraint_degree,
+        mask_pair: None,
+        challenge_lanes: LANES,
+    }
 }

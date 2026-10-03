@@ -14,7 +14,7 @@ use nonos_stark::field::Fp;
 use nonos_stark::hash::keccak256;
 use nonos_zkolang::compiler::driver::abi::slots;
 use nonos_zkolang::compiler::driver::Built;
-use nonos_zkolang::{program_log_t, StepAir};
+use nonos_zkolang::{program_log_t, Op, StepAir};
 use stark_proofs::proof_wire::ParamSet;
 
 use super::air::Air7;
@@ -22,6 +22,7 @@ use super::error::Error;
 use super::image::image;
 use super::params::{min_log_t, EXTRA_BLOWUP_BITS, GRIND_BITS, QUERIES};
 use super::tape::record;
+use super::word::head;
 
 /** What a verifier of a program's format 7 proofs pins. */
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -37,6 +38,8 @@ pub struct Statement {
     pub params: [u8; 32],
     /** The public words: the commitment limbs, the trace length, the inputs, the outputs. */
     pub words: usize,
+    /** The first five words, the program's own: its commitment's limbs and trace length. */
+    pub head: [u64; 5],
 }
 
 /** The statement of `b`, from the program alone. */
@@ -46,11 +49,12 @@ pub fn statement(b: &Built) -> Result<Statement, Error> {
     let (inputs, outputs) = (slots(&b.public), slots(&b.output));
     let zero = |n: usize| vec![Fp::ZERO; n];
     let air = StepAir::compile(ops, log_t, &zero(inputs), &zero(outputs));
-    of_air(&air.map_err(|_| Error::Shape)?, inputs, outputs)
+    of_air(ops, &air.map_err(|_| Error::Shape)?, (inputs, outputs))
 }
 
-/** The statement of `air`, with `inputs` public input slots and `outputs` output slots. */
-pub(crate) fn of_air(air: &StepAir, inputs: usize, outputs: usize) -> Result<Statement, Error> {
+/** The statement of `air`, the AIR of `ops`, with `slots` input and output slots. */
+pub(crate) fn of_air(ops: &[Op], air: &StepAir, slots: (usize, usize)) -> Result<Statement, Error> {
+    let (inputs, outputs) = slots;
     let tape = record().ok_or(Error::Transition)?;
     let image = image(&tape, air, inputs).map_err(Error::Image)?;
     let a7 = Air7(air);
@@ -61,5 +65,6 @@ pub(crate) fn of_air(air: &StepAir, inputs: usize, outputs: usize) -> Result<Sta
         log_t: air.log_trace_len(),
         params: ParamSet::of(&a7, QUERIES, GRIND_BITS, EXTRA_BLOWUP_BITS).id(),
         words: 5 + inputs + outputs,
+        head: head(ops, air.log_trace_len()),
     })
 }

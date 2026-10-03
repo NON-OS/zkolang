@@ -8,9 +8,9 @@
  * the image as `program.bin` and the numbers a gate pins beside it as `statement.txt`.
  */
 
-use nonos_zkolang_format7::statement as statement7;
+use nonos_zkolang_format7::{statement as statement7, text};
 
-use super::format7::{needs_2026, text, write};
+use super::format7::{needs_2026, write};
 use super::format7_why::why;
 use super::modern::built;
 use crate::line::Line;

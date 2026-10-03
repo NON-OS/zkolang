@@ -12,48 +12,36 @@
 use std::collections::BTreeMap;
 use std::sync::{Mutex, OnceLock};
 
-use nox_verify::{Point, Refusal, Shape};
+use nox_verify::{Point, Refusal};
 
-use super::params::{dims, EXTRA_BLOWUP_BITS, GRIND_BITS, LANES, MAX_PROOF_BYTES, QUERIES};
+use super::params::{shape, EXTRA_BLOWUP_BITS, GRIND_BITS, MAX_PROOF_BYTES, QUERIES};
 use super::statement::Statement;
 
-type Pins = BTreeMap<(Vec<u8>, [u8; 32], [u8; 32], usize), &'static nox_verify::Statement>;
+type Pinned = BTreeMap<(Vec<u8>, [[u8; 32]; 3], usize), &'static nox_verify::Statement>;
 
-static PINNED: OnceLock<Mutex<Pins>> = OnceLock::new();
+static PINNED: OnceLock<Mutex<Pinned>> = OnceLock::new();
 
-/** The numbers of a zKølang statement the image does not carry. */
-pub fn shape() -> Shape {
-    let (trace_width, window, constraint_degree) = dims();
-    Shape {
-        trace_width,
-        region_width: trace_width - 1,
-        window,
-        constraint_degree,
-        mask_pair: None,
-        challenge_lanes: LANES,
-    }
-}
-
-fn pinned(st: &Statement) -> &'static nox_verify::Statement {
-    let key = (st.image.clone(), st.periodic_root, st.params, st.words);
-    let mut pins = PINNED
+/** The statement `nox_verify` reads, pinned once per process for each set of pins. */
+fn pinned(image: &[u8], pins: [[u8; 32]; 3], words: usize) -> &'static nox_verify::Statement {
+    let key = (image.to_vec(), pins, words);
+    let mut all = PINNED
         .get_or_init(Default::default)
         .lock()
         .unwrap_or_else(|e| e.into_inner());
     let point = Point {
-        params: st.params,
+        params: pins[2],
         queries: QUERIES,
         grind_bits: GRIND_BITS,
     };
-    pins.entry(key).or_insert_with(|| {
+    all.entry(key).or_insert_with(|| {
         Box::leak(Box::new(nox_verify::Statement {
-            program: Box::leak(st.image.clone().into_boxed_slice()),
-            program_hash: st.image_hash,
-            periodic_root: st.periodic_root,
+            program: Box::leak(image.to_vec().into_boxed_slice()),
+            program_hash: pins[0],
+            periodic_root: pins[1],
             shape: shape(),
             extra_blowup_bits: EXTRA_BLOWUP_BITS,
             points: Box::leak(Box::new([point])),
-            words: st.words,
+            words,
             max_proof_bytes: MAX_PROOF_BYTES,
         }))
     })
@@ -61,5 +49,20 @@ fn pinned(st: &Statement) -> &'static nox_verify::Statement {
 
 /** `proof` verified by `nox_verify` against `st` and the public `words`; why, if not. */
 pub fn verify(st: &Statement, proof: &[u8], words: &[u64]) -> Result<(), (Refusal, &'static str)> {
-    nox_verify::verify_why(pinned(st), proof, words)
+    let pins = [st.image_hash, st.periodic_root, st.params];
+    verify_pinned(&st.image, pins, st.words, proof, words)
+}
+
+/**
+ * `proof` verified as `verify` does, against pins a verifier holds apart from any program:
+ * the image, its hash, the periodic root and the parameter identity, and the word count.
+ */
+pub fn verify_pinned(
+    image: &[u8],
+    pins: [[u8; 32]; 3],
+    n_words: usize,
+    proof: &[u8],
+    words: &[u64],
+) -> Result<(), (Refusal, &'static str)> {
+    nox_verify::verify_why(pinned(image, pins, n_words), proof, words)
 }

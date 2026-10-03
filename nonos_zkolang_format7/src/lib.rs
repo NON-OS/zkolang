@@ -23,6 +23,7 @@ mod rec_tape;
 mod replay;
 mod statement;
 mod tape;
+mod text;
 mod verify;
 mod word;
 
@@ -31,12 +32,13 @@ pub use error::Error;
 pub use image::{image, ImageError};
 pub use nox_verify::Refusal;
 pub use params::{
-    blind_degree, min_log_t, EXTRA_BLOWUP_BITS, GRIND_BITS, MAX_PROOF_BYTES, QUERIES,
+    blind_degree, min_log_t, shape, EXTRA_BLOWUP_BITS, GRIND_BITS, MAX_PROOF_BYTES, QUERIES,
 };
 pub use prove::{prove, Proof};
 pub use rec::{Op, Rec};
 pub use replay::{probe, replay};
 pub use statement::{statement, Statement};
 pub use tape::{record, Transition};
-pub use verify::{shape, verify};
+pub use text::text;
+pub use verify::{verify, verify_pinned};
 pub use word::{word, words};
