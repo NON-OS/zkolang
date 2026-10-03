@@ -42,6 +42,10 @@ jobs:
       - name: clippy
         run: cargo clippy --no-deps -p nonos_zkolang -p nonos_zkolang_cli -p nonos_zkolang_proofs -p nonos_zkolang_format7 --all-targets -- -D warnings
 
+      # The format 7 prover across cores, the build `--features parallel` asks for.
+      - name: clippy, parallel prover
+        run: cargo clippy --no-deps -p nonos_zkolang_cli -p nonos_zkolang_format7 --all-targets --features nonos_zkolang_cli/parallel,nonos_zkolang_format7/parallel -- -D warnings
+
       # The API reference builds with no broken link or other rustdoc warning.
       - name: docs
         run: cargo doc --no-deps -p nonos_zkolang -p nonos_zkolang_cli -p nonos_zkolang_proofs -p nonos_zkolang_format7

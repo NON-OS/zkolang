@@ -42,7 +42,7 @@ pub(super) fn run(line: &Line) -> Result<(), String> {
 }
 
 /** Fresh random bytes for the blinding seed. */
-fn random() -> Result<[u8; SEED_BYTES], String> {
+pub(super) fn random() -> Result<[u8; SEED_BYTES], String> {
     let mut bytes = [0u8; SEED_BYTES];
     File::open("/dev/urandom")
         .and_then(|mut f| f.read_exact(&mut bytes))

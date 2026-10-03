@@ -192,6 +192,8 @@ zkolang --version
 
 The prover, `nonos-stark`, is fetched by cargo from the public
 [STARKs repository](https://github.com/NON-OS/STARKs) at the commit the manifests pin.
+Building with `--features parallel` spreads the format 7 prover's grind across cores; that
+build of `nonos-stark` reports its memory on standard error as it builds a periodic tree.
 
 ## Learn the language in nine programs
 
@@ -547,6 +549,9 @@ the rows a trace can hold is warned about (W0102) where it is declared.
 | Command | What it does |
 |---|---|
 | `zkolang run <file> --public a,b --secret x,y` | compile, run, prove and verify; print the outputs |
+| `zkolang prove <file> --public a,b --secret x,y --out d` | prove the run in STARKs format 7, have `nox_verify` accept it, and write the proof, the image and the statement |
+| `zkolang verify <file> --proof p --public a,b --outputs y` | check a format 7 proof with `nox_verify`, the statement and public words made here from the program and the claimed values |
+| `zkolang statement <file> --out d` | a program's format 7 image and the numbers a gate pins beside it |
 | `zkolang check <file>` | check and compile, and count the rows; a crate with no `main` is checked as a library |
 | `zkolang check <file> --cost` | the rows of each function and line |
 | `zkolang check <file> --declassify` | each place a secret is revealed |
@@ -691,7 +696,8 @@ AIR's 62 constraints are recorded once as a tape, kept only if it replays to the
 own, and a program's image carries that tape and the program's boundaries, each a value
 or a public word; the image and the periodic root are what a verifier pins. Every column
 is blinded, which needs a trace of at least 2^10 rows. The test that proves a program this
-way holds its proof under 96 KiB.
+way holds its proof under 96 KiB. `zkolang prove`, `verify` and `statement` drive it from
+the command line.
 
 The design of the compiler is in [docs/compiler-architecture.md](docs/compiler-architecture.md).
 

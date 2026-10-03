@@ -59,6 +59,7 @@ normative, is the only one that describes the repository rather than the languag
   (`nonos_zkolang_format7`), which `nox_verify` verifies against the program's image and
   periodic root. Its public words are the program commitment's four limbs, the trace
   length, then the public input vector and the output vector of section 12.2.
+  `zkolang prove`, `verify` and `statement` drive it.
 - `zkolang check` of an edition 2026 crate with no `fn main` checks it as a library and
   builds nothing; `run` of it reports E0900.
 - `zkolang test` runs the tests of an edition 2026 crate (section 16), each compiled and

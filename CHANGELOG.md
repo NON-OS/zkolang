@@ -60,6 +60,9 @@ fixes below.
 - The TextMate grammar and the VS Code extension highlight edition 2026.
 - The tree-sitter grammar parses edition 2026 beside edition 2025; CI parses every
   program in the repository and the README with it, each with no error node.
+- `zkolang prove`, `verify` and `statement`: a run proven in STARKs format 7 and checked
+  by `nox_verify`, a proof verified against the statement and public words made from the
+  program and the claimed values, and the image and statement a gate pins.
 - `zkolang build --target c|python` for edition 2026: a C file or a Python script that
   runs a program without a prover, held to the reference run on every program of the
   README.
