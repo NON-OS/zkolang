@@ -6,6 +6,10 @@ on:
   pull_request:
   workflow_dispatch:
 
+# Every job reads the repository and writes nothing back.
+permissions:
+  contents: read
+
 # New push, old run dies: a superseded run burning minutes helps nobody.
 concurrency:
   group: rust-${{ github.ref }}
@@ -19,33 +23,34 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
-      - uses: dtolnay/rust-toolchain@stable
+      # A named release, so a new stable's lints land in a change that moves this pin.
+      - uses: dtolnay/rust-toolchain@7e38f4b43b4db5c8dd498af069a4f6196df1d067 # master
         with:
+          toolchain: 1.99.0
           components: rustfmt, clippy
 
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
 
-      # Formatting is enforced on the language crates. nonos-stark carries an
-      # older unformatted backlog and is left out until it is swept.
+      # Formatting is enforced on the language crates.
       - name: format
         run: cargo fmt --check -p nonos_zkolang -p nonos_zkolang_cli -p nonos_zkolang_proofs
 
-      # Deny warnings on the language crates. --no-deps keeps the lint off the
-      # nonos-stark path dependency, which carries its own backlog and is checked,
-      # not gated, so it does not block the language.
+      # Deny warnings on the language crates. --no-deps keeps the lint off
+      # nonos-stark, which the STARKs repository builds and gates.
       - name: clippy
         run: cargo clippy --no-deps -p nonos_zkolang -p nonos_zkolang_cli -p nonos_zkolang_proofs --all-targets -- -D warnings
 
+      # The API reference builds with no broken link or other rustdoc warning.
+      - name: docs
+        run: cargo doc --no-deps -p nonos_zkolang -p nonos_zkolang_cli -p nonos_zkolang_proofs
+        env:
+          RUSTDOCFLAGS: -D warnings
+
       # The proofs crate compiles every example and stdlib circuit, runs it, and
       # for the ones with a known answer checks the output. This is where the
-      # note commitment is held byte for byte against nonos-stark.
+      # note commitment is held byte for byte against nonos-stark, which comes
+      # from the STARKs repository at the revision the manifests pin.
       - name: test
-        run: cargo test --workspace --release -- --skip step_assembly
-
-      # A step assembly builds a multi-gigabyte trace, and cargo runs tests across
-      # every core, so two of these land on the runner at once and it is killed.
-      # One at a time.
-      - name: the step assembly
-        run: cargo test --workspace --release step_assembly -- --test-threads=1
+        run: cargo test --workspace --release

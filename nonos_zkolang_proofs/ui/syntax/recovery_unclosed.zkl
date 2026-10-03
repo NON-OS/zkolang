@@ -1,0 +1,15 @@
+/* A block left open is reported once, where the next item starts, and what follows parses. */
+fn f(a: u32) -> u32 { /*~ E0101 */
+    if a > 1 {
+        a
+
+}
+
+fn g() -> u32 { let x = ; 2 } /*~ E0100 */
+
+impl P { /*~ E0101 */
+    fn a(self) -> u32 { 1 }
+
+struct Q { x: u32 }
+fn h() { assert true, "abc; } /*~ E0003 */
+fn k() { let y = ; } /*~ E0100 */

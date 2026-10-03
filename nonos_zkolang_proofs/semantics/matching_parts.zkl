@@ -1,0 +1,63 @@
+/* `match` on tuples, arrays and structs (section 9.1): each part matched by its pattern. */
+
+struct P {
+    x: u8,
+    y: u8,
+}
+
+fn both(a: bool, b: bool) -> u8 {
+    match (a, b) {
+        (true, true) => 3,
+        (true, false) => 2,
+        (false, true) => 1,
+        (false, false) => 0,
+    }
+}
+
+fn first_nonzero(xs: [u8; 3]) -> u8 {
+    match xs {
+        [0, 0, 0] => 0,
+        [0, 0, c] => c,
+        [0, b, _] => b,
+        [a, _, _] => a,
+    }
+}
+
+fn quadrant(p: P) -> u8 {
+    match p {
+        P { x: 0, y: 0 } => 0,
+        P { x: 0, .. } => 1,
+        P { y: 0, .. } => 2,
+        P { x, y } if x == y => 3,
+        _ => 4,
+    }
+}
+
+#[test]
+fn tuples_arrays_and_structs_are_matched_by_parts() {
+    assert both(true, false) == 2;
+    assert both(false, true) == 1;
+    assert first_nonzero([0, 0, 0]) == 0;
+    assert first_nonzero([0, 0, 7]) == 7;
+    assert first_nonzero([0, 5, 7]) == 5;
+    assert first_nonzero([9, 5, 7]) == 9;
+    assert quadrant(P { x: 0, y: 0 }) == 0;
+    assert quadrant(P { x: 0, y: 3 }) == 1;
+    assert quadrant(P { x: 3, y: 0 }) == 2;
+    assert quadrant(P { x: 3, y: 3 }) == 3;
+    assert quadrant(P { x: 3, y: 4 }) == 4;
+}
+
+#[test]
+fn alternatives_bind_the_same_names() {
+    let s = match (3u8, 9u8) {
+        (0, x) | (x, 0) => x,
+        (a, b) => a + b,
+    };
+    assert s == 12;
+    let u = match (0u8, 4u8) {
+        (0, x) | (x, 0) => x,
+        (a, b) => a + b,
+    };
+    assert u == 4;
+}

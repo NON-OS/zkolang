@@ -20,14 +20,14 @@ impl Compiler {
         if let Some(old_array) = self.take_array(name) {
             for r in old_array {
                 if r != v.reg && !self.reg_in_use(r) {
-                    self.free.push(r);
+                    self.free_reg(r);
                 }
             }
         }
         self.rebind(name, v.reg);
         if let Some(old_reg) = old {
             if old_reg != v.reg && !self.reg_in_use(old_reg) {
-                self.free.push(old_reg);
+                self.free_reg(old_reg);
             }
         }
         Ok(())

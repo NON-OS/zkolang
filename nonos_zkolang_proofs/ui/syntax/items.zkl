@@ -1,0 +1,32 @@
+/* Every kind of item the grammar has, each in a valid form. */
+#![edition = "2026"]
+
+use crate::hash::{mimc, sponge as sp};
+use super::bits::*;
+
+#[deprecated = "use Point3"]
+pub struct Point { pub x: field, pub y: field }
+
+struct Pair(u32, u32);
+struct Unit;
+
+pub enum Shape<T> {
+    Circle { r: T },
+    Square(T),
+    Empty,
+}
+
+type Word = u64;
+const LIMIT: u32 = 1 << 10;
+
+mod inner {
+    pub fn id<T>(x: T) -> T { x }
+}
+
+impl Point {
+    pub fn new(x: field, y: field) -> Self { Point { x, y } }
+    fn norm(self) -> field { self.x * self.x + self.y * self.y }
+    fn scale(&mut self, k: field) { self.x *= k; self.y *= k; }
+}
+
+pub const fn first<const N: usize>(a: [u8; N]) -> u8 { a[0] }

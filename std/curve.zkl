@@ -1,0 +1,74 @@
+/*!
+ * Elliptic curves y² = x³ + a·x + b over `field` (section 18.2), in affine coordinates,
+ * `None` the point at infinity, by the formulas of the edition 2025 library's `curve.zkl`.
+ */
+
+use crate::option::Option;
+
+/** The curve y² = x³ + a·x + b. */
+pub struct Curve {
+    pub a: field,
+    pub b: field,
+}
+
+/** A point of a curve other than the point at infinity. */
+pub struct Point {
+    pub x: field,
+    pub y: field,
+}
+
+impl Curve {
+    /** Whether `p` lies on the curve. */
+    pub fn contains(self, p: Point) -> bool {
+        p.y * p.y == p.x * p.x * p.x + self.a * p.x + self.b
+    }
+
+    /** The sum of the points `p` and `q` of the curve. */
+    pub fn add(self, p: Option<Point>, q: Option<Point>) -> Option<Point> {
+        match (p, q) {
+            (Option::None, _) => q,
+            (_, Option::None) => p,
+            (Option::Some(p), Option::Some(q)) => if p.x != q.x {
+                Option::Some(third(p, q.x, (q.y - p.y) / (q.x - p.x)))
+            } else if p.y == q.y {
+                self.double(p)
+            } else {
+                Option::None
+            },
+        }
+    }
+
+    /** Twice the point `p` of the curve. */
+    pub fn double(self, p: Point) -> Option<Point> {
+        if p.y == 0 {
+            Option::None
+        } else {
+            let slope = (3 * p.x * p.x + self.a) / (2 * p.y);
+            Option::Some(third(p, p.x, slope))
+        }
+    }
+
+    /** `k` times the point `p`, `k` given by its bits, least significant first. */
+    pub fn mul<const N: usize>(self, p: Option<Point>, k: [bool; N]) -> Option<Point> {
+        let mut acc: Option<Point> = Option::None;
+        for i in 0..N {
+            let twice = self.add(acc, acc);
+            acc = if k[N - 1 - i] { self.add(twice, p) } else { twice };
+        }
+        acc
+    }
+}
+
+/** The negation of the point `p`. */
+pub fn neg(p: Option<Point>) -> Option<Point> {
+    match p {
+        Option::Some(p) => Option::Some(Point { x: p.x, y: -p.y }),
+        Option::None => Option::None,
+    }
+}
+
+/** The third point on the line of slope `slope` through `p` and a point at `x`, reflected. */
+fn third(p: Point, x: field, slope: field) -> Point {
+    let x3 = slope * slope - p.x - x;
+    Point { x: x3, y: slope * (p.x - x3) - p.y }
+}

@@ -9,6 +9,7 @@
 
 mod advice;
 mod error;
+mod field_inputs;
 mod log_t;
 mod params;
 mod pipeline;
@@ -19,7 +20,7 @@ mod report;
 mod source;
 
 pub use error::RunError;
-pub use prove::prove_program;
+pub use prove::{prove_program, prove_program_hidden};
 pub use report::Report;
 pub use source::{
     evaluate, prove_source, prove_source_with_inputs, prove_source_with_witness,

@@ -1,0 +1,16 @@
+/* Forms reported and skipped whole leave the statements and items after them to parse. */
+use a::fn; /*~ E0100 */
+use b::struct; /*~ E0100 */
+
+fn f(o: u8) -> u8 {
+    let mut s = 0;
+    while let Some(x) = o limit 3 { /*~ E0100 */
+        s += x;
+    }
+    s = s +; /*~ E0100 */
+    if let Some(y) = o { 1 } else { 2 }; /*~ E0100 */
+    let t = 1 *; /*~ E0100 */
+    #[allow(unused)] /*~ E0100 */
+}
+
+fn g() { let z = ; } /*~ E0100 */

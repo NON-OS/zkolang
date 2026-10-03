@@ -1,0 +1,18 @@
+/* Common mistakes, each reported once, with the code after each still parsed. */
+fn f(a: u32) -> u32 {
+    while a > 0 { a -= 1; } /*~ E0100 */
+    let b = a as; /*~ E0100 */
+    let c = 1 +* 2; /*~ E0100 */
+    let d = if a { 1 } else; /*~ E0100 */
+    let (e f) = (a, a); /*~ E0100 */
+    let g = [1, 2; /*~ E0100 */
+    let h = a /*~ E0100 */
+    let i = 3;
+    let r = 1 + return; /*~ E0105 */
+    a
+}
+
+pub pub fn twice() {} /*~ E0100 */
+use ::; /*~ E0100 */
+fn no_body() -> u32 /*~ E0100 */
+fn after() -> u32 { 1 }

@@ -1,0 +1,11 @@
+[package]
+name = "geom"
+version = "1.2.3"
+edition = "2026"
+entry = "src/lib.zkl"
+
+[dependencies]
+util = { path = "../util" }
+
+[cost]
+unroll_warn = 2048

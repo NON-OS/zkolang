@@ -1,0 +1,15 @@
+/* Keywords and reserved words: a reserved word is reported once, and what it begins is skipped. */
+fn f(a: u32) -> u32 {
+    let include = 1; /*~ E0007 */
+    let limit = 2; /*~ E0100 */
+    let mut n = 0;
+    while n < a limit 8 { n += 1; }
+    loop { a } /*~ E0007 */
+    include "old.zkl"; /*~ E0104 */
+    n
+}
+
+trait Hash { } /*~ E0007 */
+static N: u32 = 3; /*~ E0007 */
+include "old.zkl" /*~ E0104 */
+fn g() -> u32 { let z = ; z } /*~ E0100 */

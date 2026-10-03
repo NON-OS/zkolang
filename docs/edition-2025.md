@@ -1,0 +1,198 @@
+<!-- NONOS. AGPL-3.0-or-later. -->
+
+# The zKølang language specification, edition 2025
+
+zKølang is a language for verifiable computation. A program is straight-line: it reads
+public inputs and a private witness, computes over a finite field, and writes public
+outputs, and the whole run is proven by a transparent STARK. The language exists so that
+one artifact both runs and proves, so every construct here is chosen to have an honest,
+bounded cost in an execution trace. There is no heap, no general recursion, and no
+unbounded loop, because none of those has a fixed trace.
+
+This document specifies the language as the compiler implements it. It is normative
+where it states a rule and descriptive where it explains one. Edition 2025 is frozen:
+the registered circuits are compiled by it, and their commitments depend on its exact
+output. The next edition is specified in [`SPEC.md`](../SPEC.md).
+
+## 1. The field
+
+All values are elements of the Goldilocks field, the prime field of order
+`p = 2^64 - 2^32 + 1`. Arithmetic is modular. A numeric literal must be below `2^64` and is reduced modulo `p`.
+The field has two-adicity thirty two, which is what lets the prover build its evaluation
+domains, and it fits a machine word, which is what lets the same computation run as
+native code at the same cost budget.
+
+## 2. Lexical structure
+
+- **Comment.** `//` to the end of the line, which a line feed or a carriage return ends.
+  Whitespace separates tokens and is otherwise insignificant. A byte-order mark at the
+  start of a file is ignored.
+- **Identifier.** `[A-Za-z_][A-Za-z0-9_]*`, not equal to a keyword.
+- **Number.** `[0-9]+`, below `2^64`, read as a field element modulo `p`.
+- **Keywords.** `let const fn input secret output assert for in if else match inv sel return`.
+  Four have a second spelling with the same meaning, the language's own register:
+  `public` for `input`, `witness` for `secret`, `reveal` for `output`, `prove` for
+  `assert`. A program may use either spelling.
+- **Operators and punctuation.** `+ - * / = == != ! && || .. ( ) [ ] { } , ;`.
+
+## 3. Grammar
+
+In EBNF. A program is a sequence of items.
+
+```
+program     = { item } ;
+item        = const_def | fn_def | statement ;
+
+const_def   = "const" ident "=" ( number | array ) ";" ;
+fn_def      = "fn" ident "(" [ ident { "," ident } ] ")" ( "=" expr ";" | block ) ;
+
+statement   = let_stmt | input_stmt | secret_stmt
+            | output_stmt | assert_stmt | for_stmt ;
+let_stmt    = "let" names "=" expr ";" ;
+names       = ident | "(" ident { "," ident } ")" ;
+input_stmt  = "input" ident ";" ;
+secret_stmt = "secret" ident ";" ;
+output_stmt = "output" expr ";" ;
+assert_stmt = "assert" expr ";" ;
+for_stmt    = "for" ident "in" number ".." number "{" { statement } "}" ;
+
+expr        = or ;
+or          = and { "||" and } ;
+and         = equality { "&&" equality } ;
+equality    = sum [ ( "==" | "!=" | "<" | "<=" | ">" | ">=" ) sum ] ;
+sum         = product { ( "+" | "-" ) product } ;
+product     = unary { ( "*" | "/" ) unary } ;
+unary       = ( "-" | "!" ) unary | primary ;
+primary     = atom { "[" expr "]" } ;
+atom        = number | array | tuple | block | inv | sel | if_expr | match_expr
+            | call | ident | "(" expr ")" ;
+tuple       = "(" expr "," expr { "," expr } ")" ;
+block       = "{" { "let" names "=" expr ";" } ( "return" expr ";" | expr [ ";" ] ) "}" ;
+match_expr  = "match" expr "{" { number "=>" expr "," } "_" "=>" expr [ "," ] "}" ;
+
+array       = "[" [ expr { "," expr } ] "]" ;
+inv         = "inv" "(" expr ")" ;
+sel         = "sel" "(" expr "," expr "," expr ")" ;
+if_expr     = "if" expr "{" expr "}" "else" "{" expr "}" ;
+call        = ident "(" [ expr { "," expr } ] ")" ;
+```
+
+An include is not part of this grammar. A line holding only `include "path";`, where
+whitespace must follow `include`, the semicolon may be left out and a `//` comment may
+follow, is replaced by the file it names before the program is lexed. The command line
+splices each file in once, however its path is spelled.
+
+Equality does not chain: a comparison yields a bit, and comparing that bit to a third
+value is almost never meant, so it is a syntax error rather than a silent surprise.
+
+## 4. Declarations
+
+- **`input`** and **`secret`** declare a scalar read from the run's inputs in
+  declaration order. A public input enters the proven statement; a secret is a private
+  witness that feeds the run without being revealed.
+- **`let`** binds an expression to a name, or destructures a tuple into several names,
+  where `_` binds nothing. A later `let` of the same name shadows the earlier binding;
+  there is no mutation, only rebinding, which keeps the trace linear.
+- **`const`** binds either a scalar, `const N = 5;`, read by name, or a table,
+  `const T = [1, 2, 3];`, read by a constant index. The bracket after `=` selects which.
+- **`fn`** defines a function as a single expression or a block. A call is inlined at
+  compile time with its arguments substituted, so functions cost nothing beyond the
+  arithmetic they name. A function that calls itself, directly or through others, is an
+  error whether or not anything calls it, as is a parameter named twice.
+- **`include`** textually resolves another source file once, so a program can draw on a
+  standard library. Includes are resolved to a bounded depth.
+
+Names resolve innermost first: a loop variable, then a parameter or a local of a block,
+then a constant. Some names are refused because their meaning would be unclear: a
+second function or constant of one name, unless it repeats the first word for word; a
+top-level `let`, `input` or `secret` named like a constant; and a binding in a loop body
+named like the loop's variable. A scalar hides an array or table of its name, so
+indexing it is an error.
+
+## 5. Statements and control
+
+- **`output`** publishes an expression as a public output.
+- **`assert`** constrains an expression to be zero. `assert a == b;` and `assert a != b;`
+  are the equality forms. An assertion that does not hold makes the trace unprovable, so
+  a program with a false assertion has no proof.
+- **`for i in a .. b`** is a counted loop over a constant range, unrolled at compile
+  time. The bounds are integer literals, and the loop variable `i` is a compile-time
+  constant inside the body, usable in arithmetic and as an index. There is
+  no runtime loop, so the trace length is fixed before the program runs.
+
+## 6. Expressions
+
+Operators, tightest binding last:
+
+| Level | Operators | Meaning |
+|---|---|---|
+| or | `\|\|` | `a + b - a*b`, exact on bits |
+| and | `&&` | `a * b`, exact on bits |
+| comparison | `== != < <= > >=` | a bit, one when the relation holds |
+| sum | `+ -` | field add and subtract |
+| product | `* /` | field multiply, and multiply by an inverse |
+| unary | `- !` | negate, and `1 - x` (logical not) |
+
+`inv(x)` is the field inverse; inverting zero has no witness, so it makes the trace
+unprovable, and `/` is multiplication by an inverse with the same rule. `sel(c, a, b)`
+is a branchless select returning `a` when `c` is one and `b` when `c` is zero, with `c`
+constrained boolean. `if c { a } else { b }` is the same select in a familiar shape, and
+both arms are evaluated. `match e { v => a, ..., _ => d }` compares the scrutinee to each
+value and falls through to the default `_`, which is required, comes last and appears
+once. It is desugared to a nested select, so it too evaluates every arm. An array
+literal is a vector; `name[i]` reads a constant table or an array at an index that
+folds from literals and loop variables, which must be in bounds. A block binds locals
+visible only inside it and yields its last expression, or the one after `return`.
+
+## 7. Compilation and the machine
+
+A program compiles to a list of instructions over a register machine with thirty two
+registers. Register allocation reuses registers whose values are dead, so a long
+straight-line program or an unrolled loop is fine as long as the number of values live
+at once fits the file. Exceeding it is the `TooManyRegisters` error, an honest ceiling:
+it forces a circuit to be budgeted, and a bounded circuit is the only kind with a fixed
+proof.
+
+Two more bounds keep compilation itself finite. A single loop unrolls to at most a fixed
+number of iterations, and the total instruction count is capped, so a nest of loops each
+within the per-loop bound cannot multiply out into an unbounded program: either limit is
+a compile error rather than an expansion that exhausts memory. A program that compiles
+past the largest trace the prover will size to, `2^16` steps, is rejected rather than
+silently truncated, so a proof always covers the whole program.
+
+## 8. The proof
+
+Running a program yields an execution trace. The step AIR binds every operand of every
+instruction to the live register file, so register reuse is invisible to soundness and a
+forged row cannot pass. The public statement, the program commitment, the trace length,
+and the public inputs and outputs are bound into the proof. A per-program verifier key,
+`keccak256` over the wiring version, the commitment, the log trace length, the trace
+width, the rate, and the periodic root, ties a proof to an exact program, which is what
+lets a market register and challenge a program by its key alone. The underlying STARK is
+transparent, over the quadratic extension, with no trusted setup.
+
+The trace is committed with a Poseidon Merkle tree and opened at thirty two random query
+positions, with sixteen bits of grinding on the Fiat-Shamir challenge and three extra
+bits of FRI blowup, the parameter set the framework uses for its money-grade proofs. The
+transcript hash is Poseidon rather than a byte hash, which keeps the verifier itself
+arithmetizable, so a proof can be checked inside another proof. FRI folds the committed
+codeword down to a constant layer, and the verifier replays the same transcript to check
+every opening. Because the whole construction is hashes and field arithmetic, with no
+pairing and no discrete log, it is transparent and post-quantum: there is no trusted
+setup, and nothing in it is known to fall to a quantum computer. The proof and the
+verifier key are serialized behind a version byte, so a future change to either encoding
+is a distinct format rather than a silent collision.
+
+## 9. Ordered comparison
+
+Equality is a field primitive. Ordered comparison, `a < b` and its relatives, is not:
+deciding an order needs the operands' bits, which field arithmetic cannot recover. The
+operators `< <= > >=` are first class and supply the witness themselves. `a < b` range
+proves both operands to sixteen bits, forms `a + 2^16 - b`, decomposes it into seventeen
+bits, and returns the complement of the top bit, which is the sign of the difference.
+`a > b` is `b < a`, and the inclusive forms are the negations. The bit decompositions
+are advice: the compiler records, per comparison, which value is decomposed, and the
+driver evaluates the program, reads those values, fills the bits, and then proves with
+every constraint enforced. Soundness rests on the range proofs and the composition
+constraints, not on how the bits were produced, so a false order or an operand outside
+the sixteen-bit range has no proof. Operands must lie in `[0, 2^16)`.

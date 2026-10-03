@@ -1,0 +1,11 @@
+/* After an error, parsing resumes at the next statement or item, each error reported once. */
+fn f(x: u8, c: bool) {
+    match x { 1 => 2 3 => 4 } /*~ E0100 */
+    if c { let y = 1 +; } /*~ E0100 */
+    for i in 0..3 { let z = *; } /*~ E0100 */
+    let a = [x, 2; 3]; /*~ E0100 */
+    let b = g(x; 1); /*~ E0100 */
+}
+
+struct 1 S { a: u8 }; /*~ E0100 */
+fn g() {}

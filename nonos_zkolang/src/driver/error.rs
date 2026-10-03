@@ -24,8 +24,24 @@ pub enum RunError {
     Layout(BuildError),
     /// The program needs more steps than the driver will size a trace to.
     ProgramTooLong { steps: usize },
+    /**
+     * The caller supplied a different number of public inputs or secrets than the program
+     * declares. Too few public inputs would let a declared `input` read a value outside the
+     * bound statement; any mismatch misplaces the comparison advice.
+     */
+    InputCount {
+        public_expected: usize,
+        public_got: usize,
+        secret_expected: usize,
+        secret_got: usize,
+    },
     /// A hidden proof was asked for on a trace too small to carry a blinding of the
     /// query count, so the openings could not be made jointly uniform. The honest
     /// answer is to refuse rather than return a proof that hides less than it claims.
     TraceTooSmallToHide { log_trace_len: u32 },
+    /**
+     * An input at or above the field modulus, counted from the first public input on
+     * through the secrets. Reducing it would prove a statement about another number.
+     */
+    InputNotInField { position: usize },
 }

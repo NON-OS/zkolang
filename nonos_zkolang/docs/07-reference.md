@@ -53,6 +53,11 @@ Keywords: `let`, `assert`, `input`, `secret`, `output`, `inv`, `sel`, `for`, `in
 From `nonos_zkolang` (`src/lib.rs`):
 
 - `compile_source(&str) -> Result<Vec<Op>, CompileError>`
+- `compile_source_full(&str) -> Result<Compiled, CompileError>`: the program with the
+  advice plan its ordered comparisons need
+- `to_c(&Compiled) -> String`, `to_asm(&Compiled) -> String`,
+  `to_python(&Compiled) -> String`: native targets that take the public inputs and
+  secrets and compute each comparison's bits themselves
 - `prove_source(&str) -> Result<Report, RunError>`
 - `prove_source_with_inputs(&str, &[u64]) -> Result<Report, RunError>`
 - `prove_source_with_witness(&str, &[u64] public, &[u64] secret) -> Result<Report, RunError>`
@@ -75,15 +80,20 @@ values a NOX proving market registers and challenges against. See
 
 Each failure is a typed value, never a panic.
 
-- `CompileError` (`src/lang/mod.rs`): `UnexpectedChar { at }`,
+- `CompileError` (`src/lang/error.rs`): `UnexpectedChar { at }`,
   `NumberTooLarge { at }`, `UnexpectedEof`, `UnexpectedToken`, `UnknownVariable`,
-  `TooManyRegisters`, `LoopTooLarge`, `UnknownFunction`, `ArityMismatch`,
-  `RecursionTooDeep`, `NotIndexable`, `UnknownConst`, `NonConstantIndex`,
-  `IndexOutOfBounds`, `ArrayNotScalar`.
+  `TooManyRegisters`, `LoopTooLarge`, `ProgramTooLong`, `UnknownFunction`,
+  `ArityMismatch`, `RecursionTooDeep`, `NotIndexable`, `UnknownConst`,
+  `NonConstantIndex`, `IndexOutOfBounds`, `ArrayNotScalar`, `TupleNotScalar`,
+  `TupleArity`, `IncludeNotFound`, `IncludeTooDeep`, `IoLimit`, `NestingTooDeep`,
+  `ExpressionTooLarge`, and `Name` carrying a `NameError`.
+- `NameError` (`src/lang/name_error.rs`): `Duplicate`, `ShadowsConstant`,
+  `ShadowsLoopVariable`, `Recursive`.
 - `ProveError` (`src/vm/`): `BadRegister`, `BadInput`, `NoHalt`,
   `Unprovable { step }`.
 - `BuildError` (`src/air/`): `NoHalt`, `TooLong`, `MissingPublicOutput`.
-- `RunError` (`src/driver/`): `Compile`, `Execute`, `Layout`, `ProgramTooLong`.
+- `RunError` (`src/driver/`): `Compile`, `Execute`, `Layout`, `ProgramTooLong`,
+  `InputCount`, `TraceTooSmallToHide`, `InputNotInField`.
 - `KeyError` (`src/vkey.rs`): `NoHalt`, `ProgramTooLong`.
 
 ## Limits

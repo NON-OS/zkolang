@@ -22,10 +22,9 @@ impl Compiler {
         let regs = self
             .lookup_array(name)
             .ok_or(CompileError::NotIndexable { at })?;
-        let i = self.const_eval(index)?;
-        if i < 0 || i as usize >= regs.len() {
-            return Err(CompileError::IndexOutOfBounds { at });
-        }
-        Ok(regs[i as usize])
+        let i = self
+            .const_position(index, regs.len())?
+            .ok_or(CompileError::IndexOutOfBounds { at })?;
+        Ok(regs[i])
     }
 }

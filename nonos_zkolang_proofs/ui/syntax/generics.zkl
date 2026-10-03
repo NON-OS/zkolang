@@ -1,0 +1,15 @@
+/* Generic items, constant parameters and turbofish arguments. */
+pub struct Vec2<T, const N: usize> { items: [T; N] }
+
+impl<T, const N: usize> Vec2<T, N> {
+    pub fn get(self, i: usize) -> T { self.items[i] }
+    pub fn len(self) -> usize { N }
+}
+
+fn sum<const N: usize>(v: Vec2<u32, N>) -> u32 {
+    let mut s = 0;
+    for i in 0..N { s += v.get(i); }
+    s
+}
+
+fn use_it() -> u32 { sum::<{ 2 + 1 }>(Vec2 { items: [1, 2, 3] }) }

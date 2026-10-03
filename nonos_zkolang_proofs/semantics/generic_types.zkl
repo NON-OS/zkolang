@@ -1,0 +1,74 @@
+/*
+ * Generic structs, enums and aliases (section 5.5): each instance its own type, its
+ * arguments written or inferred from what builds it.
+ */
+
+struct Pair<T> {
+    a: T,
+    b: T,
+}
+
+struct Wrap<T>(T);
+
+enum Maybe<T> {
+    Just(T),
+    Nothing,
+}
+
+enum Either<L, R> {
+    Left(L),
+    Right(R),
+}
+
+type Twice<T> = (T, T);
+
+fn sum(p: Pair<u32>) -> u32 {
+    p.a + p.b
+}
+
+fn or_else(m: Maybe<u64>, d: u64) -> u64 {
+    match m {
+        Maybe::Just(x) => x,
+        Maybe::Nothing => d,
+    }
+}
+
+fn side(e: Either<u8, bool>) -> u8 {
+    match e {
+        Either::Left(n) => n,
+        Either::Right(true) => 1,
+        Either::Right(false) => 0,
+    }
+}
+
+#[test]
+fn arguments_are_inferred_from_fields() {
+    let p = Pair { a: 3, b: 4 };
+    assert sum(p) == 7;
+    let w = Wrap(true);
+    assert w.0;
+    let q: Pair<i8> = Pair { a: -1, b: 1 };
+    assert q.a + q.b == 0;
+}
+
+#[test]
+fn enum_arguments_are_inferred_or_written() {
+    assert or_else(Maybe::Just(18446744073709551615), 0) == 18446744073709551615;
+    assert or_else(Maybe::Nothing, 5) == 5;
+    let n = Maybe::Nothing::<u64>;
+    assert or_else(n, 9) == 9;
+    assert side(Either::Left(7)) == 7;
+    assert side(Either::Right(true)) == 1;
+}
+
+#[test]
+fn instances_nest_and_compare() {
+    let a: Maybe<Pair<u8>> = Maybe::Just(Pair { a: 1, b: 2 });
+    let b = Maybe::Just(Pair { a: 1u8, b: 2 });
+    assert a == b;
+    let c: Maybe<Pair<u8>> = Maybe::Nothing;
+    assert a != c;
+    let t: Twice<Wrap<u16>> = (Wrap(1), Wrap(2));
+    let (x, y) = t;
+    assert x.0 + y.0 == 3;
+}

@@ -17,7 +17,8 @@ publish = false
 path = "src/lib.rs"
 
 [dependencies]
-nonos-stark = { path = "../nonos-stark" }
+# The STARKs repository, pinned by commit.
+nonos-stark = { git = "https://github.com/NON-OS/STARKs", rev = "a47d23ae969e23b5f841e30b49a1d483a80a6b02" }
 # nonos-stark commits with Poseidon and measures with blake3. Force blake3's
 # pure-Rust path so the crate cross-compiles to the capsule target without a C
 # toolchain, matching how the kernel pins it. Not called directly here; present

@@ -1,0 +1,6 @@
+/*! Shapes, in a directory module. */
+pub mod shapes;
+
+pub fn perimeter(s: shapes::Square) -> u32 {
+    s.side * 4
+}

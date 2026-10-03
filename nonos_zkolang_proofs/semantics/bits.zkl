@@ -1,0 +1,55 @@
+/* Shifts, bitwise operators (section 7.5) and bit decomposition (section 7.9). */
+
+#[test]
+fn shifts() {
+    assert 1u8 << 7 == 128;
+    let x: u8 = 0b1000_0001;
+    assert x << 1 == 2;
+    assert x >> 7 == 1;
+    let s: i8 = -128;
+    assert s >> 7 == -1;
+    assert -16i8 >> 2 == -4;
+}
+
+#[test]
+#[should_fail]
+fn shift_by_the_width_fails() {
+    let k: u32 = 8;
+    let _v = 1u8 << k;
+}
+
+#[test]
+fn bitwise() {
+    assert 0xF0u8 & 0x3C == 0x30;
+    assert 0xF0u8 | 0x0F == 0xFF;
+    assert 0xFFu8 ^ 0x0F == 0xF0;
+    assert !0u8 == 255;
+    assert !0i8 == -1;
+    let t = true;
+    assert (t & false) == false;
+    assert t ^ true == false;
+    assert !t == false;
+}
+
+#[test]
+fn bits_round_trip() {
+    let x: u8 = 0b1010_0110;
+    let b = x.to_le_bits();
+    assert !b[0] && b[1] && b[2] && b[7];
+    assert u8::from_le_bits(b) == x;
+    let s: i8 = -2;
+    let sb = s.to_le_bits();
+    assert !sb[0] && sb[7];
+    assert i8::from_le_bits(sb) == -2;
+    let f: field = 5;
+    let fb = f.to_le_bits();
+    assert fb[0] && !fb[1] && fb[2];
+    assert field::from_le_bits(fb) == f;
+}
+
+#[test]
+#[should_fail]
+fn non_canonical_field_bits_fail() {
+    let all = [true; 64];
+    let _f = field::from_le_bits(all);
+}

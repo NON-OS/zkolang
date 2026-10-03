@@ -28,9 +28,9 @@ pub enum Op {
     Bool { a: u8 },
     /// Constrain r_a to be zero.
     Assert { a: u8 },
-    /// r_d = input[idx] (public or secret).
+    /** `r_d = input[idx]` (public or secret). */
     Inp { d: u8, idx: u16 },
-    /// public_output[idx] = r_a.
+    /** `public_output[idx] = r_a`. */
     Out { a: u8, idx: u16 },
     /// End of program.
     Halt,

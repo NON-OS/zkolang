@@ -3,11 +3,15 @@
  AGPL-3.0-or-later
 */
 
-//! Fold an expression. Sub-expressions over constants collapse to one constant, computed
-//! in the field so the fold agrees with the run, and the algebraic identities that add
-//! nothing to a trace are removed: adding or subtracting zero, multiplying by one,
-//! multiplying by zero, and selecting on a constant condition. Ordered comparison is left
-//! alone, because its bit decomposition is not a constant even when its operands are.
+/*!
+ * Fold an expression. Sub-expressions over constants collapse to one constant, computed
+ * in the field so the fold agrees with the run, and the algebraic identities that add
+ * nothing to a trace are removed: adding or subtracting zero, multiplying by one,
+ * multiplying by zero, and selecting on a constant condition. An identity that would
+ * discard an operand applies only when that operand carries no constraint. Ordered
+ * comparison is left alone, because its bit decomposition is not a constant even when its
+ * operands are.
+ */
 
 use alloc::boxed::Box;
 
@@ -26,10 +30,31 @@ fn as_num(e: &Expr) -> Option<Fp> {
     }
 }
 
+/*
+ * Whether evaluating an expression carries no constraint, so dropping it changes nothing a
+ * program proves. Plain arithmetic, equality, names and literals qualify; an inverse, a
+ * division, an ordered comparison, a select (its condition must be a bit), an index, a block
+ * and a call (either may hold any of those) do not.
+ */
+fn constraint_free(e: &Expr) -> bool {
+    match e {
+        Expr::Num(_) | Expr::Var(_) => true,
+        Expr::Add(a, b) | Expr::Sub(a, b) | Expr::Mul(a, b) | Expr::Eq(a, b) | Expr::Ne(a, b) => {
+            constraint_free(a) && constraint_free(b)
+        }
+        Expr::Neg(x) => constraint_free(x),
+        _ => false,
+    }
+}
+
+/*
+ * A select on a constant condition returns the arm it takes, but only when the other arm
+ * carries no constraint: both arms are evaluated, so the arm not taken still constrains.
+ */
 fn select(c: Expr, a: Expr, b: Expr, ctor: fn(Box<Expr>, Box<Expr>, Box<Expr>) -> Expr) -> Expr {
     match as_num(&c) {
-        Some(v) if v == Fp::ZERO => b,
-        Some(v) if v == Fp::ONE => a,
+        Some(v) if v == Fp::ZERO && constraint_free(&a) => b,
+        Some(v) if v == Fp::ONE && constraint_free(&b) => a,
         _ => ctor(Box::new(c), Box::new(a), Box::new(b)),
     }
 }
@@ -59,8 +84,8 @@ pub(super) fn fold(e: &Expr) -> Expr {
             let (a, b) = (fold(a), fold(b));
             match (as_num(&a), as_num(&b)) {
                 (Some(x), Some(y)) => num(x * y),
-                (_, Some(y)) if y == Fp::ZERO => num(Fp::ZERO),
-                (Some(x), _) if x == Fp::ZERO => num(Fp::ZERO),
+                (_, Some(y)) if y == Fp::ZERO && constraint_free(&a) => num(Fp::ZERO),
+                (Some(x), _) if x == Fp::ZERO && constraint_free(&b) => num(Fp::ZERO),
                 (_, Some(y)) if y == Fp::ONE => a,
                 (Some(x), _) if x == Fp::ONE => b,
                 _ => Expr::Mul(Box::new(a), Box::new(b)),

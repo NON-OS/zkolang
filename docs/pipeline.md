@@ -7,31 +7,39 @@ are legible in one place rather than scattered across YAML.
 ## Correctness
 
 - **rust** (`rust.yml`): `cargo fmt --check` and `cargo clippy -D warnings` on the
-  language crates, then `cargo test --workspace --release`. The step assembly, a
-  multi-gigabyte trace, runs single-threaded so it does not collide with the rest.
+  language crates, their API reference built with rustdoc warnings denied, then
+  `cargo test --workspace --release`.
+- **proofs** (`proofs.yml`): nightly, the same tests with the ignored ones included.
+- **zkl** (`zkl.yml`): every circuit, example and standard-library program compiles,
+  and the shield circuits prove and refuse as their tests require.
 - **lean** (`lean.yml`): `lake build` compiles every proof; a grep gate rejects
   `sorry` and `admit`; and the **axiom audit** runs `Zkolang/Audit.lean`, failing
   if any load-bearing theorem depends on `ofReduceBool` (which `native_decide`
   would introduce) or `sorryAx`. The trust base is checked, not claimed.
+- **verify** (`verify.yml`): prints the axioms every public theorem rests on and
+  fails if any rests on `sorryAx`.
 
-## Money-safety
+## Fuzzing
 
-The forgery suite lives inside the workspace tests: every binding in the shield
-circuit carries a forgery that violates exactly it, and each must reject. The
-recursion family does the same for the aggregation proof. `inventory` fails if a
-binding is added without a forgery, so coverage cannot quietly regress.
+- **fuzz** (`fuzz.yml`, targets under `fuzz/`): four cargo-fuzz targets, each seeded
+  with the repository's own programs by `fuzz/seed.py`. `front_end`: the edition 2026
+  lexer and parser take any text, and every diagnostic points inside it. `build_run`:
+  any text is built, and a program that builds runs with its compiled machine program
+  and its reference run in agreement. `fmt`: the formatter keeps every token and
+  comment, and a formatted file formats to itself. `edition_2025`: the 2025 compiler
+  and evaluator take any text without a panic. Two minutes a target on a change,
+  thirty a night; a failing input is kept as an artifact.
 
-## Security level
+## The prover
 
-`shield_params::tests` asserts the deployment point clears a 128-bit soundness
-floor and that the development point stays strictly weaker. Changing the money rate
-below the line turns the suite red here, not on chain.
-
-## Determinism
-
-- **verify** (`verify.yml`): the prover's serialized output is held byte-for-byte
-  against a frozen digest. A prover change that moves the bytes is caught, and a
-  digest that is meant to move is re-baked deliberately.
+nonos-stark, the STARK the language proves with, comes from the STARKs repository at
+the commit the manifests pin. That repository builds and tests it in its own CI, along
+with the shield circuits built on it and the soundness points of
+`stark_proofs/src/shield_params.rs`. Here the pin is held from the language side:
+`note_commit_deployed_tests` requires the note commitment circuit to compute the
+digest that repository pins as deployed, `shield_key_kat` requires the key hierarchy
+vector to be the one it emits, and `vkey_tests` pins a verifier key under the pinned
+build.
 
 ## Supply chain and secrets
 
@@ -45,6 +53,17 @@ below the line turns the suite red here, not on chain.
 - **hygiene** (`hygiene.yml`): the tree carries no authorship trace, host secret,
   or committed coordination note, and new commit messages read as human. This
   keeps a public repo public-safe by construction rather than by review memory.
+  `scripts/check_rules.py` then holds what the change adds to the repository's
+  rules: a code file of at most 75 lines, comments in Rust as blocks, no `allow`,
+  only declarations in a `mod.rs`, no em-dash or banned word, and commit subjects
+  of at most 72 characters. It reports what the change introduces, nothing older.
+
+## The workflows themselves
+
+Every workflow reads the repository and writes nothing back (`permissions:
+contents: read`), every job has a time limit, and every action is pinned to a
+commit, with its release tag beside it. Dependabot (`.github/dependabot.yml`)
+proposes the new commit when an action releases.
 
 ## Reproducibility
 
@@ -52,8 +71,3 @@ below the line turns the suite red here, not on chain.
 `flake.lock`. `nix develop` gives the exact environment the gates run against, and
 `nix flake check` builds the formatting check from a fixed world. A verifier whose
 byte digest must reproduce is built from a pinned world or it is not reproducible.
-
-## Perf
-
-- **measure** (`measure.yml`): prove and verify timings and proof sizes, tracked
-  so a regression in cost is visible.

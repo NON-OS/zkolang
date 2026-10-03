@@ -8,7 +8,7 @@
 //! arguments substituted. There is no call stack and no recursion, so a program
 //! stays straight-line and proves the same way.
 
-use nonos_zkolang::{compile_source, prove_source_with_inputs, CompileError};
+use nonos_zkolang::{compile_source, prove_source_with_inputs, CompileError, NameError};
 
 #[test]
 fn a_function_is_inlined_at_its_call() {
@@ -90,6 +90,6 @@ fn recursion_is_an_error() {
     let src = "fn f(x) = f(x); output f(1);";
     assert!(matches!(
         compile_source(src),
-        Err(CompileError::RecursionTooDeep)
+        Err(CompileError::Name(NameError::Recursive { .. }))
     ));
 }

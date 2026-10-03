@@ -1,0 +1,13 @@
+stray = 1 # /*~ E0902 */
+[package]
+name = "std" # /*~ E0902 */
+version = "1.0" # /*~ E0902 */
+edition = "2027" # /*~ E0902 */
+colour = "blue" # /*~ E0902 */
+name = "again" # /*~ E0902 */
+
+[dependencies]
+bad = "../bad" # /*~ E0902 */
+open = { path = "../x" # /*~ E0902 */
+
+[extras] # /*~ E0902 */

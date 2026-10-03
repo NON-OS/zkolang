@@ -1,0 +1,57 @@
+/* `match` mistakes: a value no arm covers, an arm none reaches, and patterns that do not fit. */
+#![allow(unused)]
+enum Shape {
+    Circle(u32),
+    Rect { w: u32, h: u32 },
+    Empty,
+}
+
+enum Op {
+    Add,
+    Sub,
+}
+
+fn missing_variant(s: Shape) -> u32 {
+    match s { /*~ E0400 */
+        Shape::Circle(r) => r,
+        Shape::Empty => 0,
+    }
+}
+
+fn missing_pair(a: bool, b: bool) -> u8 {
+    match (a, b) { /*~ E0400 */
+        (true, _) => 1,
+        (false, true) => 2,
+    }
+}
+
+fn missing_value(x: u8) -> u8 {
+    match x { /*~ E0400 */
+        0..=100 => 1,
+        102..=255 => 2,
+    }
+}
+
+fn guards_do_not_cover(x: u8) -> u8 {
+    match x { /*~ E0400 */
+        n if n > 3 => 1,
+        n if n <= 3 => 2,
+    }
+}
+
+fn no_arms(o: Op) -> u8 {
+    match o {} /*~ E0400 */
+}
+
+fn unreachable_arms(x: u8, o: Op) -> u8 {
+    let a = match x {
+        0..=200 => 1,
+        5 => 2, /*~ W0004 */
+        _ => 3,
+    };
+    let b = match o {
+        _ => 1,
+        Op::Add => 2, /*~ W0004 */
+    };
+    a + b
+}

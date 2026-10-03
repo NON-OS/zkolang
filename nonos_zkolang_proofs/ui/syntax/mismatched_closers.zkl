@@ -1,0 +1,6 @@
+/* In a file with a `{` missing, a `}` where a `)` is owed stands for it. */
+fn f(a: u32) -> u32 {
+    let x = (a + 1}; /*~ E0100 */
+    let z = a + ; /*~ E0100 */
+    z
+}

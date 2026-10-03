@@ -1,0 +1,48 @@
+# zKølang fuzz targets: the edition 2026 front end, the build and run of a
+# program against its reference run, the formatter, and the edition 2025
+# compiler. A workspace of its own, built by cargo fuzz on a nightly toolchain.
+
+[package]
+name = "nonos_zkolang_fuzz"
+version = "0.0.0"
+edition = "2021"
+license = "AGPL-3.0-or-later"
+publish = false
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+nonos_zkolang = { path = "../nonos_zkolang" }
+
+[workspace]
+members = ["."]
+
+[[bin]]
+name = "front_end"
+path = "fuzz_targets/front_end.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "build_run"
+path = "fuzz_targets/build_run.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fmt"
+path = "fuzz_targets/fmt.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "edition_2025"
+path = "fuzz_targets/edition_2025.rs"
+test = false
+doc = false
+bench = false

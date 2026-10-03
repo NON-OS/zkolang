@@ -1,0 +1,21 @@
+/* A mistake at the start of an item is reported once. */
+impl S {
+    const X: P = P { a: 1 }; /*~ E0100 */
+    #[allow(unused)]
+    const Y: u8 = 1; /*~ E0100 */
+    use a::{b, c}; /*~ E0100 */
+    const Z: u8 = { 1 }; /*~ E0100 */
+    /// A type in an impl block.
+    type T = u8; /*~ E0100 */
+    fn f() {}
+}
+
+pub } /*~ E0100 */
+#[x]] fn g() {} /*~ E0100 */
+/// doc
+#[test]
+) /*~ E0100 */
+fn h() {}
+
+mod m { pub } /*~ E0100 */
+fn last() { let q = ; } /*~ E0100 */

@@ -1,0 +1,54 @@
+/* Enum mistakes: each reported once, where it is made. */
+#![allow(unused)]
+enum Shape {
+    Circle(u32),
+    Rect { w: u32, h: u32 },
+    Empty,
+}
+
+enum Twice {
+    A,
+    A, /*~ E0201 */
+}
+
+enum Ouro { /*~ E0313 */
+    More(Ouro),
+    Done,
+}
+
+impl Shape {
+    fn whole() -> Self {
+        Self /*~ E0205 */
+    }
+
+    fn unit() -> Self {
+        Self::Empty
+    }
+}
+
+fn built(s: Shape) -> u32 {
+    let a = Shape::Square(1); /*~ E0308 */
+    let b = Shape::Circle { r: 1 }; /*~ E0205 */
+    let c = Shape::Rect(1, 2); /*~ E0205 */
+    let d = Shape::Circle; /*~ E0205 */
+    let e = Shape::Rect { w: 1 }; /*~ E0315 */
+    let g = Shape::Rect { w: 1, h: 2, d: 3 }; /*~ E0308 */
+    let h = Shape::Circle(true); /*~ E0300 */
+    let i = Shape; /*~ E0205 */
+    let j = Shape::Empty(); /*~ E0205 */
+    let k = Shape { w: 1 }; /*~ E0205 */
+    let l = Shape::Circle(1, 2); /*~ E0307 */
+    let m = Shape::Nope; /*~ E0308 */
+    let n = Shape::Rect { w: 1, w: 2, h: 3 }; /*~ E0314 */
+    1
+}
+
+fn taken(s: Shape) -> u32 {
+    let Shape::Circle(r) = s; /*~ E0401 */
+    let x: u32 = Shape::Empty; /*~ E0300 */
+    r
+}
+
+fn main(s: public Shape) -> public u32 {
+    s.area() /*~ E0308 */
+}

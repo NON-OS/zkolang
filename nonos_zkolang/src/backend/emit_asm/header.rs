@@ -16,3 +16,10 @@ pub(super) const HEADER: &str = "\
 # define SYM(x) x
 #endif
 ";
+
+/** On ELF, mark the stack not executable, which the linker otherwise assumes. */
+pub(super) const STACK_NOTE: &str = "\
+#ifdef __ELF__
+    .section .note.GNU-stack,\"\",@progbits
+#endif
+";

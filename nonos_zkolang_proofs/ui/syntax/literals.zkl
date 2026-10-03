@@ -1,0 +1,12 @@
+/* Literals in every radix and with suffixes, and nested block comments. */
+const A: u64 = 18_446_744_073_709_551_615;
+const B: field = 0xFFFFFFFF00000000;
+const C: i8 = -128;
+const D: bool = true;
+const E: u8 = 0o17 + 0b1111_0000;
+
+#[doc = "a string \"quoted\" \n with escapes"]
+fn f() {}
+
+/* a block /* nested */ comment */
+fn g() -> () { () }

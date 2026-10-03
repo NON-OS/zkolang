@@ -12,12 +12,12 @@
 
 use std::process::Command;
 
-use nonos_zkolang::{compile_source, prove_source_with_inputs, to_asm, to_c, to_python};
+use nonos_zkolang::{compile_source_full, prove_source_with_inputs, to_asm, to_c, to_python};
 
 // Emit a program as x86_64 assembly to a .S file, assemble and link it with the C
 // runtime, run it with the given inputs, and parse the field outputs it prints.
 fn run_asm(src: &str, inputs: &[u64], tag: &str) -> Vec<u64> {
-    let program = compile_source(src).expect("compile");
+    let program = compile_source_full(src).expect("compile");
     let asm = to_asm(&program);
 
     let dir = std::env::temp_dir();
@@ -47,7 +47,7 @@ fn run_asm(src: &str, inputs: &[u64], tag: &str) -> Vec<u64> {
 // Compile emitted C to a temporary binary, run it with the given inputs, and parse
 // the space-separated field outputs it prints.
 fn run_native(src: &str, inputs: &[u64], tag: &str) -> Vec<u64> {
-    let program = compile_source(src).expect("compile");
+    let program = compile_source_full(src).expect("compile");
     let c = to_c(&program);
 
     let dir = std::env::temp_dir();
@@ -147,7 +147,7 @@ fn native_asm_matches_the_proof_on_a_field_wrapping_hash() {
 fn the_python_backend_emits_a_runnable_module() {
     // Shape check: the emitted Python defines run(inputs) and the field prelude. It
     // is executed end to end where an interpreter is present.
-    let program = compile_source("input x; let y = x * x; output y;").expect("compile");
+    let program = compile_source_full("input x; let y = x * x; output y;").expect("compile");
     let py = to_python(&program);
     assert!(py.contains("def run(inputs):"));
     assert!(py.contains("P = 0xFFFFFFFF00000001"));

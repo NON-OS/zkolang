@@ -1,0 +1,13 @@
+/* In a file whose braces balance, indentation never closes a block. */
+impl P {
+fn a(self) -> u32 { 1 }
+fn b(self) -> u32 { 2 }
+}
+
+mod m {
+    fn f(a: u32) -> u32 {
+    #[allow(unused)] /*~ E0100 */
+        let b = a;
+        b
+    }
+}

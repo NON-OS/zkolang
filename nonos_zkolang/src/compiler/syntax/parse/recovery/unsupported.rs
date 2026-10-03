@@ -1,0 +1,56 @@
+/*
+ zKølang by NØNOS
+ AGPL-3.0-or-later
+*/
+
+/*!
+ * Forms a Rust programmer writes that the language does not have: `if let` and
+ * `while let`. Each is reported once, with what to write instead, and skipped whole.
+ */
+
+use super::super::parser::{Parser, Reported};
+use crate::compiler::diag::{Code, Diagnostic};
+use crate::compiler::syntax::keyword::Keyword;
+use crate::compiler::syntax::token::TokenKind;
+
+impl<'a> Parser<'a> {
+    /** Report and skip `if let pat = e { .. } else ..`, the `let` current. */
+    pub(in crate::compiler::syntax::parse) fn if_let(&mut self) -> Reported {
+        self.pattern_test(
+            "`if let` is not part of the language",
+            "test the value with `match`, which checks that every case is handled",
+        );
+        loop {
+            if !self.skip_to_brace() {
+                return Reported;
+            }
+            self.skip_until(&[TokenKind::RBrace]);
+            if !self.eat_kw(Keyword::Else) {
+                return Reported;
+            }
+        }
+    }
+
+    /** Report and skip `while let pat = e { .. }`, the `let` current. */
+    pub(in crate::compiler::syntax::parse) fn while_let(&mut self) -> Reported {
+        self.pattern_test(
+            "`while let` is not part of the language",
+            "loop with `while cond limit N { .. }` and take the value apart with `match`",
+        );
+        if self.skip_to_brace() {
+            self.skip_until(&[TokenKind::RBrace]);
+        }
+        Reported
+    }
+
+    fn pattern_test(&mut self, message: &str, help: &str) {
+        let d = Diagnostic::error(
+            Code::UNEXPECTED_TOKEN,
+            message,
+            self.span(),
+            "a pattern test",
+        )
+        .with_help(help);
+        self.diags.push(d);
+    }
+}

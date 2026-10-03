@@ -1,0 +1,63 @@
+/*
+ * Pattern mistakes in `match` and `let`: literals that do not fit, empty ranges, shapes of
+ * another type, and names bound twice or not in every alternative.
+ */
+#![allow(unused)]
+enum Shape {
+    Circle(u32),
+    Rect { w: u32, h: u32 },
+    Empty,
+}
+
+enum Op {
+    Add,
+    Sub,
+}
+
+fn bad_patterns(x: u8, f: field, s: Shape) -> u8 {
+    let a = match x {
+        300 => 1, /*~ E0302 */
+        _ => 2,
+    };
+    let b = match x {
+        9..=3 => 1, /*~ E0404 */
+        _ => 2,
+    };
+    let c = match f {
+        0..=5 => 1, /*~ E0402 */
+        _ => 2,
+    };
+    let d = match x {
+        true => 1, /*~ E0300 */
+        _ => 2,
+    };
+    let e = match s {
+        Op::Add => 1, /*~ E0402 */
+        _ => 2,
+    };
+    let g = match x {
+        -1 => 1, /*~ E0302 */
+        _ => 2,
+    };
+    a
+}
+
+fn bad_bindings(t: (u8, u8), p: (u8, bool)) -> u8 {
+    let a = match t {
+        (0, x) | (y, 0) => 1, /*~ E0403 E0403 */
+        _ => 2,
+    };
+    let b = match t {
+        (x, x) => x, /*~ E0403 */
+    };
+    let c = match p {
+        (x, true) | (0, x) => 1, /*~ E0403 */
+        _ => 2,
+    };
+    a
+}
+
+fn not_in_let(x: u8) {
+    let 3 = x; /*~ E0401 */
+    let (a, 1) = (x, x); /*~ E0401 */
+}

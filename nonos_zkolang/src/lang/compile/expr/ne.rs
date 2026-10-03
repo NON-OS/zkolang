@@ -27,8 +27,8 @@ impl Compiler {
         });
         let one = self.alloc()?;
         self.ops.push(Op::Imm { d: one, v: Fp::ONE });
-        self.free.push(bit);
-        self.free.push(one);
+        self.free_reg(bit);
+        self.free_reg(one);
         let d = self.alloc()?;
         self.ops.push(Op::Sub { d, a: one, b: bit });
         Ok(Val { reg: d, temp: true })

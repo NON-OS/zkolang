@@ -6,6 +6,10 @@ on:
   pull_request:
   workflow_dispatch:
 
+# Every job reads the repository and writes nothing back.
+permissions:
+  contents: read
+
 # New push, old run dies: a superseded run burning minutes helps nobody.
 concurrency:
   group: verify-${{ github.ref }}
@@ -13,59 +17,18 @@ concurrency:
 env:
   CARGO_TERM_COLOR: always
 
-# The model check runs on the proofs schedule, not here. The harnesses cover the
-# deserialiser, which reads an untrusted trailer, and settling totality over
-# every byte sequence in the bound is worth having. It is not worth having on
-# every push: the solver runs well past an hour on a single symbolic byte, so a
-# per-PR job at any timeout anyone would wait for reports a cancellation rather
-# than a result. That reads as a failing gate and teaches everyone to ignore the
-# gate. Nightly runs it with four hours and nobody waiting on it.
 jobs:
-  # `parallel` is a compile-time cfg, so the two provers can never run in one
-  # process and no single test can compare them. Each build prints a digest of a
-  # proof over the same fixed witness; the two lines have to match.
-  #
-  # A divergence means a parallel map that is not order preserving, or a search
-  # returning a different witness than the serial one. Either emits a proof that
-  # still verifies against itself, so nothing else catches it.
-  bytes:
-    name: serial and parallel emit the same proof
-    runs-on: ubuntu-latest
-    timeout-minutes: 90
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-
-      - name: serial
-        run: |
-          cargo test --release -p stark_proofs emit_proof_digest -- --ignored --nocapture \
-            | grep PROOFDIGEST | tee /tmp/serial.txt
-
-      - name: parallel
-        run: |
-          cargo test --release -p stark_proofs --features parallel emit_proof_digest \
-            -- --ignored --nocapture | grep PROOFDIGEST | tee /tmp/parallel.txt
-
-      - name: compare
-        run: |
-          cat /tmp/serial.txt /tmp/parallel.txt
-          diff /tmp/serial.txt /tmp/parallel.txt || {
-            echo "the two prover forms emit different proofs"
-            exit 1
-          }
-
   axioms:
     name: no axioms beyond the core
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       # Same reason as lean.yml: the toolchain host going down should not turn
       # this red while every proof in the repo is fine.
       - name: cache the toolchain
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: ~/.elan
           key: elan-${{ runner.os }}-${{ hashFiles('lean/lean-toolchain') }}
@@ -97,21 +60,15 @@ jobs:
       # `no sorry` is not the whole claim. A theorem can typecheck and still rest
       # on an axiom, so every public theorem states which it uses and the ones
       # that claim to be constructive are held to it.
+      # Every theorem of the library, listed by Lean from its own environment
+      # (lean/Axioms.lean) with the axioms its proof rests on. Any error fails the
+      # step, as does a theorem resting on a placeholder or on native_decide.
       - name: print axioms
         working-directory: lean
         run: |
-          {
-            echo "import Zkolang"
-            grep -rhoE '^theorem [A-Za-z0-9_.]+' Zkolang \
-              | sed 's/^theorem //' \
-              | while read -r t; do
-                  ns=$(grep -rl "theorem $t" Zkolang | head -1 \
-                       | sed 's|^Zkolang/|Zkolang.|; s|\.lean$||')
-                  echo "#print axioms $ns.$t"
-                done
-          } > /tmp/axioms.lean
-          lake env lean /tmp/axioms.lean | tee /tmp/axioms.out
-          if grep -q 'sorryAx' /tmp/axioms.out; then
-            echo "a theorem rests on sorryAx"
+          set -euo pipefail
+          lake env lean Axioms.lean | tee /tmp/axioms.out
+          if grep -qE 'sorryAx|ofReduceBool' /tmp/axioms.out; then
+            echo "a theorem rests on a placeholder or on native_decide"
             exit 1
           fi

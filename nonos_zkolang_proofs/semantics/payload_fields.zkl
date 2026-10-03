@@ -1,0 +1,32 @@
+/* A named field of a struct held in a generic enum's variant is read as any other (section 7.7). */
+enum Maybe<T> {
+    No,
+    Yes(T),
+}
+
+struct Point {
+    x: field,
+    y: field,
+}
+
+fn x_of(o: Maybe<Point>) -> field {
+    match o {
+        Maybe::Yes(p) => p.x,
+        Maybe::No => 0,
+    }
+}
+
+fn y_of(o: Option<Point>) -> field {
+    match o {
+        Some(p) => p.y,
+        None => 0,
+    }
+}
+
+#[test]
+fn a_payload_field_is_read() {
+    assert x_of(Maybe::Yes(Point { x: 4, y: 5 })) == 4;
+    assert x_of(Maybe::No) == 0;
+    assert y_of(Some(Point { x: 4, y: 5 })) == 5;
+    assert y_of(None) == 0;
+}

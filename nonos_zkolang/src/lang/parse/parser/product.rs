@@ -20,15 +20,19 @@ impl<'a> Parser<'a> {
             match self.peek() {
                 Some(Tok::Star) => {
                     self.pos += 1;
+                    self.enter()?;
                     let rhs = self.unary()?;
                     lhs = Expr::Mul(Box::new(lhs), Box::new(rhs));
                 }
                 Some(Tok::Slash) => {
                     self.pos += 1;
+                    self.enter()?;
                     let rhs = self.unary()?;
                     lhs = Expr::Div(Box::new(lhs), Box::new(rhs));
                 }
-                _ => return Ok(lhs),
+                _ => {
+                    return Ok(lhs);
+                }
             }
         }
     }

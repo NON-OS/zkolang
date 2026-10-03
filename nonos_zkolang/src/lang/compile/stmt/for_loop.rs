@@ -3,17 +3,19 @@
  AGPL-3.0-or-later
 */
 
-//! Unroll a bounded loop.
+/*! Unroll a bounded loop. */
 
-use super::super::compiler::{Compiler, MAX_OPS, MAX_UNROLL};
+use super::super::compiler::{Compiler, MAX_UNROLL};
 use crate::lang::parse::Stmt;
 use crate::lang::CompileError;
 use alloc::string::String;
 
 impl Compiler {
-    /// Unroll the loop over `[lo, hi)`: for each value, bind the loop variable as a
-    /// compile-time constant, lower the body inline, then pop the binding. Bodies are
-    /// flat, so a binding a body makes persists, which is what an accumulator needs.
+    /**
+     * Unroll the loop over `[lo, hi)`: for each value, bind the loop variable as a
+     * compile-time constant, lower the body inline, then pop the binding. Bodies are
+     * flat, so a binding a body makes persists, which is what an accumulator needs.
+     */
     pub(crate) fn for_loop(
         &mut self,
         var: &str,
@@ -26,16 +28,16 @@ impl Compiler {
         }
         let mut v = lo;
         while v < hi {
+            /*
+             * Spent before the body, so nested loops trip the bound partway through
+             * their expansion even when their bodies emit nothing.
+             */
+            self.spend_iteration()?;
             self.loop_consts.push((String::from(var), v));
             for s in body {
                 self.stmt(s)?;
             }
             self.loop_consts.pop();
-            // Checked each iteration so a nested loop trips the bound partway through
-            // its expansion, before the emitted vector can grow without limit.
-            if self.ops.len() > MAX_OPS {
-                return Err(CompileError::ProgramTooLong);
-            }
             v += 1;
         }
         Ok(())

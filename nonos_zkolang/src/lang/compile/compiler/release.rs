@@ -12,7 +12,7 @@ impl Compiler {
     /// Return a value's register to the pool if it was a temporary.
     pub(crate) fn release(&mut self, v: &Val) {
         if v.temp {
-            self.free.push(v.reg);
+            self.free_reg(v.reg);
         }
     }
 }

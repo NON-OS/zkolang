@@ -19,6 +19,7 @@ impl<'a> Parser<'a> {
         while matches!(self.peek(), Some(Tok::LBracket)) {
             let at = self.at();
             self.pos += 1;
+            self.enter()?;
             let index = self.expr()?;
             self.expect(&Tok::RBracket)?;
             base = Expr::Index(Box::new(base), Box::new(index), at);

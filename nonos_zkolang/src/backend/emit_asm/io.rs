@@ -3,18 +3,27 @@
  AGPL-3.0-or-later
 */
 
-//! The runtime glue in x86_64 assembly. On entry argc is in r12 and argv in r13. Each
-//! input is read from the matching argument with strtoull and reduced by the prime, or
-//! left zero when the argument is absent, matching the C target. Each output is printed
-//! with printf as an unsigned value, followed by a trailing newline.
+/*!
+ * The runtime glue in x86_64 assembly. On entry argc is in r12 and argv in r13. The
+ * program takes exactly one argument per input, each read by `pin` as a decimal number
+ * below the prime, and exits with status 1 for any other command line, as the C target
+ * returns 1. Each output is printed with printf as an unsigned value, followed by a
+ * trailing newline.
+ */
 
 use alloc::format;
 use alloc::string::String;
 
 pub(super) fn parse_inputs(n_in: usize) -> String {
-    let mut s = String::new();
+    let mut s = format!(
+        "    cmpq ${}, %r12\n    je .Largc\n    movl $1, %edi\n    call SYM(exit)\n.Largc:\n",
+        n_in + 1
+    );
     for i in 0..n_in {
-        s.push_str(&format!("    cmpq ${}, %r12\n    jle .Ldef{i}\n    movq {}(%r13), %rdi\n    xorl %esi, %esi\n    movl $10, %edx\n    call SYM(strtoull)\n    xorq %rdx, %rdx\n    movabsq $0xFFFFFFFF00000001, %rcx\n    divq %rcx\n    movq %rdx, in+{}(%rip)\n    jmp .Ldone{i}\n.Ldef{i}:\n    movq $0, in+{}(%rip)\n.Ldone{i}:\n", i + 1, (i + 1) * 8, i * 8, i * 8));
+        let (arg, slot) = ((i + 1) * 8, i * 8);
+        s.push_str(&format!(
+            "    movq {arg}(%r13), %rdi\n    call pin\n    movq %rax, in+{slot}(%rip)\n"
+        ));
     }
     s
 }

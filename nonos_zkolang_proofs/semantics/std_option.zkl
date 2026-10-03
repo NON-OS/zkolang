@@ -1,0 +1,39 @@
+/* The standard library's `Option` (section 18), named through the crate `std`. */
+use std::option::Option;
+
+fn first_even(xs: [u8; 4]) -> Option<u8> {
+    let mut found = Option::None;
+    for x in xs {
+        if found.is_none() && x % 2 == 0 {
+            found = Option::Some(x);
+        }
+    }
+    found
+}
+
+#[test]
+fn an_option_holds_a_value_or_none() {
+    let a: Option<u8> = Option::Some(3);
+    let b: Option<u8> = Option::None;
+    assert a.is_some() && !a.is_none();
+    assert b.is_none();
+    assert a.unwrap_or(9) == 3 && b.unwrap_or(9) == 9;
+}
+
+#[test]
+fn options_combine() {
+    let a: Option<u8> = Option::Some(1);
+    let b: Option<u8> = Option::None;
+    assert b.or(a).unwrap_or(0) == 1;
+    assert a.or(Option::Some(2)).unwrap_or(0) == 1;
+    assert a.xor(b).is_some();
+    assert a.xor(a).is_none();
+    assert first_even([3, 5, 8, 10]).unwrap_or(0) == 8;
+    assert first_even([1, 3, 5, 7]).is_none();
+}
+
+#[test]
+fn std_is_named_by_path() {
+    let c = std::option::Option::Some(true);
+    assert c.unwrap_or(false);
+}

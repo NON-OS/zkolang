@@ -24,7 +24,7 @@ impl Compiler {
             b: b.reg,
         });
         self.ops.push(Op::Assert { a: d });
-        self.free.push(d);
+        self.free_reg(d);
         Ok(())
     }
 }

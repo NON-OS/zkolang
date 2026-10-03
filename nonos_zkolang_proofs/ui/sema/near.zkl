@@ -1,0 +1,35 @@
+/* A name that does not resolve is told the close names in scope, if any is close. */
+#![allow(unused)]
+mod shapes {
+    pub fn area(w: u32, h: u32) -> u32 {
+        w * h
+    }
+    fn hidden() -> u32 {
+        1
+    }
+}
+
+use shapes::aera; /*~ E0200 */
+
+const LIMIT: u32 = 10;
+
+struct Point {
+    x: u32,
+}
+
+fn f(count: u32) -> u32 {
+    let total: u23 = 3; /*~ E0200 */
+    let p: Piont = Point { x: 1 }; /*~ E0200 */
+    let o: Optoin<u32> = Option::Some(count); /*~ E0200 */
+    cuont + LIMT + shapes::aera(1, 2) + totl /*~ E0200 E0200 E0200 E0200 */
+        + shapes::hiden() + zzzzzz /*~ E0200 E0200 */
+}
+
+fn g<Item>(item: Item) -> Option<Item> {
+    let o: Option<Itme> = Option::Some(item); /*~ E0200 */
+    o
+}
+
+fn h() -> Option<u32> {
+    g(1u32) /*~ E0702 */
+}

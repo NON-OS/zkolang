@@ -1,0 +1,16 @@
+/* Forms the grammar allows that are easy to get wrong: none gives a diagnostic. */
+fn f(op: u8, x: u32, s: S, c: bool) -> usize {
+    let mut acc = 0u32;
+    match op { 0 => acc += x, _ => acc -= x }
+    match op { 0 => { 1 } 1 => if c { 2 } else { 3 } _ => 4 };
+    match s { S { a, .., } => a };
+    let S { b, .., } = s;
+    let n = match op { _ => [1, 2] }.len();
+    if c { a } else { b }.len()
+}
+
+fn g(p: (public u8, secret u16), q: &mut secret u8, n: u32) -> bool {
+    let w = n as u8 as u32 < 3;
+    let t: [u8; N] = [0; N];
+    w
+}

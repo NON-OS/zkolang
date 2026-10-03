@@ -1,0 +1,23 @@
+/* Rust forms the language does not have, and stray tokens: each is reported once. */
+fn f(a: u32) -> u32 {
+    while a > 0 limit { } /*~ E0100 */
+    if let Some(x) = a { return x; } else { 0 }; /*~ E0100 */
+    let y = id<T>(a); /*~ E0103 */
+    a
+}
+;;; /*~ E0100 */
+fn g() {}
+))) /*~ E0100 */
+fn h() {}
+)] /*~ E0100 */
+)]
+;
+fn k() {}
+pub
+pub /*~ E0100 */
+pub
+fn m() {}
+#
+# /*~ E0100 */
+##
+fn n() {}

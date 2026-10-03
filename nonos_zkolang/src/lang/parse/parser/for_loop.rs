@@ -22,6 +22,7 @@ impl<'a> Parser<'a> {
         self.expect(&Tok::DotDot)?;
         let hi = self.number()?;
         self.expect(&Tok::LBrace)?;
+        self.enter()?;
         let mut body = Vec::new();
         while !matches!(self.peek(), Some(Tok::RBrace)) {
             if self.peek().is_none() {
@@ -30,6 +31,7 @@ impl<'a> Parser<'a> {
             body.push(self.stmt()?);
         }
         self.expect(&Tok::RBrace)?;
+        self.leave(1);
         Ok(Stmt::For { var, lo, hi, body })
     }
 }

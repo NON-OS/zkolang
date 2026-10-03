@@ -53,8 +53,9 @@ witness inside the proof is a further hardening, noted here rather than claimed.
 
 ## Parameters and deployment
 
-The two soundness points live in `stark_proofs/src/shield_params.rs`: the
-development rate (fast, for tests and gates) and the deployment rate (rate 1/16,
-32 queries, 16 grind bits, ~128-bit). The registered verifier keys and the
-on-chain verifier hold the deployment point. A change to these numbers is a
-reviewed change and is gated by the security-level test.
+A zKølang program is proven at the point of `nonos_zkolang/src/driver/params.rs`:
+32 queries, a 16-bit grind and rate 1/16. The STARKs repository states the same
+point as `inner` in `stark_proofs/src/shield_params.rs`, at 144 conjectured and
+80 provable bits, with the argument in its `docs/12-soundness.md`; the points the
+shield settles at are stated there too. A change to these numbers is a reviewed
+change.

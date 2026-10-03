@@ -25,10 +25,10 @@ impl Compiler {
             a: a.reg,
             b: b.reg,
         });
-        self.free.push(diff);
+        self.free_reg(diff);
         let recip = self.alloc()?;
         self.ops.push(Op::Inv { d: recip, a: diff });
-        self.free.push(recip);
+        self.free_reg(recip);
         Ok(())
     }
 }

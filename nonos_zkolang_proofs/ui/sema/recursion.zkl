@@ -1,0 +1,16 @@
+/* Every call is expanded, so a function that calls itself with the same generic arguments is an error, and a recursion over constant parameters must end on a constant condition. */
+fn fact(n: u32) -> u32 {
+    if n == 0 { 1 } else { n * fact(n - 1) } /*~ E0700 */
+}
+
+fn ping(n: u32) -> u32 { pong(n) } /*~ E0700 */
+fn pong(n: u32) -> u32 { ping(n) }
+
+fn fine(n: u32) -> u32 { fact_free(n) }
+fn fact_free(n: u32) -> u32 { n }
+
+fn same<const N: usize>() -> usize { same::<N>() } /*~ E0700 */
+fn up<const N: usize>() -> usize { up::<{ N + 1 }>() } /*~ E0700 */
+fn pow<const N: usize>(x: u32) -> u32 { if N == 0 { 1 } else { x * pow::<{ N - 1 }>(x) } }
+
+fn uses(x: u32) -> usize { same::<1>() + up::<0>() + pow::<3>(x) as usize }

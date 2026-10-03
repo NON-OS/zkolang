@@ -1,0 +1,64 @@
+/*
+ zKølang by NØNOS
+ AGPL-3.0-or-later
+*/
+
+/*! Recovery at module level, and the tokens that can begin an item. */
+
+use super::super::parser::Parser;
+use crate::compiler::syntax::keyword::Keyword;
+use crate::compiler::syntax::token::TokenKind;
+
+impl<'a> Parser<'a> {
+    /**
+     * Recover at module level from an error in the item that began at token `from`: close
+     * what it opened, then skip to the next token that can begin an item. A closer left
+     * over belongs to the enclosing module or impl block, which takes it.
+     */
+    pub(in crate::compiler::syntax::parse) fn recover_item(&mut self, from: usize) {
+        self.pay_owed(from);
+        let mut depth: usize = 0;
+        loop {
+            let k = self.kind();
+            match k {
+                TokenKind::Eof => return,
+                TokenKind::LParen | TokenKind::LBracket | TokenKind::LBrace => depth += 1,
+                TokenKind::RParen | TokenKind::RBracket | TokenKind::RBrace => {
+                    if depth == 0 {
+                        return;
+                    }
+                    depth -= 1;
+                    if depth == 0 && k == TokenKind::RBrace {
+                        self.bump();
+                        self.eat(TokenKind::Semi);
+                        return;
+                    }
+                }
+                TokenKind::Semi if depth == 0 => {
+                    self.bump();
+                    return;
+                }
+                _ if depth == 0 && starts_item(k) => return,
+                _ => {}
+            }
+            self.bump();
+        }
+    }
+}
+
+/** Whether a token can begin an item. */
+pub(in crate::compiler::syntax::parse) fn starts_item(k: TokenKind) -> bool {
+    matches!(
+        k,
+        TokenKind::Pound
+            | TokenKind::Kw(Keyword::Pub)
+            | TokenKind::Kw(Keyword::Fn)
+            | TokenKind::Kw(Keyword::Struct)
+            | TokenKind::Kw(Keyword::Enum)
+            | TokenKind::Kw(Keyword::Type)
+            | TokenKind::Kw(Keyword::Const)
+            | TokenKind::Kw(Keyword::Mod)
+            | TokenKind::Kw(Keyword::Use)
+            | TokenKind::Kw(Keyword::Impl)
+    )
+}

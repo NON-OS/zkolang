@@ -12,12 +12,12 @@
 mod emit_asm;
 mod emit_c;
 mod emit_python;
-mod inputs;
 mod outputs;
+mod plan;
 
 pub use emit_asm::to_asm;
 pub use emit_c::to_c;
 pub use emit_python::to_python;
 
-pub(crate) use inputs::n_inputs;
 pub(crate) use outputs::n_outputs;
+pub(crate) use plan::Plan;

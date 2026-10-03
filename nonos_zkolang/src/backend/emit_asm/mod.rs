@@ -15,6 +15,7 @@ mod header;
 mod inv;
 mod io;
 mod op;
+mod pin;
 mod program;
 
 pub use program::to_asm;

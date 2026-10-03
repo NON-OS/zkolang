@@ -1,0 +1,74 @@
+/* Integer arithmetic (section 7.2): checked, with division truncated toward zero. */
+
+#[test]
+fn sums_and_products() {
+    let a: u8 = 200;
+    assert a + 55 == 255;
+    assert 7u32 * 6 == 42;
+    let b: i8 = -100;
+    assert b - 28 == -128;
+}
+
+#[test]
+#[should_fail]
+fn u8_overflow_fails() {
+    let a: u8 = 200;
+    let _b = a + 56;
+}
+
+#[test]
+fn division_truncates_toward_zero() {
+    let (a, b): (i8, i8) = (-7, 2);
+    assert a / b == -3;
+    assert a % b == -1;
+    assert 7i8 / -2 == -3;
+    assert 7i8 % -2 == 1;
+}
+
+#[test]
+#[should_fail]
+fn min_over_minus_one_fails() {
+    let a: i8 = -128;
+    let m: i8 = -1;
+    let _q = a / m;
+}
+
+#[test]
+#[should_fail]
+fn division_by_zero_fails() {
+    let z: u32 = 0;
+    let _q = 1u32 / z;
+}
+
+#[test]
+#[should_fail]
+fn negating_min_fails() {
+    let a: i32 = -2147483648;
+    let _n = -a;
+}
+
+#[test]
+fn wrapping_methods_wrap() {
+    let a: u8 = 250;
+    assert a.wrapping_add(10) == 4;
+    assert 3u8.wrapping_sub(5) == 254;
+    assert 16u8.wrapping_mul(17) == 16;
+    let m: i8 = -128;
+    assert m.wrapping_neg() == -128;
+    assert 127i8.wrapping_add(1) == -128;
+}
+
+#[test]
+fn min_max_and_pow() {
+    assert 3u32.min(9) == 3;
+    assert (-4i16).max(-9) == -4;
+    assert 2u64.pow(40) == 1099511627776;
+    assert (-2i32).pow(3) == -8;
+}
+
+#[test]
+#[should_fail]
+fn pow_overflow_fails() {
+    let b: u8 = 2;
+    let _p = b.pow(8);
+}

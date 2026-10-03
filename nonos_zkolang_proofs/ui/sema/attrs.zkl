@@ -1,0 +1,31 @@
+/* Attributes: each unknown, malformed or misplaced one is reported once (E0903). */
+#[tset] /*~ E0903 */
+fn a() {}
+#[test]
+fn b() {}
+#[test] /*~ E0903 */
+fn c(x: u8) { let _y = x; }
+#[test]
+#[should_fail]
+fn d() { assert false; }
+#[should_fail] /*~ E0903 */
+fn e() {}
+#[test] /*~ E0903 */
+const K: u8 = 1;
+#[cfg(test)]
+fn only_in_tests() -> u8 { missing() }
+#[cfg(debug)] /*~ E0903 */
+fn g() {}
+#[allow(unusd)] /*~ E0903 */
+fn h() {}
+#[deprecated = "use k2"]
+fn k() -> u8 { 1 }
+fn k2() -> u8 { k() } /*~ W0005 */
+#[deprecated] /*~ E0903 */
+fn old() {}
+#[test]
+#[test] /*~ E0903 */
+fn twice() {}
+mod inner {
+    #![test] /*~ E0903 */
+}

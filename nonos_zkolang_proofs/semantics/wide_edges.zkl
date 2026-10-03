@@ -1,0 +1,75 @@
+/* 64-bit integers at the edges of their ranges (sections 7.2 and 7.8). */
+
+#[test]
+fn products_at_the_signed_limit() {
+    let a: i64 = -4294967296;
+    let b: i64 = 2147483648;
+    assert a * b == i64::MIN;
+    let m: i64 = i64::MIN;
+    assert m * 1 == i64::MIN;
+    assert i64::MAX * -1 == -9223372036854775807;
+}
+
+#[test]
+#[should_fail]
+fn a_positive_two_to_the_63_fails() {
+    let a: i64 = 4294967296;
+    let b: i64 = 2147483648;
+    let _c = a * b;
+}
+
+#[test]
+#[should_fail]
+fn min_times_minus_one_fails() {
+    let m: i64 = i64::MIN;
+    let n: i64 = -1;
+    let _c = m * n;
+}
+
+#[test]
+#[should_fail]
+fn min_over_minus_one_fails() {
+    let m: i64 = i64::MIN;
+    let n: i64 = -1;
+    let _c = m / n;
+}
+
+#[test]
+#[should_fail]
+fn min_mod_minus_one_fails() {
+    let m: i64 = i64::MIN;
+    let n: i64 = -1;
+    let _c = m % n;
+}
+
+#[test]
+fn division_and_shifts_of_halves() {
+    let a: u64 = 18446744073709551615;
+    assert a / 4294967296 == 4294967295;
+    assert a % 4294967296 == 4294967295;
+    let b: i64 = -9;
+    assert b / 2 == -4 && b % 2 == -1;
+    assert b >> 1 == -5;
+    assert (a >> 63) == 1 && (1u64 << 63) == 9223372036854775808;
+    assert a.wrapping_add(2) == 1 && 0u64.wrapping_sub(1) == a;
+    assert i64::MIN.wrapping_neg() == i64::MIN;
+}
+
+#[test]
+fn conversions_through_64_bits() {
+    let m: i32 = -5;
+    assert m as i64 == -5;
+    assert u32::checked_from(4294967295u64) == 4294967295;
+    assert i8::checked_from(-128i64) == -128;
+    assert u8::wrapping_from(-1i64) == 255;
+    let f: field = -1;
+    assert i64::wrapping_from(f) == -4294967296;
+    assert (-1i64).to_le_bits()[63] && !0u64.to_le_bits()[63];
+}
+
+#[test]
+#[should_fail]
+fn a_negative_to_unsigned_fails() {
+    let m: i64 = -1;
+    let _u = u64::checked_from(m);
+}

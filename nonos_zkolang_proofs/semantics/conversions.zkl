@@ -1,0 +1,65 @@
+/* Conversions (section 7.8): `as` where every value fits, and the explicit forms. */
+
+#[test]
+fn widening_casts() {
+    let a: u8 = 255;
+    assert a as u16 == 255;
+    assert a as i16 == 255;
+    let b: i8 = -1;
+    assert b as i64 == -1;
+    assert true as u8 == 1;
+    assert false as field == 0;
+    let c: u32 = 7;
+    assert c as usize == 7;
+    let d: usize = 9;
+    assert d as u64 == 9;
+    let e: i32 = -1;
+    assert e as field == -1;
+}
+
+#[test]
+fn checked_and_wrapping_from() {
+    let big: u32 = 300;
+    assert u8::wrapping_from(big) == 44;
+    let m: i32 = -1;
+    assert u8::wrapping_from(m) == 255;
+    assert i8::wrapping_from(200u8) == -56;
+    assert u8::checked_from(255u32) == 255;
+    let f: field = -1;
+    assert u64::checked_from(f) == 18446744069414584320;
+    assert u32::wrapping_from(f) == 0;
+    assert bool::checked_from(1u8);
+}
+
+#[test]
+#[should_fail]
+fn checked_from_out_of_range_fails() {
+    let big: u32 = 256;
+    let _b = u8::checked_from(big);
+}
+
+#[test]
+#[should_fail]
+fn checked_from_negative_fails() {
+    let m: i8 = -1;
+    let _u = u32::checked_from(m);
+}
+
+#[test]
+#[should_fail]
+fn bool_from_two_fails() {
+    let two: u8 = 2;
+    let _b = bool::checked_from(two);
+}
+
+#[test]
+fn a_cast_leaves_a_literal_its_own_type() {
+    let mut t: field = 0;
+    for i in 0..4 {
+        t = t + i as field;
+    }
+    assert t == 6;
+    let n = 3;
+    let w: u64 = n as u64 + 18446744073709551610;
+    assert w == 18446744073709551613;
+}

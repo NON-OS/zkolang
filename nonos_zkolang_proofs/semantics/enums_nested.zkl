@@ -1,0 +1,63 @@
+/* Enums inside enums, wide fields, and a single variant taken apart by `let` (section 9.2). */
+
+enum Wide {
+    Big(u64),
+    Pair(i64, bool),
+    Nothing,
+}
+
+enum Leaf {
+    Num(u32),
+    Flag(bool),
+}
+
+enum Tree {
+    Tip(u8),
+    Node(Leaf, Leaf),
+}
+
+enum Wrapper {
+    Of(u8, u8),
+}
+
+fn wide_value(w: Wide) -> u64 {
+    match w {
+        Wide::Big(x) => x,
+        Wide::Pair(x, true) if x >= 0 => 1,
+        Wide::Pair(_, flag) => if flag { 2 } else { 3 },
+        Wide::Nothing => 0,
+    }
+}
+
+fn weight(t: Tree) -> u32 {
+    match t {
+        Tree::Tip(x) => x as u32,
+        Tree::Node(Leaf::Num(a), Leaf::Num(b)) => a + b,
+        Tree::Node(Leaf::Flag(true), _) | Tree::Node(_, Leaf::Flag(true)) => 100,
+        Tree::Node(_, _) => 7,
+    }
+}
+
+#[test]
+fn wide_fields_keep_their_values() {
+    assert wide_value(Wide::Big(18446744073709551615)) == 18446744073709551615;
+    assert wide_value(Wide::Pair(5, true)) == 1;
+    assert wide_value(Wide::Pair(-5, true)) == 2;
+    assert wide_value(Wide::Pair(-5, false)) == 3;
+    assert wide_value(Wide::Nothing) == 0;
+}
+
+#[test]
+fn enums_nest() {
+    assert weight(Tree::Tip(9)) == 9;
+    assert weight(Tree::Node(Leaf::Num(3), Leaf::Num(4))) == 7;
+    assert weight(Tree::Node(Leaf::Num(3), Leaf::Flag(true))) == 100;
+    assert weight(Tree::Node(Leaf::Flag(false), Leaf::Num(4))) == 7;
+    assert Tree::Tip(1) != Tree::Node(Leaf::Num(1), Leaf::Num(0));
+}
+
+#[test]
+fn a_single_variant_enum_is_taken_apart_by_let() {
+    let Wrapper::Of(x, y) = Wrapper::Of(3, 4);
+    assert x + y == 7;
+}

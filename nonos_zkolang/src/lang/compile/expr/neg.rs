@@ -21,7 +21,7 @@ impl Compiler {
             v: Fp::ZERO,
         });
         self.release(&v);
-        self.free.push(zero);
+        self.free_reg(zero);
         let d = self.alloc()?;
         self.ops.push(Op::Sub {
             d,

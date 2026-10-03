@@ -17,6 +17,7 @@ impl<'a> Parser<'a> {
         let mut lhs = self.equality()?;
         while matches!(self.peek(), Some(Tok::AmpAmp)) {
             self.pos += 1;
+            self.enter()?;
             let rhs = self.equality()?;
             lhs = Expr::Mul(Box::new(lhs), Box::new(rhs));
         }

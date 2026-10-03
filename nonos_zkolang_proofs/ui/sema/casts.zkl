@@ -1,0 +1,26 @@
+/*
+ A cast does not give an open literal type its target: the literal keeps the type the rest
+ of the body gives it, and the cast is checked against that type.
+*/
+#![allow(unused)]
+fn counters(xs: [u8; 4]) -> field {
+    let mut t: field = 0;
+    for i in 0..4 {
+        t = t + i as field;
+    }
+    for i in 0..4 {
+        let x = xs[i];
+        let y = i as u8; /*~ E0304 */
+    }
+    t
+}
+
+fn open() -> u64 {
+    let n = 3;
+    let m = 5;
+    let f: field = m;
+    let a = m as u8; /*~ E0304 */
+    let b = 1;
+    let c = b as bool; /*~ E0304 */
+    n as u64
+}

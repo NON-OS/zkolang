@@ -15,8 +15,7 @@ impl Compiler {
     /// value, since the output vector now carries it.
     pub(crate) fn output(&mut self, e: &Expr) -> Result<(), CompileError> {
         let v = self.expr(e)?;
-        let idx = self.next_output;
-        self.next_output += 1;
+        let idx = self.take_output()?;
         self.ops.push(Op::Out { a: v.reg, idx });
         self.release(&v);
         Ok(())

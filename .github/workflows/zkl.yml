@@ -6,6 +6,10 @@ on:
   pull_request:
   workflow_dispatch:
 
+# Every job reads the repository and writes nothing back.
+permissions:
+  contents: read
+
 # New push, old run dies: a superseded run burning minutes helps nobody.
 concurrency:
   group: zkl-${{ github.ref }}
@@ -17,10 +21,14 @@ jobs:
   circuits:
     name: compile and prove circuits
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      # A named release, so a new stable's lints land in a change that moves this pin.
+      - uses: dtolnay/rust-toolchain@7e38f4b43b4db5c8dd498af069a4f6196df1d067 # master
+        with:
+          toolchain: 1.99.0
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
 
       - name: build the compiler
         run: cargo build --release -p nonos_zkolang_cli

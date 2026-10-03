@@ -28,15 +28,13 @@ impl Compiler {
             b: zero.reg,
         });
         let value_op = (self.ops.len() - 1) as u32;
-        self.free.push(zero.reg);
+        self.free_reg(zero.reg);
 
         let start = self.next_advice;
-        let base = self.n_public + self.n_secret;
         let mut bits: Vec<u8> = Vec::with_capacity(nbits as usize);
         for _ in 0..nbits {
             let bit = self.alloc()?;
-            let idx = base + self.next_advice;
-            self.next_advice += 1;
+            let idx = self.take_advice()?;
             self.ops.push(Op::Inp { d: bit, idx });
             self.ops.push(Op::Bool { a: bit });
             bits.push(bit);
@@ -68,8 +66,8 @@ impl Compiler {
                 a: doubled,
                 b: bit,
             });
-            self.free.push(acc);
-            self.free.push(doubled);
+            self.free_reg(acc);
+            self.free_reg(doubled);
             acc = nacc;
         }
 
@@ -80,11 +78,11 @@ impl Compiler {
             b: m,
         });
         self.ops.push(Op::Assert { a: diff });
-        self.free.push(acc);
-        self.free.push(m);
-        self.free.push(diff);
+        self.free_reg(acc);
+        self.free_reg(m);
+        self.free_reg(diff);
         for &bit in &bits[..bits.len() - 1] {
-            self.free.push(bit);
+            self.free_reg(bit);
         }
         Ok(bits[bits.len() - 1])
     }

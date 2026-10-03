@@ -19,15 +19,19 @@ impl<'a> Parser<'a> {
             match self.peek() {
                 Some(Tok::Plus) => {
                     self.pos += 1;
+                    self.enter()?;
                     let rhs = self.product()?;
                     lhs = Expr::Add(Box::new(lhs), Box::new(rhs));
                 }
                 Some(Tok::Minus) => {
                     self.pos += 1;
+                    self.enter()?;
                     let rhs = self.product()?;
                     lhs = Expr::Sub(Box::new(lhs), Box::new(rhs));
                 }
-                _ => return Ok(lhs),
+                _ => {
+                    return Ok(lhs);
+                }
             }
         }
     }

@@ -1,0 +1,19 @@
+/* Every expression form, with the precedence the grammar gives it. */
+fn main(a: public u32, b: secret u32, xs: [u8; 4]) -> public u32 {
+    let (p, q): (u32, u32) = (a + b, a * 2);
+    let mut acc = 0u32;
+    for i in 0..4 { acc += xs[i] as u32; }
+    for j in 0..=3 { acc ^= j; }
+    let mut n = 10;
+    while n > 0 limit 16 { n -= 1; if n == 5 { break; } else { continue; } }
+    let big = if a < b { a } else if a == b { 0 } else { b };
+    let m = match p { 0 => 1, 1 | 2 => 2, 3..=9 => 3, x if x > 100 => 4, _ => { 5 } };
+    let bits = (a >> 3) & 0xff | (b << 1) ^ 0b1010 % 7;
+    let ok = !(a <= b) && (a >= 1 || b != 2);
+    let s = Shape::Circle { r: 3 };
+    let t = Pair(1, 2).0 + [1, 2, 3][1] + [0u8; 8][2] as u32;
+    assert ok, "must hold";
+    assert big <= a + b;
+    let pub_q = declassify(q);
+    -acc + big + m + bits + t + pub_q + inner::id::<u32>(1)
+}

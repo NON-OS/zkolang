@@ -1,0 +1,46 @@
+/* Warnings of unused and unreachable code, and `#[allow]` dropping the ones it names. */
+fn unused(a: u8, _b: u8) { /*~ W0001 */
+    let c = 1u8; /*~ W0001 */
+    let mut d = 0u8; /*~ W0001 */
+    d = 2;
+    let _e = 3u8;
+    let mut g = 0u8;
+    g += 1;
+    5u8; /*~ W0002 */
+}
+
+fn after(x: u8) -> u8 {
+    return x;
+    x + 1 /*~ W0003 */
+}
+
+#[allow(unused, unreachable)]
+fn quiet(a: u8) -> u8 {
+    let c = 1u8;
+    return 0;
+    a + 1
+}
+
+mod m {
+    #![allow(unused)]
+    fn inner(a: u8) {}
+}
+
+fn loud(a: u8) {} /*~ W0001 */
+
+fn ref_param(x: &mut u8) { x = 1; }
+
+fn skipped<const N: usize>(a: u8) -> u8 {
+    if N == 0 { 0 } else { a }
+}
+
+fn plain(a: u8) -> u8 {
+    if false { a } else { 0 }
+}
+
+fn calls_skipped() -> u8 { skipped::<0>(1) + plain(2) }
+
+fn after_assert(x: u8) -> u8 {
+    assert false;
+    x /*~ W0003 */
+}

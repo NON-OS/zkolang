@@ -1,0 +1,33 @@
+/* A generic method's constant parameters are taken from its arguments' types, as a function's are (section 10.5). */
+struct Scale {
+    k: u32,
+}
+
+impl Scale {
+    fn total<const N: usize>(self, a: [u32; N]) -> u32 {
+        let mut s = 0u32;
+        for x in a {
+            s = s + self.k * x;
+        }
+        s
+    }
+
+    fn width<const N: usize>(_a: [bool; N]) -> usize {
+        N
+    }
+
+    fn pick<T, const N: usize>(&mut self, a: [T; N], i: usize) -> T {
+        self.k = self.k + 1;
+        a[i]
+    }
+}
+
+#[test]
+fn a_method_infers_its_constants() {
+    let mut s = Scale { k: 3 };
+    assert s.total([1, 2, 3]) == 18;
+    assert s.total([5]) == 15;
+    assert Scale::width([true, false, true]) == 3;
+    assert Scale::total(s, [2, 2]) == 12;
+    assert s.pick([7u8, 8, 9], 2) == 9 && s.k == 4;
+}

@@ -18,6 +18,7 @@ extern crate alloc;
 mod air;
 mod backend;
 mod commit;
+pub mod compiler;
 mod driver;
 mod isa;
 mod lang;
@@ -31,12 +32,13 @@ pub use air::{BuildError, StepAir, TRACE_WIDTH};
 pub use backend::{to_asm, to_c, to_python};
 pub use commit::{commit, commit_limbs, serialize};
 pub use driver::{
-    evaluate, prove_program, prove_source, prove_source_with_inputs, prove_source_with_witness,
-    prove_source_with_witness_zk, Report, RunError,
+    evaluate, prove_program, prove_program_hidden, prove_source, prove_source_with_inputs,
+    prove_source_with_witness, prove_source_with_witness_zk, Report, RunError,
 };
 pub use isa::{Op, Program, REGS};
 pub use lang::{
-    compile_source, compile_source_unoptimized, expand_includes, render_error, CompileError,
+    compile_source, compile_source_full, compile_source_unoptimized, expand_includes,
+    expand_includes_from, render_error, Advice, CompileError, Compiled, Included, NameError,
 };
 pub use nox::{quote, Quote, MICRONOX_PER_NOX};
 pub use stdlib::{check, expand_with_stdlib, run, stdlib_source};

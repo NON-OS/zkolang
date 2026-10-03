@@ -1,0 +1,8 @@
+[package]
+name = "root"
+version = "0.1.0"
+edition = "2026"
+
+[dependencies]
+old = { path = "../old" } # /*~ E0902 */
+gone = { path = "../nowhere" } # /*~ E0902 */

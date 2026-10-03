@@ -1,0 +1,67 @@
+/* Control flow (section 8): `if` values, loops, early exits and short-circuit operators. */
+
+#[test]
+fn if_is_an_expression() {
+    let x: u32 = 5;
+    let y = if x > 3 { 10 } else if x > 1 { 5 } else { 0 };
+    assert y == 10;
+}
+
+#[test]
+fn loops_break_and_continue() {
+    let mut s: u32 = 0;
+    for i in 0..10 {
+        if i % 2 == 0 { continue; }
+        if i > 7 { break; }
+        s += i;
+    }
+    assert s == 1 + 3 + 5 + 7;
+    let mut n: u32 = 0;
+    for _k in 1..=4 { n += 1; }
+    assert n == 4;
+}
+
+#[test]
+fn while_runs_until_its_condition() {
+    let mut v: u32 = 1000;
+    let mut c: u32 = 0;
+    while v > 0 limit 16 {
+        v = v / 2;
+        c += 1;
+    }
+    assert c == 10;
+}
+
+#[test]
+#[should_fail]
+fn while_past_its_limit_fails() {
+    let mut v: u32 = 0;
+    while v < 100 limit 10 { v += 1; }
+}
+
+#[test]
+fn short_circuit_skips_the_right_operand() {
+    let z: u32 = 0;
+    assert !(z != 0 && 10 / z > 1);
+    assert z == 0 || 10 / z > 1;
+}
+
+#[test]
+fn return_leaves_early() {
+    assert first_even([3, 5, 8, 9]) == 8;
+    assert first_even([1, 1, 1, 1]) == 0;
+}
+
+fn first_even(a: [u32; 4]) -> u32 {
+    for x in a {
+        if x % 2 == 0 { return x; }
+    }
+    0
+}
+
+#[test]
+#[should_fail]
+fn a_failed_assert_fails() {
+    let x: u32 = 2;
+    assert x == 3, "two is not three";
+}

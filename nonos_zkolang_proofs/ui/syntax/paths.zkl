@@ -1,0 +1,15 @@
+/* After `::` comes a name, or what the place takes: `<` in an expression, `*` or `{` in a use. */
+use a::limit; /*~ E0100 */
+use a::self; /*~ E0100 */
+use super::super::b; /*~ E0100 */
+use a::b::; /*~ E0100 */
+use a::{self, b};
+use c::{1, d, e f}; /*~ E0100 E0100 */
+use g::*;
+
+fn f() {
+    let x = a::1; /*~ E0100 */
+    let y = a::b::; /*~ E0100 */
+    let z: a:: = 1; /*~ E0100 */
+    let w = a::b::<u8>;
+}

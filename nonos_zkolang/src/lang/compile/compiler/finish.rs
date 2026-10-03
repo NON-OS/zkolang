@@ -17,6 +17,8 @@ impl Compiler {
             ops: self.ops,
             advice: self.advice,
             n_advice: self.next_advice,
+            n_public: self.n_public,
+            n_secret: self.n_secret,
         }
     }
 }

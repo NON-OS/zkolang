@@ -1,0 +1,47 @@
+/* Constant generic parameters (section 10.5): values in bodies, and inferred from the arguments. */
+
+struct Buf<const N: usize> {
+    data: [u8; N],
+}
+
+fn len<T, const N: usize>(_a: [T; N]) -> usize {
+    N
+}
+
+fn sum<const N: usize>(a: [u32; N]) -> u32 {
+    let mut s = 0;
+    for i in 0..N {
+        s += a[i];
+    }
+    s
+}
+
+fn zeros<const N: usize>() -> [u8; N] {
+    [0; N]
+}
+
+fn first<const N: usize>(b: Buf<N>) -> u8 {
+    b.data[0]
+}
+
+fn fill<const N: usize>(a: &mut [u8; N], v: u8) {
+    for i in 0..N {
+        a[i] = v;
+    }
+}
+
+#[test]
+fn a_constant_parameter_is_a_value() {
+    assert len([1u8, 2, 3]) == 3;
+    assert len::<bool, 2>([true, false]) == 2;
+    assert zeros::<4>().len() == 4;
+}
+
+#[test]
+fn constants_are_inferred_from_the_arguments() {
+    assert sum([1, 2, 3, 4]) == 10;
+    assert first(Buf::<2> { data: [9, 8] }) == 9;
+    let mut a = [0u8; 3];
+    fill(&mut a, 7);
+    assert a[0] == 7 && a[2] == 7;
+}

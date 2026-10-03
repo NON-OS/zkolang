@@ -1,0 +1,18 @@
+/* A file with errors gets no warning for documentation that recovery skipped. */
+struct S {
+    /// a
+    a u8, /*~ E0100 */
+    /// b
+    b: u8,
+}
+
+impl S {
+    /// doc
+    type T = u8; /*~ E0100 */
+    fn f() {}
+}
+
+fn g() {
+    /// documents nothing, but the file has errors
+    let x = 1;
+}

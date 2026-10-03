@@ -33,9 +33,58 @@ outputs [729]
 steps 5  trace 2^3
 ```
 
-The tool has five verbs: `run` compiles and proves, `check` compiles only, `build` emits
-a native backend, `key` prints a circuit's registration key, and `fee` prices the
-pay-to-prove cost of a run in NOX.
+The tool's verbs: `run` compiles and proves, `check` compiles only, `build` emits a
+native backend, `key` prints a circuit's registration key, and `fee` prices the
+pay-to-prove cost of a run in NOX. For edition 2026, `test` runs a program's tests and
+`explain` prints what a diagnostic code means.
+
+## Edition 2026
+
+Edition 2026 is a typed language, specified in [`SPEC.md`](SPEC.md), whose compiler is
+being built in stages; the status section there says what exists. This program proves
+that a secret leaf lies in a Merkle tree under a public root, and reveals nothing else:
+
+```
+use std::merkle::root;
+
+fn main(r: public field, leaf: secret field, path: secret [field; 3], right: secret [bool; 3]) -> field {
+    assert root(leaf, path, right) == r, "not a member";
+    r
+}
+```
+
+```
+zkolang run member.zkl --edition 2026 --public 4974174274453454789 --secret 7,11,22,33,0,1,1
+verified
+outputs [4974174274453454789]
+rows 259  trace 2^9
+```
+
+A leaf that is not in the tree fails the run at the `assert`, and no proof is made. The
+edition has fixed-width integers, `bool` and `field`; tuples, arrays, structs, and enums
+with `match`, checked for exhaustiveness; `public` and `secret` labels, with a check that
+refuses a secret reaching a public result unless it is `declassify`d; generic functions,
+types and `impl` blocks over types and constants; modules in their own files; packages
+with a `zkolang.toml` and path dependencies; and a standard library written in zKølang,
+with `Option` and `Result` and their variants in every module, and `std::array`,
+`std::cmp`, `std::poly`, `std::curve` (elliptic curves over `field`), `std::hash` and
+`std::merkle`. [`docs/migration-2026.md`](docs/migration-2026.md) maps each edition 2025
+form to its edition 2026 form, each pair checked by a test to give the same outputs.
+
+```
+zkolang check program.zkl --edition 2026          # check and compile, and count the rows
+zkolang check program.zkl --edition 2026 --cost   # the rows of each function and line
+zkolang check program.zkl --edition 2026 --declassify  # each place a secret is revealed
+zkolang test program.zkl                          # run each #[test], compiled on the machine
+zkolang abi program.zkl --edition 2026            # the layout of the inputs and result
+zkolang doc program.zkl                           # the reference from the doc comments
+zkolang fmt program.zkl                           # lay out its lines; --check only reports
+zkolang check program.zkl --edition 2026 --json   # the diagnostics as a JSON array
+zkolang explain E0300                             # what a diagnostic code means
+```
+
+A file that a `zkolang.toml` governs, in its directory or one above, is compiled in the
+manifest's edition without `--edition`.
 
 ## A first program
 
@@ -72,7 +121,7 @@ reveal nullifier(key, position);
 prove balance == 0;
 ```
 
-The [specification](SPEC.md) is normative; the [manifesto](MANIFESTO.md) says what it is
+The [specification](docs/edition-2025.md) is normative; the [manifesto](MANIFESTO.md) says what it is
 for.
 
 ## The standard library
@@ -149,7 +198,7 @@ and each rejects a forged input.
 The step AIR is exposed as a standalone `AirExt`, with the transition written once over any
 field (`transition_over`) and a `GenericTransition` seam, so a recursive verifier can
 arithmetize it as its inner statement and prove that a zKølang proof itself verifies. The
-generic composition check lives in the vendored STARK primitives; the registration key a
+generic composition check lives in `nonos-stark`, in the STARKs repository; the registration key a
 recursion targets is reproducible from `verifier_key(program, 3)`.
 
 ## Proving and verification
@@ -185,15 +234,15 @@ grammar under [tree-sitter-zkolang](tree-sitter-zkolang), a TextMate grammar und
 nonos_zkolang/         the language, the VM, the step AIR, the prover binding
 nonos_zkolang_cli/     the zkolang command-line tool
 nonos_zkolang_proofs/  the host proof suite
-nonos-stark/           the transparent STARK primitives (vendored)
 circuits/              the production utilities, kernel and shield
 examples/              programs written in the language
 stdlib/                the standard library, in zKølang
 lean/                  gadget soundness in Lean 4
 ```
 
-The language and the STARK travel together so the repository builds and proves on its own,
-with no dependency outside `blake3`.
+The transparent STARK primitives, `nonos-stark`, come from the
+[STARKs repository](https://github.com/NON-OS/STARKs) at the commit the manifests pin; the
+build has no other dependency outside `blake3`.
 
 ## License
 

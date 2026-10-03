@@ -1,0 +1,15 @@
+/* Habits from other languages: each is reported once, and parsing goes on as meant. */
+fn f(x: u8) -> u8 {
+    assert x > 1, 'overflow'; /*~ E0001 */
+    let c = '\u{41}'; /*~ E0001 */
+    let r#type = 1; /*~ E0001 */
+    let mut y = x;
+    y −= 1; /*~ E0001 */
+    include "a.zkl" /*~ E0104 */
+    let z = include "b.zkl"; /*~ E0104 */
+    y
+}
+
+fn g<'a>(x: u8) -> u8 { x } /*~ E0001 */
+impl S { include "x.zkl"; } /*~ E0104 */
+include /* old */ "x.zkl"; /*~ E0104 */

@@ -1,0 +1,30 @@
+/* `field` arithmetic (section 7.1): modulo p = 2^64 - 2^32 + 1. */
+
+#[test]
+fn field_arithmetic_is_modular() {
+    let m: field = -1;
+    assert m + 1 == 0;
+    assert m * m == 1;
+    let a: field = 12345;
+    assert a * a.inv() == 1;
+    assert a / a == 1;
+    assert -a + a == 0;
+    let t: field = 3;
+    assert t.pow(4) == 81;
+    let big: field = 18446744069414584320;
+    assert big + 2 == 1;
+}
+
+#[test]
+#[should_fail]
+fn inverse_of_zero_fails() {
+    let z: field = 0;
+    let _i = z.inv();
+}
+
+#[test]
+#[should_fail]
+fn field_division_by_zero_fails() {
+    let z: field = 0;
+    let _q = 1 / z;
+}

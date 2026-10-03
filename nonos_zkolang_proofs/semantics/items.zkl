@@ -1,0 +1,45 @@
+/* Constants and `const fn` (section 11), modules (section 4) and tests (section 16). */
+
+const N: usize = 4;
+const SQUARES: [u32; N] = [0, 1, 4, 9];
+const T5: u32 = tri(5);
+
+const fn tri(n: u32) -> u32 {
+    let mut s = 0;
+    for i in 0..=10 {
+        if i <= n { s += i; }
+    }
+    s
+}
+
+fn add(a: u32, b: u32) -> u32 {
+    a + b
+}
+
+fn main(a: public u32, w: secret u32) -> public u32 {
+    a + declassify(w * 0)
+}
+
+#[test]
+fn constants_evaluate() {
+    assert T5 == 15;
+    assert SQUARES[3] == 9;
+    assert tri(4) == 10;
+    let a = [0u8; N];
+    assert a.len() == N;
+}
+
+#[test]
+fn a_test_calls_main() {
+    assert main(2, 3) == 2;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::add;
+
+    #[test]
+    fn a_test_in_a_test_module() {
+        assert add(2, 3) == 5;
+    }
+}

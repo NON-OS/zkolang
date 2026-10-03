@@ -1,0 +1,4 @@
+/* `main` takes its inputs by value (E0901). */
+fn main(a: public u8, b: &mut secret u8) -> public u8 { /*~ E0901 */
+    a
+}

@@ -1,0 +1,44 @@
+/* `assert false` leaves its block (section 8.3), which lets `Option::unwrap` be written in zKølang. */
+
+fn even_half(x: u8) -> u8 {
+    if x % 2 == 1 {
+        assert false, "odd";
+    }
+    x / 2
+}
+
+fn pick(c: bool) -> u8 {
+    let v = if c { 7 } else { assert false; };
+    v
+}
+
+#[test]
+fn unwrap_gives_the_value_held() {
+    assert Some(5u8).unwrap() == 5;
+    assert !Some(true).and(Some(false)).unwrap();
+    assert None::<u8>.and(Some(1)).is_none();
+}
+
+#[test]
+#[should_fail]
+fn unwrap_of_none_fails() {
+    let _v = None::<u8>.unwrap();
+}
+
+#[test]
+fn a_block_that_asserts_false_has_any_type() {
+    assert pick(true) == 7;
+    assert even_half(8) == 4;
+}
+
+#[test]
+#[should_fail]
+fn it_fails_where_it_is_reached() {
+    let _v = pick(false);
+}
+
+#[test]
+#[should_fail]
+fn a_guarded_one_fails_when_its_guard_holds() {
+    let _v = even_half(3);
+}

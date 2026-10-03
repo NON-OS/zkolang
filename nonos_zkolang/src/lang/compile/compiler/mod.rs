@@ -9,8 +9,13 @@
 //! depth. The two bounds guard against a runaway unroll or a recursive inline.
 
 mod alloc;
+mod bind_fresh;
 mod finish;
 mod free_dead;
+mod free_reg;
+mod hide;
+mod io_index;
+mod limits;
 mod lookup;
 mod loop_const;
 mod new;
@@ -20,21 +25,8 @@ mod release;
 mod state;
 mod take_scalar;
 mod val;
+mod work;
 
+pub(crate) use limits::{MAX_EXPR_DEPTH, MAX_INLINE, MAX_UNROLL};
 pub(crate) use state::Compiler;
 pub(crate) use val::Val;
-
-/// The largest number of iterations a single loop may unroll to, a fail-fast guard
-/// before the trace-length cap catches anything larger at prove time.
-pub(crate) const MAX_UNROLL: u64 = 65_536;
-
-/// The largest number of instructions a program may unroll to. A single loop is
-/// bounded by MAX_UNROLL, but nested loops multiply, so total emission is capped
-/// here to keep a hostile program from exhausting memory during compilation. The
-/// bound sits well above any provable trace, so the prove-time cap still gives the
-/// tighter answer for programs that merely will not fit.
-pub(crate) const MAX_OPS: usize = 1 << 20;
-
-/// The deepest a chain of inlined calls may nest, which turns a recursive call into
-/// a compile error rather than a non-terminating inline.
-pub(crate) const MAX_INLINE: usize = 256;

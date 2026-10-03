@@ -17,11 +17,14 @@ impl<'a> Parser<'a> {
     pub(crate) fn logic_or(&mut self) -> Result<Expr, CompileError> {
         let mut lhs = self.logic_and()?;
         while matches!(self.peek(), Some(Tok::PipePipe)) {
+            let at = self.at();
             self.pos += 1;
+            self.enter()?;
             let rhs = self.logic_and()?;
             let sum = Expr::Add(Box::new(lhs.clone()), Box::new(rhs.clone()));
             let prod = Expr::Mul(Box::new(lhs), Box::new(rhs));
             lhs = Expr::Sub(Box::new(sum), Box::new(prod));
+            self.within_budget(&lhs, at)?;
         }
         Ok(lhs)
     }

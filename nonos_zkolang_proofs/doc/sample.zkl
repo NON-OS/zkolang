@@ -1,0 +1,56 @@
+/*! A sample crate for the reference renderer. */
+
+/** A point of the plane. */
+pub struct Point {
+    /** Across. */
+    pub x: u32,
+    pub y: u32,
+    hidden: u32,
+}
+
+/** A pair of one type, by position. */
+pub struct Both<T>(pub T, pub T);
+
+/** A shape. */
+pub enum Shape {
+    /** Nothing at all. */
+    Empty,
+    Dot(Point),
+}
+
+/** Four points. */
+pub type Quad = [Point; 4];
+
+/** The largest coordinate. */
+pub const MAX: u32 = 1000;
+
+const SECRET: u32 = 7;
+
+impl Point {
+    /** Its distance from the origin, in steps. */
+    pub fn steps(self) -> u32 {
+        self.x + self.y + self.hidden
+    }
+
+    fn private(self) -> u32 {
+        SECRET
+    }
+}
+
+/** The origin. */
+pub fn origin(
+    zero: u32,
+) -> Point {
+    Point { x: zero, y: zero, hidden: 0 }
+}
+
+fn helper() {}
+
+pub mod geo {
+    /*! Geometry. */
+
+    /** Twice `x`. */
+    pub fn twice<const N: usize>(x: [u32; N]) -> u32 {
+        x[0] * 2
+    }
+}

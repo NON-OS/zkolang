@@ -1,0 +1,26 @@
+/* The widest integer types, and the constants of every integer type (section 18.3). */
+
+#[test]
+fn wide_types_hold_their_ranges() {
+    assert u64::MAX == 18446744073709551615;
+    assert i64::MIN == -9223372036854775808;
+    let a: u64 = 4294967296;
+    assert a * 4294967295 == 18446744069414584320;
+    assert u32::BITS == 32;
+    assert i16::MIN + i16::MAX == -1;
+    assert usize::MAX == 4294967295;
+}
+
+#[test]
+#[should_fail]
+fn u64_overflow_fails() {
+    let a: u64 = 4294967296;
+    let _b = a * a;
+}
+
+#[test]
+#[should_fail]
+fn i64_underflow_fails() {
+    let a: i64 = i64::MIN;
+    let _b = a - 1;
+}

@@ -1,0 +1,23 @@
+/* A constant generic parameter (section 5.5) sizes the arrays of each instance. */
+
+struct Buf<const N: usize> {
+    data: [u8; N],
+}
+
+type Row<const N: usize> = [u16; N];
+
+fn total(b: Buf<3>) -> u8 {
+    let mut t = 0u8;
+    for x in b.data {
+        t += x;
+    }
+    t
+}
+
+#[test]
+fn a_constant_argument_sizes_an_array() {
+    let b = Buf::<3> { data: [1, 2, 3] };
+    assert total(b) == 6;
+    let r: Row<2> = [7, 8];
+    assert r[0] + r[1] == 15;
+}

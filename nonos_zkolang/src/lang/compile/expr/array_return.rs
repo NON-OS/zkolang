@@ -33,7 +33,6 @@ impl Compiler {
             Expr::Var(n) => {
                 self.lookup(n).is_none()
                     && self.loop_const(n).is_none()
-                    && self.scalar_const(n).is_none()
                     && self.lookup_array(n).is_some()
             }
             Expr::Call(name, _) => self
@@ -95,6 +94,7 @@ impl Compiler {
         if self.inline_depth >= MAX_INLINE {
             return Err(CompileError::RecursionTooDeep);
         }
+        self.spend_inline()?;
         let argv: Vec<Arg> = self.eval_args(args)?;
         let saved = self.open_params(&def.params, &argv);
         self.inline_depth += 1;

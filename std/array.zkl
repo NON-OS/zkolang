@@ -1,0 +1,59 @@
+/*!
+ * Arrays (section 18.2): folds and searches over an array of any length `N`. A function
+ * whose element type `T` must add, multiply or compare is checked for each `T` it is
+ * called with (section 5.5), so it takes the integer types and `field` where they allow it.
+ */
+
+use crate::option::Option;
+
+/** The sum of the elements of `a`; the run fails if an integer sum overflows `T`. */
+pub fn sum<T, const N: usize>(a: [T; N]) -> T {
+    let mut s: T = 0;
+    for x in a {
+        s = s + x;
+    }
+    s
+}
+
+/** The product of the elements of `a`; the run fails if an integer product overflows `T`. */
+pub fn product<T, const N: usize>(a: [T; N]) -> T {
+    let mut s: T = 1;
+    for x in a {
+        s = s * x;
+    }
+    s
+}
+
+/** The sum of the products of the elements of `a` and `b` at each index. */
+pub fn dot<T, const N: usize>(a: [T; N], b: [T; N]) -> T {
+    let mut s: T = 0;
+    for i in 0..N {
+        s = s + a[i] * b[i];
+    }
+    s
+}
+
+/** The index of the first element of `a` equal to `x`, if one is. */
+pub fn position<T, const N: usize>(a: [T; N], x: T) -> Option<usize> {
+    let mut found: Option<usize> = Option::None;
+    for i in 0..N {
+        if found.is_none() && a[i] == x {
+            found = Option::Some(i);
+        }
+    }
+    found
+}
+
+/** Whether an element of `a` equals `x`. */
+pub fn contains<T, const N: usize>(a: [T; N], x: T) -> bool {
+    position(a, x).is_some()
+}
+
+/** The elements of `a`, last first. */
+pub fn reverse<T, const N: usize>(a: [T; N]) -> [T; N] {
+    let mut r = a;
+    for i in 0..N {
+        r[i] = a[N - 1 - i];
+    }
+    r
+}

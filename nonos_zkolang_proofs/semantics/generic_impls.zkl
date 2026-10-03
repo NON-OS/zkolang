@@ -1,0 +1,65 @@
+/*
+ * Generic `impl` blocks (section 10.2): the functions of `impl<T> G<T>` instantiated for
+ * the arguments the type gives, beside functions of an `impl` block for one instance.
+ */
+
+struct Pair<T> {
+    a: T,
+    b: T,
+}
+
+impl<T> Pair<T> {
+    fn new(a: T, b: T) -> Self {
+        Pair { a, b }
+    }
+
+    fn swap(self) -> Pair<T> {
+        Pair { a: self.b, b: self.a }
+    }
+
+    fn first(self) -> T {
+        self.a
+    }
+
+    fn with<U>(self, u: U) -> (U, T) {
+        (u, self.b)
+    }
+}
+
+impl Pair<u8> {
+    fn sum(self) -> u8 {
+        self.a + self.b
+    }
+}
+
+enum Maybe<T> {
+    Just(T),
+    Nothing,
+}
+
+impl<T> Maybe<T> {
+    fn or(self, d: T) -> T {
+        match self {
+            Self::Just(x) => x,
+            Self::Nothing => d,
+        }
+    }
+}
+
+#[test]
+fn members_are_instantiated_for_the_type() {
+    let p = Pair::new(5u8, 3);
+    let q = p.swap();
+    assert q.first() == 3 && p.sum() == 8;
+    let r: Pair<i16> = Pair::new(-1, 2);
+    assert r.swap().first() == 2;
+    let (u, t) = q.with(true);
+    assert u && t == 5;
+}
+
+#[test]
+fn enum_members_match_on_self() {
+    let m: Maybe<u64> = Maybe::Nothing;
+    assert m.or(12) == 12;
+    assert Maybe::Just(false).or(true) == false;
+}

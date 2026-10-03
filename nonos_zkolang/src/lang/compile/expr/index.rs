@@ -22,6 +22,10 @@ impl Compiler {
         at: usize,
     ) -> Result<Val, CompileError> {
         if let Expr::Var(name) = base {
+            /* A loop variable hides an outer array of its name, as a binding does. */
+            if self.loop_const(name).is_some() {
+                return Err(CompileError::NotIndexable { at });
+            }
             if self.lookup_array(name).is_some() {
                 let reg = self.array_element(name, idx, at)?;
                 return Ok(Val { reg, temp: false });

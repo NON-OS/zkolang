@@ -1,0 +1,28 @@
+/* The prelude's names: refused where a pattern must be irrefutable, matched exhaustively, and shadowed by an item. */
+#![allow(unused)]
+fn f(o: Option<u8>) -> u8 {
+    let None = o; /*~ E0401 */
+    match o { /*~ E0400 */
+        Some(1) => 1,
+        None => 0,
+    }
+}
+
+fn g() -> Option<u8> {
+    Some(1, 2) /*~ E0307 */
+}
+
+mod shadow {
+    pub struct None;
+
+    fn h() -> None {
+        let n = None;
+        n
+    }
+
+    fn k(x: u8) -> u8 {
+        match x {
+            None => x,
+        }
+    }
+}

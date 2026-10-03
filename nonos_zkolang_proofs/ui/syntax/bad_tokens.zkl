@@ -1,0 +1,6 @@
+/* Malformed literals are each reported where they start. */
+fn f() -> u32 {
+    let a = 0xZZ; /*~ E0005 */
+    let b = 99999999999999999999999999; /*~ E0006 */
+    a + b
+}
