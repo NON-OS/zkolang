@@ -38,7 +38,11 @@ pub(super) fn render(h: &Poseidon, rounds: usize) -> String {
     for k in 0..RATE {
         writeln!(s, "let o{k} = state[{k}];").unwrap();
     }
-    writeln!(s, "let state = [l0, l1, l2, {NOTE_DOMAIN}, o0, o1, o2, o3];").unwrap();
+    writeln!(
+        s,
+        "let state = [l0, l1, l2, {NOTE_DOMAIN}, o0, o1, o2, o3];"
+    )
+    .unwrap();
     perm(rounds, &mut s);
     for k in 0..RATE {
         writeln!(s, "reveal state[{k}];").unwrap();

@@ -12,8 +12,8 @@
 use alloc::format;
 use alloc::vec::Vec;
 
-use super::files::join;
 use super::entry::Loader;
+use super::files::join;
 use super::load_report::{missing, too_deep};
 use crate::compiler::syntax::ast::{Ident, Item, ItemKind, SourceAst};
 

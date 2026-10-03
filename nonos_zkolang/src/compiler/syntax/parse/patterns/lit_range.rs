@@ -14,7 +14,10 @@ use crate::compiler::syntax::token::TokenKind;
 
 impl<'a> Parser<'a> {
     /** A literal pattern, or a range `lo..=hi` of two, starting at `start`. */
-    pub(in crate::compiler::syntax::parse) fn pattern_lit_or_range(&mut self, start: Span) -> PResult<Pattern> {
+    pub(in crate::compiler::syntax::parse) fn pattern_lit_or_range(
+        &mut self,
+        start: Span,
+    ) -> PResult<Pattern> {
         let lo = self.literal_pattern(true)?;
         if !self.at(TokenKind::DotDotEq) {
             return Ok(lo);

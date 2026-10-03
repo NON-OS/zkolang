@@ -14,7 +14,10 @@ use crate::compiler::syntax::token::TokenKind;
 
 impl<'a> Parser<'a> {
     /** `()`, `(p)` or `(p, q, ...)`, the `(` current and at `start`. */
-    pub(in crate::compiler::syntax::parse) fn pattern_paren(&mut self, start: Span) -> PResult<Pattern> {
+    pub(in crate::compiler::syntax::parse) fn pattern_paren(
+        &mut self,
+        start: Span,
+    ) -> PResult<Pattern> {
         self.bump();
         let kind = if self.eat(TokenKind::RParen) {
             PatKind::Tuple(Vec::new())

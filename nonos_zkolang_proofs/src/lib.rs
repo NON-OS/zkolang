@@ -174,12 +174,6 @@ mod match_default_tests;
 #[cfg(test)]
 mod match_exhaust_tests;
 #[cfg(test)]
-mod match_witness_arm_tests;
-#[cfg(test)]
-mod migration_pairs;
-#[cfg(test)]
-mod migration_tests;
-#[cfg(test)]
 mod match_gen;
 #[cfg(test)]
 mod match_pat;
@@ -187,6 +181,12 @@ mod match_pat;
 mod match_rng;
 #[cfg(test)]
 mod match_witness;
+#[cfg(test)]
+mod match_witness_arm_tests;
+#[cfg(test)]
+mod migration_pairs;
+#[cfg(test)]
+mod migration_tests;
 #[cfg(test)]
 mod modules_expect;
 #[cfg(test)]
