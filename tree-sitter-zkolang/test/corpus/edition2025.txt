@@ -1,0 +1,87 @@
+================================================================================
+Edition 2025 at the top level
+================================================================================
+
+include "hash.zkl";
+const K = 7;
+fn sq(a) = a * a;
+fn both(a, b) {
+    let s = a + b;
+    s * s
+}
+input x;
+witness w;
+for i in 0..3 {
+    assert x != i;
+}
+output sq(x) + w;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (include_directive
+    (string))
+  (legacy_const
+    (identifier)
+    (integer))
+  (legacy_function
+    (identifier)
+    (legacy_parameters
+      (identifier))
+    (binary_expression
+      (identifier)
+      (identifier)))
+  (legacy_function
+    (identifier)
+    (legacy_parameters
+      (identifier)
+      (identifier))
+    (block
+      (let_declaration
+        (identifier)
+        (binary_expression
+          (identifier)
+          (identifier)))
+      (binary_expression
+        (identifier)
+        (identifier))))
+  (input_declaration
+    (identifier))
+  (input_declaration
+    (identifier))
+  (legacy_for
+    (identifier)
+    (range_expression
+      (integer)
+      (integer))
+    (assert_statement
+      (binary_expression
+        (identifier)
+        (identifier))))
+  (output_statement
+    (binary_expression
+      (call_expression
+        (identifier)
+        (arguments
+          (identifier)))
+      (identifier))))
+
+================================================================================
+Comments: line, doc, and nested block
+================================================================================
+
+/// a doc comment
+// a line comment
+/* outer /* inner */ still outer */
+fn f() {}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (line_comment)
+  (line_comment)
+  (block_comment)
+  (function_item
+    (identifier)
+    (parameters)
+    (block)))

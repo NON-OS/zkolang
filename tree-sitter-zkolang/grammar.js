@@ -1,66 +1,32 @@
-// zKolang grammar for tree-sitter. Mirrors the compiler front end: a source file is a
-// sequence of includes, constant and function definitions, and statements, over an
-// expression language with the operators the parser accepts.
+/*
+ zKølang by NØNOS
+ AGPL-3.0-or-later
+*/
+
+/*
+ * zKølang for tree-sitter. Edition 2026 as SPEC.md section 3 gives it, one file of rules
+ * per part, and the top-level forms of edition 2025 beside it.
+ */
+
+const lexical = require('./grammar/lexical');
+const items = require('./grammar/items');
+const types = require('./grammar/types');
+const statements = require('./grammar/statements');
+const expressions = require('./grammar/expressions');
+const patterns = require('./grammar/patterns');
+const legacy = require('./grammar/legacy');
+
 module.exports = grammar({
   name: 'zkolang',
-
-  extras: $ => [/\s/, $.comment],
-
+  word: $ => $.identifier,
+  externals: $ => [$.block_comment],
+  extras: $ => [/\s/, $.line_comment, $.block_comment],
+  conflicts: $ => [
+    [$._expression, $.struct_expression],
+    [$.parameters, $.legacy_parameters],
+  ],
   rules: {
-    source_file: $ => repeat($._item),
-
-    _item: $ => choice(
-      $.include,
-      $.const_def,
-      $.fn_def,
-      $._statement,
-    ),
-
-    include: $ => seq('include', $.string, ';'),
-
-    const_def: $ => seq('const', $.identifier, '=', choice($.number, $.array), ';'),
-
-    fn_def: $ => seq('fn', $.identifier, '(', optional($._params), ')', '=', $._expr, ';'),
-    _params: $ => seq($.identifier, repeat(seq(',', $.identifier))),
-
-    _statement: $ => choice(
-      $.let_stmt, $.input_stmt, $.secret_stmt, $.output_stmt, $.assert_stmt, $.for_stmt,
-    ),
-    let_stmt: $ => seq('let', $.identifier, '=', $._expr, ';'),
-    input_stmt: $ => seq(choice('input', 'public'), $.identifier, ';'),
-    secret_stmt: $ => seq(choice('secret', 'witness'), $.identifier, ';'),
-    output_stmt: $ => seq(choice('output', 'reveal'), $._expr, ';'),
-    assert_stmt: $ => seq(choice('assert', 'prove'), $._expr, ';'),
-    for_stmt: $ => seq('for', $.identifier, 'in', $._expr, '..', $._expr,
-      '{', repeat($._statement), '}'),
-
-    _expr: $ => choice(
-      $.binary, $.unary, $.call, $.index, $.array, $.inv, $.sel, $.if_expr, $.match_expr,
-      $.paren, $.number, $.identifier,
-    ),
-
-    binary: $ => choice(
-      prec.left(1, seq($._expr, '||', $._expr)),
-      prec.left(2, seq($._expr, '&&', $._expr)),
-      prec.left(3, seq($._expr, choice('==', '!=', '<', '<=', '>', '>='), $._expr)),
-      prec.left(4, seq($._expr, choice('+', '-'), $._expr)),
-      prec.left(5, seq($._expr, choice('*', '/'), $._expr)),
-    ),
-    unary: $ => prec(6, seq(choice('-', '!'), $._expr)),
-    call: $ => prec(7, seq($.identifier, '(', optional($._args), ')')),
-    index: $ => prec(7, seq($.identifier, '[', $._expr, ']')),
-    _args: $ => seq($._expr, repeat(seq(',', $._expr))),
-    array: $ => seq('[', optional($._args), ']'),
-    inv: $ => seq('inv', '(', $._expr, ')'),
-    sel: $ => seq('sel', '(', $._expr, ',', $._expr, ',', $._expr, ')'),
-    if_expr: $ => seq('if', $._expr, '{', $._expr, '}', 'else', '{', $._expr, '}'),
-    match_expr: $ => seq('match', $._expr, '{',
-      repeat(seq(choice($.number, '_'), '=>', $._expr, ',')), '}'),
-    paren: $ => seq('(', $._expr, ')'),
-
-    identifier: $ => /[A-Za-z_][A-Za-z0-9_]*/,
-    number: $ => /[0-9]+/,
-    string: $ => /"[^"]*"/,
-    comment: $ => token(seq('//', /.*/)),
+    source_file: $ => repeat(choice($.attribute_item, $._item, $._legacy_item)),
+    ...lexical, ...items, ...types, ...statements, ...expressions, ...patterns, ...legacy,
   },
 });

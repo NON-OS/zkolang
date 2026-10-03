@@ -576,7 +576,8 @@ Editor support: `zkolang lsp` speaks the Language Server Protocol, publishing th
 diagnostics of each open edition 2026 document as it changes, across the files of its
 package, and laying a document out on request with `zkolang fmt`. A
 [TextMate grammar](grammars) and a [VS Code extension](editors/vscode) highlight both
-editions, and a [tree-sitter grammar](tree-sitter-zkolang) covers edition 2025.
+editions, and a [tree-sitter grammar](tree-sitter-zkolang) parses both, held in CI to
+every program in this repository.
 
 ## What you can build today
 
@@ -609,7 +610,7 @@ Stated so nobody has to find out by surprise:
   proofs yet.
 - **Bounded programs only:** loops are unrolled, `while` carries a `limit`, there is no
   heap, and functions are inlined, so recursion is refused.
-- **The tree-sitter grammar and the `asm` target** take edition 2025 only.
+- **The `asm` target** takes edition 2025 only; edition 2026 builds to C and Python.
 
 ## How it is kept correct
 

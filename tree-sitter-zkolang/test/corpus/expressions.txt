@@ -1,0 +1,202 @@
+================================================================================
+Precedence, loosest first
+================================================================================
+
+fn f() -> bool {
+    -x as u64 + y * z << 1 == w && a || b
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (function_item
+    (identifier)
+    (parameters)
+    (primitive_type)
+    (block
+      (binary_expression
+        (binary_expression
+          (binary_expression
+            (binary_expression
+              (binary_expression
+                (type_cast_expression
+                  (unary_expression
+                    (identifier))
+                  (primitive_type))
+                (binary_expression
+                  (identifier)
+                  (identifier)))
+              (integer))
+            (identifier))
+          (identifier))
+        (identifier)))))
+
+================================================================================
+A condition is a block's, not a struct literal's
+================================================================================
+
+fn f() -> u32 {
+    let p = Point { x: 1, y };
+    if a == b { c } else { p.x }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (function_item
+    (identifier)
+    (parameters)
+    (primitive_type)
+    (block
+      (let_declaration
+        (identifier)
+        (struct_expression
+          (identifier)
+          (field_initializer_list
+            (field_initializer
+              (identifier)
+              (integer))
+            (shorthand_field_initializer
+              (identifier)))))
+      (expression_statement
+        (if_expression
+          (binary_expression
+            (identifier)
+            (identifier))
+          (block
+            (identifier))
+          (block
+            (field_expression
+              (identifier)
+              (identifier))))))))
+
+================================================================================
+Match arms: alternatives, guards, and a block with no comma
+================================================================================
+
+fn f(s: Sign) -> u32 {
+    match s {
+        Sign::Neg | Sign::Zero => 0,
+        Some(n) if n > 2 => { n }
+        Pair { a, .. } => a,
+        -5..=5 => 1,
+        _ => 2
+    }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (function_item
+    (identifier)
+    (parameters
+      (parameter
+        (identifier)
+        (identifier)))
+    (primitive_type)
+    (block
+      (expression_statement
+        (match_expression
+          (identifier)
+          (match_block
+            (match_arm
+              (or_pattern
+                (scoped_identifier
+                  (identifier)
+                  (identifier))
+                (scoped_identifier
+                  (identifier)
+                  (identifier)))
+              (integer))
+            (match_arm
+              (tuple_struct_pattern
+                (identifier)
+                (identifier))
+              (binary_expression
+                (identifier)
+                (integer))
+              (block
+                (identifier)))
+            (match_arm
+              (struct_pattern
+                (identifier)
+                (field_pattern
+                  (identifier))
+                (remaining_field_pattern))
+              (identifier))
+            (match_arm
+              (range_pattern
+                (negative_literal
+                  (integer))
+                (integer))
+              (integer))
+            (match_arm
+              (wildcard)
+              (integer))))))))
+
+================================================================================
+Loops, assignment, methods with type arguments, and declassify
+================================================================================
+
+fn f(t: [u8; 4]) -> u8 {
+    let mut k = 0u8;
+    for i in 0..4 { k += t[i]; }
+    while k < 10 limit 16 { k = k << 1; }
+    declassify(t.get::<u8>(0).0)
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (function_item
+    (identifier)
+    (parameters
+      (parameter
+        (identifier)
+        (array_type
+          (primitive_type)
+          (integer))))
+    (primitive_type)
+    (block
+      (let_declaration
+        (mut_pattern
+          (identifier))
+        (integer))
+      (expression_statement
+        (for_expression
+          (identifier)
+          (range_expression
+            (integer)
+            (integer))
+          (block
+            (expression_statement
+              (assignment_expression
+                (identifier)
+                (index_expression
+                  (identifier)
+                  (identifier)))))))
+      (expression_statement
+        (while_expression
+          (binary_expression
+            (identifier)
+            (integer))
+          (integer)
+          (block
+            (expression_statement
+              (assignment_expression
+                (identifier)
+                (binary_expression
+                  (identifier)
+                  (integer)))))))
+      (declassify_expression
+        (field_expression
+          (call_expression
+            (generic_function
+              (field_expression
+                (identifier)
+                (identifier))
+              (type_arguments
+                (primitive_type)))
+            (arguments
+              (integer)))
+          (integer))))))

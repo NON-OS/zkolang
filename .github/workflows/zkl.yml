@@ -73,3 +73,20 @@ jobs:
             exit 1
           fi
           echo "verifier key stable"
+
+  grammar:
+    name: tree-sitter grammar
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      # The CLI at the version package.json pins, run by the runner's Node.
+      - name: install tree-sitter
+        working-directory: tree-sitter-zkolang
+        run: npm install --no-audit --no-fund
+
+      # The grammar generates, its pinned trees and highlight queries hold, and every
+      # program in the repository that marks no syntax error parses with no error node.
+      - name: parse every program
+        run: python3 scripts/check_grammar.py tree-sitter-zkolang/node_modules/.bin/tree-sitter
