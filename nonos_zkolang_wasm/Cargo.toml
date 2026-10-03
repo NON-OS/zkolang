@@ -1,0 +1,15 @@
+# zKølang's format 7 verifier as a WebAssembly module a page instantiates with nothing but
+# WebAssembly.instantiate: nox_verify over a statement the page pins, no bindings.
+
+[package]
+name = "nonos_zkolang_wasm"
+version = "0.1.0"
+edition = "2021"
+license = "AGPL-3.0-or-later"
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+nonos_zkolang_format7 = { path = "../nonos_zkolang_format7" }

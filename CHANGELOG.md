@@ -60,6 +60,9 @@ fixes below.
 - The TextMate grammar and the VS Code extension highlight edition 2026.
 - The tree-sitter grammar parses edition 2026 beside edition 2025; CI parses every
   program in the repository and the README with it, each with no error node.
+- `nonos_zkolang_wasm`: the format 7 verifier as a WebAssembly module a page loads with
+  no bindings, and `zkolang-verify.mjs`; CI has it verify the committed fixture in Node.
+  Release archives carry it beside the command.
 - `zkolang prove`, `verify` and `statement`: a run proven in STARKs format 7 and checked
   by `nox_verify`, a proof verified against the statement and public words made from the
   program and the claimed values, and the image and statement a gate pins.

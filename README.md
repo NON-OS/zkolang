@@ -607,12 +607,12 @@ Stated so nobody has to find out by surprise:
 
 - **No external audit**, and no claim of full zero-knowledge: the trace columns are blinded,
   and the composition and FRI layers are not argued here ([SECURITY.md](SECURITY.md)).
-- **Format 7 reaches `nox_verify`, not yet the browser or the chain.** A run proves in
-  STARKs format 7 and `nox_verify`, the `no_std` verifier a STARKs gate links, accepts it
-  against the program's image ([`nonos_zkolang_format7`](nonos_zkolang_format7)). The
-  STARKs browser module is built for the statements it ships with, and an on-chain
-  verifier is generated from a statement's image in the contracts repository; neither is
-  built for a zKølang program yet.
+- **Format 7 reaches `nox_verify` and the browser, not yet the chain.** A run proves in
+  STARKs format 7; `nox_verify`, the `no_std` verifier a STARKs gate links, accepts it
+  against the program's image, and so does [`nonos_zkolang_wasm`](nonos_zkolang_wasm), the
+  same verifier as a module a page loads. An on-chain verifier is generated from a
+  statement's image in the contracts repository; none is built for a zKølang program
+  here.
 - **A trace holds at most 2^16 rows**, and there is no recursion that aggregates zKølang
   proofs yet.
 - **Bounded programs only:** loops are unrolled, `while` carries a `limit`, there is no
@@ -697,7 +697,9 @@ own, and a program's image carries that tape and the program's boundaries, each 
 or a public word; the image and the periodic root are what a verifier pins. Every column
 is blinded, which needs a trace of at least 2^10 rows. The test that proves a program this
 way holds its proof under 96 KiB. `zkolang prove`, `verify` and `statement` drive it from
-the command line.
+the command line, and [`nonos_zkolang_wasm`](nonos_zkolang_wasm) verifies it in a page; CI
+loads that module in Node and has it verify the committed
+[fixture](nonos_zkolang_format7/fixture).
 
 The design of the compiler is in [docs/compiler-architecture.md](docs/compiler-architecture.md).
 
@@ -729,11 +731,14 @@ flowchart LR
     F7["nonos_zkolang_format7<br/>STARKs format 7"]:::here
     STARK["nonos-stark<br/>STARKs repository, pinned"]:::there
     NOXV["nox_verify<br/>STARKs repository, pinned"]:::there
+    WASM["nonos_zkolang_wasm<br/>the verifier in a page"]:::here
 
     CLI --> LIB
+    CLI --> F7
     PROOFS --> LIB
     F7 --> LIB
     F7 --> NOXV
+    WASM --> F7
     LIB --> STD
     LIB --> STARK
     NOXV --> STARK
@@ -746,6 +751,7 @@ flowchart LR
 | [`nonos_zkolang_cli`](nonos_zkolang_cli) | the `zkolang` command |
 | [`nonos_zkolang_proofs`](nonos_zkolang_proofs) | the test suite: semantics, diagnostics, circuits, the README |
 | [`nonos_zkolang_format7`](nonos_zkolang_format7) | a program's STARKs image, its runs proven in format 7 and verified by `nox_verify` |
+| [`nonos_zkolang_wasm`](nonos_zkolang_wasm) | the format 7 verifier as a WebAssembly module, and its JavaScript interface |
 | [`std`](std) | the standard library of edition 2026, in zKølang |
 | [`circuits`](circuits), [`examples`](examples), [`stdlib`](stdlib) | programs and the library of edition 2025 |
 | [`lean`](lean) | the Lean 4 proofs |

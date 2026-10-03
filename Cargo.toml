@@ -11,4 +11,5 @@ members = [
     "nonos_zkolang_cli",
     "nonos_zkolang_format7",
     "nonos_zkolang_proofs",
+    "nonos_zkolang_wasm",
 ]
