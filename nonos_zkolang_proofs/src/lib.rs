@@ -230,6 +230,8 @@ mod packages_run;
 #[cfg(test)]
 mod packages_tests;
 #[cfg(test)]
+mod pin_tests;
+#[cfg(test)]
 mod prop_binary;
 #[cfg(test)]
 mod prop_expr;

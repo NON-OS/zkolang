@@ -21,10 +21,12 @@ mod for_key;
 mod generic_transition;
 mod layout;
 mod pad;
+mod pin;
 mod step_air;
 mod transition;
 mod wiring;
 
 pub use error::BuildError;
 pub use layout::TRACE_WIDTH;
+pub use pin::Pin;
 pub use step_air::StepAir;
