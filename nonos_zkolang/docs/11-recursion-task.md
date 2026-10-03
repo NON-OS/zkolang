@@ -43,12 +43,12 @@ recursion attests to exactly the statement the base proof committed.
 The base verifier's soundness is in its query loop: for each of `n_queries`
 sampled points it checks the trace, composition, and DEEP openings against the
 Poseidon Merkle roots and the out-of-domain frame (see
-`nonos-stark/src/air/verify_poseidon_ext.rs`, the loop over `proof.queries`). The
-recursion must arithmetize that loop: the transcript replay, the index draws, the
-Merkle path checks, and the DEEP consistency equation, so that a satisfying
-recursion trace implies every query passed. This is the same shape as the shield
-recursion already in the tree; the difference is only the AIR under it and the
-public-input vector above.
+`nonos-stark/src/air/verify_poseidon_ext.rs` in the STARKs repository, the loop
+over `proof.queries`). The recursion must arithmetize that loop: the transcript
+replay, the index draws, the Merkle path checks, and the DEEP consistency equation,
+so that a satisfying recursion trace implies every query passed. This is the same
+shape as the shield recursion in the STARKs repository; the difference is only the
+AIR under it and the public-input vector above.
 
 ## Acceptance criteria
 

@@ -71,7 +71,7 @@ interface IZkolangVerifier {
 ```
 
 A full zKølang STARK is too large to verify directly in EVM gas. The verifier
-checks a succinct proof produced by the recursive verifier already in the tree
+checks a succinct proof produced by the recursive verifier of the STARKs repository
 (`nonos-stark`, the recursion assembly path), which compresses the STARK to a
 constant-size object a Solidity verifier can check. The recursion binds the
 program commitment and the public inputs and outputs into its own public inputs,
@@ -155,8 +155,8 @@ These are the honest blockers. None is hidden.
 
 1. On-chain verification. The full STARK does not fit in EVM gas. The launch path
    is the recursive verifier compressing a zKølang proof to a succinct proof the
-   Solidity verifier checks. The recursion and a Solidity verifier exist in the
-   tree for the custody use case; the work is to route a zKølang proof through the
+   Solidity verifier checks. The recursion exists in the STARKs repository for the
+   custody use case; the work is to route a zKølang proof through the
    same recursion and to expose the program commitment and public inputs and
    outputs as the recursion's public inputs. Until this lands, verification is
    in-process only and settlement cannot be trustless on chain.

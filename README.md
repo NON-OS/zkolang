@@ -198,7 +198,7 @@ and each rejects a forged input.
 The step AIR is exposed as a standalone `AirExt`, with the transition written once over any
 field (`transition_over`) and a `GenericTransition` seam, so a recursive verifier can
 arithmetize it as its inner statement and prove that a zKølang proof itself verifies. The
-generic composition check lives in the vendored STARK primitives; the registration key a
+generic composition check lives in `nonos-stark`, in the STARKs repository; the registration key a
 recursion targets is reproducible from `verifier_key(program, 3)`.
 
 ## Proving and verification
@@ -234,15 +234,15 @@ grammar under [tree-sitter-zkolang](tree-sitter-zkolang), a TextMate grammar und
 nonos_zkolang/         the language, the VM, the step AIR, the prover binding
 nonos_zkolang_cli/     the zkolang command-line tool
 nonos_zkolang_proofs/  the host proof suite
-nonos-stark/           the transparent STARK primitives (vendored)
 circuits/              the production utilities, kernel and shield
 examples/              programs written in the language
 stdlib/                the standard library, in zKølang
 lean/                  gadget soundness in Lean 4
 ```
 
-The language and the STARK travel together so the repository builds and proves on its own,
-with no dependency outside `blake3`.
+The transparent STARK primitives, `nonos-stark`, come from the
+[STARKs repository](https://github.com/NON-OS/STARKs) at the commit the manifests pin; the
+build has no other dependency outside `blake3`.
 
 ## License
 

@@ -59,9 +59,10 @@ The two properties a private-value system must never violate are theorems, not t
   `E(x^2) + x * O(x^2)`; the verifier's sum and difference of `f(x)` and `f(-x)` recover the
   even and odd parts at `x^2`, so each fold is a well-defined function of `x^2`.
 - **S-box split** (`SboxSplit.split_sound`, `split_complete`) and its bridge to the running
-  Rust (`stark_proofs` KAT `the_sbox_split_matches_the_lean_model`). The witnessed squares
-  reproduce the seventh power exactly; the deployed field op is checked equal to the Lean
-  model on random inputs, so the two meet in CI rather than in prose.
+  Rust (`stark_proofs` KAT `the_sbox_split_matches_the_lean_model`, in the STARKs
+  repository). The witnessed squares reproduce the seventh power exactly; the deployed field
+  op is checked equal to the Lean model on random inputs, so the two meet in a test rather
+  than in prose.
 - **Goldilocks primality** (`Pratt`). A Pratt certificate for `2^64 - 2^32 + 1`: the
   factorization of `p - 1`, the witness `7` to the full order and each maximal proper
   divisor, and the primality of every factor to its square-root bound, all decided by the
