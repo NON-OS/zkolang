@@ -51,6 +51,10 @@ normative, is the only one that describes the repository rather than the languag
   `docs/compiler-architecture.md` describes.
 - `zkolang lsp` serves the Language Server Protocol on standard input and output: the
   diagnostics of each open edition 2026 document as it changes, and formatting.
+- `zkolang build --target c` and `--target python` emit an edition 2026 program's SSA as a
+  C file and a Python script that compute its result natively: each advice value is found
+  by its hint, and each constraint is checked, failing the run with status 3 where a
+  proof would not exist.
 - `zkolang check` of an edition 2026 crate with no `fn main` checks it as a library and
   builds nothing; `run` of it reports E0900.
 - `zkolang test` runs the tests of an edition 2026 crate (section 16), each compiled and

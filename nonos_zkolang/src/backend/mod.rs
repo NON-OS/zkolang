@@ -19,5 +19,7 @@ pub use emit_asm::to_asm;
 pub use emit_c::to_c;
 pub use emit_python::to_python;
 
+pub(crate) use emit_c::PRELUDE as C_PRELUDE;
+pub(crate) use emit_python::PRELUDE as PYTHON_PRELUDE;
 pub(crate) use outputs::n_outputs;
 pub(crate) use plan::Plan;

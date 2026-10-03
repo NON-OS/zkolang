@@ -16,6 +16,7 @@ pub mod fmt;
 pub mod gadget;
 pub mod interp;
 pub mod lower;
+pub mod native;
 pub mod opt;
 pub mod package;
 pub mod schedule;

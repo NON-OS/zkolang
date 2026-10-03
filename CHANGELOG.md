@@ -54,6 +54,9 @@ fixes below.
 - `zkolang lsp`, a language server: the diagnostics of each open edition 2026 document as
   it changes, across the files of its package, and formatting.
 - The TextMate grammar and the VS Code extension highlight edition 2026.
+- `zkolang build --target c|python` for edition 2026: a C file or a Python script that
+  runs a program without a prover, held to the reference run on every program of the
+  README.
 - Cost warnings W0100, W0101 and W0102, and the cost report of `check --cost`.
 
 ### Assurance

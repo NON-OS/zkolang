@@ -18,7 +18,7 @@ fn one(b: &Block) -> Source<'static> {
     Source::file("README.md", b.src.clone())
 }
 
-fn built(b: &Block, root: &Option<String>, shown: &Shown) -> Result<Built, String> {
+pub(crate) fn built(b: &Block, root: &Option<String>, shown: &Shown) -> Result<Built, String> {
     let mut map = SourceMap::new();
     let r = match root {
         None => build(&mut map, &NoFiles, one(b)),

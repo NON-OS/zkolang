@@ -558,12 +558,19 @@ the rows a trace can hold is warned about (W0102) where it is declared.
 | `zkolang explain <code>` | what a diagnostic code means, for each of the codes the compiler reports |
 | `zkolang key <file>` | a circuit's program commitment and verifier key |
 | `zkolang fee <file>` | what a run costs to prove, in NOX |
-| `zkolang build <file> --target c\|asm\|python` | a native program, for edition 2025 sources |
+| `zkolang build <file> --target c\|python` | the program as a C file or a Python script that runs it without a prover; `asm` too for edition 2025 |
 | `zkolang lsp` | a language server on standard input and output, for any editor with an LSP client |
 
 `--edition 2026` selects the language of this page for a file no manifest governs; without
 it such a file is read as edition 2025. Diagnostics carry a code, a span and, where one
 applies, a suggestion, including the names closest to one that does not resolve.
+
+Running natively: `zkolang build --target c` writes a C file, and `--target python` a
+Python script, that compute what a proven run computes, with no prover. Each takes one
+argument per leaf of `main`'s inputs, the public ones then the secret ones, prints the
+leaves of the result on one line, and exits with status 3 where a constraint fails, which
+is where no proof exists. A test builds every program this page runs both ways, compiles the
+C with every warning an error, and holds both to the reference run.
 
 Editor support: `zkolang lsp` speaks the Language Server Protocol, publishing the
 diagnostics of each open edition 2026 document as it changes, across the files of its
@@ -601,8 +608,7 @@ Stated so nobody has to find out by surprise:
   proofs yet.
 - **Bounded programs only:** loops are unrolled, `while` carries a `limit`, there is no
   heap, and functions are inlined, so recursion is refused.
-- **The native backends** (`build --target c|asm|python`) and the tree-sitter grammar take
-  edition 2025 only.
+- **The tree-sitter grammar and the `asm` target** take edition 2025 only.
 
 ## How it is kept correct
 

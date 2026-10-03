@@ -10,7 +10,7 @@
  * input that is not a field element raises `ValueError`.
  */
 
-pub(super) const PRELUDE: &str = "\
+pub(crate) const PRELUDE: &str = "\
 P = 0xFFFFFFFF00000001
 
 

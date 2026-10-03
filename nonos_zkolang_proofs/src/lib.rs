@@ -200,9 +200,13 @@ mod name_check_tests;
 #[cfg(test)]
 mod name_near_tests;
 #[cfg(test)]
+mod native_2026_tests;
+#[cfg(test)]
 mod native_compare_tests;
 #[cfg(test)]
 mod native_guard_tests;
+#[cfg(test)]
+mod native_run;
 #[cfg(test)]
 mod nesting_tests;
 #[cfg(test)]
