@@ -120,10 +120,12 @@ three.
 **Is this zero-knowledge?** Partly, and the docs are careful about which part. A
 `secret` input is a private witness: it feeds the run and never enters the public
 statement, so a proof can attest knowledge of a hidden value that satisfies a
-public relation, for example a square root of a public number. That is a private
-witness, not full zero-knowledge: the STARK is not hiding, so a determined verifier
-could learn trace values from the query openings. Hiding the witness completely is
-a further hardening, and is not claimed today.
+public relation, for example a square root of a public number. An edition 2026
+proof blinds every trace column with fresh randomness, one random coefficient per
+point the proof opens it at, so the trace values it reveals are jointly uniform.
+An edition 2025 proof from `zkolang run` is not blinded, and its query openings can
+show trace values. Full zero-knowledge, an argument that also covers the
+composition polynomial and the FRI layers, is not claimed today.
 
 **What is proven versus assumed?** The AIR constraints listed in
 [the AIR](05-the-air.md) are proven: opcode semantics, register binding, ordering,
