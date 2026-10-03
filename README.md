@@ -30,7 +30,7 @@ Edition 2026 · compiler 0.1.0 · AGPL-3.0-or-later
 1. [A first look](#a-first-look)
 2. [From a program to a proof](#from-a-program-to-a-proof)
 3. [Install](#install)
-4. [Learn the language in nine programs](#learn-the-language-in-nine-programs)
+4. [Learn the language in ten programs](#learn-the-language-in-ten-programs)
 5. [The toolchain](#the-toolchain)
 6. [What you can build today](#what-you-can-build-today)
 7. [What is not there yet](#what-is-not-there-yet)
@@ -195,7 +195,7 @@ The prover, `nonos-stark`, is fetched by cargo from the public
 Building with `--features parallel` spreads the format 7 prover's grind across cores; that
 build of `nonos-stark` reports its memory on standard error as it builds a periodic tree.
 
-## Learn the language in nine programs
+## Learn the language in ten programs
 
 Every program in this section is run by a test, `readme_tests`, in the state the line above
 it says: proven with these outputs, failing, refused, or with its tests passing. If the
@@ -543,6 +543,36 @@ the lines that take the most rows
 `field` arithmetic costs a row an operation. A fixed-width integer also pays for the range
 checks that keep it in range. A function that takes more than half
 the rows a trace can hold is warned about (W0102) where it is declared.
+
+### 10. Verifying anywhere
+
+`zkolang run` proves and verifies in one process. For a verifier somewhere else, a run is
+proven in STARKs format 7, the format the STARKs verifiers read.
+
+<!-- proves public=12 secret=5 outputs=149 -->
+```rust
+fn main(x: public u32, y: secret u32) -> u32 {
+    assert y < 100, "y is small";
+    declassify(x * x + y)
+}
+```
+
+`zkolang statement sum.zkl --edition 2026 --out pin` writes what a verifier pins, from the
+program alone: the image `program.bin` and the numbers in `statement.txt`. `zkolang prove
+sum.zkl --edition 2026 --public 12 --secret 5 --out run` proves the run, has `nox_verify`
+accept it, and writes `run/proof.bin` beside the same two files. Anyone holding the
+program checks the proof against the inputs and outputs they expect:
+
+```text
+$ zkolang verify sum.zkl --edition 2026 --proof run/proof.bin --public 12 --outputs 149
+verified by nox_verify
+$ zkolang verify sum.zkl --edition 2026 --proof run/proof.bin --public 12 --outputs 150
+run/proof.bin: refused: the DEEP nonce does not meet its grind
+```
+
+A page does the same with [`nonos_zkolang_wasm`](nonos_zkolang_wasm), and a gate links
+`nox_verify` with the pins of `statement.txt`
+([`nonos_zkolang_format7`](nonos_zkolang_format7)).
 
 ## The toolchain
 
