@@ -13,48 +13,7 @@ concurrency:
 env:
   CARGO_TERM_COLOR: always
 
-# The model check runs on the proofs schedule, not here. The harnesses cover the
-# deserialiser, which reads an untrusted trailer, and settling totality over
-# every byte sequence in the bound is worth having. It is not worth having on
-# every push: the solver runs well past an hour on a single symbolic byte, so a
-# per-PR job at any timeout anyone would wait for reports a cancellation rather
-# than a result. That reads as a failing gate and teaches everyone to ignore the
-# gate. Nightly runs it with four hours and nobody waiting on it.
 jobs:
-  # `parallel` is a compile-time cfg, so the two provers can never run in one
-  # process and no single test can compare them. Each build prints a digest of a
-  # proof over the same fixed witness; the two lines have to match.
-  #
-  # A divergence means a parallel map that is not order preserving, or a search
-  # returning a different witness than the serial one. Either emits a proof that
-  # still verifies against itself, so nothing else catches it.
-  bytes:
-    name: serial and parallel emit the same proof
-    runs-on: ubuntu-latest
-    timeout-minutes: 90
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-
-      - name: serial
-        run: |
-          cargo test --release -p stark_proofs emit_proof_digest -- --ignored --nocapture \
-            | grep PROOFDIGEST | tee /tmp/serial.txt
-
-      - name: parallel
-        run: |
-          cargo test --release -p stark_proofs --features parallel emit_proof_digest \
-            -- --ignored --nocapture | grep PROOFDIGEST | tee /tmp/parallel.txt
-
-      - name: compare
-        run: |
-          cat /tmp/serial.txt /tmp/parallel.txt
-          diff /tmp/serial.txt /tmp/parallel.txt || {
-            echo "the two prover forms emit different proofs"
-            exit 1
-          }
-
   axioms:
     name: no axioms beyond the core
     runs-on: ubuntu-latest

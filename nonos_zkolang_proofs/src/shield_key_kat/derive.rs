@@ -9,10 +9,22 @@ use nonos_stark::field::Fp;
 pub(super) const POOL_LOG_ROUNDS: u32 = 5;
 pub(super) const SPEND_DOMAIN: u64 = 0x5350_4E44;
 pub(super) const NULL_DOMAIN: u64 = 0x4E55_4C4C;
+/* The second lane of a retired dummy's nullifier word, ASCII "DEAD"; a live note's is 0. */
+pub(super) const DEAD_DOMAIN: u64 = 0x4445_4144;
 
 pub(super) fn tag(v: u64) -> [Fp; RATE] {
     let mut q = [Fp::ZERO; RATE];
     q[0] = Fp::from_u64(v);
+    q
+}
+
+pub(super) fn position(leaf_index: u64, live: bool) -> [Fp; RATE] {
+    let mut q = tag(leaf_index);
+    q[1] = if live {
+        Fp::ZERO
+    } else {
+        Fp::from_u64(DEAD_DOMAIN)
+    };
     q
 }
 

@@ -204,6 +204,8 @@ mod native_guard_tests;
 #[cfg(test)]
 mod nesting_tests;
 #[cfg(test)]
+mod note_commit_deployed_tests;
+#[cfg(test)]
 mod note_commit_gen;
 #[cfg(test)]
 mod note_commit_tests;
@@ -277,6 +279,8 @@ mod semantics_tests;
 mod shield_key_kat;
 #[cfg(test)]
 mod shield_membership_tests;
+#[cfg(test)]
+mod shield_readme_tests;
 #[cfg(test)]
 mod shield_tests;
 #[cfg(test)]

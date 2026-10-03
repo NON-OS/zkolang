@@ -28,3 +28,6 @@ wildcards = "allow"
 [sources]
 unknown-registry = "deny"
 unknown-git = "deny"
+# nonos-stark, the prover, from the STARKs repository at the revision the
+# manifests pin.
+allow-git = ["https://github.com/NON-OS/STARKs"]

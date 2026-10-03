@@ -31,21 +31,14 @@ pub(super) fn render(h: &Poseidon, rounds: usize) -> String {
         writeln!(s, "witness l{l};").unwrap();
     }
     writeln!(s).unwrap();
-    writeln!(s, "let state = [l0, l1, l2, l3, l4, l5, l6, l7];").unwrap();
+    /* The owner is the spend key and the blinding compressed; the commitment is the
+     * public quad, value, asset and the domain, compressed with the owner. */
+    writeln!(s, "let state = [l3, l4, l5, l6, l7, l8, l9, l10];").unwrap();
     perm(rounds, &mut s);
     for k in 0..RATE {
-        writeln!(s, "let d0_{k} = state[{k}];").unwrap();
+        writeln!(s, "let o{k} = state[{k}];").unwrap();
     }
-    writeln!(s, "let state = [l8, l9, l10, {NOTE_DOMAIN}, 0, 0, 0, 0];").unwrap();
-    perm(rounds, &mut s);
-    for k in 0..RATE {
-        writeln!(s, "let d1_{k} = state[{k}];").unwrap();
-    }
-    writeln!(
-        s,
-        "let state = [d0_0, d0_1, d0_2, d0_3, d1_0, d1_1, d1_2, d1_3];"
-    )
-    .unwrap();
+    writeln!(s, "let state = [l0, l1, l2, {NOTE_DOMAIN}, o0, o1, o2, o3];").unwrap();
     perm(rounds, &mut s);
     for k in 0..RATE {
         writeln!(s, "reveal state[{k}];").unwrap();

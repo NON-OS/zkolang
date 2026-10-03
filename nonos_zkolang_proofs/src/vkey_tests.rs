@@ -49,7 +49,7 @@ fn the_helper_root_is_the_prover_baked_root() {
     .expect("air");
     let flat = air.build_trace(&trace).expect("layout");
 
-    let proof = stark_prove_ext_preprocessed(&air, &flat, QUERIES, GRIND, BLOWUP);
+    let proof = stark_prove_ext_preprocessed(&air, &flat, QUERIES, GRIND, BLOWUP).expect("proves");
     let root = periodic_root(&program, BLOWUP).expect("root");
 
     assert!(
@@ -125,7 +125,7 @@ fn a_proof_at_the_registration_rate_verifies_against_the_registration_root() {
     let flat = air.build_trace(&trace).expect("layout");
 
     let rate = REGISTRATION_RATE;
-    let proof = stark_prove_ext_preprocessed(&air, &flat, QUERIES, GRIND, rate);
+    let proof = stark_prove_ext_preprocessed(&air, &flat, QUERIES, GRIND, rate).expect("proves");
     let root = registration_root(&program).expect("root");
 
     assert!(
@@ -143,9 +143,11 @@ fn a_proof_at_the_registration_rate_verifies_against_the_registration_root() {
 
 #[test]
 fn the_golden_vk_reproduces_from_main() {
-    // The exact descriptor a recursive verifier's golden-vk carries, pinned so the
-    // commitment, registration root, verifier key, and sizing derivations can never drift
-    // from what a recursion built against this repo expects.
+    /* The exact descriptor a recursive verifier's golden-vk carries, pinned so the
+     * commitment, registration root, verifier key, and sizing derivations can never drift
+     * from what a recursion built against this repo expects. The root and the key are
+     * those of the STARKs default build, whose Merkle digests keep 24 bytes and zero the
+     * rest. */
     let program = compile_source("input x; let y = x * x; output y;").expect("compile");
     assert_eq!(program_log_t(&program), Some(2), "sizing");
     assert_eq!(
@@ -155,12 +157,12 @@ fn the_golden_vk_reproduces_from_main() {
     );
     assert_eq!(
         hex(&registration_root(&program).expect("root")),
-        "3f3379da0618013376bfd84bec2507df8d254d8011c2bdf27b5182fca5d31da7",
+        "7c790dad590864b6b99cefa08adc96679f532568b4f8e21f0000000000000000",
         "registration root"
     );
     assert_eq!(
         hex(&verifier_key(&program, REGISTRATION_RATE).expect("key")),
-        "0b16d67a588a447e2ca08b847c5b5fee32aa4930f77b55da160f5cb199ab928a",
+        "2325a350dd82c2f77d882e521cd16b5981083d809bf3902cc5a2c5a5659a5b36",
         "verifier key"
     );
 }
