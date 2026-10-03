@@ -9,5 +9,6 @@ resolver = "2"
 members = [
     "nonos_zkolang",
     "nonos_zkolang_cli",
+    "nonos_zkolang_format7",
     "nonos_zkolang_proofs",
 ]

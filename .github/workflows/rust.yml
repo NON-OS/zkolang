@@ -35,16 +35,16 @@ jobs:
 
       # Formatting is enforced on the language crates.
       - name: format
-        run: cargo fmt --check -p nonos_zkolang -p nonos_zkolang_cli -p nonos_zkolang_proofs
+        run: cargo fmt --check -p nonos_zkolang -p nonos_zkolang_cli -p nonos_zkolang_proofs -p nonos_zkolang_format7
 
       # Deny warnings on the language crates. --no-deps keeps the lint off
       # nonos-stark, which the STARKs repository builds and gates.
       - name: clippy
-        run: cargo clippy --no-deps -p nonos_zkolang -p nonos_zkolang_cli -p nonos_zkolang_proofs --all-targets -- -D warnings
+        run: cargo clippy --no-deps -p nonos_zkolang -p nonos_zkolang_cli -p nonos_zkolang_proofs -p nonos_zkolang_format7 --all-targets -- -D warnings
 
       # The API reference builds with no broken link or other rustdoc warning.
       - name: docs
-        run: cargo doc --no-deps -p nonos_zkolang -p nonos_zkolang_cli -p nonos_zkolang_proofs
+        run: cargo doc --no-deps -p nonos_zkolang -p nonos_zkolang_cli -p nonos_zkolang_proofs -p nonos_zkolang_format7
         env:
           RUSTDOCFLAGS: -D warnings
 

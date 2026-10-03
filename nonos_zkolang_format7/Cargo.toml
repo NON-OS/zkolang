@@ -1,0 +1,17 @@
+# The STARKs format 7 face of zKølang: a program's constraints as the program image
+# the STARKs verifiers read, the browser, no_std and on-chain ones among them.
+
+[package]
+name = "nonos_zkolang_format7"
+version = "0.1.0"
+edition = "2021"
+license = "AGPL-3.0-or-later"
+publish = false
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+nonos_zkolang = { path = "../nonos_zkolang" }
+# The STARKs repository, pinned by commit.
+nonos-stark = { git = "https://github.com/NON-OS/STARKs", rev = "a47d23ae969e23b5f841e30b49a1d483a80a6b02" }

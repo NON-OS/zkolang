@@ -602,8 +602,9 @@ Stated so nobody has to find out by surprise:
 - **No external audit**, and no claim of full zero-knowledge: the trace columns are blinded,
   and the composition and FRI layers are not argued here ([SECURITY.md](SECURITY.md)).
 - **Proofs are checked by this repository's verifier.** Verifying a zKølang proof on chain,
-  or through the STARKs repository's `no_std` and browser verifiers, needs the program
-  compiled to a STARKs program image, which is not built yet.
+  or through the STARKs repository's `no_std` and browser verifiers, needs the proof in
+  STARKs format 7. [`nonos_zkolang_format7`](nonos_zkolang_format7) writes the program
+  image those verifiers read a circuit from; proving in format 7 is not wired yet.
 - **A trace holds at most 2^16 rows**, and there is no recursion that aggregates zKølang
   proofs yet.
 - **Bounded programs only:** loops are unrolled, `while` carries a `limit`, there is no
