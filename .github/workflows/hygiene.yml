@@ -6,6 +6,10 @@ on:
   pull_request:
   workflow_dispatch:
 
+# Every job reads the repository and writes nothing back.
+permissions:
+  contents: read
+
 # New push, old run dies: a superseded run burning minutes helps nobody.
 concurrency:
   group: hygiene-${{ github.ref }}
@@ -17,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           # The commit-message scan needs history, not just the tip.
           fetch-depth: 0

@@ -7,7 +7,8 @@ are legible in one place rather than scattered across YAML.
 ## Correctness
 
 - **rust** (`rust.yml`): `cargo fmt --check` and `cargo clippy -D warnings` on the
-  language crates, then `cargo test --workspace --release`.
+  language crates, their API reference built with rustdoc warnings denied, then
+  `cargo test --workspace --release`.
 - **proofs** (`proofs.yml`): nightly, the same tests with the ignored ones included.
 - **zkl** (`zkl.yml`): every circuit, example and standard-library program compiles,
   and the shield circuits prove and refuse as their tests require.
@@ -17,6 +18,17 @@ are legible in one place rather than scattered across YAML.
   would introduce) or `sorryAx`. The trust base is checked, not claimed.
 - **verify** (`verify.yml`): prints the axioms every public theorem rests on and
   fails if any rests on `sorryAx`.
+
+## Fuzzing
+
+- **fuzz** (`fuzz.yml`, targets under `fuzz/`): four cargo-fuzz targets, each seeded
+  with the repository's own programs by `fuzz/seed.py`. `front_end`: the edition 2026
+  lexer and parser take any text, and every diagnostic points inside it. `build_run`:
+  any text is built, and a program that builds runs with its compiled machine program
+  and its reference run in agreement. `fmt`: the formatter keeps every token and
+  comment, and a formatted file formats to itself. `edition_2025`: the 2025 compiler
+  and evaluator take any text without a panic. Two minutes a target on a change,
+  thirty a night; a failing input is kept as an artifact.
 
 ## The prover
 
@@ -41,6 +53,17 @@ build.
 - **hygiene** (`hygiene.yml`): the tree carries no authorship trace, host secret,
   or committed coordination note, and new commit messages read as human. This
   keeps a public repo public-safe by construction rather than by review memory.
+  `scripts/check_rules.py` then holds what the change adds to the repository's
+  rules: a code file of at most 75 lines, comments in Rust as blocks, no `allow`,
+  only declarations in a `mod.rs`, no em-dash or banned word, and commit subjects
+  of at most 72 characters. It reports what the change introduces, nothing older.
+
+## The workflows themselves
+
+Every workflow reads the repository and writes nothing back (`permissions:
+contents: read`), every job has a time limit, and every action is pinned to a
+commit, with its release tag beside it. Dependabot (`.github/dependabot.yml`)
+proposes the new commit when an action releases.
 
 ## Reproducibility
 

@@ -6,6 +6,10 @@ on:
   pull_request:
   workflow_dispatch:
 
+# Every job reads the repository and writes nothing back.
+permissions:
+  contents: read
+
 # New push, old run dies: a superseded run burning minutes helps nobody.
 concurrency:
   group: verify-${{ github.ref }}
@@ -19,12 +23,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       # Same reason as lean.yml: the toolchain host going down should not turn
       # this red while every proof in the repo is fine.
       - name: cache the toolchain
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: ~/.elan
           key: elan-${{ runner.os }}-${{ hashFiles('lean/lean-toolchain') }}

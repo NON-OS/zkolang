@@ -1,0 +1,11 @@
+# The workflows pin every action to a commit. Dependabot proposes the new commit
+# when an action releases, so a pin is current without being a moving tag.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ["*"]
