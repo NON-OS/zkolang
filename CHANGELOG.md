@@ -84,8 +84,9 @@ fixes below.
 
 ### Changed
 
-- The prover, `nonos-stark`, comes from the STARKs repository at a pinned commit, and the
-  vendored copies are removed. Its default build keeps 24 bytes of each Merkle digest, so
-  registration roots and verifier keys differ from those of earlier builds.
+- The prover, `nonos-stark`, comes from the STARKs repository at a pinned commit, in its
+  `fri8` build, the build of STARKs format 7, whose Merkle digests keep all 32 bytes; the
+  vendored copies are removed. The registration root and verifier key the golden test
+  pins are the ones it pinned before the move.
 - The note commitment of `circuits/shield/note_commit.zkl` follows the STARKs layout,
   `cm = compress([value_lo, value_hi, asset, NOTE_DOMAIN], compress(spend_pk, blinding))`.

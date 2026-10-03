@@ -19,8 +19,8 @@ repository builds it; `shield_readme_tests` checks each key below against its ci
 
 | Circuit | Role | Verifier key |
 |---|---|---|
-| `spend_note.zkl` | prove a note's membership, retire it, range-prove its value | `c1d6c325…e783854b` |
-| `note_root.zkl` | compute the commitment-tree root a note authenticates to | `c6565601…d3145954` |
+| `spend_note.zkl` | prove a note's membership, retire it, range-prove its value | `3b45aec5…b59ac338` |
+| `note_root.zkl` | compute the commitment-tree root a note authenticates to | `50ce0eac…855e0ca3` |
 
 `spend_note.zkl` composes the whole language: the standard library and its MiMC
 permutation, an array indexed by an unrolled loop, a nested loop over the Merkle path,

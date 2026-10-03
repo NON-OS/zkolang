@@ -17,8 +17,9 @@ publish = false
 path = "src/lib.rs"
 
 [dependencies]
-# The STARKs repository, pinned by commit.
-nonos-stark = { git = "https://github.com/NON-OS/STARKs", rev = "a47d23ae969e23b5f841e30b49a1d483a80a6b02" }
+# The STARKs repository, pinned by commit, in the build of STARKs format 7: radix 8 FRI
+# and 32-byte Merkle digests. Registration roots and verifier keys are that build's.
+nonos-stark = { git = "https://github.com/NON-OS/STARKs", rev = "a47d23ae969e23b5f841e30b49a1d483a80a6b02", features = ["fri8"] }
 # nonos-stark commits with Poseidon and measures with blake3. Force blake3's
 # pure-Rust path so the crate cross-compiles to the capsule target without a C
 # toolchain, matching how the kernel pins it. Not called directly here; present
