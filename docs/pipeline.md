@@ -58,6 +58,13 @@ build.
   only declarations in a `mod.rs`, no em-dash or banned word, and commit subjects
   of at most 72 characters. It reports what the change introduces, nothing older.
 
+## Releases
+
+- **release** (`release.yml`): on a tag `v*`, builds `zkolang` for Linux on x86_64 and
+  aarch64 and for macOS on aarch64 and x86_64, packs each with the licence and the
+  README and a SHA-256, and publishes a GitHub release whose notes are the tag's section
+  of `CHANGELOG.md`. A run started by hand builds the archives without publishing.
+
 ## The workflows themselves
 
 Every workflow reads the repository and writes nothing back (`permissions:
