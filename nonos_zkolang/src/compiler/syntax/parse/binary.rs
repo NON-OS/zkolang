@@ -37,10 +37,7 @@ impl<'a> Parser<'a> {
     /** The operators binding at least as tightly as `min` that follow `lhs`. */
     pub(super) fn binary_rest(&mut self, mut lhs: Expr, min: u8) -> PResult<Expr> {
         let mut chain: Option<(u8, Vec<(BinOp, Expr)>)> = None;
-        loop {
-            let Some(op) = binop(self.kind()) else {
-                break;
-            };
+        while let Some(op) = binop(self.kind()) {
             let prec = op.precedence();
             if prec < min {
                 break;

@@ -17,10 +17,9 @@ pub const SEED_BYTES: usize = 8 * RATE;
  */
 pub fn seed_of(bytes: &[u8; SEED_BYTES]) -> [Fp; RATE] {
     let mut seed = [Fp::ZERO; RATE];
-    for (s, chunk) in seed.iter_mut().zip(bytes.chunks_exact(8)) {
-        let mut w = [0u8; 8];
-        w.copy_from_slice(chunk);
-        *s = Fp::from_u64(u64::from_le_bytes(w));
+    let (chunks, _) = bytes.as_chunks::<8>();
+    for (s, chunk) in seed.iter_mut().zip(chunks) {
+        *s = Fp::from_u64(u64::from_le_bytes(*chunk));
     }
     seed
 }

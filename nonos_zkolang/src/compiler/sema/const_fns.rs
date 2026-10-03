@@ -31,7 +31,7 @@ impl<'a> Sema<'a> {
                 .iter()
                 .find(|l| !l.labels.is_empty())
                 .map(|l| l.span);
-            if let Some(at) = labelled.or(Some(body.span).filter(|_| !body.ret_labels.is_empty())) {
+            if let Some(at) = labelled.or((!body.ret_labels.is_empty()).then_some(body.span)) {
                 found.push((at, "a `const fn` uses no `secret` or `public` type"));
             }
             body.body
