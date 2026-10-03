@@ -18,11 +18,12 @@ mod args;
 mod cmd;
 mod line;
 mod load;
+mod lsp;
 mod out;
 mod render_run;
 
 const USAGE: &str = "\
-zkolang <run|check|test|explain|doc|abi|fmt|build|key|fee> <file.zkl> [options]
+zkolang <run|check|test|explain|doc|abi|fmt|build|key|fee|lsp> <file.zkl> [options]
   run   <file> [--input a,b] [--witness x,y]     compile, prove, report
   check <file>                                   compile only
   test  <file>                                   run each #[test] of an edition 2026 crate
@@ -34,7 +35,8 @@ zkolang <run|check|test|explain|doc|abi|fmt|build|key|fee> <file.zkl> [options]
   one value per scalar of main's public and secret parameters, and hides the secrets
   build <file> [--target c|asm|python] [--out f] emit a native backend
   key   <file>                                   commitment and verifier key
-  fee   <file> [--input a,b] [--witness x,y]     the pay-to-prove cost in NOX";
+  fee   <file> [--input a,b] [--witness x,y]     the pay-to-prove cost in NOX
+  lsp                                            serve the Language Server Protocol on stdio";
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -50,6 +52,7 @@ fn main() {
         Some("build") => cmd::build(rest),
         Some("key") => cmd::key(rest),
         Some("fee") => cmd::fee(rest),
+        Some("lsp") => lsp::serve(),
         Some("version" | "--version" | "-V") => {
             println!("zkolang {}", env!("CARGO_PKG_VERSION"));
             Ok(())

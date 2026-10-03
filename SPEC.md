@@ -49,6 +49,8 @@ normative, is the only one that describes the repository rather than the languag
   `prove` build a program and prove a run of it with the STARK, hiding the witness;
   `zkolang check` and `zkolang run` call them with `--edition 2026`. The rest of the compiler is being built in the stages
   `docs/compiler-architecture.md` describes.
+- `zkolang lsp` serves the Language Server Protocol on standard input and output: the
+  diagnostics of each open edition 2026 document as it changes, and formatting.
 - `zkolang check` of an edition 2026 crate with no `fn main` checks it as a library and
   builds nothing; `run` of it reports E0900.
 - `zkolang test` runs the tests of an edition 2026 crate (section 16), each compiled and

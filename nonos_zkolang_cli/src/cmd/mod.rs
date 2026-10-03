@@ -30,6 +30,7 @@ mod values;
 pub(crate) use abi::abi;
 pub(crate) use build::build;
 pub(crate) use check::check;
+pub(crate) use disk::manifest_for;
 pub(crate) use doc::doc;
 pub(crate) use explain::explain;
 pub(crate) use fee::fee;

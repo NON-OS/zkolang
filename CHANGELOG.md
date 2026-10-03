@@ -51,6 +51,9 @@ fixes below.
 - `zkolang run`, `check` (with `--cost`, `--declassify` and `--json`), `test`, `abi`,
   `doc`, `fmt`, `explain`, `key` and `fee` for edition 2026.
 - `zkolang check` of a crate with no `fn main` checks it as a library.
+- `zkolang lsp`, a language server: the diagnostics of each open edition 2026 document as
+  it changes, across the files of its package, and formatting.
+- The TextMate grammar and the VS Code extension highlight edition 2026.
 - Cost warnings W0100, W0101 and W0102, and the cost report of `check --cost`.
 
 ### Assurance
