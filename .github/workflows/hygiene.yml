@@ -78,3 +78,24 @@ jobs:
             exit 1
           fi
           echo "new commit messages are clean"
+
+      # The repository's rules, held over what this event adds and nothing older:
+      # code files of at most 75 lines, comments in Rust as blocks, no allow, only
+      # declarations in a mod.rs, no em-dash or banned word, subjects of at most 72
+      # characters (scripts/check_rules.py).
+      - name: the change keeps the repository's rules
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          if [ -z "$base" ]; then
+            base='${{ github.event.before }}'
+            head='${{ github.sha }}'
+          fi
+          if [ -z "$base" ] || [ "$base" = "0000000000000000000000000000000000000000" ] \
+             || ! git rev-parse --quiet --verify "$base^{commit}" >/dev/null; then
+            echo "no commit range for this event; nothing to check"
+            exit 0
+          fi
+          base=$(git merge-base "$base" "$head")
+          python3 scripts/check_rules.py --base "$base" --head "$head"
