@@ -33,3 +33,15 @@ exactly the secret times the vanishing polynomial, where the hiding lives.
 #print axioms Zkolang.Pratt.witness_full
 #print axioms Zkolang.Blinding.invisible_on_domain
 #print axioms Zkolang.Blinding.shift_off_domain
+
+/-! The constraint ledger of the edition 2026 compiler: each gadget's soundness, and the
+exactness of the guards and the bounds checks it rests on. -/
+
+#print axioms Zkolang.Ledger.Guard.require_holds
+#print axioms Zkolang.Ledger.Decompose.decompose_sound
+#print axioms Zkolang.Ledger.Decompose.decompose_unique
+#print axioms Zkolang.Ledger.FieldBits.field_bits_sound
+#print axioms Zkolang.Ledger.FieldBits.field_bits_complete
+#print axioms Zkolang.Ledger.Divide.divide_sound
+#print axioms Zkolang.Ledger.Index.index_exact
+#print axioms Zkolang.Ledger.Index.shift_exact

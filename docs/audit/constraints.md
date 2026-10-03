@@ -30,6 +30,7 @@ entry (`lower/entry.rs`). The primitives of `lower/guard.rs` fold it in:
 A gadget (section 3) is never multiplied by the guard. Its operands are guarded instead,
 with a value the gadget accepts: 0 for a range check, 1 for a divisor or an inverted
 value. So a gadget on a path that does not run constrains nothing that could fail.
+Lean: `Ledger.Guard` (`lean/Zkolang/Ledger/Guard.lean`).
 
 ## 2. The failure conditions
 
@@ -53,7 +54,8 @@ fail (`semantics_compiled_tests.rs` runs every test of `semantics/` compiled as 
 
 Why the index check is exact: an index is a `usize`, 32 bits, so `i < 2^32`. For `i < n`
 the difference `(n − 1) − i` is at most `n − 1 < 2^bits(n − 1)`; for `i ≥ n` it is
-`p − (i − n + 1) > p − 2^32`, far above `2^bits(n − 1)`.
+`p − (i − n + 1) > p − 2^32`, far above `2^bits(n − 1)`. Lean: `Ledger.Index.index_exact`,
+and `shift_exact` for the shift.
 
 ## 3. Gadgets
 
@@ -70,6 +72,7 @@ generator finds from the instruction's hint (section 21.3), and constrains them.
 *Soundness.* The sum lies in `[0, 2^n)`, below `2^63 < p`, so its equality with `v` in the
 field is equality of integers: `v`'s canonical representative is below `2^n`, and its bits
 are the `b_k`, which are therefore unique. *Completeness.* The hint gives bit `k` of `v`.
+Lean: `Ledger.Decompose.decompose_sound`, `decompose_unique`.
 
 A decomposition of the same value and width written at most 64 instructions earlier in the
 program being expanded (`NEAR`) is reused rather than written again. For `n ≥ 64` the
@@ -87,7 +90,8 @@ representative and, when `v < 2^32 − 1`, also `v + p`, whose `hi` is `2^32 −
 `lo` is `v + 1 > 0`: the second constraint refuses it. The largest canonical value,
 `p − 1`, has `hi = 2^32 − 1` and `lo = 0`, and passes. So the bits are those of the
 canonical representative. Test: `ssa_gadget_tests.rs`,
-`field_bits_admit_only_the_canonical_representative`.
+`field_bits_admit_only_the_canonical_representative`. Lean:
+`Ledger.FieldBits.field_bits_sound`, `field_bits_complete`.
 
 ### Division: `Quot(a, b, n)` and `Rem(a, b, n)`, `n ≤ 32`
 
@@ -99,7 +103,8 @@ Constraints: `a`, `b`, `q`, `r` and `b − r − 1` each below `2^n`, and
 `r < b` as integers, so `b ≥ 1`. With `q, b < 2^32`, `q · b ≤ (2^32 − 1)^2 = 2^64 − 2^33 + 1`,
 and with `r < 2^32 − 1`, `a + p − r ≥ 2^64 − 2^33 + 3`: so `q · b + r = a` holds in the field
 only as integers, and integer division makes `q` and `r` unique. Test:
-`ssa_gadget_tests.rs`, `division_admits_only_the_true_quotient_and_remainder`. The quotient
+`ssa_gadget_tests.rs`, `division_admits_only_the_true_quotient_and_remainder`. Lean:
+`Ledger.Divide.divide_sound`. The quotient
 and remainder of one pair of operands share one expansion. For `n > 32` the gadget writes
 `AssertZero(1)`.
 

@@ -68,6 +68,29 @@ The two properties a private-value system must never violate are theorems, not t
   divisor, and the primality of every factor to its square-root bound, all decided by the
   kernel with zero axioms. Closes the gap `Field` left under `recip`, `divide`, `ratio`.
 
+## The compiler's constraint ledger
+
+The edition 2026 compiler lists every constraint it writes in
+`docs/audit/constraints.md`, each with the argument that it is sound. `Ledger` checks
+those arguments, over integers read through `Field`'s congruence.
+
+- **Guards** (`Ledger.Guard.require_holds`, `require_zero_on`, `require_zero_off`,
+  `guarded_on`, `guarded_off`). `AssertZero(g · (1 − ok))` holds exactly when the guard
+  bit is off or the condition bit is on, and a gadget's operands under a false guard are
+  the safe values it accepts.
+- **Bit decomposition** (`Ledger.Decompose.decompose_sound`, `decompose_unique`). Fewer
+  than 64 bits equal to a canonical `v` in the field sum to `v` as an integer, so `v` is
+  below `2^n`, and any two such decompositions are the same bits.
+- **Field bits** (`Ledger.FieldBits.field_bits_sound`, `field_bits_complete`). Two 32-bit
+  halves equal to `v` in the field, with the top half's all-ones value forcing the low
+  half to zero, are the halves of `v`'s canonical representative, and those halves keep
+  both constraints.
+- **Division** (`Ledger.Divide.divide_sound`, `remainder_below`). Operands, quotient,
+  remainder and `b − r − 1` below `2^32`, with `q · b + r = a` in the field, make `q` and
+  `r` the integer quotient and remainder of `a` by `b`.
+- **Index and shift bounds** (`Ledger.Index.index_exact`, `shift_exact`). The canonical
+  value of `(n − 1) − i` is below `2^bits(n − 1)` exactly when `i < n`.
+
 ## The named boundaries
 
 These are the facts a core-library development cannot reach. Each is stated at its use site
