@@ -30,7 +30,7 @@ Edition 2026 · compiler 0.1.0 · AGPL-3.0-or-later
 1. [A first look](#a-first-look)
 2. [From a program to a proof](#from-a-program-to-a-proof)
 3. [Install](#install)
-4. [Learn the language in nine programs](#learn-the-language-in-nine-programs)
+4. [Learn the language in ten programs](#learn-the-language-in-ten-programs)
 5. [The toolchain](#the-toolchain)
 6. [What you can build today](#what-you-can-build-today)
 7. [What is not there yet](#what-is-not-there-yet)
@@ -192,8 +192,10 @@ zkolang --version
 
 The prover, `nonos-stark`, is fetched by cargo from the public
 [STARKs repository](https://github.com/NON-OS/STARKs) at the commit the manifests pin.
+Building with `--features parallel` spreads the format 7 prover's grind across cores; that
+build of `nonos-stark` reports its memory on standard error as it builds a periodic tree.
 
-## Learn the language in nine programs
+## Learn the language in ten programs
 
 Every program in this section is run by a test, `readme_tests`, in the state the line above
 it says: proven with these outputs, failing, refused, or with its tests passing. If the
@@ -542,12 +544,45 @@ the lines that take the most rows
 checks that keep it in range. A function that takes more than half
 the rows a trace can hold is warned about (W0102) where it is declared.
 
+### 10. Verifying anywhere
+
+`zkolang run` proves and verifies in one process. For a verifier somewhere else, a run is
+proven in STARKs format 7, the format the STARKs verifiers read.
+
+<!-- proves public=12 secret=5 outputs=149 -->
+```rust
+fn main(x: public u32, y: secret u32) -> u32 {
+    assert y < 100, "y is small";
+    declassify(x * x + y)
+}
+```
+
+`zkolang statement sum.zkl --edition 2026 --out pin` writes what a verifier pins, from the
+program alone: the image `program.bin` and the numbers in `statement.txt`. `zkolang prove
+sum.zkl --edition 2026 --public 12 --secret 5 --out run` proves the run, has `nox_verify`
+accept it, and writes `run/proof.bin` beside the same two files. Anyone holding the
+program checks the proof against the inputs and outputs they expect:
+
+```text
+$ zkolang verify sum.zkl --edition 2026 --proof run/proof.bin --public 12 --outputs 149
+verified by nox_verify
+$ zkolang verify sum.zkl --edition 2026 --proof run/proof.bin --public 12 --outputs 150
+run/proof.bin: refused: the DEEP nonce does not meet its grind
+```
+
+A page does the same with [`nonos_zkolang_wasm`](nonos_zkolang_wasm), and a gate links
+`nox_verify` with the pins of `statement.txt`
+([`nonos_zkolang_format7`](nonos_zkolang_format7)).
+
 ## The toolchain
 
 | Command | What it does |
 |---|---|
 | `zkolang run <file> --public a,b --secret x,y` | compile, run, prove and verify; print the outputs |
-| `zkolang check <file>` | check and compile, and count the rows |
+| `zkolang prove <file> --public a,b --secret x,y --out d` | prove the run in STARKs format 7, have `nox_verify` accept it, and write the proof, the image and the statement |
+| `zkolang verify <file> --proof p --public a,b --outputs y` | check a format 7 proof with `nox_verify`, the statement and public words made here from the program and the claimed values |
+| `zkolang statement <file> --out d` | a program's format 7 image and the numbers a gate pins beside it |
+| `zkolang check <file>` | check and compile, and count the rows; a crate with no `main` is checked as a library |
 | `zkolang check <file> --cost` | the rows of each function and line |
 | `zkolang check <file> --declassify` | each place a secret is revealed |
 | `zkolang check <file> --json` | the diagnostics as one JSON array, for editors and CI |
@@ -558,15 +593,26 @@ the rows a trace can hold is warned about (W0102) where it is declared.
 | `zkolang explain <code>` | what a diagnostic code means, for each of the codes the compiler reports |
 | `zkolang key <file>` | a circuit's program commitment and verifier key |
 | `zkolang fee <file>` | what a run costs to prove, in NOX |
-| `zkolang build <file> --target c\|asm\|python` | a native program, for edition 2025 sources |
+| `zkolang build <file> --target c\|python` | the program as a C file or a Python script that runs it without a prover; `asm` too for edition 2025 |
+| `zkolang lsp` | a language server on standard input and output, for any editor with an LSP client |
 
 `--edition 2026` selects the language of this page for a file no manifest governs; without
 it such a file is read as edition 2025. Diagnostics carry a code, a span and, where one
 applies, a suggestion, including the names closest to one that does not resolve.
 
-Editor support: a [tree-sitter grammar](tree-sitter-zkolang), a
-[TextMate grammar](grammars) and a [VS Code extension](editors/vscode). All three cover the
-edition 2025 syntax today.
+Running natively: `zkolang build --target c` writes a C file, and `--target python` a
+Python script, that compute what a proven run computes, with no prover. Each takes one
+argument per leaf of `main`'s inputs, the public ones then the secret ones, prints the
+leaves of the result on one line, and exits with status 3 where a constraint fails, which
+is where no proof exists. A test builds every program this page runs both ways, compiles the
+C with every warning an error, and holds both to the reference run.
+
+Editor support: `zkolang lsp` speaks the Language Server Protocol, publishing the
+diagnostics of each open edition 2026 document as it changes, across the files of its
+package, and laying a document out on request with `zkolang fmt`. A
+[TextMate grammar](grammars) and a [VS Code extension](editors/vscode) highlight both
+editions, and a [tree-sitter grammar](tree-sitter-zkolang) parses both, held in CI to
+every program in this repository.
 
 ## What you can build today
 
@@ -591,17 +637,17 @@ Stated so nobody has to find out by surprise:
 
 - **No external audit**, and no claim of full zero-knowledge: the trace columns are blinded,
   and the composition and FRI layers are not argued here ([SECURITY.md](SECURITY.md)).
-- **Proofs are checked by this repository's verifier.** Verifying a zKølang proof on chain,
-  or through the STARKs repository's `no_std` and browser verifiers, needs the program
-  compiled to a STARKs program image, which is not built yet.
+- **Format 7 reaches `nox_verify` and the browser, not yet the chain.** A run proves in
+  STARKs format 7; `nox_verify`, the `no_std` verifier a STARKs gate links, accepts it
+  against the program's image, and so does [`nonos_zkolang_wasm`](nonos_zkolang_wasm), the
+  same verifier as a module a page loads. An on-chain verifier is generated from a
+  statement's image in the contracts repository; none is built for a zKølang program
+  here.
 - **A trace holds at most 2^16 rows**, and there is no recursion that aggregates zKølang
   proofs yet.
 - **Bounded programs only:** loops are unrolled, `while` carries a `limit`, there is no
   heap, and functions are inlined, so recursion is refused.
-- **The native backends** (`build --target c|asm|python`) and the editor grammars take
-  edition 2025 only.
-- `zkolang check` on a library crate, one with no `main`, reports E0900; check it from the
-  package that uses it, or with `zkolang test`.
+- **The `asm` target** takes edition 2025 only; edition 2026 builds to C and Python.
 
 ## How it is kept correct
 
@@ -672,6 +718,19 @@ point STARKs calls `inner`. A program's verifier key is
 `keccak256(0x01 ‖ commit ‖ log2N ‖ trace_width ‖ rate ‖ periodic_root)`, printed by
 `zkolang key`.
 
+A run also proves in STARKs format 7, the format the STARKs verifiers read
+([`nonos_zkolang_format7`](nonos_zkolang_format7)): a Keccak transcript and Merkle trees,
+FRI folding by eight, STARKs' query shape A (19 queries after a 28-bit grind, with the
+DEEP and folding grinds of its launch transcript), and five extra blowup bits. The step
+AIR's 62 constraints are recorded once as a tape, kept only if it replays to the AIR's
+own, and a program's image carries that tape and the program's boundaries, each a value
+or a public word; the image and the periodic root are what a verifier pins. Every column
+is blinded, which needs a trace of at least 2^10 rows. The test that proves a program this
+way holds its proof under 96 KiB. `zkolang prove`, `verify` and `statement` drive it from
+the command line, and [`nonos_zkolang_wasm`](nonos_zkolang_wasm) verifies it in a page; CI
+loads that module in Node and has it verify the committed
+[fixture](nonos_zkolang_format7/fixture).
+
 The design of the compiler is in [docs/compiler-architecture.md](docs/compiler-architecture.md).
 
 ## Edition 2025
@@ -699,12 +758,20 @@ flowchart LR
     PROOFS["nonos_zkolang_proofs<br/>the test suite"]:::here
     STD["std<br/>the standard library"]:::here
     LEANN["lean<br/>the proofs"]:::here
+    F7["nonos_zkolang_format7<br/>STARKs format 7"]:::here
     STARK["nonos-stark<br/>STARKs repository, pinned"]:::there
+    NOXV["nox_verify<br/>STARKs repository, pinned"]:::there
+    WASM["nonos_zkolang_wasm<br/>the verifier in a page"]:::here
 
     CLI --> LIB
+    CLI --> F7
     PROOFS --> LIB
+    F7 --> LIB
+    F7 --> NOXV
+    WASM --> F7
     LIB --> STD
     LIB --> STARK
+    NOXV --> STARK
     LEANN -. "checks the arguments of" .-> LIB
 ```
 
@@ -713,6 +780,8 @@ flowchart LR
 | [`nonos_zkolang`](nonos_zkolang) | the compiler, the machine, the step AIR and the prover binding |
 | [`nonos_zkolang_cli`](nonos_zkolang_cli) | the `zkolang` command |
 | [`nonos_zkolang_proofs`](nonos_zkolang_proofs) | the test suite: semantics, diagnostics, circuits, the README |
+| [`nonos_zkolang_format7`](nonos_zkolang_format7) | a program's STARKs image, its runs proven in format 7 and verified by `nox_verify` |
+| [`nonos_zkolang_wasm`](nonos_zkolang_wasm) | the format 7 verifier as a WebAssembly module, and its JavaScript interface |
 | [`std`](std) | the standard library of edition 2026, in zKølang |
 | [`circuits`](circuits), [`examples`](examples), [`stdlib`](stdlib) | programs and the library of edition 2025 |
 | [`lean`](lean) | the Lean 4 proofs |

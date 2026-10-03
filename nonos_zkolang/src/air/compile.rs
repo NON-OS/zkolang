@@ -29,14 +29,22 @@ impl StepAir {
     ) -> Result<StepAir, BuildError> {
         let mut wiring: Vec<WireRow> = Vec::new();
         let mut binds: Vec<(usize, usize, Fp)> = Vec::new();
+        let mut pins = Vec::new();
         let mut halted = false;
         for (row, op) in program.iter().enumerate() {
             wiring.push(WireRow::of(op));
-            if bind_op(row, *op, public_inputs, public_outputs, &mut binds)? {
+            if bind_op(
+                row,
+                *op,
+                public_inputs,
+                public_outputs,
+                &mut binds,
+                &mut pins,
+            )? {
                 halted = true;
                 break;
             }
         }
-        pad_and_build(wiring, halted, log_t, binds)
+        pad_and_build(wiring, halted, log_t, binds, pins)
     }
 }

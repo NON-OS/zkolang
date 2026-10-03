@@ -8,7 +8,7 @@
  * 128-bit intermediate so operands stay canonical, and a strict reader for one input.
  */
 
-pub(super) const PRELUDE: &str = "\
+pub(crate) const PRELUDE: &str = "\
 #include <stdio.h>
 #include <stdlib.h>
 typedef unsigned long long u64;

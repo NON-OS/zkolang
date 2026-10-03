@@ -28,7 +28,7 @@ mod trace;
 mod vkey;
 mod vm;
 
-pub use air::{BuildError, StepAir, TRACE_WIDTH};
+pub use air::{BuildError, Pin, StepAir, TRACE_WIDTH};
 pub use backend::{to_asm, to_c, to_python};
 pub use commit::{commit, commit_limbs, serialize};
 pub use driver::{

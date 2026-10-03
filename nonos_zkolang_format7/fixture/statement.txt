@@ -1,0 +1,15 @@
+format 7
+program_hash 9098b089a89c88b0f1aa09fda8e15cdb2072c42dfab691e40e4e6259aec22620
+periodic_root ce6519f4768bc4a5595caf42cfab22a37fb925145b85e27bc282b14a5a4c25a8
+params a7399bb93dd6e65f0402572f06109f3fe731b2afc63e36d391fc438ddd2f6d5d
+queries 19
+grind_bits 28
+extra_blowup_bits 5
+trace_width 51
+region_width 50
+window 2
+constraint_degree 3
+challenge_lanes 2
+words 7
+head 984398559057421111,14874275877515603357,9565781346580807583,4546231859790787260,1024
+max_proof_bytes 1048576

@@ -1,0 +1,5 @@
+/* The program of the format 7 fixture: a public `x`, a small secret `y`, `x * x + y`. */
+fn main(x: public u32, y: secret u32) -> u32 {
+    assert y < 100, "y is small";
+    declassify(x * x + y)
+}

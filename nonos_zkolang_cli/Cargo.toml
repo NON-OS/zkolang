@@ -12,3 +12,8 @@ path = "src/main.rs"
 
 [dependencies]
 nonos_zkolang = { path = "../nonos_zkolang" }
+nonos_zkolang_format7 = { path = "../nonos_zkolang_format7" }
+
+[features]
+# The format 7 prover across cores; see nonos_zkolang_format7's feature of that name.
+parallel = ["nonos_zkolang_format7/parallel"]

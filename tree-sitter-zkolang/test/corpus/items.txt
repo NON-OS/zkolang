@@ -1,0 +1,145 @@
+================================================================================
+A function over labelled types with a return type
+================================================================================
+
+fn main(x: public u32, y: secret field) -> u32 {
+    x * x
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (function_item
+    (identifier)
+    (parameters
+      (parameter
+        (identifier)
+        (labelled_type
+          (primitive_type)))
+      (parameter
+        (identifier)
+        (labelled_type
+          (primitive_type))))
+    (primitive_type)
+    (block
+      (binary_expression
+        (identifier)
+        (identifier)))))
+
+================================================================================
+A generic struct, an enum with payloads, and an impl
+================================================================================
+
+pub struct Pair<T, const N: usize> { a: [T; N], pub b: T }
+enum Shape { Dot, Line(u32), Box { w: u32, h: u32 } }
+impl<T> Pair<T, 2> {
+    pub fn first(&mut self) -> T { self.a[0] }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (visibility)
+  (struct_item
+    (identifier)
+    (type_parameters
+      (identifier)
+      (const_parameter
+        (identifier)
+        (primitive_type)))
+    (field_declaration_list
+      (field_declaration
+        (identifier)
+        (array_type
+          (identifier)
+          (identifier)))
+      (field_declaration
+        (visibility)
+        (identifier)
+        (identifier))))
+  (enum_item
+    (identifier)
+    (enum_variant
+      (identifier))
+    (enum_variant
+      (identifier)
+      (ordered_field_declaration_list
+        (primitive_type)))
+    (enum_variant
+      (identifier)
+      (field_declaration_list
+        (field_declaration
+          (identifier)
+          (primitive_type))
+        (field_declaration
+          (identifier)
+          (primitive_type)))))
+  (impl_item
+    (type_parameters
+      (identifier))
+    (generic_type
+      (identifier)
+      (type_arguments
+        (identifier)
+        (integer)))
+    (declaration_list
+      (visibility)
+      (function_item
+        (identifier)
+        (parameters
+          (self_parameter))
+        (identifier)
+        (block
+          (index_expression
+            (field_expression
+              (self)
+              (identifier))
+            (integer)))))))
+
+================================================================================
+Uses, constants, aliases, modules and attributes
+================================================================================
+
+#![edition = "2026"]
+use crate::hash::{mimc, sponge as sp};
+use super::cmp::*;
+const LIMIT: u64 = 1 << 20;
+type Word = u64;
+#[test]
+mod inner;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (attribute_item
+    (attribute
+      (identifier)
+      (string)))
+  (use_declaration
+    (scoped_use_list
+      (scoped_identifier
+        (crate)
+        (identifier))
+      (identifier)
+      (use_as_clause
+        (identifier)
+        (identifier))))
+  (use_declaration
+    (use_wildcard
+      (scoped_identifier
+        (super)
+        (identifier))))
+  (const_item
+    (identifier)
+    (primitive_type)
+    (binary_expression
+      (integer)
+      (integer)))
+  (type_item
+    (identifier)
+    (primitive_type))
+  (attribute_item
+    (attribute
+      (identifier)))
+  (mod_item
+    (identifier)))

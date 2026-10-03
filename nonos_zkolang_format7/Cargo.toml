@@ -1,0 +1,29 @@
+# zKølang programs proven in STARKs format 7, the format the STARKs verifiers read, the
+# browser, no_std and on-chain ones among them: a program's image, its proofs, and their
+# verification by nox_verify.
+
+[package]
+name = "nonos_zkolang_format7"
+version = "0.1.0"
+edition = "2021"
+license = "AGPL-3.0-or-later"
+publish = false
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+nonos_zkolang = { path = "../nonos_zkolang" }
+# The STARKs repository, pinned by commit.
+nonos-stark = { git = "https://github.com/NON-OS/STARKs", rev = "a47d23ae969e23b5f841e30b49a1d483a80a6b02" }
+# The format 7 writer: the parameter identity and the shared-path serialization, in the
+# build the deployed verifiers read.
+stark_proofs = { git = "https://github.com/NON-OS/STARKs", rev = "a47d23ae969e23b5f841e30b49a1d483a80a6b02", default-features = false, features = ["fri8"] }
+# The verifier of STARKs format 7, no_std, as a gate links it.
+nox_verify = { git = "https://github.com/NON-OS/STARKs", rev = "a47d23ae969e23b5f841e30b49a1d483a80a6b02" }
+
+[features]
+# The prover's proof-of-work and evaluation spread across cores; the proof is the same.
+# That build of nonos-stark also reports its memory on standard error as it builds a
+# periodic tree, so it is asked for rather than the default.
+parallel = ["nonos-stark/parallel"]

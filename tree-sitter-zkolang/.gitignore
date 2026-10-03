@@ -1,4 +1,6 @@
-src/
+src/*
+!src/scanner.c
 build/
 node_modules/
+package-lock.json
 *.wasm

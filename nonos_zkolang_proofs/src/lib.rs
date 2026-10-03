@@ -140,6 +140,8 @@ mod fuzz_tests;
 #[cfg(test)]
 mod golden_corpus;
 #[cfg(test)]
+mod grammar_tests;
+#[cfg(test)]
 mod hash_tests;
 #[cfg(test)]
 mod include_key_tests;
@@ -198,9 +200,13 @@ mod name_check_tests;
 #[cfg(test)]
 mod name_near_tests;
 #[cfg(test)]
+mod native_2026_tests;
+#[cfg(test)]
 mod native_compare_tests;
 #[cfg(test)]
 mod native_guard_tests;
+#[cfg(test)]
+mod native_run;
 #[cfg(test)]
 mod nesting_tests;
 #[cfg(test)]
@@ -223,6 +229,8 @@ mod owned_element_tests;
 mod packages_run;
 #[cfg(test)]
 mod packages_tests;
+#[cfg(test)]
+mod pin_tests;
 #[cfg(test)]
 mod prop_binary;
 #[cfg(test)]

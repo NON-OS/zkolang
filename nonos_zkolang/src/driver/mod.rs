@@ -10,9 +10,11 @@
 mod advice;
 mod error;
 mod field_inputs;
+mod laid_out;
 mod log_t;
 mod params;
 mod pipeline;
+mod prepare;
 mod prove;
 mod prover;
 mod publics;
@@ -27,4 +29,5 @@ pub use source::{
     prove_source_with_witness_zk,
 };
 
+pub(crate) use laid_out::laid_out;
 pub(crate) use log_t::choose_log_t;

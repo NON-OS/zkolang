@@ -35,16 +35,20 @@ jobs:
 
       # Formatting is enforced on the language crates.
       - name: format
-        run: cargo fmt --check -p nonos_zkolang -p nonos_zkolang_cli -p nonos_zkolang_proofs
+        run: cargo fmt --check -p nonos_zkolang -p nonos_zkolang_cli -p nonos_zkolang_proofs -p nonos_zkolang_format7 -p nonos_zkolang_wasm
 
       # Deny warnings on the language crates. --no-deps keeps the lint off
       # nonos-stark, which the STARKs repository builds and gates.
       - name: clippy
-        run: cargo clippy --no-deps -p nonos_zkolang -p nonos_zkolang_cli -p nonos_zkolang_proofs --all-targets -- -D warnings
+        run: cargo clippy --no-deps -p nonos_zkolang -p nonos_zkolang_cli -p nonos_zkolang_proofs -p nonos_zkolang_format7 -p nonos_zkolang_wasm --all-targets -- -D warnings
+
+      # The format 7 prover across cores, the build `--features parallel` asks for.
+      - name: clippy, parallel prover
+        run: cargo clippy --no-deps -p nonos_zkolang_cli -p nonos_zkolang_format7 --all-targets --features nonos_zkolang_cli/parallel,nonos_zkolang_format7/parallel -- -D warnings
 
       # The API reference builds with no broken link or other rustdoc warning.
       - name: docs
-        run: cargo doc --no-deps -p nonos_zkolang -p nonos_zkolang_cli -p nonos_zkolang_proofs
+        run: cargo doc --no-deps -p nonos_zkolang -p nonos_zkolang_cli -p nonos_zkolang_proofs -p nonos_zkolang_format7 -p nonos_zkolang_wasm
         env:
           RUSTDOCFLAGS: -D warnings
 
@@ -54,3 +58,29 @@ jobs:
       # from the STARKs repository at the revision the manifests pin.
       - name: test
         run: cargo test --workspace --release
+
+  wasm:
+    name: browser verifier
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: dtolnay/rust-toolchain@7e38f4b43b4db5c8dd498af069a4f6196df1d067 # master
+        with:
+          toolchain: 1.99.0
+          components: clippy
+          targets: wasm32-unknown-unknown
+
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+
+      - name: clippy
+        run: cargo clippy --no-deps -p nonos_zkolang_wasm --target wasm32-unknown-unknown -- -D warnings
+
+      - name: build the module
+        run: cargo build --release -p nonos_zkolang_wasm --target wasm32-unknown-unknown
+
+      # The module a page loads, run by Node against the committed format 7 fixture: the
+      # pinned proof verifies, and with a byte flipped or another output it does not.
+      - name: verify the fixture in Node
+        run: node nonos_zkolang_wasm/js/check.mjs target/wasm32-unknown-unknown/release/nonos_zkolang_wasm.wasm nonos_zkolang_format7/fixture

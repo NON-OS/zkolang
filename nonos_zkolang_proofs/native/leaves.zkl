@@ -1,0 +1,35 @@
+/* Each kind of leaf, as an input and in the result: a signed and an unsigned 64-bit
+   integer, a narrow signed and unsigned one, a field element, a bool, and an enum. */
+
+enum Sign {
+    Neg,
+    Zero,
+    Pos,
+}
+
+fn sign(x: i64) -> Sign {
+    if x < 0 {
+        Sign::Neg
+    } else if x == 0 {
+        Sign::Zero
+    } else {
+        Sign::Pos
+    }
+}
+
+fn main(
+    a: public i64,
+    b: public u64,
+    c: secret i32,
+    d: secret u8,
+    f: secret field,
+) -> (i64, i64, u64, u64, i32, bool, field, u8, Sign) {
+    let s = match sign(a) {
+        Sign::Neg => 0 - 1,
+        Sign::Zero => 0,
+        Sign::Pos => 1,
+    };
+    let q = b / (d as u64 + 1);
+    let r = b % (d as u64 + 1);
+    declassify((a * s, a - s, q, r, c / 3 - c % 3, c < -5, f * f + 1, d ^ 0x5a, sign(a)))
+}

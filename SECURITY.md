@@ -43,6 +43,11 @@ certificate rests on no axioms at all.
   commitment written in the language equal to the digest the STARKs repository
   pins as deployed, and `shield_key_kat` holds the key hierarchy vector byte for
   byte to the one that repository emits.
+- **Format 7.** The tests of `nonos_zkolang_format7` prove a run in STARKs format 7 and
+  have `nox_verify` accept it and refuse another output, another input, a damaged proof
+  and another program's statement. A committed fixture proof is verified against the
+  statement made from its program on every change, natively and, by the browser module,
+  in Node.
 - **Fuzzing.** Four cargo-fuzz targets, the front end, building and running, the
   formatter and the edition 2025 compiler, run on every change and nightly.
 - **Supply chain and secrets.** `cargo-deny` (advisories, licenses, bans,
@@ -66,7 +71,10 @@ proof opens the column at, so the trace values the proof reveals are jointly
 uniform (`nonos_zkolang/src/driver/prover.rs`; the identities the blinding rests
 on are `Blinding.invisible_on_domain` and `Blinding.shift_off_domain` in Lean).
 A zero-knowledge argument that also covers the composition polynomial and the FRI
-layers is not made here. Edition 2025 proofs from `zkolang run` are not blinded:
+layers is not made here. A format 7 proof made by `zkolang prove` blinds every column
+likewise, to the degree STARKs gives for the values a format 7 proof opens
+(`blinding_degree` in its `air/zk.rs`), with the same boundary. Edition 2025 proofs from
+`zkolang run` are not blinded:
 there a `secret` input is a private witness the statement leaves out, and the
 query openings can show trace values. `nonos_zkolang/docs/07-reference.md` states
 the same boundary.
@@ -77,5 +85,7 @@ A zKølang program is proven at the point of `nonos_zkolang/src/driver/params.rs
 32 queries, a 16-bit grind and rate 1/16. The STARKs repository states the same
 point as `inner` in `stark_proofs/src/shield_params.rs`, at 144 conjectured and
 80 provable bits, with the argument in its `docs/12-soundness.md`; the points the
-shield settles at are stated there too. A change to these numbers is a reviewed
-change.
+shield settles at are stated there too. A format 7 proof is made at STARKs' query shape
+A, 19 queries after a 28-bit grind on its launch transcript, with five extra blowup bits
+(`nonos_zkolang_format7/src/params.rs`), the shape the STARKs pool proves at. A change to
+these numbers is a reviewed change.

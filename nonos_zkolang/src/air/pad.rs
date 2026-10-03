@@ -18,6 +18,7 @@ pub(super) fn pad_and_build(
     halted: bool,
     log_t: u32,
     public_bindings: Vec<(usize, usize, nonos_stark::field::Fp)>,
+    pins: Vec<super::pin::Pin>,
 ) -> Result<StepAir, BuildError> {
     if !halted {
         return Err(BuildError::NoHalt);
@@ -36,5 +37,6 @@ pub(super) fn pad_and_build(
         log_t,
         wiring,
         public_bindings,
+        pins,
     })
 }

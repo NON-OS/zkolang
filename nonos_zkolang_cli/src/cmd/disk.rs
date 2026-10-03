@@ -26,7 +26,7 @@ impl Files for Disk {
  * The manifest that governs the file `file` (section 4.1): `zkolang.toml` in the file's
  * directory or the nearest one above it, as the path names them; its path and text.
  */
-pub(super) fn manifest_for(file: &str) -> Option<(String, String)> {
+pub(crate) fn manifest_for(file: &str) -> Option<(String, String)> {
     let dir = Path::new(file).parent()?;
     dir.ancestors().find_map(|d| {
         let path = d.join("zkolang.toml");

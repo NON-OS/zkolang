@@ -13,4 +13,5 @@ mod op;
 mod prelude;
 mod program;
 
+pub(crate) use prelude::PRELUDE;
 pub use program::to_c;

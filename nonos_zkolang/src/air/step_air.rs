@@ -21,4 +21,6 @@ pub struct StepAir {
     pub(super) wiring: Vec<WireRow>,
     /// Boundary triples binding public inputs and outputs: (column, row, value).
     pub(super) public_bindings: Vec<(usize, usize, Fp)>,
+    /** What pins each public binding, in the same order. */
+    pub(super) pins: Vec<super::pin::Pin>,
 }

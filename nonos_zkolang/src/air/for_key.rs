@@ -27,6 +27,6 @@ impl StepAir {
                 break;
             }
         }
-        pad_and_build(wiring, halted, log_t, Vec::new())
+        pad_and_build(wiring, halted, log_t, Vec::new(), Vec::new())
     }
 }
