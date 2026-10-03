@@ -1,51 +1,292 @@
 {
   "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
-  "name": "zKolang",
+  "name": "zKølang",
   "scopeName": "source.zkolang",
-  "fileTypes": ["zkl"],
+  "fileTypes": [
+    "zkl"
+  ],
   "patterns": [
-    { "include": "#comments" },
-    { "include": "#keywords" },
-    { "include": "#functions" },
-    { "include": "#numbers" },
-    { "include": "#operators" }
+    {
+      "include": "#comments"
+    },
+    {
+      "include": "#attributes"
+    },
+    {
+      "include": "#strings"
+    },
+    {
+      "include": "#numbers"
+    },
+    {
+      "include": "#declarations"
+    },
+    {
+      "include": "#keywords"
+    },
+    {
+      "include": "#types"
+    },
+    {
+      "include": "#calls"
+    },
+    {
+      "include": "#names"
+    },
+    {
+      "include": "#operators"
+    },
+    {
+      "include": "#punctuation"
+    }
   ],
   "repository": {
     "comments": {
-      "match": "//.*$",
-      "name": "comment.line.double-slash.zkolang"
-    },
-    "keywords": {
       "patterns": [
         {
-          "match": "\\b(let|const|fn|input|public|secret|witness|output|reveal|assert|prove|for|in|if|else|match|include)\\b",
-          "name": "keyword.control.zkolang"
+          "name": "comment.block.documentation.zkolang",
+          "begin": "/\\*[*!](?![*/])",
+          "end": "\\*/",
+          "patterns": [
+            {
+              "include": "#block-comment"
+            }
+          ]
         },
         {
-          "match": "\\b(inv|sel)\\b",
-          "name": "support.function.builtin.zkolang"
+          "include": "#block-comment"
+        },
+        {
+          "name": "comment.line.documentation.zkolang",
+          "match": "//[/!](?!/).*$"
+        },
+        {
+          "name": "comment.line.double-slash.zkolang",
+          "match": "//.*$"
         }
       ]
     },
-    "functions": {
+    "block-comment": {
+      "name": "comment.block.zkolang",
+      "begin": "/\\*",
+      "end": "\\*/",
       "patterns": [
         {
-          "match": "\\bfn\\s+([A-Za-z_][A-Za-z0-9_]*)",
-          "captures": { "1": { "name": "entity.name.function.zkolang" } }
+          "include": "#block-comment"
+        }
+      ]
+    },
+    "attributes": {
+      "name": "meta.attribute.zkolang",
+      "begin": "#!?\\[",
+      "end": "\\]",
+      "patterns": [
+        {
+          "include": "#strings"
         },
         {
-          "match": "\\b([A-Za-z_][A-Za-z0-9_]*)\\s*(?=\\()",
-          "name": "entity.name.function.call.zkolang"
+          "include": "#numbers"
+        },
+        {
+          "match": "[A-Za-z_][A-Za-z0-9_]*",
+          "name": "entity.other.attribute-name.zkolang"
+        }
+      ]
+    },
+    "strings": {
+      "name": "string.quoted.double.zkolang",
+      "begin": "\"",
+      "end": "\"|$",
+      "patterns": [
+        {
+          "match": "\\\\[\"\\\\nt0]",
+          "name": "constant.character.escape.zkolang"
+        },
+        {
+          "match": "\\\\.",
+          "name": "invalid.illegal.escape.zkolang"
         }
       ]
     },
     "numbers": {
-      "match": "\\b[0-9]+\\b",
-      "name": "constant.numeric.zkolang"
+      "patterns": [
+        {
+          "match": "\\b(0x[0-9A-Fa-f][0-9A-Fa-f_]*|0o[0-7][0-7_]*|0b[01][01_]*|[0-9][0-9_]*)(u8|u16|u32|u64|i8|i16|i32|i64|usize)?\\b",
+          "captures": {
+            "1": {
+              "name": "constant.numeric.zkolang"
+            },
+            "2": {
+              "name": "storage.type.numeric.zkolang"
+            }
+          }
+        },
+        {
+          "match": "\\b(true|false)\\b",
+          "name": "constant.language.boolean.zkolang"
+        }
+      ]
+    },
+    "declarations": {
+      "patterns": [
+        {
+          "match": "\\b(fn)\\s+([A-Za-z_][A-Za-z0-9_]*)",
+          "captures": {
+            "1": {
+              "name": "storage.type.function.zkolang"
+            },
+            "2": {
+              "name": "entity.name.function.zkolang"
+            }
+          }
+        },
+        {
+          "match": "\\b(struct|enum|type|mod)\\s+([A-Za-z_][A-Za-z0-9_]*)",
+          "captures": {
+            "1": {
+              "name": "storage.type.zkolang"
+            },
+            "2": {
+              "name": "entity.name.type.zkolang"
+            }
+          }
+        },
+        {
+          "match": "\\b(const)\\s+([A-Z_][A-Z0-9_]*)\\b",
+          "captures": {
+            "1": {
+              "name": "storage.type.zkolang"
+            },
+            "2": {
+              "name": "variable.other.constant.zkolang"
+            }
+          }
+        }
+      ]
+    },
+    "keywords": {
+      "patterns": [
+        {
+          "match": "\\b(if|else|match|for|in|while|limit|return|break|continue)\\b",
+          "name": "keyword.control.zkolang"
+        },
+        {
+          "match": "\\b(assert)\\b",
+          "name": "keyword.control.assert.zkolang"
+        },
+        {
+          "match": "\\b(fn|let|const|type|struct|enum|impl|mod|use|pub)\\b",
+          "name": "storage.type.zkolang"
+        },
+        {
+          "match": "\\b(mut)\\b",
+          "name": "storage.modifier.mut.zkolang"
+        },
+        {
+          "match": "\\b(public|secret)\\b",
+          "name": "storage.modifier.visibility.zkolang"
+        },
+        {
+          "match": "\\b(declassify)\\b",
+          "name": "keyword.other.declassify.zkolang"
+        },
+        {
+          "match": "\\b(as)\\b",
+          "name": "keyword.operator.cast.zkolang"
+        },
+        {
+          "match": "\\b(self|Self|crate|super)\\b",
+          "name": "variable.language.zkolang"
+        },
+        {
+          "match": "\\b(input|witness|output|reveal|prove|include)\\b",
+          "name": "keyword.other.edition-2025.zkolang"
+        },
+        {
+          "match": "\\b(inv|sel)\\b(?=\\s*\\()",
+          "name": "support.function.builtin.zkolang"
+        },
+        {
+          "match": "\\b(async|await|dyn|extern|loop|macro|move|ref|static|trait|unsafe|where|yield)\\b",
+          "name": "invalid.illegal.reserved.zkolang"
+        }
+      ]
+    },
+    "types": {
+      "match": "\\b(field|bool|u8|u16|u32|u64|i8|i16|i32|i64|usize)\\b",
+      "name": "storage.type.primitive.zkolang"
+    },
+    "calls": {
+      "patterns": [
+        {
+          "match": "\\b([a-z_][A-Za-z0-9_]*)\\s*(?=(::<.*?>)?\\s*\\()",
+          "name": "entity.name.function.call.zkolang"
+        }
+      ]
+    },
+    "names": {
+      "patterns": [
+        {
+          "match": "\\b[A-Z][A-Z0-9_]+\\b",
+          "name": "variable.other.constant.zkolang"
+        },
+        {
+          "match": "\\b[A-Z][A-Za-z0-9_]*\\b",
+          "name": "entity.name.type.zkolang"
+        },
+        {
+          "match": "\\b_\\b",
+          "name": "variable.language.wildcard.zkolang"
+        }
+      ]
     },
     "operators": {
-      "match": "==|!=|<=|>=|&&|\\|\\||\\.\\.|[+\\-*/=!<>]",
-      "name": "keyword.operator.zkolang"
+      "patterns": [
+        {
+          "match": "<<=|>>=|\\+=|-=|\\*=|/=|%=|\\^=|&=|\\|=",
+          "name": "keyword.operator.assignment.compound.zkolang"
+        },
+        {
+          "match": "==|!=|<=|>=",
+          "name": "keyword.operator.comparison.zkolang"
+        },
+        {
+          "match": "&&|\\|\\||!",
+          "name": "keyword.operator.logical.zkolang"
+        },
+        {
+          "match": "->|=>",
+          "name": "keyword.operator.arrow.zkolang"
+        },
+        {
+          "match": "\\.\\.=|\\.\\.",
+          "name": "keyword.operator.range.zkolang"
+        },
+        {
+          "match": "<<|>>|[+\\-*/%^&|]",
+          "name": "keyword.operator.arithmetic.zkolang"
+        },
+        {
+          "match": "[=<>]",
+          "name": "keyword.operator.zkolang"
+        }
+      ]
+    },
+    "punctuation": {
+      "patterns": [
+        {
+          "match": "::",
+          "name": "punctuation.separator.path.zkolang"
+        },
+        {
+          "match": "[,;:.]",
+          "name": "punctuation.separator.zkolang"
+        },
+        {
+          "match": "[(){}\\[\\]]",
+          "name": "punctuation.brackets.zkolang"
+        }
+      ]
     }
   }
 }

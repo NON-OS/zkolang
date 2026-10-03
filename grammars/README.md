@@ -2,8 +2,11 @@
 
 # zKolang syntax grammar
 
-`zkolang.tmLanguage.json` is a TextMate grammar for zKolang source (`.zkl`). It
-gives editors and GitHub the rules to highlight the language.
+`zkolang.tmLanguage.json` is a TextMate grammar for zKølang source (`.zkl`), both
+editions: nested block comments and doc comments, attributes, strings and their escapes,
+integer literals with a radix and a type suffix, every keyword and reserved word of the
+lexer, the primitive types, and the edition 2025 words. `grammar_tests` holds it to the
+lexer's keyword table, and the VS Code extension ships the same file.
 
 ## Editors
 

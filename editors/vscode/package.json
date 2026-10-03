@@ -1,7 +1,7 @@
 {
   "name": "zkolang",
   "displayName": "zKolang",
-  "description": "Language support for zKolang (.zkl): the verifiable-compute language by NONOS.",
+  "description": "Language support for zKolang (.zkl), editions 2025 and 2026: the verifiable-compute language by NONOS.",
   "version": "0.1.0",
   "publisher": "nonos",
   "license": "AGPL-3.0-or-later",

@@ -140,6 +140,8 @@ mod fuzz_tests;
 #[cfg(test)]
 mod golden_corpus;
 #[cfg(test)]
+mod grammar_tests;
+#[cfg(test)]
 mod hash_tests;
 #[cfg(test)]
 mod include_key_tests;

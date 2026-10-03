@@ -564,9 +564,8 @@ the rows a trace can hold is warned about (W0102) where it is declared.
 it such a file is read as edition 2025. Diagnostics carry a code, a span and, where one
 applies, a suggestion, including the names closest to one that does not resolve.
 
-Editor support: a [tree-sitter grammar](tree-sitter-zkolang), a
-[TextMate grammar](grammars) and a [VS Code extension](editors/vscode). All three cover the
-edition 2025 syntax today.
+Editor support: a [TextMate grammar](grammars) and a [VS Code extension](editors/vscode)
+for both editions, and a [tree-sitter grammar](tree-sitter-zkolang) for edition 2025.
 
 ## What you can build today
 
@@ -598,7 +597,7 @@ Stated so nobody has to find out by surprise:
   proofs yet.
 - **Bounded programs only:** loops are unrolled, `while` carries a `limit`, there is no
   heap, and functions are inlined, so recursion is refused.
-- **The native backends** (`build --target c|asm|python`) and the editor grammars take
+- **The native backends** (`build --target c|asm|python`) and the tree-sitter grammar take
   edition 2025 only.
 
 ## How it is kept correct

@@ -2,9 +2,10 @@
 
 # zKolang for VS Code
 
-Syntax highlighting and editor configuration for zKølang source (`.zkl`). The extension
-contributes the language under scope `source.zkolang` with the TextMate grammar in
-`syntaxes/`, line comments, and bracket handling.
+Syntax highlighting and editor configuration for zKølang source (`.zkl`), editions 2025
+and 2026. The extension contributes the language under scope `source.zkolang` with the
+TextMate grammar in `syntaxes/`, line and block comments, bracket handling and
+indentation.
 
 ## Install from source
 
